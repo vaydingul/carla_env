@@ -1,6 +1,7 @@
 import subprocess
 import os
-
+import signal
+import time
 from carla_env.modules import module
 
 CARLA_ROOT = os.getenv("CARLA_ROOT")
@@ -13,6 +14,12 @@ class ServerModule(module.Module):
 		super().__init__()
 		self.config = config
 		self.carla_exec = os.path.join(CARLA_ROOT, "CarlaUE4.sh")
+		self.is_running = None
+		self.render_dict = {}
+
+	def _generate_command(self):
+		"""Generate the command to start the server based on the config file"""
+
 		self.command = [self.carla_exec, "-carla-server"]
 
 		if config["quality"] is not None:
@@ -25,57 +32,52 @@ class ServerModule(module.Module):
 		else:
 			self.command += ["-carla-rpc-port", "2000"]
 
+		self.command += ["-opengl"]
+
 		if config["no_screen"]:
 			self.command = "".join(self.command)
 		
-
-		
-	def _start(self):
+	def start(self):
 		"""Start the server"""
 		
-		self.process = subprocess.Popen(self.command, shell = True)
+		self.process = subprocess.Popen(self.command, stdout=subprocess.PIPE)
 		
 
-	def _stop(self):
+	def stop(self):
 		"""Kill the server"""
 
-		self.process.kill()
-		self.process.wait()
-		self.process = None
+		#self.process.terminate()
+		os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
 
 	def _is_running(self):
 		"""Check if the server is running"""
 		return self.process.poll() is None
 
-	def _get_status(self):
-		"""Get the status of the server"""
-		return self.process.poll()
-
 
 	def reset(self):
 		"""Reset the module"""
-		pass
+		self.stop()
+		time.sleep(3.0)
+		self.start()
+
 	
 	def step(self, action):
 		"""Perform an action in the module"""
-		pass
+		self.is_running = self._is_running()
 	
 	def render(self):
 		"""Render the module"""
-		pass
-	
-	def close(self):
-		"""Close the module"""
-		pass
-	
+		self.render_dict["is_running"] = self.is_running
+		
+
 	def seed(self, seed):
 		"""Set the seed for the module"""
-		pass
+		raise(NotImplementedError)
 	
 	
 	def get_config(self):
 		"""Get the config of the module"""
-		pass
+		return self.config
 
 
 if __name__ == "__main__":
@@ -83,6 +85,9 @@ if __name__ == "__main__":
 	config = {"quality": "epic", "port": "2000", "no_screen": False}
 	server = ServerModule(config)
 	server._start()
+	time.sleep(10.0)
+	print("Stopping....")
+	server._stop()
 	pass
 
 
