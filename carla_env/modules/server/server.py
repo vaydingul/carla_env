@@ -36,7 +36,13 @@ class ServerModule(module.Module):
 
 		if config["no_screen"]:
 			self.command = "".join(self.command)
-		
+
+
+	def _is_running(self):
+			"""Check if the server is running"""
+			return self.process.poll() is None
+
+
 	def start(self):
 		"""Start the server"""
 		
@@ -46,12 +52,8 @@ class ServerModule(module.Module):
 	def stop(self):
 		"""Kill the server"""
 
-		#self.process.terminate()
+		# self.process.terminate()
 		os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
-
-	def _is_running(self):
-		"""Check if the server is running"""
-		return self.process.poll() is None
 
 
 	def reset(self):
