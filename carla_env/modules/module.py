@@ -28,20 +28,7 @@ class Module(abc.ABC):
 		"""Set the seed for the module"""
 		pass
 	
-	@abc.abstractmethod
-	def get_state(self):
-		"""Get the state of the module"""
-		pass
 	
-	@abc.abstractmethod
-	def get_action_space(self):
-		"""Get the action space of the module"""
-		pass
-	
-	@abc.abstractmethod
-	def get_observation_space(self):
-		"""Get the observation space of the module"""
-		pass
 	
 	@abc.abstractmethod
 	def get_config(self):
