@@ -45,3 +45,4 @@ class CarlaEnvironment(Environment):
 	def get_config(self):
 		"""Get the config of the environment"""
 		return self.config
+

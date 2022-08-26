@@ -7,13 +7,16 @@ class ClientModule(module.Module):
 	def __init__(self, config) -> None:
 		super().__init__()
 
-		self.config = config
+		if config is None:
+			self.set_default_config()
+		else:
+			self.config = config
 		self.render_dict = {}
 		
 	def _tick(self):
 		self.frame_id = self.world.tick()
 
-	def start(self):
+	def _start(self):
 		"""Start the client"""
 		self.client = carla.Client(self.config["host"], self.config["port"])
 		self.client.set_timeout(self.config["timeout"])
@@ -26,13 +29,16 @@ class ClientModule(module.Module):
 		self.settings.synchronous_mode = self.config["synchronous_mode"]
 		self.settings.fixed_delta_seconds = self.config["fixed_delta_seconds"]
 		self.world.apply_settings(self.settings)
+
+
 		self._tick()
+
 	def step(self):
 		"""Step the client"""
 		self._tick()
 
 
-	def stop(self):
+	def _stop(self):
 		"""Stop the client"""
 		pass
 
@@ -44,6 +50,10 @@ class ClientModule(module.Module):
 	def render(self):
 		"""Render the client"""
 		pass
+	
+	def close(self):
+		"""Close the client"""
+		pass
 
 	def seed(self):
 		"""Seed the client"""
@@ -52,4 +62,15 @@ class ClientModule(module.Module):
 	def get_config(self):
 		"""Get the config of the client"""
 		return self.config
+	
+	def set_default_config(self):
+		"""Set the default config of the client"""
+		self.config = {
+			"host": "localhost",
+			"port": 2000,
+			"timeout": 10.0,
+			"world": "Town01",
+			"synchronous_mode": False,
+			"fixed_delta_seconds": 0.01
+		}
 		

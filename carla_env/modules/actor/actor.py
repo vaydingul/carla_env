@@ -1,5 +1,6 @@
 from typing_extensions import Self
 from carla_env.modules import module
+from carla_env.modules.vehicle import vehicle
 import carla
 
 class ActorModule(module.Module):
@@ -40,7 +41,10 @@ class ActorModule(module.Module):
 		self.render_dict["velocity"] = self.actor.get_velocity()
 		self.render_dict["location"] = Self.actor.get_location()
 
-	
+	def close(self):
+		"""Close the actor manager"""
+		pass
+
 	def seed(self):
 		"""Seed the actor manager"""
 		pass
@@ -49,3 +53,7 @@ class ActorModule(module.Module):
 		"""Get the config of the actor manager"""
 		return self.config
 	
+	def set_default_config(self):
+		"""Set the default config of actor manager"""
+		self.config = {"actor" : vehicle.VehicleModule()["blueprint"], 
+		"hero" : True}
