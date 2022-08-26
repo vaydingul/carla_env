@@ -7,7 +7,8 @@ class TrafficModule(module.Module):
 
     def __init__(self, client, config) -> None:
         super().__init__()
-        self.config = config
+        for k in config.keys():
+    self.config[k] = config[k]
         self.client = client
         # TODO: Figure out how to connect vehicles
 

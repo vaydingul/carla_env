@@ -1,4 +1,3 @@
-from typing_extensions import Self
 from carla_env.modules import module
 import carla
 
@@ -6,14 +5,15 @@ class VehicleModule(module.Module):
 	"""Concrete implementation of Module abstract base class for vehicle management"""
 	def __init__(self, config, client) -> None:
 		super().__init__()
-		if config is None:
-			self.set_default_config()
-		else:
-			self.config = config
-
 		self.client = client
+
+		
+		self._set_default_config()
+		if config is not None:
+			for k in config.keys():
+				self.config[k] = config[k]
 		self.world = self.client.get_world()
-		self.blueprint = self.config[f"vehicle.{self.config['vehicle_model']}"][0]
+		self.blueprint = self.world.get_blueprint_library().filter(f"vehicle.{self.config['vehicle_model']}")[0]
 
 			
 	def _start(self, spawn_transform):
@@ -48,7 +48,7 @@ class VehicleModule(module.Module):
 		"""Get the config of the vehicle manager"""
 		return self.config
 
-	def set_default_config(self):
+	def _set_default_config(self):
 		"""Set the default config of the vehicle"""
 		self.config = {"vehicle_model" : "lincoln.mkz2017"}
 	

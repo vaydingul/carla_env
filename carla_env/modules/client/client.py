@@ -7,10 +7,12 @@ class ClientModule(module.Module):
 	def __init__(self, config) -> None:
 		super().__init__()
 
-		if config is None:
-			self.set_default_config()
-		else:
-			self.config = config
+		self._set_default_config()
+		if config is not None:
+			for k in config.keys():
+				self.config[k] = config[k]
+			
+				
 		self.render_dict = {}
 		
 	def _tick(self):
@@ -22,6 +24,7 @@ class ClientModule(module.Module):
 		self.client.set_timeout(self.config["timeout"])
 		
 		self.world = self.client.load_world(self.config["world"])
+		self.map = self.world.get_map()
 		
 		self.blueprint_library = self.world.get_blueprint_library()
 
@@ -63,7 +66,7 @@ class ClientModule(module.Module):
 		"""Get the config of the client"""
 		return self.config
 	
-	def set_default_config(self):
+	def _set_default_config(self):
 		"""Set the default config of the client"""
 		self.config = {
 			"host": "localhost",
@@ -73,4 +76,8 @@ class ClientModule(module.Module):
 			"synchronous_mode": False,
 			"fixed_delta_seconds": 0.01
 		}
-		
+	
+	def _get_spawn_points(self):
+		"""Get all the spawn point in the map"""
+
+		return self.map.get_spawn_points()

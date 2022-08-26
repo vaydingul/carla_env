@@ -1,4 +1,3 @@
-from typing_extensions import Self
 from carla_env.modules import module
 from carla_env.modules.vehicle import vehicle
 import carla
@@ -7,16 +6,21 @@ class ActorModule(module.Module):
 	"""Concrete implementation of Module abstract base class for actor management"""
 	def __init__(self, config, client) -> None:
 		super().__init__()
-		self.config = config
-		self.actor = self.config["actor"]
 		self.client = client
-		self.world = self.client.world
+
+		self._set_default_config()
+		if config is not None:
+			for k in config.keys():
+				self.config[k] = config[k]
+
+		self.actor = self.config["actor"]
+		self.world = self.client.get_world()
 		self.hero = self.config["hero"]
 		self.render_dict = {}
 	
-	def start(self, spawn_transform):
+	def _start(self, spawn_transform):
 		"""Start the actor manager"""
-		self.actor = self.world.try_spawn_actor(self.actor, spawn_transform)
+		self.player = self.world.try_spawn_actor(self.actor.blueprint, spawn_transform)
 
 	
 	def step(self, control = None):
@@ -26,7 +30,7 @@ class ActorModule(module.Module):
 			self.actor.apply_control(vehicle_control)
 
 	
-	def stop(self):
+	def _stop(self):
 		"""Stop the actor manager"""
 		self.actor.destroy()
 	
@@ -53,7 +57,7 @@ class ActorModule(module.Module):
 		"""Get the config of the actor manager"""
 		return self.config
 	
-	def set_default_config(self):
+	def _set_default_config(self):
 		"""Set the default config of actor manager"""
-		self.config = {"actor" : vehicle.VehicleModule()["blueprint"], 
+		self.config = {"actor" : vehicle.VehicleModule(None, self.client), 
 		"hero" : True}

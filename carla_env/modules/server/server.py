@@ -10,13 +10,13 @@ CARLA_ROOT = os.getenv("CARLA_ROOT")
 class ServerModule(module.Module):
 	"""Concrete implementation of Module abstract base class for server module"""
 
-	def __init__(self, config = None) -> None:
+	def __init__(self, config) -> None:
 		super().__init__()
 
-		if config is None:
-			self.set_default_config()
-		else:
-			self.config = config
+		self._set_default_config()
+		if config is not None:
+			for k in config.keys():
+				self.config[k] = config[k]
 
 		self.carla_exec = os.path.join(CARLA_ROOT, "CarlaUE4.sh") # Path to the carla executable
 		self.is_running = None # Boolean to check if the server is running
@@ -89,7 +89,7 @@ class ServerModule(module.Module):
 		"""Get the config of the module"""
 		return self.config
 
-	def set_default_config(self):
+	def _set_default_config(self):
 		"""Set the default config for the module"""
 		self.config = {"quality":None,
 		"port": None,

@@ -7,7 +7,9 @@ class CarlaEnvironment(Environment):
 	def __init__(self, config):
 		"""Initialize the environment"""
 		super().__init__(config)
-		self.config = config
+		self._set_default_config()
+		for k in config.keys():
+			self.config[k] = config[k]
 		self.reset()
 	
 	def reset(self):
