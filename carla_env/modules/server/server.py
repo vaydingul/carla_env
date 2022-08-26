@@ -12,10 +12,10 @@ class ServerModule(module.Module):
 
 	def __init__(self, config) -> None:
 		super().__init__()
-		self.config = config
-		self.carla_exec = os.path.join(CARLA_ROOT, "CarlaUE4.sh")
-		self.is_running = None
-		self.render_dict = {}
+		self.config = config # Config for the server module
+		self.carla_exec = os.path.join(CARLA_ROOT, "CarlaUE4.sh") # Path to the carla executable
+		self.is_running = None # Boolean to check if the server is running
+		self.render_dict = {} # Dictionary to store the render information
 
 	def _generate_command(self):
 		"""Generate the command to start the server based on the config file"""
