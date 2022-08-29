@@ -29,18 +29,4 @@ class Environment(abc.ABC):
 		"""Set the seed for the environment"""
 		pass
 	
-	@abc.abstractmethod
-	def get_state(self):
-		"""Get the state of the environment"""
-		pass
-	
-	@abc.abstractmethod
-	def get_action_space(self):
-		"""Get the action space of the environment"""
-		pass
-	
-	@abc.abstractmethod
-	def get_observation_space(self):
-		"""Get the observation space of the environment"""
-		pass
 	

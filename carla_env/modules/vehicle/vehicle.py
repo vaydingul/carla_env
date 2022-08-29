@@ -21,7 +21,7 @@ class VehicleModule(module.Module):
 		pass
 
 	
-	def step(self, control = None):
+	def step(self):
 		"""Step the vehicle manager"""
 		pass
 	

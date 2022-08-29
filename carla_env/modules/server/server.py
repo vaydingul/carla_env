@@ -2,11 +2,15 @@ import subprocess
 import os
 import signal
 import time
-
+import logging
 from carla_env.modules import module
 
 CARLA_ROOT = os.getenv("CARLA_ROOT")
+CARLA_EXECUTABLE = os.path.join(CARLA_ROOT, "CarlaUE4.sh") # Path to the carla executable
+os.environ["VK_ICD_FILENAMES"] = "/usr/share/vulkan/icd.d/nvidia_icd.json"
 
+
+logger = logging.getLogger(__name__)
 class ServerModule(module.Module):
 	"""Concrete implementation of Module abstract base class for server module"""
 
@@ -18,14 +22,15 @@ class ServerModule(module.Module):
 			for k in config.keys():
 				self.config[k] = config[k]
 
-		self.carla_exec = os.path.join(CARLA_ROOT, "CarlaUE4.sh") # Path to the carla executable
-		self.is_running = None # Boolean to check if the server is running
+		self._is_running = False # Boolean to check if the server is running
 		self.render_dict = {} # Dictionary to store the render information
+
+		self.reset()
 
 	def _generate_command(self):
 		"""Generate the command to start the server based on the config file"""
 
-		self.command = [self.carla_exec, "-carla-server"]
+		self.command = [CARLA_EXECUTABLE, "-carla-server"]
 
 		if self.config["quality"]  is not None:
 			self.command += ["-quality-level", config["quality"]]
@@ -42,35 +47,46 @@ class ServerModule(module.Module):
 		if self.config["no_screen"] :
 			self.command = "".join(self.command)
 
+	@property
+	def is_running(self):
+		"""Check if the server is running"""
 
-	def _is_running(self):
-			"""Check if the server is running"""
-			return self.process.poll() is None
+		if hasattr(self, 'process'):
+			self._is_running = self.process.poll() is None
+		else:
+			self._is_running = False
 
+		return self._is_running
+		
 
 	def _start(self):
 		"""Start the server"""
 		
 		self._generate_command()
 		self.process = subprocess.Popen(self.command, stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
-		
+		logger.info("Server started")
+		time.sleep(5.0)
 
 	def _stop(self):
 		"""Kill the server"""
 
 		# self.process.terminate()
-		os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
-		
+		os.killpg(os.getpgid(self.process.pid), signal.SIGKILL)
+		logger.info("Server stopped")
+		time.sleep(5.0)
+
+
 	def reset(self):
 		"""Reset the module"""
-		self.stop()
-		time.sleep(3.0)
-		self.start()
-
+		if self.is_running:
+			self._stop()
+		
+		self._start()
+		logger.info("Server reset")
 	
-	def step(self, action):
+	def step(self):
 		"""Perform an action in the module"""
-		self.is_running = self._is_running()
+		pass
 	
 	def render(self):
 		"""Render the module"""
@@ -79,6 +95,7 @@ class ServerModule(module.Module):
 	def close(self):
 		"""Close the module"""
 		self.stop()
+		time.sleep(5.0)
 		
 	def seed(self, seed):
 		"""Set the seed for the module"""
@@ -95,15 +112,7 @@ class ServerModule(module.Module):
 		"port": None,
 		"no_screen": False}
 
-if __name__ == "__main__":
 
-	config = {"quality": "epic", "port": "2000", "no_screen": False}
-	server = ServerModule(config)
-	server._start()
-	time.sleep(10.0)
-	print("Stopping....")
-	server._stop()
-	pass
 
 
 
