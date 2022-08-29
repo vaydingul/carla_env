@@ -1,16 +1,20 @@
 from carla_env.modules.sensor import sensor
 from queue import Queue, Empty
+import carla
+import copy
+import numpy as np
 
 
-class VehicleSensorModule(sensor.SensorModule):
-	"""Concrete implementation of SensorModule abstract base class for vehicle sensor management"""
-	def __init__(self, config, client, actor = None) -> None:
+class RGBSensorModule(sensor.SensorModule):
+	"""Concrete implementation of SensorModule abstract base class for rgb sensor management"""
+
+	def __init__(self, config, client, actor=None) -> None:
 		super().__init__(config, client)
 
 		if config is not None:
 			for k in config.keys():
 				self.config[k] = config[k]
-
+		self.sensor_dict = {}
 		self.client = client
 		self.world = self.client.get_world()
 		self.map = self.world.get_map()
@@ -18,44 +22,60 @@ class VehicleSensorModule(sensor.SensorModule):
 		if actor is not None:
 			self.attach_to_actor(actor)
 
-
 		self.reset()
-		
+
 	def _start(self):
 		"""Start the sensor module"""
+
 		self.queue = Queue()
+
+		rgb_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
+
+		self.camera_transform = carla.Transform(carla.Location(x=1.5, z=2.4))
+
+		self.camera = self.world.spawn_actor(
+			rgb_bp, self.camera_transform, attach_to=self.actor.player)
+
+		self.camera.listen(lambda image: self._get_sensor_data(image))
 
 	def _stop(self):
 		"""Stop the sensor module"""
-		pass
-	
+		self.camera.destroy()
+
 	def _tick(self):
 		"""Tick the sensor"""
 		pass
 
-	def _get_sensor_data(self):
+	def _get_sensor_data(self, image):
 		"""Get the sensor data"""
-		data = {'transform': self.actor.player.get_transform(),
-						'location': self.actor.player.get_location(),
-						'velocity': self.actor.player.get_velocity()
-						}
+
+		image_data = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
+		image_data = copy.deepcopy(image_data)
+		image_data = np.reshape(image_data, (image.height, image.width, 4))
+		image_data = image_data[:, :, :3]
+		image_data = image_data[:, :, ::-1]
+
+		data = {'frame': image.frame,
+				'transform': image.transform,
+				'data': image_data
+				}
 		self._queue_operation(data)
 
 	def step(self):
 		"""Step the sensor"""
 		self._tick()
-		self._get_sensor_data()
 
 	def reset(self):
 		"""Reset the sensor"""
 		self._start()
+
 	def render(self):
 		"""Render the sensor"""
 		pass
 
 	def close(self):
 		"""Close the sensor"""
-		pass
+		self._stop()
 
 	def seed(self):
 		"""Seed the sensor"""

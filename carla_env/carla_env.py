@@ -6,6 +6,7 @@ from carla_env.modules.client import client as c
 from carla_env.modules.actor import actor as a
 from carla_env.modules.vehicle import vehicle as v
 from carla_env.modules.sensor import vehicle_sensor as vs
+from carla_env.modules.sensor import rgb_sensor as rgbs
 # Import utils
 import carla
 import time
@@ -48,13 +49,11 @@ class CarlaEnvironment(Environment):
 		self.actor = a.ActorModule({"actor": self.vehicle, "hero": True}, self.client.client)
 
 		self.vehicle_sensor = vs.VehicleSensorModule(None, self.client.client, self.actor)
-		#vehicle_sensor.attach_to_actor(actor)
-	
-		
 
+		self.rgb_sensor = rgbs.RGBSensorModule(None, self.client.client, self.actor)
 
-		self.actor.reset()
-		self.vehicle.reset()
+		#self.actor.reset()
+		#self.vehicle.reset()
 
 
 	def step(self, action = None):
@@ -76,12 +75,11 @@ class CarlaEnvironment(Environment):
 
 	def close(self):
 		"""Close the environment"""
-		self.server.close()
-		self.client.close()
-		self.actor.close()
 		self.vehicle.close()
-
-
+		self.actor.close()
+		self.client.close()
+		self.server.close()
+		
 	def seed(self, seed):
 		"""Set the seed for the environment"""
 		pass

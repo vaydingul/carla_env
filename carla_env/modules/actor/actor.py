@@ -21,6 +21,8 @@ class ActorModule(module.Module):
 		self.render_dict = {}
 		self.sensor_list = []
 
+		self.reset()
+
 	def _start(self):
 		"""Start the actor manager"""
 		

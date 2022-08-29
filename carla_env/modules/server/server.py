@@ -9,7 +9,6 @@ CARLA_ROOT = os.getenv("CARLA_ROOT")
 CARLA_EXECUTABLE = os.path.join(CARLA_ROOT, "CarlaUE4.sh") # Path to the carla executable
 os.environ["VK_ICD_FILENAMES"] = "/usr/share/vulkan/icd.d/nvidia_icd.json"
 
-
 logger = logging.getLogger(__name__)
 class ServerModule(module.Module):
 	"""Concrete implementation of Module abstract base class for server module"""
@@ -94,7 +93,7 @@ class ServerModule(module.Module):
 	
 	def close(self):
 		"""Close the module"""
-		self.stop()
+		self._stop()
 		time.sleep(5.0)
 		
 	def seed(self, seed):
