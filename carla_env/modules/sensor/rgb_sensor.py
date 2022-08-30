@@ -3,7 +3,10 @@ from queue import Queue, Empty
 import carla
 import copy
 import numpy as np
+import logging
+import time
 
+logger = logging.getLogger(__name__)
 
 class RGBSensorModule(sensor.SensorModule):
 	"""Concrete implementation of SensorModule abstract base class for rgb sensor management"""
@@ -49,6 +52,9 @@ class RGBSensorModule(sensor.SensorModule):
 	def _get_sensor_data(self, image):
 		"""Get the sensor data"""
 
+		#logger.info("Received an image of frame: " + str(image.frame))
+
+
 		image_data = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
 		image_data = copy.deepcopy(image_data)
 		image_data = np.reshape(image_data, (image.height, image.width, 4))
@@ -64,7 +70,7 @@ class RGBSensorModule(sensor.SensorModule):
 	def step(self):
 		"""Step the sensor"""
 		self._tick()
-
+		
 	def reset(self):
 		"""Reset the sensor"""
 		self._start()

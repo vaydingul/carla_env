@@ -1,0 +1,9 @@
+- Implement action based on the snapshot time
+- Return is_completed in each step
+- Feed some kind of action profile to CarlaEnvironment class
+  - OR hardcode it!
+- Select a good spawn point for the dynamic equivalency tests
+
+- Implement dynamic models from the GitHub code in a straightforward way. (QUICKLY)
+- Fetch dynamics props from CARLA
+- Try to compare results.

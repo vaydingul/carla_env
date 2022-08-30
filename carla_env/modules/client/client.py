@@ -38,7 +38,7 @@ class ClientModule(module.Module):
 		self.world.apply_settings(self.settings)
 		logger.info("Client started")
 
-		self._tick()
+		#self._tick()
 
 	def step(self):
 		"""Step the client"""

@@ -11,10 +11,16 @@ from carla_env.modules.sensor import rgb_sensor as rgbs
 import carla
 import time
 import numpy as np
+from queue import Queue, Empty
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class CarlaEnvironment(Environment):
 	"""Concrete implementation of Environment abstract base class"""
 
-	
 	def __init__(self, config):
 		"""Initialize the environment"""
 		super().__init__()
@@ -28,8 +34,8 @@ class CarlaEnvironment(Environment):
 		self.server = s.ServerModule(None)
 		self.client = c.ClientModule(None)
 
-
-		
+		self.first_time_step = True
+		self.data = Queue()
 
 		self.reset()
 
@@ -40,34 +46,72 @@ class CarlaEnvironment(Environment):
 
 		self.spectator = self.client.world.get_spectator()
 
-
 		# Let's initialize a vehicle
 		self.vehicle = v.VehicleModule(
 			{"vehicle_model": "lincoln.mkz2017"}, self.client.client)
 
 		# Make this vehicle actor
-		self.actor = a.ActorModule({"actor": self.vehicle, "hero": True}, self.client.client)
+		self.actor = a.ActorModule(
+			{"actor": self.vehicle, "hero": True}, self.client.client)
 
-		self.vehicle_sensor = vs.VehicleSensorModule(None, self.client.client, self.actor)
+		self.vehicle_sensor = vs.VehicleSensorModule(
+			None, self.client.client, self.actor)
 
-		self.rgb_sensor = rgbs.RGBSensorModule(None, self.client.client, self.actor)
+		self.rgb_sensor = rgbs.RGBSensorModule(
+			None, self.client.client, self.actor)
 
-		#self.actor.reset()
-		#self.vehicle.reset()
+		time.sleep(1.0)
+		logger.info("Everything is set!")
+		# self.actor.reset()
+		# self.vehicle.reset()
+		# self.vehicle_sensor.reset()
+		# self.rgb_sensor.reset()
 
-
-	def step(self, action = None):
+	def step(self, action=None):
 		"""Perform an action in the environment"""
 		self.server.step()
 		self.client.step()
 		self.actor.step(action)
 		self.vehicle.step()
-		if self.vehicle_sensor.queue.qsize() > 0:
-			ego_transform = self.vehicle_sensor.queue.get()["transform"]
-			transform = ego_transform
-			transform.location.z += 2.0
+		self.vehicle_sensor.step()
 
-			self.spectator.set_transform(transform)
+		data_dict = {}
+		snapshot = self.client.world.get_snapshot()
+
+		for (k, v) in self.actor.sensor_dict.items():
+
+			if v.queue.qsize() > 0:
+
+				try:
+
+					equivalent_frame_fetched = False
+
+					while not equivalent_frame_fetched:
+
+						data_ = v.queue.get(True, 10)
+
+						equivalent_frame_fetched =  data_["frame"] == snapshot.frame, f"Frame number mismatch: {data_['frame']} != {snapshot.frame} \n Current Sensor: {k} \n Current Data Queue Size {self.data.qsize()}"
+
+				except Empty:
+					print("Empty")
+
+				data_dict[k] = data_
+
+				if k == "VehicleSensorModule":
+
+					ego_transform = data_dict[k]["transform"]
+					transform = ego_transform
+					transform.location.z += 2.0
+
+					if self.first_time_step:
+						self.initial_vehicle_transform = ego_transform
+						self.first_time_step = False
+
+		data_dict["snapshot"] = snapshot
+
+		self.data.put(data_dict)
+
+		self.spectator.set_transform(transform)
 
 	def render(self):
 		"""Render the environment"""
@@ -79,11 +123,11 @@ class CarlaEnvironment(Environment):
 		self.actor.close()
 		self.client.close()
 		self.server.close()
-		
+
 	def seed(self, seed):
 		"""Set the seed for the environment"""
 		pass
-	
+
 	def get_config(self):
 		"""Get the config of the environment"""
 		return self.config

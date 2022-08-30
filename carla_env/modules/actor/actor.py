@@ -19,8 +19,8 @@ class ActorModule(module.Module):
 		self.world = self.client.get_world()
 		self.hero = self.config["hero"]
 		self.render_dict = {}
-		self.sensor_list = []
-
+		self.sensor_dict = {}
+		self.last_applied_control = [0, 0, 0]
 		self.reset()
 
 	def _start(self):
@@ -29,24 +29,26 @@ class ActorModule(module.Module):
 		not_spawned = True
 
 		while not_spawned:
+
 			selected_spawn_point = np.random.choice(self.world.get_map().get_spawn_points())
+			
 			self.player = self.world.try_spawn_actor(self.actor.blueprint, selected_spawn_point)
-			print(self.player)
-			print(selected_spawn_point)
+			
 			not_spawned = self.player is None
 	
 
 	def step(self, action = None):
 		"""Step the actor manager"""
-		for sensor in self.sensor_list:
-			sensor.step()
+		# for sensor in self.sensor_dict.values():
+		# 	sensor.step()
 
 		if self.hero and action is not None:
 
 			if type(action) == list:
-	
+				
 				vehicle_control = carla.VehicleControl(throttle = action[0], steer = action[1], brake = action[2])
 				self.player.apply_control(vehicle_control)
+				self.last_applied_control = action
 
 	
 	def _stop(self):

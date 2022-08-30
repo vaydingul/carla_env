@@ -13,7 +13,6 @@ class SensorModule(module.Module):
         if config is not None:
             for k in config.keys():
                 self.config[k] = config[k]
-        self.sensor_dict = {}
         self.client = client
         self.world = self.client.get_world()
         self.map = self.world.get_map()
@@ -63,5 +62,5 @@ class SensorModule(module.Module):
 
     def attach_to_actor(self, actor):
         """Attach the sensor to an actor"""
-        actor.sensor_list.append(self)
+        actor.sensor_dict[f"{self.__class__.__name__}"] = self
         self.actor = actor
