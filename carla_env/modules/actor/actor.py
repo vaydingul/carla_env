@@ -48,7 +48,6 @@ class ActorModule(module.Module):
 				
 				vehicle_control = carla.VehicleControl(throttle = action[0], steer = action[1], brake = action[2])
 				self.player.apply_control(vehicle_control)
-				self.last_applied_control = action
 
 	
 	def _stop(self):

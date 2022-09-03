@@ -17,7 +17,41 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+class ActionDesigner(object):
+	
+	@classmethod
+	def step(cls, t = None):
+		
+		
+		if t < 5:
 
+			action = [0.0, 0.0, 0.0]
+
+		elif t > 5 and t < 10:
+
+			action = [1.0, 0.0, 0.0]
+
+		elif t > 10 and t < 10.5:
+
+			action = [0.0, -0.1, 0.0]
+
+		elif t > 10.5 and t < 11:
+
+			action = [0.0, 0.1, 0.0]
+
+		elif t > 1 and t < 14:
+
+			action = [0.1, 0.0, 0.0]
+
+		elif t > 14 and t < 16:
+
+			action = [0.0, 0.0, 1.0]
+
+		else:
+
+			action = None
+		
+		return action
 class CarlaEnvironment(Environment):
 	"""Concrete implementation of Environment abstract base class"""
 
@@ -35,6 +69,7 @@ class CarlaEnvironment(Environment):
 		self.client = c.ClientModule(None)
 
 		self.first_time_step = True
+		self.is_done = False
 		self.data = Queue()
 
 		self.reset()
@@ -69,14 +104,27 @@ class CarlaEnvironment(Environment):
 
 	def step(self, action=None):
 		"""Perform an action in the environment"""
+
+		
+
+		
 		self.server.step()
 		self.client.step()
+
+		snapshot = self.client.world.get_snapshot()
+		t = snapshot.timestamp.elapsed_seconds
+		action = ActionDesigner.step(t)
+
+		self.is_done = action is None
+		
+		if self.is_done:
+			return True
+
 		self.actor.step(action)
 		self.vehicle.step()
 		self.vehicle_sensor.step()
 
 		data_dict = {}
-		snapshot = self.client.world.get_snapshot()
 
 		for (k, v) in self.actor.sensor_dict.items():
 
@@ -90,7 +138,7 @@ class CarlaEnvironment(Environment):
 
 						data_ = v.queue.get(True, 10)
 
-						equivalent_frame_fetched =  data_["frame"] == snapshot.frame, f"Frame number mismatch: {data_['frame']} != {snapshot.frame} \n Current Sensor: {k} \n Current Data Queue Size {self.data.qsize()}"
+						equivalent_frame_fetched =  data_["frame"] == snapshot.frame #, f"Frame number mismatch: {data_['frame']} != {snapshot.frame} \n Current Sensor: {k} \n Current Data Queue Size {self.data.qsize()}"
 
 				except Empty:
 					print("Empty")
@@ -112,6 +160,8 @@ class CarlaEnvironment(Environment):
 		self.data.put(data_dict)
 
 		self.spectator.set_transform(transform)
+
+		return False
 
 	def render(self):
 		"""Render the environment"""

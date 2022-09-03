@@ -11,75 +11,78 @@ logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
 
-	c = carla_env.CarlaEnvironment(None)
+    c = carla_env.CarlaEnvironment(None)
 
-	t_init = time.time()
+    t_init = time.time()
 
-	while True:
-		
-		t_ = time.time()
+    while not c.is_done:
 
-		if t_ - t_init < 10:
+        c.step()
 
-			action = [1.0, 0.0, 0.0]
+    c.close()
 
-		elif t_ - t_init > 10 and t_ - t_init < 11:
+    # os.makedirs("images", exist_ok=True)
+    # for ix, rgb_image in enumerate(rgbs):
 
-			action = [0.0, 0.5, 0.0]
+    #     img = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2RGB)
 
-		elif t_ - t_init > 11 and t_ - t_init < 12:
+    #     cv2.imwrite("images/{}.png".format(ix), img)
 
-			action = [0.0, -0.5, 0.0]
+    vehicle_location_vehicle_frame_list = []
+    vehicle_velocity_vehicle_frame_list = []
+    vehicle_acceleration_vehicle_frame_list = []
+    vehicle_control = []
+    snapshot_list = []
+    for _ in range(c.data.qsize()):
 
-		elif t_ - t_init > 12 and t_ - t_init < 20:
+        data_point = c.data.get()
+        snapshot_list.append(data_point["snapshot"])
 
-			action = [0.0, 0.0, 1.0]
+        if data_point != {} and "VehicleSensorModule" in data_point.keys():
 
-		else:
+            vehicle_control.append(
+                data_point["VehicleSensorModule"]["control"])
 
-			break
+            vehicle_location = data_point["VehicleSensorModule"]["location"]
+            vehicle_velocity = data_point["VehicleSensorModule"]["velocity"]
+            vehicle_acceleration = data_point["VehicleSensorModule"]["acceleration"]
 
-		c.step(action)
+            vehicle_location = np.array(
+                [vehicle_location.x, vehicle_location.y, vehicle_location.z, 1])
+            vehicle_velocity = np.array(
+                [vehicle_velocity.x, vehicle_velocity.y, vehicle_velocity.z, 1])
+            vehicle_acceleration = np.array(
+                [vehicle_acceleration.x, vehicle_acceleration.y, vehicle_acceleration.z, 1])
 
-	c.close()
+            vehicle_location_vehicle_frame = c.initial_vehicle_transform.get_inverse_matrix() @ vehicle_location
+            vehicle_velocity_vehicle_frame = vehicle_velocity #c.initial_vehicle_transform.get_inverse_matrix() @ vehicle_velocity
+            vehicle_acceleration_vehicle_frame = vehicle_acceleration #c.initial_vehicle_transform.get_inverse_matrix(
+            #) @ vehicle_acceleration
 
-	# os.makedirs("images", exist_ok=True)
-	# for ix, rgb_image in enumerate(rgbs):
+            vehicle_location_vehicle_frame_list.append(
+                vehicle_location_vehicle_frame[:-1])
+            vehicle_velocity_vehicle_frame_list.append(
+                vehicle_velocity_vehicle_frame[:-1])
+            vehicle_acceleration_vehicle_frame_list.append(
+                vehicle_acceleration_vehicle_frame[:-1])
 
-	#     img = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2RGB)
+    vehicle_location_vehicle_frame_list = np.array(
+        vehicle_location_vehicle_frame_list)
+    vehicle_control = np.array(vehicle_control)
+    elapsed_time = np.array(
+        [snapshot.timestamp.elapsed_seconds for snapshot in snapshot_list])
 
-	#     cv2.imwrite("images/{}.png".format(ix), img)
+    np.savez("data2", vehicle_location=vehicle_location_vehicle_frame_list, vehicle_velocity=vehicle_velocity_vehicle_frame_list,
+             vehicle_acceleration=vehicle_acceleration_vehicle_frame_list, vehicle_control=vehicle_control, elapsed_time=elapsed_time)
 
-	vehicle_location_vehicle_frame_list = []
-	vehicle_control = []
-	snapshot_list = []
-	for _ in range(c.data.qsize()):
+    exit()
 
-		data_point = c.data.get()
-		snapshot_list.append(data_point["snapshot"])
-		
-		if data_point != {} and "VehicleSensorModule" in data_point.keys():
-
-			vehicle_control.append(data_point["VehicleSensorModule"]["control"])
-
-			vehicle_location = data_point["VehicleSensorModule"]["location"]
-			vehicle_location = np.array(
-				[vehicle_location.x, vehicle_location.y, vehicle_location.z, 1])
-			
-			vehicle_location_vehicle_frame = c.initial_vehicle_transform.get_inverse_matrix() @ vehicle_location
-			vehicle_location_vehicle_frame_list.append(
-				vehicle_location_vehicle_frame[:-1])
-
-	vehicle_location_vehicle_frame_list = np.array(
-		vehicle_location_vehicle_frame_list)
-	vehicle_control = np.array(vehicle_control)
-
-	plt.figure()
-	plt.plot(vehicle_location_vehicle_frame_list[:, 0])
-	plt.figure()
-	plt.plot(vehicle_location_vehicle_frame_list[:, 1])
-	plt.figure()
-	plt.plot(vehicle_location_vehicle_frame_list[:, 2])
-	plt.figure()
-	plt.plot(vehicle_control)
-	plt.show()
+    plt.figure()
+    plt.plot(vehicle_location_vehicle_frame_list[:, 0])
+    plt.figure()
+    plt.plot(vehicle_location_vehicle_frame_list[:, 1])
+    plt.figure()
+    plt.plot(vehicle_location_vehicle_frame_list[:, 2])
+    plt.figure()
+    plt.plot(vehicle_control)
+    plt.show()

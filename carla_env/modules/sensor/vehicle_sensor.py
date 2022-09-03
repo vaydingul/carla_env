@@ -35,10 +35,14 @@ class VehicleSensorModule(sensor.SensorModule):
 
     def _get_sensor_data(self):
         """Get the sensor data"""
+        vehicle_control = self.actor.player.get_control()
+
+        vehicle_control_ = [vehicle_control.throttle, vehicle_control.steer, vehicle_control.brake]
         data = {'transform': self.actor.player.get_transform(),
                 'location': self.actor.player.get_location(),
                 'velocity': self.actor.player.get_velocity(),
-                'control': self.actor.last_applied_control,
+                'acceleration': self.actor.player.get_acceleration(),
+                'control': vehicle_control_,
                 'frame': self.world.get_snapshot().frame
                 }
 
