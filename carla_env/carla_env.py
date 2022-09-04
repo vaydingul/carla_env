@@ -35,13 +35,13 @@ class ActionDesigner(object):
 
 			action = [0.0, -0.1, 0.0]
 
-		elif t > 10.5 and t < 11:
-
-			action = [0.0, 0.1, 0.0]
-
-		elif t > 1 and t < 14:
+		elif t > 10.5 and t < 13.5:
 
 			action = [0.1, 0.0, 0.0]
+
+		elif t > 13.5 and t < 14:
+
+			action = [0.0, 0.1, 0.0]
 
 		elif t > 14 and t < 16:
 

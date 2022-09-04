@@ -41,5 +41,11 @@ if __name__ == "__main__":
 	print(f"Rear Left Max Steer Angle: {rear_left.max_steer_angle}")
 	print(f"Rear Right Max Steer Angle: {rear_right.max_steer_angle}")
 
+	print(f"Front Left Lateral Stiffness Value (Cornering Stiffness): {front_left.lat_stiff_value}")
+	print(f"Front Right Lateral Stiffness Value (Cornering Stiffness): {front_right.lat_stiff_value}")
+	print(f"Rear Left Lateral Stiffness Value (Cornering Stiffness): {rear_left.lat_stiff_value}")
+	print(f"Rear Right Lateral Stiffness Value (Cornering Stiffness): {rear_right.lat_stiff_value}")
+	
+
 
 	c.close()

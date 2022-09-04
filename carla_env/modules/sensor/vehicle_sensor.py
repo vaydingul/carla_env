@@ -1,6 +1,8 @@
 from carla_env.modules.sensor import sensor
 from queue import Queue, Empty
+import logging
 
+logger = logging.getLogger(__name__)
 
 class VehicleSensorModule(sensor.SensorModule):
     """Concrete implementation of SensorModule abstract base class for vehicle sensor management"""
@@ -40,12 +42,19 @@ class VehicleSensorModule(sensor.SensorModule):
         vehicle_control_ = [vehicle_control.throttle, vehicle_control.steer, vehicle_control.brake]
         data = {'transform': self.actor.player.get_transform(),
                 'location': self.actor.player.get_location(),
+                'rotation': self.actor.player.get_transform().rotation,
                 'velocity': self.actor.player.get_velocity(),
                 'acceleration': self.actor.player.get_acceleration(),
                 'control': vehicle_control_,
                 'frame': self.world.get_snapshot().frame
                 }
-
+        
+        logger.debug(f"Location: {data['location']}")
+        logger.debug(f"Rotation: {data['rotation']}")
+        logger.debug(f"Velocity: {data['velocity']}")
+        logger.debug(f"Acceleration: {data['acceleration']}")
+        logger.debug(f"Control: {data['control']}")
+        logger.debug(f"Frame: {data['frame']}")
         
 
         self._queue_operation(data)

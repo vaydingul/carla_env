@@ -1,17 +1,16 @@
-from xml.sax.handler import DTDHandler
 import numpy as np
 
 AIR_DENSITY = 1.225  # kg/m^3
 GRAVITY = 9.81  # m/s^2
 
 # LATERAL DYNAMICS PROPERTIES
-CORNERING_STIFFNESS_FRONT = 35000 
+CORNERING_STIFFNESS_FRONT = 30000 
 CORNERING_STIFFNESS_REAR = 40000
 MAX_STEER_ANGLE = np.deg2rad(70)  # radians
 
 # INERTIAL PROPERTIES
 MASS = 2404 # OK
-INERTIA = 5000
+INERTIA = 3000
 
 # LONGITUDINAL DYNAMICS PROPERTIES
 AERODYNAMIC_DRAG_COEFFICIENT = 0.3 # OK
@@ -73,8 +72,10 @@ class DynamicBicycleModel(object):
 		"""
 		# TODO : Implement lateral dynamics!
 
-		self.y += -self.velocity_y * dt		
+		self.y += (self.velocity_x * np.sin(self.yaw) - self.velocity_y * np.cos(self.yaw)) * dt	
+
 		self.yaw += self.omega * dt
+		#self.yaw = normalize_angle(self.yaw)
 
 		if np.abs(self.velocity_x) > 1e-2:
 			
@@ -89,7 +90,7 @@ class DynamicBicycleModel(object):
 		_F_yf = 2 * CORNERING_STIFFNESS_FRONT * (steer - _delta_vf)
 		_F_yr = 2 * CORNERING_STIFFNESS_REAR * (-_delta_vr)
 
-		self.velocity_y += -self.velocity_x * self.omega + (1 / MASS) * (_F_yf + _F_yr) * dt
+		self.velocity_y += (-self.velocity_x * self.omega + (1 / MASS) * (_F_yf + _F_yr)) * dt
 		self.omega += (1 / INERTIA) * (WHEELBASE_FRONT * _F_yf - WHEELBASE_REAR * _F_yr) * dt
 
 
@@ -99,7 +100,7 @@ class DynamicBicycleModel(object):
 		Update the longitudinal dynamics of the vehicle.
 		"""
 		# TODO : Implement longitudinal dynamics!
-		self.x += self.velocity_x * dt
+		self.x += (self.velocity_x * np.cos(self.yaw) + self.velocity_y * np.sin(self.yaw)) * dt
 
 		# Aerodynamic drag force
 		#_frontal_area = 1.6 + 0.00056 * (MASS - 765)

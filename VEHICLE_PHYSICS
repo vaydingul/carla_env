@@ -12,3 +12,7 @@ Front Left Max Steer Angle: 69.99999237060547
 Front Right Max Steer Angle: 69.99999237060547
 Rear Left Max Steer Angle: 0.0
 Rear Right Max Steer Angle: 0.0
+Front Left Lateral Stiffness Value (Cornering Stiffness): 20.0
+Front Right Lateral Stiffness Value (Cornering Stiffness): 20.0
+Rear Left Lateral Stiffness Value (Cornering Stiffness): 20.0
+Rear Right Lateral Stiffness Value (Cornering Stiffness): 20.0
