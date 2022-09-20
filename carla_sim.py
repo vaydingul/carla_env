@@ -78,7 +78,7 @@ if __name__ == "__main__":
              vehicle_acceleration=vehicle_acceleration, vehicle_control=vehicle_control, elapsed_time=elapsed_time)
 
     exit()
-
+"""
     plt.figure()
     plt.plot(vehicle_location_vehicle_frame_list[:, 0])
     plt.figure()
@@ -88,3 +88,4 @@ if __name__ == "__main__":
     plt.figure()
     plt.plot(vehicle_control)
     plt.show()
+"""

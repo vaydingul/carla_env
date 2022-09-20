@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from vehicle import KinematicBicycleModel, DynamicBicycleModel
-
+from carla_env.models.static.vehicle import KinematicBicycleModel, DynamicBicycleModel
+import os 
+import pathlib
 DELTA_T = 0.01
 
 
@@ -11,6 +12,7 @@ def plot_all():
 
 if __name__ == "__main__":
 
+	fname = "data3.npz"
 	data = np.load("data4.npz")
 
 	vehicle_location = data["vehicle_location"]
@@ -67,6 +69,8 @@ if __name__ == "__main__":
 		kinematic_bicycle_yaw[k] = kinematic_bicycle_model.yaw
 		dynamic_bicycle_yaw[k] = dynamic_bicycle_model.yaw
 
+	savedir = pathlib.Path(f"figures/{fname.split('.')[0]}")
+	os.makedirs(savedir, exist_ok=True)
 
 	plt.figure()
 	plt.plot(vehicle_location[:, 1], vehicle_location[:, 0], "r-", label="CARLA")
@@ -76,6 +80,7 @@ if __name__ == "__main__":
 	plt.xlabel("y")
 	plt.ylabel("x")
 	plt.title("CARLA vs. Bicycle Model")
+	plt.savefig(savedir / "figure1.png")
 	#plt.show()
 
 	plt.figure()
@@ -86,6 +91,7 @@ if __name__ == "__main__":
 	plt.xlabel("Time")
 	plt.ylabel("x")
 	plt.title("CARLA vs. Bicycle Model")
+	plt.savefig(savedir / "figure2.png")
 
 	plt.figure()
 	plt.plot(elapsed_time, vehicle_location[:, 1], "r-", label="CARLA")
@@ -95,6 +101,7 @@ if __name__ == "__main__":
 	plt.xlabel("Time")
 	plt.ylabel("y")
 	plt.title("CARLA vs. Bicycle Model")
+	plt.savefig(savedir / "figure3.png")
 
 	plt.figure()
 	#plt.plot(elapsed_time, np.array([np.linalg.norm(vehicle_velocity[k, :]) for k in range(vehicle_velocity.shape[0])]), "r-", label="CARLA")
@@ -105,6 +112,7 @@ if __name__ == "__main__":
 	plt.xlabel("Time")
 	plt.ylabel("Speed")
 	plt.title("CARLA vs. Bicycle Model")
+	plt.savefig(savedir / "figure4.png")
 	#plt.show()
 
 	plt.figure()
@@ -116,6 +124,7 @@ if __name__ == "__main__":
 	plt.xlabel("Time")
 	plt.ylabel("Acceleration-x")
 	plt.title("Vehicle Acceleration Response in CARLA")
+	plt.savefig(savedir / "figure5.png")
 	#plt.show()
 
 	plt.figure()
@@ -127,6 +136,7 @@ if __name__ == "__main__":
 	plt.xlabel("Time")
 	plt.ylabel("Acceleration-y")
 	plt.title("Vehicle Acceleration Response in CARLA")
+	plt.savefig(savedir / "figure6.png")
 	#plt.show()
 
 	plt.figure()
@@ -135,6 +145,7 @@ if __name__ == "__main__":
 	plt.ylabel("Control")
 	plt.legend(["Throttle", "Steer", "Brake"])
 	plt.title("Control Actions")
+	plt.savefig(savedir / "figure7.png")
 	#plt.show()
 
 
@@ -145,7 +156,8 @@ if __name__ == "__main__":
 	plt.xlabel("Time")
 	plt.ylabel("Yaw")
 	plt.title("Vehicle Yaw")
-	plt.show()
+	plt.legend()
+	#plt.show()
 
 
 
