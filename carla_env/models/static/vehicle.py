@@ -74,28 +74,31 @@ class DynamicBicycleModel(object):
                    self.velocity_y * np.cos(self.yaw)) * dt
 
         self.yaw += self.omega * dt
-        #self.yaw = normalize_angle(self.yaw)
+        self.yaw = angle_convention(self.yaw)
 
-        if np.abs(self.velocity_x) > 1e-2:
 
-            _delta_vf = (self.velocity_y + WHEELBASE_FRONT *
-                         self.omega) / (self.velocity_x)
-            _delta_vr = (self.velocity_y - WHEELBASE_REAR *
-                         self.omega) / (self.velocity_x)
+        _delta_vf = (self.velocity_y + WHEELBASE_FRONT *
+                        self.omega) / (self.velocity_x)
+        _delta_vr = (self.velocity_y - WHEELBASE_REAR *
+                        self.omega) / (self.velocity_x)
 
-        else:
 
-            _delta_vf = 0
-            _delta_vr = 0
+
+        _delta_vf = np.where(np.isfinite(_delta_vf), _delta_vf, np.zeros_like(_delta_vf))
+        _delta_vr = np.where(np.isfinite(_delta_vr), _delta_vr, np.zeros_like(_delta_vr))
 
         _F_yf = 2 * CORNERING_STIFFNESS_FRONT * (steer - _delta_vf)
         _F_yr = 2 * CORNERING_STIFFNESS_REAR * (-_delta_vr)
 
         self.velocity_y += (-self.velocity_x * self.omega +
                             (1 / MASS) * (_F_yf + _F_yr)) * dt
+        
         self.omega += (1 / INERTIA) * (WHEELBASE_FRONT *
                                        _F_yf - WHEELBASE_REAR * _F_yr) * dt
 
+        self.omega = np.where(np.isfinite(self.omega), self.omega, np.zeros_like(self.omega))
+        self.omega = np.clip(self.omega, -0.1, 0.1)
+        #print(self.omega)
     def _longitudinal_dynamics_step(self, acceleration_x, dt):
         """
         Update the longitudinal dynamics of the vehicle.
@@ -147,7 +150,7 @@ class DynamicBicycleModel(object):
     # 	self.omega = self.omega + (Ffy * WHEELBASE_FRONT * np.cos(delta) - Fry * WHEELBASE_REAR) / INERTIA * dt
 
 
-def normalize_angle(angle):
+def angle_convention(angle):
     """
     Normalize an angle to [-pi, pi].
     :param angle: (float)

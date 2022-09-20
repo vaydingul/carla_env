@@ -1,4 +1,4 @@
-from carla_env import carla_env
+from carla_env import carla_env_basic
 
 import time
 import logging
@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
 
-	c = carla_env.CarlaEnvironment(None)
+	c = carla_env_basic.CarlaEnvironment(None)
 	vehicle = c.actor.player
 	vehicle_physics_control = vehicle.get_physics_control()
 	

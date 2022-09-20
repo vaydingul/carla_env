@@ -53,6 +53,8 @@ class ActorModule(module.Module):
 	def _stop(self):
 		"""Stop the actor manager"""
 		self.player.destroy()
+		for sensor in self.sensor_dict.values():
+			sensor.close()
 	
 	def reset(self):
 		"""Reset the actor manager"""

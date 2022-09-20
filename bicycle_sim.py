@@ -12,8 +12,8 @@ def plot_all():
 
 if __name__ == "__main__":
 
-	fname = "data3.npz"
-	data = np.load("data4.npz")
+	fname = "dynamic_kinematic_model_data_3.npz"
+	data = np.load("data/kinematic_model_data/dynamic_kinematic_model_data_3.npz")
 
 	vehicle_location = data["vehicle_location"]
 	vehicle_rotation = data["vehicle_rotation"]
@@ -74,8 +74,8 @@ if __name__ == "__main__":
 
 	plt.figure()
 	plt.plot(vehicle_location[:, 1], vehicle_location[:, 0], "r-", label="CARLA")
-	plt.plot(kinematic_bicycle_location[:, 1], kinematic_bicycle_location[:, 0], "b-", label="Kinematic Bicycle")
-	plt.plot(dynamic_bicycle_location[:, 1], dynamic_bicycle_location[:, 0], "g-", label="Dynamic Bicycle")
+	plt.plot(kinematic_bicycle_location[:, 1], kinematic_bicycle_location[:, 0], "b-o", label="Kinematic Bicycle")
+	#plt.plot(dynamic_bicycle_location[:, 1], dynamic_bicycle_location[:, 0], "g-", label="Dynamic Bicycle")
 	plt.legend()
 	plt.xlabel("y")
 	plt.ylabel("x")
@@ -86,7 +86,7 @@ if __name__ == "__main__":
 	plt.figure()
 	plt.plot(elapsed_time, vehicle_location[:, 0], "r-", label="CARLA")
 	plt.plot(elapsed_time, kinematic_bicycle_location[:, 0], "b-", label="Kinematic Bicycle")
-	plt.plot(elapsed_time, dynamic_bicycle_location[:, 0], "g-", label="Dynamic Bicycle")
+	#plt.plot(elapsed_time, dynamic_bicycle_location[:, 0], "g-", label="Dynamic Bicycle")
 	plt.legend()
 	plt.xlabel("Time")
 	plt.ylabel("x")
@@ -96,7 +96,7 @@ if __name__ == "__main__":
 	plt.figure()
 	plt.plot(elapsed_time, vehicle_location[:, 1], "r-", label="CARLA")
 	plt.plot(elapsed_time, kinematic_bicycle_location[:, 1], "b-", label="Kinematic Bicycle")
-	plt.plot(elapsed_time, dynamic_bicycle_location[:, 1], "g-", label="Dynamic Bicycle")
+	#plt.plot(elapsed_time, dynamic_bicycle_location[:, 1], "g-", label="Dynamic Bicycle")
 	plt.legend()
 	plt.xlabel("Time")
 	plt.ylabel("y")
@@ -152,11 +152,12 @@ if __name__ == "__main__":
 	plt.figure()
 	plt.plot(elapsed_time, np.rad2deg(vehicle_rotation[:, 1]), "r-", label="CARLA")
 	plt.plot(elapsed_time, np.rad2deg(kinematic_bicycle_yaw), "b-", label="Kinematic Bicycle")
-	plt.plot(elapsed_time, np.rad2deg(dynamic_bicycle_yaw), "g-", label="Dynamic Bicycle")
+	#plt.plot(elapsed_time, np.rad2deg(dynamic_bicycle_yaw), "g-", label="Dynamic Bicycle")
 	plt.xlabel("Time")
 	plt.ylabel("Yaw")
 	plt.title("Vehicle Yaw")
 	plt.legend()
+	plt.savefig(savedir / "figure8.png")
 	#plt.show()
 
 

@@ -1,4 +1,4 @@
-from carla_env import carla_env
+from carla_env import carla_env_basic
 
 import time
 import logging
@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 if __name__ == "__main__":
 
-    c = carla_env.CarlaEnvironment(None)
+    c = carla_env_basic.CarlaEnvironment(None)
 
     t_init = time.time()
 
