@@ -78,7 +78,7 @@ class ClientModule(module.Module):
 			"timeout": 10.0,
 			"world": "Town06",
 			"synchronous_mode": True,
-			"fixed_delta_seconds": 0.01
+			"fixed_delta_seconds": 1/20
 		}
 
 	@property

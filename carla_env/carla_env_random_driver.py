@@ -26,8 +26,16 @@ class RandomActionDesigner(object):
 		self.max_throttle = max_throttle
 		self.max_steering_angle = max_steering_angle
 
-	def step(self, t = None):
+		self.previous_action = None
+		self.previous_count = 0
+		self.action_repeat = 5
+	def step(self, count = None):
 		
+		if (self.previous_count < self.action_repeat) and self.previous_action:
+
+			self.previous_count += 1
+
+			return self.previous_action
 		
 		# Randomize control
 		if np.random.random() < self.brake_probability:
@@ -41,7 +49,10 @@ class RandomActionDesigner(object):
 
 		action = [throttle, steer, brake]
 		logger.debug(f"Action: {action}")
-
+		
+		self.previous_action = action
+		self.previous_count = 0
+		
 		return action
 class CarlaEnvironment(Environment):
 	"""Concrete implementation of Environment abstract base class"""
@@ -115,7 +126,7 @@ class CarlaEnvironment(Environment):
 		t = snapshot.timestamp.elapsed_seconds
 		action = self.action_designer.step(t)
 
-		self.is_done = action is None or (self.counter > 5000)
+		self.is_done = action is None or (self.counter > 1000)
 		
 		if self.is_done:
 			return True
@@ -154,7 +165,7 @@ class CarlaEnvironment(Environment):
 					if self.first_time_step:
 						self.initial_vehicle_transform = ego_transform
 						self.first_time_step = False
-				
+
 				elif k == "CollisionSensorModule":
 
 					impulse = data_dict[k]["impulse"]

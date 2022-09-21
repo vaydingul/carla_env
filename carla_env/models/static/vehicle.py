@@ -42,9 +42,15 @@ class KinematicBicycleModel(object):
         delta = steer * MAX_STEER_ANGLE  # * np.pi * 0.5
         #delta = np.clip(delta, -MAX_STEER_ANGLE, MAX_STEER_ANGLE)
 
-        self.x += self.v * np.cos(self.yaw) * dt
-        self.y += self.v * np.sin(self.yaw) * dt
-        self.yaw += self.v / WHEELBASE * np.tan(delta) * dt
+        beta = np.arctan2(WHEELBASE_REAR * np.tan(delta) , WHEELBASE)
+
+        self.x += self.v * np.cos(self.yaw + beta) * dt
+        self.y += self.v * np.sin(self.yaw + beta) * dt
+
+        
+
+        self.yaw += ((self.v * np.cos(beta)) / WHEELBASE) * np.tan(delta) * dt
+        self.yaw = angle_convention(self.yaw)
         self.v += acceleration * dt
 
         return self.x, self.y, self.yaw, self.v

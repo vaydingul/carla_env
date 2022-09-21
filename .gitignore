@@ -133,3 +133,6 @@ tickable_modules
 *.png
 
 logs
+
+wandb/
+WoR_ego_model_parameters

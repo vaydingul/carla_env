@@ -5,7 +5,7 @@ from torch import nn
 
 
 class KinematicBicycleModel(nn.Module):
-	def __init__(self, dt=1./4):
+	def __init__(self, dt= 0.1):
 		super().__init__()
 
 		self.dt = dt
@@ -25,7 +25,7 @@ class KinematicBicycleModel(nn.Module):
 			nn.Linear(1, 1, bias=False),
 		)
 
-	def forward(self, location, speed, yaw, action):
+	def forward(self, location, yaw, speed, action):
 		'''
 		One step semi-parametric kinematic bicycle model
 		'''
@@ -35,7 +35,7 @@ class KinematicBicycleModel(nn.Module):
 		brake = action[..., 2:3].byte()
 
 
-		acceleration = torch.where(brake, self.brake_acceleration.expand(
+		acceleration = torch.where(brake == 1, self.brake_acceleration.expand(
 			*brake.size()), self.throttle_acceleration(throttle))
 
 		# Transformation from steer to wheel steering angle 
@@ -57,4 +57,4 @@ class KinematicBicycleModel(nn.Module):
 		yaw_next = yaw + speed / self.rear_wheelbase * \
 			torch.sin(beta) * self.dt
 
-		return location_next, F.relu(speed_next), yaw_next 
+		return location_next, yaw_next, F.relu(speed_next) 

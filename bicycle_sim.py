@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from carla_env.models.static.vehicle import KinematicBicycleModel, DynamicBicycleModel
 import os 
 import pathlib
-DELTA_T = 0.01
+DELTA_T = 0.1
 
 
 def plot_all():
@@ -13,7 +13,7 @@ def plot_all():
 if __name__ == "__main__":
 
 	fname = "dynamic_kinematic_model_data_3.npz"
-	data = np.load("data/kinematic_model_data/dynamic_kinematic_model_data_3.npz")
+	data = np.load("data/kinematic_model_data_train/dynamic_kinematic_model_data_3.npz")
 
 	vehicle_location = data["vehicle_location"]
 	vehicle_rotation = data["vehicle_rotation"]
