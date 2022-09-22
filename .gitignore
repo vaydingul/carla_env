@@ -135,4 +135,5 @@ tickable_modules
 logs
 
 wandb/
+pretrained_models/
 WoR_ego_model_parameters
