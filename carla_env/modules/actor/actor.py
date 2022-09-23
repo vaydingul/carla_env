@@ -18,23 +18,28 @@ class ActorModule(module.Module):
 		self.actor = self.config["actor"]
 		self.world = self.client.get_world()
 		self.hero = self.config["hero"]
+		self.spawned = False
 		self.render_dict = {}
 		self.sensor_dict = {}
-		self.last_applied_control = [0, 0, 0]
+
 		self.reset()
 
 	def _start(self):
 		"""Start the actor manager"""
-		
-		not_spawned = True
+	
+		while not self.spawned:
 
-		while not_spawned:
-
-			selected_spawn_point = np.random.choice(self.world.get_map().get_spawn_points())
+			if "selected_spawn_point" in self.config.keys():
+				
+				selected_spawn_point = self.config["selected_spawn_point"]
+			
+			else:
+				
+				selected_spawn_point = np.random.choice(self.world.get_map().get_spawn_points())
 			
 			self.player = self.world.try_spawn_actor(self.actor.blueprint, selected_spawn_point)
 			
-			not_spawned = self.player is None
+			self.spawned = self.player is not None
 	
 
 	def step(self, action = None):
@@ -53,6 +58,7 @@ class ActorModule(module.Module):
 	def _stop(self):
 		"""Stop the actor manager"""
 		self.player.destroy()
+
 		for sensor in self.sensor_dict.values():
 			sensor.close()
 	
