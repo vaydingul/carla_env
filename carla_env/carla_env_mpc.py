@@ -19,17 +19,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class MPCWrapper(object):
-	"""MPC wrapper."""
-
-	def __init__(self, mpc_module):
-		"""Initialize."""
-		self.mpc_module = carla_env
-
-	def step(self):
-		"""Run a single step of MPC."""
-		return self.mpc_module.step()
-
 class CarlaEnvironment(Environment):
 	"""Concrete implementation of Environment abstract base class"""
 
@@ -52,8 +41,6 @@ class CarlaEnvironment(Environment):
 		self.is_done = False
 		self.counter = 0
 		self.data = Queue()
-
-		self.action_designer = MPCWrapper(config["mpc_module"])
 		
 		self.reset()
 
@@ -90,9 +77,6 @@ class CarlaEnvironment(Environment):
 	def step(self, action=None):
 		"""Perform an action in the environment"""
 
-		
-
-		
 		self.server.step()
 		self.client.step()
 
@@ -120,6 +104,7 @@ class CarlaEnvironment(Environment):
 						equivalent_frame_fetched =  data_["frame"] == snapshot.frame #, f"Frame number mismatch: {data_['frame']} != {snapshot.frame} \n Current Sensor: {k} \n Current Data Queue Size {self.data.qsize()}"
 
 				except Empty:
+
 					print("Empty")
 
 				data_dict[k] = data_
@@ -148,18 +133,10 @@ class CarlaEnvironment(Environment):
 
 		self.spectator.set_transform(transform)
 
-		action = self.action_designer.step()
-
-		self.is_done = action is None or (self.counter > 10000)
+		self.is_done = False
 		
-		if self.is_done:
-			return True
-
-
-
 		self.counter += 1
 
-		return False
 
 	def render(self):
 		"""Render the environment"""

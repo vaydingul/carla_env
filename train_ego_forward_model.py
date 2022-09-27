@@ -97,7 +97,6 @@ class Learner(object):
 
                 location = location[..., :2].to(self.device)
                 rotation = rotation[..., 1:2].to(self.device)
-                #velocity = velocity[..., 0:1].to(self.device)
                 velocity = torch.norm(
                     velocity, dim=-1, keepdim=True).to(self.device)
                 control = control.to(self.device)
@@ -149,9 +148,7 @@ class Learner(object):
         if run is not None:
             run.log({"val/step": step, "val/loss": loss,
                     "val/loss_location": loss_location, "val/loss_rotation": loss_rotation})
-            run.log({"model/step": step, "model/front_wheelbase": self.model.front_wheelbase.item(), "model/rear_wheelbase": self.model.rear_wheelbase.item(),
-                    "model/steer_gain": self.model.steer_gain.item(), "model/brake_acceleration": self.model.brake_acceleration.item(),
-					"model/throttle_acceleration": list(self.model.parameters())[-1].item()})
+            run.log({"model/step": step, **{f"model/{name}": param.item() for name, param in self.model.named_parameters()}})
 
         return loss, loss_location, loss_rotation
 
@@ -193,7 +190,7 @@ def main(config):
 
     if config.wandb:
         run = wandb.init(project="mbl", group="ego-forward-model",
-                         name="training_final", config=config)
+                         name="training_cropped_dataset", config=config)
         run.define_metric("train/step")
         run.define_metric("val/step")
         run.define_metric("model/step")
@@ -225,7 +222,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", type=float, default=0.01)
-    parser.add_argument("--num_epochs", type=int, default=500)
+    parser.add_argument("--num_epochs", type=int, default=1000)
     parser.add_argument("--batch_size", type=int, default=5000)
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--data_path_train", type=str,

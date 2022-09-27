@@ -137,3 +137,5 @@ logs
 wandb/
 pretrained_models/
 WoR_ego_model_parameters
+wor_correct_control_configuration_result
+wor_wrong_control_configuration_result

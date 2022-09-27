@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from carla_env.models.dynamic.vehicle import KinematicBicycleModel
+from carla_env.models.dynamic.vehicle_WoR import EgoModel
 #from ego_model import EgoModel
 import os 
 import pathlib
@@ -25,10 +25,9 @@ def evaluate(fname, data, model, config):
 	yaw_predicted = []
 	speed_predicted = []
 
-	
 	for k in range(0, elapsed_time.shape[0]-1):
 		
-		if k % 2 == 0:
+		if k % 10 == 0:
 
 			location = vehicle_location[k, :2]
 			yaw = vehicle_rotation[k, 1:2]
@@ -54,14 +53,13 @@ def evaluate(fname, data, model, config):
 
 	vehicle_location = vehicle_location.numpy()
 	vehicle_rotation = vehicle_rotation.numpy()
-
+	
 	location_loss = np.mean(np.abs(vehicle_location[:-1, :2] - location_predicted))
 	rotation_loss = np.mean(np.abs(np.cos(vehicle_rotation[:-1, 1:2]) - np.cos(yaw_predicted)))
 	rotation_loss += np.mean(np.abs(np.sin(vehicle_rotation[:-1, 1:2]) - np.sin(yaw_predicted)))
 
 
-
-	savedir = pathlib.Path(f"figures/ego-forward-model-evaluation/{fname}/")
+	savedir = pathlib.Path(f"figures/ego-forward-model-evaluation-WoR/{fname}/")
 	os.makedirs(savedir, exist_ok=True)
 
 	if config.plot_local:
@@ -69,14 +67,15 @@ def evaluate(fname, data, model, config):
 		time.sleep(1)
 
 	return location_loss, rotation_loss
-
+	
 def main(config):
 	folder_name = config.evaluation_data_folder
 	
 
-	model = KinematicBicycleModel()
-	model.state_dict = torch.load(config.model_path)
+	model = EgoModel(dt = 1/20)
+	model.load_state_dict(torch.load(config.model_path))
 	model.eval()
+
 
 	location_loss_list = []
 	rotation_loss_list = []
@@ -95,15 +94,10 @@ def main(config):
 
 
 
-
-
-	
-
-
 if __name__ == "__main__":
 	
 	parser = argparse.ArgumentParser()
-	parser.add_argument("--model_path", type=str, default="pretrained_models/2022-09-27/16-21-41/ego_model_new.pt")
+	parser.add_argument("--model_path", type=str, default="pretrained_models/WoR/ego_model.th")
 	parser.add_argument("--evaluation_data_folder", type=str, default="data/kinematic_model_data_val")
 	parser.add_argument("--wandb", type=bool, default=False)
 	parser.add_argument("--plot_local", type=bool, default=True)

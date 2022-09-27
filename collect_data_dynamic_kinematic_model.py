@@ -76,7 +76,7 @@ def main(config):
 		elapsed_time = np.array(
 			[snapshot.timestamp.elapsed_seconds for snapshot in snapshot_list])
 
-		np.savez(f"{config.data_save_path}/dynamic_kinematic_model_data_{k}", vehicle_location=vehicle_location, vehicle_rotation = vehicle_rotation, vehicle_velocity=vehicle_velocity,
+		np.savez(f"{config.data_save_path}/dynamic_kinematic_model_data_{k+14}", vehicle_location=vehicle_location, vehicle_rotation = vehicle_rotation, vehicle_velocity=vehicle_velocity,
 				vehicle_acceleration=vehicle_acceleration, vehicle_control=vehicle_control, elapsed_time=elapsed_time)
 
 		del vehicle_location_list, vehicle_rotation_list, vehicle_velocity_list, vehicle_acceleration_list, vehicle_control_list, snapshot_list, vehicle_location, vehicle_velocity, vehicle_acceleration, vehicle_rotation, vehicle_control, elapsed_time
@@ -85,8 +85,8 @@ def main(config):
 if __name__ == "__main__":
 
 	parser = argparse.ArgumentParser(description="Collect data from the CARLA simulator")
-	parser.add_argument("--data_save_path", type=str, default="./data/kinematic_model_data_val_2/", help="Path to save the data")
-	parser.add_argument("--num_episodes", type=int, default=10, help="Number of episodes to collect data from")
+	parser.add_argument("--data_save_path", type=str, default="./data/kinematic_model_data_val/", help="Path to save the data")
+	parser.add_argument("--num_episodes", type=int, default=6, help="Number of episodes to collect data from")
 	config = parser.parse_args()
 
 	main(config)
