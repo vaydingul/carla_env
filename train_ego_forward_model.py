@@ -190,7 +190,7 @@ def main(config):
 
     if config.wandb:
         run = wandb.init(project="mbl", group="ego-forward-model",
-                         name="training_cropped_dataset", config=config)
+                         name="training_new_dataset", config=config)
         run.define_metric("train/step")
         run.define_metric("val/step")
         run.define_metric("model/step")
@@ -226,9 +226,9 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=5000)
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--data_path_train", type=str,
-                        default="./data/kinematic_model_data_train/")
+                        default="./data/kinematic_model_data_train_2/")
     parser.add_argument("--data_path_val", type=str,
-                        default="./data/kinematic_model_data_val/")
+                        default="./data/kinematic_model_data_val_2/")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
     parser.add_argument("--wandb", type=bool, default=True)

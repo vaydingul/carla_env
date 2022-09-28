@@ -28,8 +28,8 @@ class EgoModel(nn.Module):
         steer = acts[...,1:2]
         throt = acts[...,0:1]
         brake = acts[...,2:3].byte()
-        
-        accel = torch.where(brake, self.brake_accel.expand(*brake.size()), self.throt_accel(throt))
+
+        accel = torch.where(brake == 1, self.brake_accel.expand(*brake.size()), self.throt_accel(throt))
         wheel = self.steer_gain * steer
         
         beta = torch.atan(self.rear_wb/(self.front_wb+self.rear_wb) * torch.tan(wheel))

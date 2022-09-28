@@ -28,7 +28,7 @@ def evaluate(fname, data, model, config):
 	
 	for k in range(0, elapsed_time.shape[0]-1):
 		
-		if k % 2 == 0:
+		if k % 10 == 0:
 
 			location = vehicle_location[k, :2]
 			yaw = vehicle_rotation[k, 1:2]
@@ -74,7 +74,7 @@ def main(config):
 	folder_name = config.evaluation_data_folder
 	
 
-	model = KinematicBicycleModel()
+	model = KinematicBicycleModel(dt=1/20)
 	model.state_dict = torch.load(config.model_path)
 	model.eval()
 
