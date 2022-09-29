@@ -129,13 +129,17 @@ dmypy.json
 .pyre/
 tickable_modules
 
+# File types
 *.npz
 *.png
 
-logs
-
+# Folders
+logs/
 wandb/
 pretrained_models/
+
+# Individual files
 WoR_ego_model_parameters
 wor_correct_control_configuration_result
 wor_wrong_control_configuration_result
+VEHICLE_PHYSICS
