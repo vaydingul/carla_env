@@ -85,7 +85,7 @@ def main(config):
 if __name__ == "__main__":
 
 	parser = argparse.ArgumentParser(description="Collect data from the CARLA simulator")
-	parser.add_argument("--data_save_path", type=str, default="./data/kinematic_model_data_val_2/", help="Path to save the data")
+	parser.add_argument("--data_save_path", type=str, default="./data/kinematic_model_data_train_3", help="Path to save the data")
 	parser.add_argument("--num_episodes", type=int, default=10, help="Number of episodes to collect data from")
 	config = parser.parse_args()
 

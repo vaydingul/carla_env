@@ -54,6 +54,45 @@ class RandomActionDesigner(object):
 		self.previous_count = 0
 		
 		return action
+
+class RandomActionDesignerV2(object):
+	
+	def __init__(self, brake_probability = 0.03, max_throttle = 1.0, max_steering_angle = 1.0):
+		self.brake_probability = brake_probability
+		self.max_throttle = max_throttle
+		self.max_steering_angle = max_steering_angle
+
+		self.previous_action = None
+		self.previous_count = 0
+		self.action_repeat = 5
+
+	def step(self, count = None):
+		
+		if (self.previous_count < self.action_repeat) and self.previous_action:
+
+			self.previous_count += 1
+
+			return self.previous_action
+		
+		# Randomize control
+		if np.random.random() < self.brake_probability:
+
+			acceleration = np.random.uniform(-self.max_throttle, 0)
+			steer = np.random.uniform(-self.max_steering_angle, self.max_steering_angle)
+
+			action = [0, steer, acceleration]
+			
+		else:
+			
+			acceleration = np.random.uniform(0, self.max_throttle)
+			steer = np.random.uniform(-self.max_steering_angle, self.max_steering_angle)
+
+			action = [acceleration, steer, 0]
+		
+		self.previous_action = action
+		self.previous_count = 0
+		
+		return action
 class CarlaEnvironment(Environment):
 	"""Concrete implementation of Environment abstract base class"""
 
@@ -78,7 +117,7 @@ class CarlaEnvironment(Environment):
 		self.counter = 0
 		self.data = Queue()
 
-		self.action_designer = RandomActionDesigner()
+		self.action_designer = RandomActionDesignerV2()
 
 		self.reset()
 
