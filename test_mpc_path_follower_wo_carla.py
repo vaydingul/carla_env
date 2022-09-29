@@ -6,6 +6,9 @@ import logging
 import numpy as np
 import argparse
 import matplotlib.pyplot as plt
+import os
+from pathlib import Path
+from utils.plot_utils import plot_result_mpc_path_follow
 
 torch.autograd.set_detect_anomaly(True)
 # Save the log to a file name with the current date
@@ -77,14 +80,18 @@ def main(config):
 
 	state_list = []
 	action_list = []
+	target_state_list = []
 
 	stride = 10
 	for k in range(50, vehicle_location.shape[0] - 1 - stride, stride):
 
 		current_state = torch.cat(
 			(vehicle_location[k, 0:2], vehicle_rotation[k, 1:2], torch.norm(vehicle_velocity[k], dim = -1, keepdim=True)), dim=-1).unsqueeze(0).unsqueeze(0)
+		current_state.requires_grad = True
+
 		target_state = torch.cat(
 			(vehicle_location[k+stride, 0:2], vehicle_rotation[k+stride, 1:2], torch.norm(vehicle_velocity[k+stride], dim = -1, keepdim=True)), dim=-1).unsqueeze(0).unsqueeze(0)
+		target_state_list.append(target_state.detach().cpu().numpy())
 
 		state, action = go_to_waypoint(current_state, target_state, mpc_module, ego_forward_model)
 		
@@ -93,6 +100,7 @@ def main(config):
 
 	state = np.concatenate(state_list, axis=0)
 	action = np.concatenate(action_list, axis=0)
+	target_state = np.concatenate(target_state_list, axis=0)
 
 	vehicle_location = vehicle_location.detach().cpu().numpy()
 	vehicle_rotation = vehicle_rotation.detach().cpu().numpy()
@@ -100,23 +108,16 @@ def main(config):
 	vehicle_control = vehicle_control.detach().cpu().numpy()
 
 
+	savedir =  f"figures/mpc_toy_examples/path_follow_1/"
+	os.makedirs(os.path.dirname(savedir), exist_ok=True)
+
+	plot_result_mpc_path_follow(state, action, vehicle_location, vehicle_rotation, vehicle_velocity, vehicle_control, target_state, 50, k+stride, Path(savedir))
 	
-	plt.figure()
-	plt.plot(state[:, 0, 1], state[:, 0, 0], label="MPC")
-	plt.plot(vehicle_location[50:k+stride, 1], vehicle_location[50:k+stride, 0], label="Ground Truth")
-	plt.legend()
-
-	plt.figure()
-	plt.plot(np.linspace(0, 1, action.shape[0]),np.clip(action[:, 0, 0], 0, 1), label='Throttle - MPC')
-	plt.plot(np.linspace(0, 1, action.shape[0]), np.clip(action[:, 0, 1], -1, 1), label='Steer - MPC')
-	plt.plot(np.linspace(0, 1, vehicle_control.shape[0]), vehicle_control[:, 0], label='Throttle - Ground Truth')
-	plt.plot(np.linspace(0, 1, vehicle_control.shape[0]), vehicle_control[:, 1], label='Steer - Ground Truth')
-	plt.legend()
+	
 
 
 
-
-	plt.show()
+	
 
 
 

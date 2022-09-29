@@ -31,6 +31,8 @@ class KinematicBicycleModel(nn.Module):
 		One step semi-parametric kinematic bicycle model
 		'''
 
+		# throttle = torch.clip(action[..., 0:1], 0, 1)
+		# steer = torch.clip(action[..., 1:2], -1, 1)
 		throttle = action[..., 0:1]
 		steer = action[..., 1:2]
 		brake = action[..., 2:3].byte()
