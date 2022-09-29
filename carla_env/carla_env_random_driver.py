@@ -17,7 +17,7 @@ from queue import Queue, Empty
 import logging
 
 logger = logging.getLogger(__name__)
-maps = ["Town04"]#["Town01", "Town02", "Town03", "Town04", "Town05", "Town06"]
+maps = ["Town01", "Town02", "Town03", "Town04", "Town05", "Town06"]
 
 class RandomActionDesigner(object):
 	
@@ -49,7 +49,6 @@ class RandomActionDesigner(object):
 			brake = 0.
 
 		action = [throttle, steer, brake]
-		logger.debug(f"Action: {action}")
 		
 		self.previous_action = action
 		self.previous_count = 0
@@ -110,6 +109,10 @@ class CarlaEnvironment(Environment):
 
 		time.sleep(1.0)
 		logger.info("Everything is set!")
+
+		for _ in range(int(1/self.client.config["fixed_delta_seconds"]) * 2):
+			self.client.step()
+
 		# self.actor.reset()
 		# self.vehicle.reset()
 		# self.vehicle_sensor.reset()
@@ -117,79 +120,69 @@ class CarlaEnvironment(Environment):
 
 	def step(self, action=None):
 		"""Perform an action in the environment"""
-
-		
-
-		
-		self.server.step()
-		self.client.step()
-
+	
 		snapshot = self.client.world.get_snapshot()
 		t = snapshot.timestamp.elapsed_seconds
 		action = self.action_designer.step(t)
-
+		logger.debug(f"Action: {action}")
 		self.is_done = action is None or (self.counter > 1000 + self.do_not_collect)
 		
 		if self.is_done:
 			return True
 
-		if self.counter > self.do_not_collect:
-			self.actor.step(action)
-			self.vehicle.step()
-			self.vehicle_sensor.step()
+		self.actor.step(action)
+		self.vehicle.step()
+		self.vehicle_sensor.step()
 
-			data_dict = {}
+		data_dict = {}
 
-			for (k, v) in self.actor.sensor_dict.items():
+		for (k, v) in self.actor.sensor_dict.items():
 
-				if v.queue.qsize() > 0:
+			if v.queue.qsize() > 0:
 
-					try:
+				try:
 
-						equivalent_frame_fetched = False
+					equivalent_frame_fetched = False
 
-						while not equivalent_frame_fetched:
+					while not equivalent_frame_fetched:
 
-							data_ = v.queue.get(True, 10)
+						data_ = v.queue.get(True, 10)
 
-							equivalent_frame_fetched =  data_["frame"] == snapshot.frame #, f"Frame number mismatch: {data_['frame']} != {snapshot.frame} \n Current Sensor: {k} \n Current Data Queue Size {self.data.qsize()}"
+						equivalent_frame_fetched =  data_["frame"] == snapshot.frame #, f"Frame number mismatch: {data_['frame']} != {snapshot.frame} \n Current Sensor: {k} \n Current Data Queue Size {self.data.qsize()}"
 
-					except Empty:
-						print("Empty")
+				except Empty:
+					print("Empty")
 
-					data_dict[k] = data_
+				data_dict[k] = data_
 
-					if k == "VehicleSensorModule":
+				if k == "VehicleSensorModule":
 
-						ego_transform = data_dict[k]["transform"]
-						transform = ego_transform
-						transform.location.z += 2.0
+					ego_transform = data_dict[k]["transform"]
+					transform = ego_transform
+					transform.location.z += 2.0
 
-						if self.first_time_step:
-							self.initial_vehicle_transform = ego_transform
-							self.first_time_step = False
+					if self.first_time_step:
+						self.initial_vehicle_transform = ego_transform
+						self.first_time_step = False
 
-					elif k == "CollisionSensorModule":
+				elif k == "CollisionSensorModule":
 
-						impulse = data_dict[k]["impulse"]
-						impulse_amplitude = np.linalg.norm(impulse)
-						logger.debug(f"Collision impulse: {impulse_amplitude}")
-						if impulse_amplitude > 1:
-							self.is_done = True
+					impulse = data_dict[k]["impulse"]
+					impulse_amplitude = np.linalg.norm(impulse)
+					logger.debug(f"Collision impulse: {impulse_amplitude}")
+					if impulse_amplitude > 1:
+						self.is_done = True
 
-			data_dict["snapshot"] = snapshot
+		data_dict["snapshot"] = snapshot
 
-			self.data.put(data_dict)
+		self.data.put(data_dict)
 
-			self.spectator.set_transform(transform)
+		self.spectator.set_transform(transform)
 
 		
-		else:
-			
-			self.actor.step()
-			self.vehicle.step()
-			self.vehicle_sensor.step()
-
+	
+		self.server.step()
+		self.client.step()
 
 		self.counter += 1
 

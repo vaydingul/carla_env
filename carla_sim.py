@@ -77,15 +77,3 @@ if __name__ == "__main__":
     np.savez("data4", vehicle_location=vehicle_location, vehicle_rotation = vehicle_rotation, vehicle_velocity=vehicle_velocity,
              vehicle_acceleration=vehicle_acceleration, vehicle_control=vehicle_control, elapsed_time=elapsed_time)
 
-    exit()
-"""
-    plt.figure()
-    plt.plot(vehicle_location_vehicle_frame_list[:, 0])
-    plt.figure()
-    plt.plot(vehicle_location_vehicle_frame_list[:, 1])
-    plt.figure()
-    plt.plot(vehicle_location_vehicle_frame_list[:, 2])
-    plt.figure()
-    plt.plot(vehicle_control)
-    plt.show()
-"""

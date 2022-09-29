@@ -104,10 +104,7 @@ class CarlaEnvironment(Environment):
 
 	def step(self, action=None):
 		"""Perform an action in the environment"""
-
-		
-
-		
+	
 		self.server.step()
 		self.client.step()
 
