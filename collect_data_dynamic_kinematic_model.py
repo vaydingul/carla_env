@@ -75,7 +75,9 @@ def main(config):
 		vehicle_control = np.array(vehicle_control_list)
 		elapsed_time = np.array(
 			[snapshot.timestamp.elapsed_seconds for snapshot in snapshot_list])
-
+		
+		# Save the data
+		os.makedirs(config.data_save_path, exist_ok=True)
 		np.savez(f"{config.data_save_path}/dynamic_kinematic_model_data_{k}", vehicle_location=vehicle_location, vehicle_rotation = vehicle_rotation, vehicle_velocity=vehicle_velocity,
 				vehicle_acceleration=vehicle_acceleration, vehicle_control=vehicle_control, elapsed_time=elapsed_time)
 
