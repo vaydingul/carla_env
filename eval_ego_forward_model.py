@@ -6,7 +6,7 @@ import os
 import pathlib
 import torch
 import argparse
-from utils.plot_utils import plot_result
+from utils.plot_utils import plot_result_eval
 import time
 
 def evaluate(fname, data, model, config):
@@ -61,11 +61,11 @@ def evaluate(fname, data, model, config):
 
 
 
-	savedir = pathlib.Path(f"figures/ego-forward-model-evaluation/{fname}/")
+	savedir = pathlib.Path(f"figures/ego-forward-model-evaluation-temp/{fname}/")
 	os.makedirs(savedir, exist_ok=True)
 
 	if config.plot_local:
-		plot_result(vehicle_location, vehicle_rotation, vehicle_velocity, vehicle_control, elapsed_time, location_predicted, yaw_predicted, speed_predicted, savedir)
+		plot_result_eval(vehicle_location, vehicle_rotation, vehicle_velocity, vehicle_control, elapsed_time, location_predicted, yaw_predicted, speed_predicted, savedir)
 		time.sleep(1)
 
 	return location_loss, rotation_loss
@@ -103,7 +103,8 @@ def main(config):
 if __name__ == "__main__":
 	
 	parser = argparse.ArgumentParser()
-	parser.add_argument("--model_path", type=str, default="pretrained_models/2022-09-27/16-21-41/ego_model_new.pt")
+	#parser.add_argument("--model_path", type=str, default="pretrained_models/2022-09-27/16-21-41/ego_model_new.pt")
+	parser.add_argument("--model_path", type=str, default="pretrained_models/2022-09-28/03-24-39/ego_model_new.pt")
 	parser.add_argument("--evaluation_data_folder", type=str, default="data/kinematic_model_data_val")
 	parser.add_argument("--wandb", type=bool, default=False)
 	parser.add_argument("--plot_local", type=bool, default=True)

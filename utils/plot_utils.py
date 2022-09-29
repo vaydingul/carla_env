@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_result(vehicle_location, vehicle_rotation, vehicle_velocity, vehicle_control, elapsed_time, location_predicted, yaw_predicted, speed_predicted, savedir):
+def plot_result_eval(vehicle_location, vehicle_rotation, vehicle_velocity, vehicle_control, elapsed_time, location_predicted, yaw_predicted, speed_predicted, savedir):
 
 	print(savedir)
 	print(f"Location MAE: {np.mean(np.abs(vehicle_location[:-1, :2] - location_predicted))}")
@@ -65,4 +65,73 @@ def plot_result(vehicle_location, vehicle_rotation, vehicle_velocity, vehicle_co
 	plt.legend()
 	plt.savefig(savedir / "yaw.png")
 	
+	plt.close("all")
+
+
+def plot_result_mpc(state, action, target_state, savedir):
+	plt.figure()
+	plt.plot(state[:, 0, 1], state[:, 0, 0])
+	plt.plot(state[0, 0, 1], state[0, 0, 0], 'go')
+	plt.plot(target_state[0, 0, 1], target_state[0, 0, 0], 'ro')
+	plt.title("Trajectory")
+	plt.xlabel("y")
+	plt.ylabel("x")
+	plt.savefig(savedir / "trajectory.png")
+
+	plt.figure()
+	plt.plot(state[:, 0, 2])
+	plt.plot(state.shape[0]-1, target_state[0, 0, 2], 'ro')
+	plt.title("Yaw")
+	plt.savefig(savedir / "yaw.png")
+
+	plt.figure()
+	plt.plot(state[:, 0, 3])
+	plt.plot(state.shape[0]-1, target_state[0, 0, 3], 'ro')
+	plt.title("Speed")
+	plt.savefig(savedir / "speed.png")
+		
+	plt.figure()
+	plt.plot(action[:, 0, 0], label='Throttle')
+	plt.plot(action[:, 0, 1], label='Steer')
+	plt.legend()
+	plt.title("Control Actions")
+	plt.savefig(savedir / "action.png")
+	plt.close("all")
+
+
+def plot_result_mpc_path_follow(state, action, vehicle_location, vehicle_rotation, vehicle_velocity, vehicle_control, target_state, offset, end_ix, savedir):
+
+	plt.figure()
+	plt.plot(state[:, 0, 1], state[:, 0, 0], label="MPC")
+	plt.plot(vehicle_location[offset:end_ix, 1], vehicle_location[offset:end_ix, 0], label="Ground Truth")
+	plt.plot(target_state[:, 0, 1], target_state[:, 0, 0], "ro", label="Intermediate Target Points")
+	plt.title("Trajectory")
+	plt.xlabel("y")
+	plt.ylabel("x")
+	plt.legend()
+	plt.savefig(savedir / "trajectory.png")
+
+	plt.figure()
+	plt.plot(np.linspace(0, 1, action.shape[0]),action[:, 0, 0], label='Throttle - MPC')
+	plt.plot(np.linspace(0, 1, action.shape[0]), action[:, 0, 1], label='Steer - MPC')
+	plt.plot(np.linspace(0, 1, vehicle_control[offset:end_ix].shape[0]), vehicle_control[offset:end_ix, 0], label='Throttle - Ground Truth')
+	plt.plot(np.linspace(0, 1, vehicle_control[offset:end_ix].shape[0]), vehicle_control[offset:end_ix, 1], label='Steer - Ground Truth')
+	plt.legend()
+	plt.title("Control Actions")
+	plt.savefig(savedir / "action.png")
+
+	plt.figure()
+	plt.plot(np.linspace(0, 1, state.shape[0]), state[:, 0, 3], label='MPC')
+	plt.plot(np.linspace(0, 1, vehicle_velocity[offset:end_ix].shape[0]), np.linalg.norm(vehicle_velocity[offset:end_ix], axis=-1), label='Ground Truth')
+	plt.legend()
+	plt.title("Speed")
+	plt.savefig(savedir / "speed.png")
+
+	plt.figure()
+	plt.plot(np.linspace(0, 1, state.shape[0]), np.rad2deg(state[:, 0, 2]), label='MPC')
+	plt.plot(np.linspace(0, 1, vehicle_rotation[offset:end_ix].shape[0]), np.rad2deg(vehicle_rotation[offset:end_ix, 1]), label='Ground Truth')
+	plt.legend()
+	plt.title("Yaw")
+	plt.savefig(savedir / "yaw.png")
+
 	plt.close("all")

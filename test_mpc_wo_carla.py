@@ -1,11 +1,14 @@
 from carla_env import carla_env_basic, carla_env_random_driver, carla_env_mpc
 from carla_env.mpc import mpc
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel
+from utils.plot_utils import plot_result_mpc
 import torch
 import logging
 import numpy as np
 import argparse
 import matplotlib.pyplot as plt
+from pathlib import Path
+import os
 
 torch.autograd.set_detect_anomaly(True)
 # Save the log to a file name with the current date
@@ -31,19 +34,19 @@ def main(config):
 	current_state.retain_grad()
 
 	target_state = torch.zeros((1, 4), device=config.device).unsqueeze(0)
-	target_state[0, 0, 0] = 5
-	target_state[0, 0, 1] = 20
-	target_state[0, 0, 2] = torch.pi / 4
-	target_state[0, 0, 3] = 5
+	target_state[0, 0, 0] = 3
+	target_state[0, 0, 1] = 6
+	target_state[0, 0, 2] = 0
+	target_state[0, 0, 3] = 2
 	
 	counter = 0
 
 	state_list = []
 	action_list = []
 
-	while torch.norm(current_state[..., 0:2] - target_state[..., 0:2]) > 0.1:
+	while torch.norm(current_state[..., 0:2] - target_state[..., 0:2]) > 0.05:
 
-		if counter % 2 == 0:
+		if counter % 1 == 0:
 
 			logging.info(f"Target State: {target_state}")
 			logging.info(f"Current state: {current_state}")
@@ -77,19 +80,16 @@ def main(config):
 		mpc_module.reset()
 
 		counter += 1
+
+
 	state = np.concatenate(state_list, axis=0)
 	action = np.concatenate(action_list, axis=0)
 
-	plt.figure()
-	plt.plot(state[:, 0, 1], state[:, 0, 0])
-	plt.plot(target_state[0, 0, 1], target_state[0, 0, 0], 'ro')
-	plt.show()
+	savedir =  f"figures/mpc_toy_examples/go_diagonal/"
+	os.makedirs(os.path.dirname(savedir), exist_ok=True)
+	
+	plot_result_mpc(state, action, target_state, savedir = Path(savedir))
 
-	plt.figure()
-	plt.plot(action[:, 0, 0], label='Throttle')
-	plt.plot(action[:, 0, 1], label='Steer')
-	plt.legend()
-	plt.show()
 
 
 
