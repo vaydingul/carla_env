@@ -1,14 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 def plot_result_eval(vehicle_location, vehicle_rotation, vehicle_velocity, vehicle_control, elapsed_time, location_predicted, yaw_predicted, speed_predicted, savedir):
 
-	print(savedir)
-	print(f"Location MAE: {np.mean(np.abs(vehicle_location[:-1, :2] - location_predicted))}")
-	print(f"Orientation Cos MAE: {np.mean(np.abs(np.cos(vehicle_rotation[:-1, 1:2]) - np.cos(yaw_predicted)))}")
-	print(f"Orientation Sin MAE: {np.mean(np.abs(np.sin(vehicle_rotation[:-1, 1:2]) - np.sin(yaw_predicted)))}")
-
+	
 	plt.figure()
 	plt.plot(vehicle_location[:-1, 1], vehicle_location[:-1, 0], "r-", label="CARLA")
 	plt.plot(location_predicted[:, 1], location_predicted[:, 0], "b-", label="NN")
