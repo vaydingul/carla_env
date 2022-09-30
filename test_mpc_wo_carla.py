@@ -10,10 +10,6 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import os
 
-torch.autograd.set_detect_anomaly(True)
-# Save the log to a file name with the current date
-# logging.basicConfig(filename=f"logs/sim_log_debug",level=logging.DEBUG)
-
 logging.basicConfig(level=logging.INFO)
 
 
@@ -29,15 +25,15 @@ def main(config):
 
 	current_state = torch.zeros(
 		(1, 4), device=config.device).unsqueeze(0)
-	current_state[0, 0, 3] = 1
+	current_state[0, 0, 3] = 0.01
 	current_state.requires_grad_(True)
 	current_state.retain_grad()
 
 	target_state = torch.zeros((1, 4), device=config.device).unsqueeze(0)
-	target_state[0, 0, 0] = 3
-	target_state[0, 0, 1] = 6
+	target_state[0, 0, 0] = 1
+	target_state[0, 0, 1] = 1
 	target_state[0, 0, 2] = 0
-	target_state[0, 0, 3] = 2
+	target_state[0, 0, 3] = 1
 	
 	counter = 0
 
@@ -85,7 +81,7 @@ def main(config):
 	state = np.concatenate(state_list, axis=0)
 	action = np.concatenate(action_list, axis=0)
 
-	savedir =  f"figures/mpc_toy_examples/go_diagonal/"
+	savedir =  f"figures/mpc_toy_examples/go_backward_direction/"
 	os.makedirs(os.path.dirname(savedir), exist_ok=True)
 	
 	plot_result_mpc(state, action, target_state, savedir = Path(savedir))

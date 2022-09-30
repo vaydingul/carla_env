@@ -51,7 +51,7 @@ class ActorModule(module.Module):
 
 			if type(action) == list:
 				
-				vehicle_control = carla.VehicleControl(throttle = action[0], steer = action[1], brake = action[2])
+				vehicle_control = carla.VehicleControl(throttle = float(action[0]), steer = float(action[1]), brake = float(action[2]))
 				self.player.apply_control(vehicle_control)
 
 	

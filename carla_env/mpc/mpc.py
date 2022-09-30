@@ -63,7 +63,6 @@ class MPC(nn.Module):
 			location = initial_state[:, :, 0:2].clone()
 			rotation = initial_state[:, :, 2:3].clone()
 			speed = initial_state[:, :, 3:4].clone()
-			#state[:, 0, :] = initial_state[:, 0, :].clone()
 
 			location_predicted, rotation_predicted, speed_predicted = self.forward(location, rotation, speed)
 			cost = self._calculate_cost(location_predicted, rotation_predicted, speed_predicted, target_state)
@@ -94,9 +93,9 @@ class MPC(nn.Module):
 		#return self.loss_criterion(predicted_location, target_location) + (self.action[..., 1:] ** 2).sum() + ((1 - self.action[..., 0]) ** 2).sum()
 		loss = torch.tensor(0.)
 
-		loss += self.loss_criterion(predicted_location[..., :1], target_state[..., :1].expand(*(predicted_location[..., :1].shape))) 
+		loss += self.loss_criterion(predicted_location[..., :1], target_state[..., :1].expand(*(predicted_location[..., :1].shape)))
 		loss += self.loss_criterion(predicted_location[..., 1:2], target_state[..., 1:2].expand(*(predicted_location[..., 1:2].shape)))
-		loss += self.loss_criterion(predicted_rotation, target_state[..., 2:3].expand(*(predicted_rotation.shape))) 
+		#loss += self.loss_criterion(predicted_rotation, target_state[..., 2:3].expand(*(predicted_rotation.shape))) 
 		loss += self.loss_criterion(predicted_speed, target_state[..., 3:4].expand(*(predicted_speed.shape)))
 
 		#loss += (self.action[..., 1:2] ** 2).sum()# + ((1 - self.action[..., 0]) ** 2).sum()

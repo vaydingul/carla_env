@@ -3,7 +3,7 @@ from torch.utils.data import Dataset, DataLoader
 import os
 import numpy as np
 from carla_env.models.dynamic import vehicle as v
-from carla_env.dataset.ego_model import EgoModelDataset
+from carla_env.dataset.ego_model import EgoModelDataset, EgoModelDatasetV2
 import wandb
 import argparse
 import logging
@@ -166,8 +166,8 @@ def main(config):
 
     data_path_train = config.data_path_train
     data_path_val = config.data_path_val
-    ego_model_dataset_train = EgoModelDataset(data_path_train)
-    ego_model_dataset_val = EgoModelDataset(data_path_val)
+    ego_model_dataset_train = EgoModelDatasetV2(data_path_train)
+    ego_model_dataset_val = EgoModelDatasetV2(data_path_val)
     logger.info(f"Train dataset size: {len(ego_model_dataset_train)}")
     logger.info(f"Validation dataset size: {len(ego_model_dataset_val)}")
 
@@ -176,7 +176,7 @@ def main(config):
     ego_model_dataloader_val = DataLoader(
         ego_model_dataset_val, batch_size=config.batch_size, shuffle=False, num_workers=config.num_workers)
 
-    ego_model = v.KinematicBicycleModel(dt=1/20)
+    ego_model = v.KinematicBicycleModelV2(dt=1/20)
     ego_model_optimizer = torch.optim.Adam(
         ego_model.parameters(), lr=config.lr)
     ego_model_loss_criterion = torch.nn.L1Loss()
@@ -190,7 +190,7 @@ def main(config):
 
     if config.wandb:
         run = wandb.init(project="mbl", group="ego-forward-model",
-                         name="training_new_dataset", config=config)
+                         name="training_new_model", config=config)
         run.define_metric("train/step")
         run.define_metric("val/step")
         run.define_metric("model/step")
@@ -226,9 +226,9 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=5000)
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--data_path_train", type=str,
-                        default="./data/kinematic_model_data_train_2/")
+                        default="./data/kinematic_model_data_train_3/")
     parser.add_argument("--data_path_val", type=str,
-                        default="./data/kinematic_model_data_val_2/")
+                        default="./data/kinematic_model_data_val_3/")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
     parser.add_argument("--wandb", type=bool, default=True)

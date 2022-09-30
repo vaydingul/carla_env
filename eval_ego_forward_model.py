@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from carla_env.models.dynamic.vehicle import KinematicBicycleModel
+from carla_env.models.dynamic.vehicle import KinematicBicycleModel, KinematicBicycleModelV2
 from carla_env.models.dynamic.vehicle_WoR import EgoModel
 #from ego_model import EgoModel
 import logging
@@ -9,6 +9,7 @@ import pathlib
 import torch
 import argparse
 from utils.plot_utils import plot_result_eval
+from utils.kinematic_utils import throttle_brake_to_acceleration
 import time
 
 logger = logging.getLogger(__name__)
@@ -48,7 +49,12 @@ def evaluate(fname, data, model, config):
 
 		action = vehicle_control[k, :]
 
-		location, yaw, speed = model(location, yaw, speed, action)
+		if config.kinematic_model == "v2":
+			acceleration = throttle_brake_to_acceleration(action[..., 0], action[..., 2])
+			action = torch.stack([acceleration, action[..., 1]], dim = -1)
+			location, yaw, speed = model(location, yaw, speed, action)
+		else:
+			location, yaw, speed = model(location, yaw, speed, action)
 
 		location_predicted.append(location)
 		yaw_predicted.append(yaw)
@@ -85,8 +91,13 @@ def evaluate(fname, data, model, config):
 def main(config):
 	folder_name = config.evaluation_data_folder
 	
-	if not config.WoR:
+	if config.kinematic_model == "v1":
 		model = KinematicBicycleModel(dt=1/20)
+		model.state_dict = torch.load(config.model_path)
+		model.eval()
+
+	elif config.kinematic_model == "v2":
+		model = KinematicBicycleModelV2(dt=1/20)
 		model.state_dict = torch.load(config.model_path)
 		model.eval()
 	else:
@@ -128,13 +139,13 @@ def main(config):
 if __name__ == "__main__":
 	
 	parser = argparse.ArgumentParser()
-	parser.add_argument("--model_path", type=str, default="pretrained_models/2022-09-27/16-21-41/ego_model_new.pt") # More data
+	parser.add_argument("--model_path", type=str, default="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt") # More data
 	#parser.add_argument("--model_path", type=str, default="pretrained_models/2022-09-28/03-24-39/ego_model_new.pt") # New dataset
-	parser.add_argument("--evaluation_data_folder", type=str, default="data/kinematic_model_data_val")
-	parser.add_argument("--save_dir", type=str, default="WoR_test_old_dataset")
+	parser.add_argument("--evaluation_data_folder", type=str, default="./data/kinematic_model_data_test_3")
+	parser.add_argument("--save_dir", type=str, default="train_new_model_test_new_dataset")
 	parser.add_argument("--wandb", type=bool, default=False)
 	parser.add_argument("--plot_local", type=bool, default=True)
-	parser.add_argument("--WoR", type=bool, default=True)
+	parser.add_argument("--kinematic_model", type=str, default="v2" )
 	config = parser.parse_args()
 
 	main(config)

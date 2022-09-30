@@ -80,7 +80,7 @@ class RandomActionDesignerV2(object):
 			acceleration = np.random.uniform(-self.max_throttle, 0)
 			steer = np.random.uniform(-self.max_steering_angle, self.max_steering_angle)
 
-			action = [0, steer, acceleration]
+			action = [0, steer, -acceleration]
 			
 		else:
 			
