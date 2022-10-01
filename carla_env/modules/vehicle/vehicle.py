@@ -12,9 +12,12 @@ class VehicleModule(module.Module):
 		if config is not None:
 			for k in config.keys():
 				self.config[k] = config[k]
+
+			
 		self.world = self.client.get_world()
 		self.blueprint = self.world.get_blueprint_library().filter(f"vehicle.{self.config['vehicle_model']}")[0]
 
+		self.render_dict = {}
 			
 	def _start(self, spawn_transform):
 		"""Start the vehicle manager"""
@@ -35,8 +38,9 @@ class VehicleModule(module.Module):
 	
 	def render(self):
 		"""Render the vehicle manager"""
-		pass
-
+		self.render_dict["vehicle_model"] = self.vehicle
+		return self.render_dict
+		
 	def close(self):
 		"""Close the vehicle manager"""
 		pass

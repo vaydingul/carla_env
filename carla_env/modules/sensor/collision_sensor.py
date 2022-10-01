@@ -21,6 +21,9 @@ class CollisionSensorModule(sensor.SensorModule):
 		self.client = client
 		self.world = self.client.get_world()
 		self.map = self.world.get_map()
+		
+		self.render_dict = {}
+		self.impulse = None
 
 		if actor is not None:
 			self.attach_to_actor(actor)
@@ -58,6 +61,7 @@ class CollisionSensorModule(sensor.SensorModule):
 		impulse = np.array([impulse.x, impulse.y, impulse.z])
 		impulse = copy.deepcopy(impulse)
 
+		self.impulse = impulse
 
 		data = {'frame': collision_data.frame,
 				'transform': collision_data.transform,
@@ -75,7 +79,10 @@ class CollisionSensorModule(sensor.SensorModule):
 
 	def render(self):
 		"""Render the sensor"""
-		pass
+		if self.impulse is not None:
+			self.render_dict['impulse'] = self.impulse
+		
+		return self.render_dict
 
 	def close(self):
 		"""Close the sensor"""

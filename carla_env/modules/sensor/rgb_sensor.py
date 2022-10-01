@@ -21,6 +21,8 @@ class RGBSensorModule(sensor.SensorModule):
 		self.client = client
 		self.world = self.client.get_world()
 		self.map = self.world.get_map()
+		self.render_dict = {}
+		self.image_data = None
 
 		if actor is not None:
 			self.attach_to_actor(actor)
@@ -60,6 +62,8 @@ class RGBSensorModule(sensor.SensorModule):
 		image_data = np.reshape(image_data, (image.height, image.width, 4))
 		image_data = image_data[:, :, :3]
 		image_data = image_data[:, :, ::-1]
+		
+		self.image_data = image_data
 
 		data = {'frame': image.frame,
 				'transform': image.transform,
@@ -77,7 +81,9 @@ class RGBSensorModule(sensor.SensorModule):
 
 	def render(self):
 		"""Render the sensor"""
-		pass
+		if self.image_data is not None:
+			self.render_dict["image_data"] = self.image_data
+
 
 	def close(self):
 		"""Close the sensor"""

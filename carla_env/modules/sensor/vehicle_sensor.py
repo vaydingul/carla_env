@@ -17,7 +17,7 @@ class VehicleSensorModule(sensor.SensorModule):
         self.client = client
         self.world = self.client.get_world()
         self.map = self.world.get_map()
-
+        self.render_dict = {}
         if actor is not None:
             self.attach_to_actor(actor)
 
@@ -70,7 +70,7 @@ class VehicleSensorModule(sensor.SensorModule):
 
     def render(self):
         """Render the sensor"""
-        pass
+        return self.render_dict
 
     def close(self):
         """Close the sensor"""

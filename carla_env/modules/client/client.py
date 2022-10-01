@@ -1,6 +1,7 @@
 from carla_env.modules import module
 import carla
 import logging
+import time
 logger = logging.getLogger(__name__)
 class ClientModule(module.Module):
 	"""Concrete implementation Module abstract base class for client module"""
@@ -13,6 +14,7 @@ class ClientModule(module.Module):
 			for k in config.keys():
 				self.config[k] = config[k]
 
+		self.is_connected = False
 		self.render_dict = {}
 
 		self.reset()
@@ -23,10 +25,16 @@ class ClientModule(module.Module):
 	def _start(self):
 		"""Start the client"""
 		
-				
-		self.client = carla.Client(self.config["host"], self.config["port"])
-		self.client.set_timeout(self.config["timeout"])
-				
+
+		while not self.is_connected:
+			try:		
+				self.client = carla.Client(self.config["host"], self.config["port"])
+				self.client.set_timeout(self.config["timeout"])
+				self.is_connected = True
+			except RuntimeError:
+				logger.info("Failed to connect to CARLA server")
+				time.sleep(1)
+			
 		self.world = self.client.load_world(self.config["world"])
 		self.map = self.world.get_map()
 		
@@ -56,8 +64,12 @@ class ClientModule(module.Module):
 
 	def render(self):
 		"""Render the client"""
-		pass
-	
+		if self.is_connected:
+			self.render_dict["is_connected"] = self.is_connected
+			self.render_dict["World"] = self.config["world"]
+
+		return self.render_dict
+		
 	def close(self):
 		"""Close the client"""
 		pass

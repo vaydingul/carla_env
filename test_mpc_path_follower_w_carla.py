@@ -1,17 +1,17 @@
-from carla_env import carla_env_basic, carla_env_random_driver, carla_env_mpc
+from carla_env import carla_env_mpc_path_follower
 from carla_env.mpc import mpc
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel, KinematicBicycleModelV2
 from carla_env.models.dynamic.vehicle_WoR import EgoModel
-from utils.plot_utils import plot_result_mpc
 import torch
+import time
 import logging
+import math
 import numpy as np
 import argparse
-import matplotlib.pyplot as plt
-from pathlib import Path
-import os
+from utils.kinematic_utils import acceleration_to_throttle_brake
 
-logging.basicConfig(level=logging.INFO)
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 def main(config):
@@ -50,65 +50,55 @@ def main(config):
     else:
         raise ValueError("Invalid kinematic model")
 
-    current_state = torch.zeros(
-        (1, 4), device=config.device).unsqueeze(0)
-    current_state[0, 0, 3] = 0.01
-    current_state.requires_grad_(True)
-    current_state.retain_grad()
+    c = carla_env_mpc_path_follower.CarlaEnvironment(None)
 
-    target_state = torch.zeros((1, 4), device=config.device).unsqueeze(0)
-    target_state[0, 0, 0] = -10
-    target_state[0, 0, 1] = -10
-    target_state[0, 0, 2] = 0
-    target_state[0, 0, 3] = 3
+    current_transform, current_velocity, target_waypoint = c.step()
 
     counter = 0
 
-    state_list = []
-    action_list = []
+    while not c.is_done:
 
-    while (torch.norm(current_state[..., 0:2] - target_state[..., 0:2]) > 0.2):
+        if counter % 1 == 0:
 
-        if counter % 5 == 0:
+            # Set the current state of the ego vehicle for the kinematic model
+            current_state = torch.zeros(
+                (1, 4), device=config.device).unsqueeze(0)
 
-            logging.info(f"Target State: {target_state}")
-            logging.info(f"Current state: {current_state}")
+            current_state[..., 0] = current_transform.location.x
+            current_state[..., 1] = current_transform.location.y
+            current_state[..., 2] = current_transform.rotation.yaw * \
+                torch.pi / 180.0
+            current_state[..., 3] = math.sqrt(
+                current_velocity.x**2 + current_velocity.y**2)
+            current_state.requires_grad_(True)
 
-            action = mpc_module.optimize_action(
+            logging.debug(f"Current state: {current_state}")
+
+            target_state = torch.zeros(
+                (1, 4), device=config.device).unsqueeze(0)
+
+            target_state[..., 0] = target_waypoint.transform.location.x
+            target_state[..., 1] = target_waypoint.transform.location.y
+            target_state[..., 2] = target_waypoint.transform.rotation.yaw * \
+                torch.pi / 180.0
+            target_state[..., 3] = 5
+
+            logging.debug(f"Target state: {target_state}")
+            # Get the control from the MPC module
+            control = mpc_module.optimize_action(
                 current_state, target_state)
 
-            logging.info(f"Action: {action}")
+        throttle, brake = acceleration_to_throttle_brake(control[0])
+        control = [throttle, control[1], brake]
 
-            action = torch.Tensor(action).unsqueeze(0).unsqueeze(0)
 
-            # action[0] = 1
-            # action[1] = 0
-            # action[2] = 0.0
 
-        location = current_state[:, :, 0:2]
-        yaw = current_state[:, :, 2]
-        speed = current_state[:, :, 3]
-
-        location_, yaw_, speed_ = ego_forward_model(
-            location, yaw, speed, action)
-
-        current_state = torch.cat(
-            (location_, yaw_, speed_), dim=-1)
-
-        state_list.append(current_state.detach().cpu().numpy())
-        action_list.append(action)
-
+        current_transform, current_velocity, target_waypoint = c.step(control)
         mpc_module.reset()
 
         counter += 1
 
-    state = np.concatenate(state_list, axis=0)
-    action = np.concatenate(action_list, axis=0)
-
-    savedir = f"figures/mpc_toy_examples/go_backward_direction/"
-    os.makedirs(os.path.dirname(savedir), exist_ok=True)
-
-    plot_result_mpc(state, action, target_state, savedir=Path(savedir))
+    c.close()
 
 
 if __name__ == "__main__":
@@ -120,8 +110,6 @@ if __name__ == "__main__":
     parser.add_argument("--kinematic_model", type=str, default="v2")
     parser.add_argument("--device", type=str, default="cpu",
                         help="Device to use for the forward model")
-    parser.add_argument("--wandb", type=bool, default=False)
-
     config = parser.parse_args()
 
     main(config)
