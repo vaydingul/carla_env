@@ -55,10 +55,11 @@ class ClientModule(module.Module):
 
 	def _stop(self):
 		"""Stop the client"""
-		pass
+		self.is_connected = False
 
 	def reset(self):
 		"""Reset the client"""
+		self._stop()
 		self._start()
 		
 

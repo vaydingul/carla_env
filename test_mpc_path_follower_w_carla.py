@@ -11,7 +11,7 @@ import argparse
 from utils.kinematic_utils import acceleration_to_throttle_brake
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 def main(config):
@@ -34,7 +34,7 @@ def main(config):
             torch.load(config.ego_forward_model_path))
         ego_forward_model.to(config.device)
 
-        mpc_module = mpc.MPC(config.device, 2, 10, 30, ego_forward_model)
+        mpc_module = mpc.MPC(config.device, 2, 20, 30, ego_forward_model)
         mpc_module.to(config.device)
 
     elif config.kinematic_model == "WoR":
@@ -50,7 +50,7 @@ def main(config):
     else:
         raise ValueError("Invalid kinematic model")
 
-    c = carla_env_mpc_path_follower.CarlaEnvironment(None)
+    c = carla_env_mpc_path_follower.CarlaEnvironment(config = {"render" : True, "save": True}) 
 
     current_transform, current_velocity, target_waypoint = c.step()
 
@@ -85,7 +85,7 @@ def main(config):
 
             logging.debug(f"Target state: {target_state}")
             # Get the control from the MPC module
-            control = mpc_module.optimize_action(
+            control, location_predicted, cost = mpc_module.optimize_action(
                 current_state, target_state)
 
         throttle, brake = acceleration_to_throttle_brake(control[0])
@@ -94,6 +94,9 @@ def main(config):
 
 
         current_transform, current_velocity, target_waypoint = c.step(control)
+        c.render(location_predicted, cost = cost, control = control, current_state = current_state, target_state = target_state)
+
+
         mpc_module.reset()
 
         counter += 1

@@ -49,7 +49,7 @@ class RouteModule(module.Module):
 	def step(self, current_location):
 		"""Step the vehicle manager"""
 		if self.route_index < self.route_length:
-			if _get_distance_between_waypoints(self.route[self.route_index][0], current_location) < 0.2:#self.config["sampling_resolution"]:
+			if _get_distance_between_waypoints(self.route[self.route_index][0], current_location) < 0.5:#self.config["sampling_resolution"]:
 				self.route_index += 1
 		return self.route[self.route_index]
 	
@@ -63,7 +63,8 @@ class RouteModule(module.Module):
 	
 	def render(self):
 		"""Render the vehicle manager"""
-		self.render_dict["route"] = self.route
+		self.render_dict["current_waypoint"] = self.route[self.route_index][0].transform.location if self.route_index < self.route_length else None
+		self.render_dict["current_command"] = self.route[self.route_index][1] if self.route_index < self.route_length else None
 		self.render_dict["route_index"] = self.route_index
 		return self.render_dict
 

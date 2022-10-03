@@ -23,7 +23,7 @@ class RGBSensorModule(sensor.SensorModule):
 		self.map = self.world.get_map()
 		self.render_dict = {}
 		self.image_data = None
-
+		
 		if actor is not None:
 			self.attach_to_actor(actor)
 
@@ -64,6 +64,7 @@ class RGBSensorModule(sensor.SensorModule):
 		image_data = image_data[:, :, ::-1]
 		
 		self.image_data = image_data
+		self.image_transform = image.transform
 
 		data = {'frame': image.frame,
 				'transform': image.transform,
@@ -83,8 +84,9 @@ class RGBSensorModule(sensor.SensorModule):
 		"""Render the sensor"""
 		if self.image_data is not None:
 			self.render_dict["image_data"] = self.image_data
-
-
+			self.render_dict["image_transform"] = self.image_transform
+			
+		return self.render_dict
 	def close(self):
 		"""Close the sensor"""
 		self._stop()

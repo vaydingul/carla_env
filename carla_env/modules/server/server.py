@@ -90,6 +90,8 @@ class ServerModule(module.Module):
 	def render(self):
 		"""Render the module"""
 		self.render_dict["is_running"] = self.is_running
+
+		return self.render_dict
 	
 	def close(self):
 		"""Close the module"""

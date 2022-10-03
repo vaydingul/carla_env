@@ -69,11 +69,12 @@ class ActorModule(module.Module):
 	def render(self):
 		"""Render the actor manager"""
 		if self.spawned:
-			self.render_dict["id"] = self.actor.id
-			self.render_dict["transform"] = self.actor.get_transform()
-			self.render_dict["velocity"] = self.actor.get_velocity()
-			self.render_dict["location"] = self.actor.get_location()
-
+			self.render_dict["velocity"] = self.player.get_velocity()
+			self.render_dict["location"] = self.player.get_location()
+			self.render_dict["rotation"] = self.player.get_transform().rotation
+			self.render_dict["acceleration"] = self.player.get_acceleration()
+			self.render_dict["control"] = self.player.get_control()
+			
 		return self.render_dict			
 
 	def close(self):

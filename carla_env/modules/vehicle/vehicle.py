@@ -38,7 +38,7 @@ class VehicleModule(module.Module):
 	
 	def render(self):
 		"""Render the vehicle manager"""
-		self.render_dict["vehicle_model"] = self.vehicle
+		self.render_dict["vehicle_model"] = self.config['vehicle_model']
 		return self.render_dict
 		
 	def close(self):
