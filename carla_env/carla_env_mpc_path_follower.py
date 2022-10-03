@@ -7,6 +7,7 @@ from carla_env.modules.actor import actor as a
 from carla_env.modules.vehicle import vehicle as v
 from carla_env.modules.sensor import vehicle_sensor as vs
 from carla_env.modules.sensor import rgb_sensor as rgbs
+from carla_env.modules.sensor import semantic_sensor as ss
 from carla_env.modules.sensor import collision_sensor as cs
 from carla_env.modules.route import route as r
 from carla_env.modules.module import Module
@@ -94,6 +95,8 @@ class CarlaEnvironment(Environment):
         self.collision_sensor = cs.CollisionSensorModule(
             None, self.client.client, self.actor)
         self.rgb_sensor = rgbs.RGBSensorModule(
+            None, self.client.client, self.actor)
+        self.semantic_sensor = ss.SemanticSensorModule(
             None, self.client.client, self.actor)
 
         time.sleep(1.0)
@@ -186,11 +189,16 @@ class CarlaEnvironment(Environment):
         # Put image into canvas
         self.canvas[:rgb_image.shape[0], :rgb_image.shape[1]] = rgb_image
 
+        semantic_image = self.render_dict["semantic_sensor"]["image_data"]
+        semantic_image = cv2.cvtColor(semantic_image, cv2.COLOR_BGR2RGB)
+        # Put image into canvas
+        self.canvas[rgb_image.shape[0]:rgb_image.shape[0] + semantic_image.shape[0],:semantic_image.shape[1]] = semantic_image
+
         # Put text for other modules
         position_x = rgb_image.shape[1] + 10
         position_y = 20
         for (module, render_dict) in self.render_dict.items():
-            if module != "rgb_sensor":
+            if module not in  ["rgb_sensor", "semantic_sensor"]:
 
                 if bool(render_dict):
 
@@ -225,10 +233,11 @@ class CarlaEnvironment(Environment):
                 cv2.circle(self.canvas, (int(pixel_loc_[0][0]), int(
                     pixel_loc_[0][1])), 5, (255, 0, 0), -1)
 
-        cv2.imshow("Environment", self.canvas)
+        canvas_display = self.canvas#cv2.resize(self.canvas, (0, 0), fx=0.8, fy=0.8)
+        cv2.imshow("Environment", canvas_display)
 
-        canvas_  = cv2.resize(self.canvas, (self.canvas.shape[1]//2, self.canvas.shape[0]//2))
-        cv2.imwrite(str(self.debug_path / Path(f"{self.counter}.png")), canvas_)
+        canvas_save  = self.canvas#cv2.resize(self.canvas, (self.canvas.shape[1]//2, self.canvas.shape[0]//2))
+        cv2.imwrite(str(self.debug_path / Path(f"{self.counter}.png")), canvas_save)
 
         cv2.waitKey(1)
 
@@ -253,7 +262,7 @@ class CarlaEnvironment(Environment):
 
     def _create_render_window(self):
 
-        self.canvas = np.zeros((600, 1600, 3), np.uint8)
+        self.canvas = np.zeros((1200, 1600, 3), np.uint8)
         cv2.imshow("Environment", self.canvas)
 
         if cv2.waitKey(1) == ord('q'):

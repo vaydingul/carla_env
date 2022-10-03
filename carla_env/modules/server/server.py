@@ -7,7 +7,7 @@ from carla_env.modules import module
 
 CARLA_ROOT = os.getenv("CARLA_ROOT")
 CARLA_EXECUTABLE = os.path.join(CARLA_ROOT, "CarlaUE4.sh") # Path to the carla executable
-os.environ["VK_ICD_FILENAMES"] = "/usr/share/vulkan/icd.d/nvidia_icd.json"
+#os.environ["VK_ICD_FILENAMES"] = "/usr/share/vulkan/icd.d/nvidia_icd.json"
 
 logger = logging.getLogger(__name__)
 class ServerModule(module.Module):
