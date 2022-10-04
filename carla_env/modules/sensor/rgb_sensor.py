@@ -70,7 +70,9 @@ class RGBSensorModule(sensor.SensorModule):
 				'transform': image.transform,
 				'data': image_data
 				}
-		self._queue_operation(data)
+
+		if self.save_to_queue:
+			self._queue_operation(data)
 
 	def step(self):
 		"""Step the sensor"""

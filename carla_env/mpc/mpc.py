@@ -21,7 +21,7 @@ class MPC(nn.Module):
 
 
 		self.action = torch.zeros((1, self.rollout_length, self.action_size), device=self.device)
-		self.action[..., 0] = torch.ones_like(self.action[..., 0])
+		#self.action[..., 0] = torch.ones_like(self.action[..., 0])
 		self.action = nn.Parameter(self.action, requires_grad=True)
 		self.optimizer = torch.optim.SGD((self.action, ), lr=.5)
 

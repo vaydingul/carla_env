@@ -54,5 +54,5 @@ class VehicleModule(module.Module):
 
 	def _set_default_config(self):
 		"""Set the default config of the vehicle"""
-		self.config = {"vehicle_model" : "lincoln.mkz2017"}
+		self.config = {"vehicle_model" : "lincoln.mkz_2017"}
 	

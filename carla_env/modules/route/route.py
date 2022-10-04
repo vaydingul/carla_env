@@ -1,8 +1,6 @@
 from carla_env.modules import module
 import carla
-from agents.navigation.local_planner_behavior import LocalPlanner, RoadOption
 from agents.navigation.global_route_planner import GlobalRoutePlanner
-from agents.navigation.global_route_planner_dao import GlobalRoutePlannerDAO
 
 RED = carla.Color(r=255, g=0, b=0)
 GREEN = carla.Color(r=0, g=255, b=0)
@@ -28,9 +26,7 @@ class RouteModule(module.Module):
 			for k in config.keys():
 				self.config[k] = config[k]
 		self.world = self.client.get_world()
-		self.dao = GlobalRoutePlannerDAO(self.world.get_map(),self.config["sampling_resolution"])
-		self.grp = GlobalRoutePlanner(self.dao)
-		self.grp.setup()
+		self.grp = GlobalRoutePlanner(self.world.get_map(),self.config["sampling_resolution"])
 
 		self.route = self.grp.trace_route(self.config["start"].location, self.config["end"].location)
 		self.route_length = len(self.route)
@@ -48,10 +44,12 @@ class RouteModule(module.Module):
 	
 	def step(self, current_location):
 		"""Step the vehicle manager"""
-		if self.route_index < self.route_length:
+		if self.route_index < self.route_length-1:
 			if _get_distance_between_waypoints(self.route[self.route_index][0], current_location) < 0.5:#self.config["sampling_resolution"]:
 				self.route_index += 1
-		return self.route[self.route_index]
+			return self.route[self.route_index]
+		else:
+			return None
 	
 	def _stop(self):
 		"""Stop the vehicle manager"""
@@ -66,6 +64,7 @@ class RouteModule(module.Module):
 		self.render_dict["current_waypoint"] = self.route[self.route_index][0].transform.location if self.route_index < self.route_length else None
 		self.render_dict["current_command"] = self.route[self.route_index][1] if self.route_index < self.route_length else None
 		self.render_dict["route_index"] = self.route_index
+		self.render_dict["route_length"] = self.route_length
 		return self.render_dict
 
 	def close(self):

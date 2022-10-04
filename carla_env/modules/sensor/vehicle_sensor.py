@@ -4,6 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class VehicleSensorModule(sensor.SensorModule):
     """Concrete implementation of SensorModule abstract base class for vehicle sensor management"""
 
@@ -39,7 +40,8 @@ class VehicleSensorModule(sensor.SensorModule):
         """Get the sensor data"""
         vehicle_control = self.actor.player.get_control()
 
-        vehicle_control_ = [vehicle_control.throttle, vehicle_control.steer, vehicle_control.brake]
+        vehicle_control_ = [vehicle_control.throttle,
+                            vehicle_control.steer, vehicle_control.brake]
         data = {'transform': self.actor.player.get_transform(),
                 'location': self.actor.player.get_location(),
                 'rotation': self.actor.player.get_transform().rotation,
@@ -48,16 +50,16 @@ class VehicleSensorModule(sensor.SensorModule):
                 'control': vehicle_control_,
                 'frame': self.world.get_snapshot().frame
                 }
-        
+
         logger.debug(f"Location: {data['location']}")
         logger.debug(f"Rotation: {data['rotation']}")
         logger.debug(f"Velocity: {data['velocity']}")
         logger.debug(f"Acceleration: {data['acceleration']}")
         logger.debug(f"Control: {data['control']}")
         logger.debug(f"Frame: {data['frame']}")
-        
 
-        self._queue_operation(data)
+        if self.save_to_queue:
+            self._queue_operation(data)
 
     def step(self):
         """Step the sensor"""

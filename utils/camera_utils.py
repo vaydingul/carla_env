@@ -6,7 +6,7 @@ def world_2_pixel(world_point, world_2_camera, height, width):
     Convert world coordinates to pixel coordinates.
     """
 
-    FOV = 100
+    FOV = 90
     WIDTH = width
     HEIGHTH = height
     FOCAL = WIDTH / (2.0 * np.tan(FOV * np.pi / 360.0))

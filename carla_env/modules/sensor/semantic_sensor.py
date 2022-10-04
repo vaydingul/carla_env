@@ -8,6 +8,8 @@ import time
 
 logger = logging.getLogger(__name__)
 
+OTHER_MAP = [1, 2, 5, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
+
 class SemanticSensorModule(sensor.SensorModule):
 	"""Concrete implementation of SensorModule abstract base class for semantic sensor management"""
 
@@ -35,8 +37,8 @@ class SemanticSensorModule(sensor.SensorModule):
 		self.queue = Queue()
 
 		semantic_bp = self.world.get_blueprint_library().find('sensor.camera.semantic_segmentation')
-
-		self.camera_transform = carla.Transform(carla.Location(x=1.5, z=15), carla.Rotation(pitch=-90))
+		semantic_bp.set_attribute('fov', str(50))
+		self.camera_transform = carla.Transform(carla.Location(z=50), carla.Rotation(pitch=-90))
 
 		self.camera = self.world.spawn_actor(
 			semantic_bp, self.camera_transform, attach_to=self.actor.player)
@@ -53,24 +55,19 @@ class SemanticSensorModule(sensor.SensorModule):
 
 	def _get_sensor_data(self, image):
 		"""Get the sensor data"""
-
-		#logger.info("Received an image of frame: " + str(image.frame))
-
-		image.convert(carla.ColorConverter.CityScapesPalette)
-		image_data = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
-		image_data = copy.deepcopy(image_data)
-		image_data = np.reshape(image_data, (image.height, image.width, 4))
-		image_data = image_data[:, :, :3]
-		image_data = image_data[:, :, ::-1]
+	
+		image_data_transformed, image_data= self._image_to_basic_palette(image)
 		
-		self.image_data = image_data
+		self.image_data = image_data_transformed
 		self.image_transform = image.transform
 
 		data = {'frame': image.frame,
 				'transform': image.transform,
-				'data': image_data
+				'data': image_data_transformed
 				}
-		self._queue_operation(data)
+				
+		if self.save_to_queue:
+			self._queue_operation(data)
 
 	def step(self):
 		"""Step the sensor"""
@@ -106,3 +103,47 @@ class SemanticSensorModule(sensor.SensorModule):
 	def _queue_operation(self, data):
 		"""Queue the sensor data and additional stuff"""
 		self.queue.put(data)
+
+	def _to_bgra_array(self, image):
+		"""Convert a CARLA raw image to a BGRA numpy array."""
+
+		if not isinstance(image, carla.Image):
+			raise ValueError("Argument must be a carla.sensor.Image")
+		array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
+		array = np.reshape(array, (image.height, image.width, 4))
+		return array
+
+
+	def _to_rgb_array(self, image):
+		"""Convert a CARLA raw image to a RGB numpy array."""
+		array = self._to_bgra_array(image)
+		# Convert BGRA to RGB.
+		array = array[:, :, :3]
+		array = array[:, :, ::-1]
+		return array
+
+
+	def _labels_to_array(self, image):
+		"""
+		Convert an image containing CARLA semantic segmentation labels to a 2D array
+		containing the label of each pixel.
+		"""
+		return self._to_bgra_array(image)[:, :, 2]
+
+
+	def _image_to_basic_palette(self, image):
+		"""
+		Convert an image containing CARLA semantic segmentation labels to
+		Cityscapes palette.
+		"""
+		classes = {
+			0: [0, 0, 0],         # None
+			6: [157, 234, 50],    # RoadLines
+			7: [128, 64, 128],    # Roads
+			10: [0, 0, 255],      # Vehicles
+		}
+		array = self._labels_to_array(image)
+		result = np.zeros((array.shape[0], array.shape[1], 3))
+		for key, value in classes.items():
+			result[np.where(array == key)] = value
+		return result, array

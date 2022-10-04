@@ -1,18 +1,19 @@
 from carla_env.environment import Environment
 
 # Import modules
-from carla_env.modules.server import server as s
-from carla_env.modules.client import client as c
-from carla_env.modules.actor import actor as a
-from carla_env.modules.vehicle import vehicle as v
-from carla_env.modules.sensor import vehicle_sensor as vs
-from carla_env.modules.sensor import rgb_sensor as rgbs
-from carla_env.modules.sensor import semantic_sensor as ss
-from carla_env.modules.sensor import collision_sensor as cs
-from carla_env.modules.route import route as r
+from carla_env.modules.server import server 
+from carla_env.modules.client import client 
+from carla_env.modules.actor import actor 
+from carla_env.modules.vehicle import vehicle 
+from carla_env.modules.sensor import vehicle_sensor 
+from carla_env.modules.sensor import rgb_sensor
+from carla_env.modules.sensor import semantic_sensor 
+from carla_env.modules.sensor import collision_sensor 
+from carla_env.modules.route import route 
 from carla_env.modules.module import Module
 
 from utils.camera_utils import world_2_pixel
+from utils.bev_utils import world_2_bev
 # Import utils
 import carla
 import time
@@ -40,9 +41,9 @@ class CarlaEnvironment(Environment):
                 self.config[k] = config[k]
 
         # We have our server and client up and running
-        self.server = s.ServerModule(None)
+        self.server = server.ServerModule(None)
         # Select a random map
-        self.client = c.ClientModule(None)
+        self.client = client.ClientModule(None)
 
         self.render_dict = {}
 
@@ -80,24 +81,29 @@ class CarlaEnvironment(Environment):
         start = start_end_spawn_point[0]
         end = start_end_spawn_point[1]
 
-        self.route = r.RouteModule(
+        self.route = route.RouteModule(
             {"start": start, "end": end, "sampling_resolution": 2, "debug": True}, self.client.client)
         # Let's initialize a vehicle
-        self.vehicle = v.VehicleModule(
-            {"vehicle_model": "lincoln.mkz2017"}, self.client.client)
+        self.vehicle = vehicle.VehicleModule(
+            {"vehicle_model": "lincoln.mkz_2017"}, self.client.client)
         # Make this vehicle actor
-        self.actor = a.ActorModule(
+        self.actor = actor.ActorModule(
             {"actor": self.vehicle, "hero": True, "selected_spawn_point": start}, self.client.client)
 
         # Sensor suite
-        self.vehicle_sensor = vs.VehicleSensorModule(
+        self.vehicle_sensor = vehicle_sensor.VehicleSensorModule(
             None, self.client.client, self.actor)
-        self.collision_sensor = cs.CollisionSensorModule(
+        self.collision_sensor = collision_sensor.CollisionSensorModule(
             None, self.client.client, self.actor)
-        self.rgb_sensor = rgbs.RGBSensorModule(
+        self.rgb_sensor = rgb_sensor.RGBSensorModule(
             None, self.client.client, self.actor)
-        self.semantic_sensor = ss.SemanticSensorModule(
+        self.semantic_sensor = semantic_sensor.SemanticSensorModule(
             None, self.client.client, self.actor)
+
+        for (k, v) in self.actor.sensor_dict.items():
+            if k not in self.config["allowed_sensors"]:
+                v.save_to_queue = False
+
 
         time.sleep(1.0)
         logger.info("Everything is set!")
@@ -117,56 +123,58 @@ class CarlaEnvironment(Environment):
         data_dict = {}
 
         for (k, v) in self.actor.sensor_dict.items():
+            
+            if k in self.config["allowed_sensors"]:
+                
+                if v.queue.qsize() > 0:
 
-            if v.queue.qsize() > 0:
+                    try:
 
-                try:
+                        equivalent_frame_fetched = False
 
-                    equivalent_frame_fetched = False
+                        while not equivalent_frame_fetched:
 
-                    while not equivalent_frame_fetched:
+                            data_ = v.queue.get(True, 10)
 
-                        data_ = v.queue.get(True, 10)
+                            # , f"Frame number mismatch: {data_['frame']} != {snapshot.frame} \n Current Sensor: {k} \n Current Data Queue Size {self.data.qsize()}"
+                            equivalent_frame_fetched = data_[
+                                "frame"] == snapshot.frame
 
-                        # , f"Frame number mismatch: {data_['frame']} != {snapshot.frame} \n Current Sensor: {k} \n Current Data Queue Size {self.data.qsize()}"
-                        equivalent_frame_fetched = data_[
-                            "frame"] == snapshot.frame
+                    except Empty:
 
-                except Empty:
+                        print("Empty")
 
-                    print("Empty")
+                    data_dict[k] = data_
 
-                data_dict[k] = data_
+                    if k == "VehicleSensorModule":
 
-                if k == "VehicleSensorModule":
+                        current_transform = data_dict[k]["transform"]
+                        current_velocity = data_dict[k]["velocity"]
 
-                    current_transform = data_dict[k]["transform"]
-                    current_velocity = data_dict[k]["velocity"]
+                        transform = current_transform
+                        transform.location.z += 2.0
 
-                    transform = current_transform
-                    transform.location.z += 2.0
+                        if self.first_time_step:
+                            self.initial_vehicle_transform = current_transform
+                            self.first_time_step = False
 
-                    if self.first_time_step:
-                        self.initial_vehicle_transform = current_transform
-                        self.first_time_step = False
+                    elif k == "CollisionSensorModule":
 
-                elif k == "CollisionSensorModule":
-
-                    impulse = data_dict[k]["impulse"]
-                    impulse_amplitude = np.linalg.norm(impulse)
-                    logger.debug(f"Collision impulse: {impulse_amplitude}")
-                    if impulse_amplitude > 1:
-                        self.is_done = True
+                        impulse = data_dict[k]["impulse"]
+                        impulse_amplitude = np.linalg.norm(impulse)
+                        logger.debug(f"Collision impulse: {impulse_amplitude}")
+                        if impulse_amplitude > 1:
+                            self.is_done = True
 
         data_dict["snapshot"] = snapshot
 
         self.data.put(data_dict)
-
+    
         self.spectator.set_transform(transform)
 
         self.is_done = False
 
-        target_waypoint, _ = self.route.step(
+        route_step = self.route.step(
             self.map.get_waypoint(current_transform.location))
         # target_waypoint, _ = self.route.step(current_transform)
         self.server.step()
@@ -174,7 +182,11 @@ class CarlaEnvironment(Environment):
 
         self.counter += 1
 
-        return current_transform, current_velocity, target_waypoint
+        if route_step is not None:
+            return current_transform, current_velocity, route_step[0]
+        else:
+            self.is_done = True
+            return current_transform, current_velocity, None
 
     def render(self, predicted_location,  **kwargs):
         """Render the environment"""
@@ -190,7 +202,7 @@ class CarlaEnvironment(Environment):
         self.canvas[:rgb_image.shape[0], :rgb_image.shape[1]] = rgb_image
 
         semantic_image = self.render_dict["semantic_sensor"]["image_data"]
-        semantic_image = cv2.cvtColor(semantic_image, cv2.COLOR_BGR2RGB)
+        # semantic_image = cv2.cvtColor(semantic_image, cv2.COLOR_BGR2RGB)
         # Put image into canvas
         self.canvas[rgb_image.shape[0]:rgb_image.shape[0] + semantic_image.shape[0],:semantic_image.shape[1]] = semantic_image
 
@@ -225,18 +237,38 @@ class CarlaEnvironment(Environment):
 
         for k in range(predicted_location.shape[0]):
             loc_ = predicted_location[k]
-            loc_ = np.array([loc_[0], loc_[1], 0.2])
+            loc_ = np.array([loc_[0], loc_[1], self.render_dict["actor"]["location"].z])
             pixel_loc_ = world_2_pixel(loc_, self.render_dict["rgb_sensor"]["image_transform"].get_inverse_matrix(
             ), rgb_image.shape[0], rgb_image.shape[1])
+
+            ego_loc = np.array([self.render_dict["actor"]["location"].x, self.render_dict["actor"]["location"].y, self.render_dict["actor"]["location"].z])            
+            bev_loc_ = world_2_bev(loc_, ego_loc, self.render_dict["actor"]["rotation"].yaw, rgb_image.shape[0], rgb_image.shape[1])
 
             if pixel_loc_.shape[0] > 0:
                 cv2.circle(self.canvas, (int(pixel_loc_[0][0]), int(
                     pixel_loc_[0][1])), 5, (255, 0, 0), -1)
+            cv2.circle(self.canvas, (int(bev_loc_[0]), int(
+                bev_loc_[1] + rgb_image.shape[0])), 5, (0, 255, 0), -1)
 
-        canvas_display = self.canvas#cv2.resize(self.canvas, (0, 0), fx=0.8, fy=0.8)
+        for k in range(self.render_dict["route"]["route_index"], self.render_dict["route"]["route_index"] + 5):
+            loc_ = self.route.route[k][0].transform.location
+            loc_ = np.array([loc_.x, loc_.y, loc_.z])
+            pixel_loc_ = world_2_pixel(loc_, self.render_dict["rgb_sensor"]["image_transform"].get_inverse_matrix(
+            ), rgb_image.shape[0], rgb_image.shape[1])
+
+            ego_loc = np.array([self.render_dict["actor"]["location"].x, self.render_dict["actor"]["location"].y, self.render_dict["actor"]["location"].z])            
+            bev_loc_ = world_2_bev(loc_, ego_loc, self.render_dict["actor"]["rotation"].yaw, rgb_image.shape[0], rgb_image.shape[1])
+
+            if pixel_loc_.shape[0] > 0:
+                cv2.circle(self.canvas, (int(pixel_loc_[0][0]), int(
+                    pixel_loc_[0][1])), 5, (0, 255, 0), -1)
+            cv2.circle(self.canvas, (int(bev_loc_[0]), int(
+                bev_loc_[1] + rgb_image.shape[0])), 5, (255, 0, 0), -1)
+
+        canvas_display = cv2.resize(self.canvas, (0, 0), fx=0.8, fy=0.8)
         cv2.imshow("Environment", canvas_display)
 
-        canvas_save  = self.canvas#cv2.resize(self.canvas, (self.canvas.shape[1]//2, self.canvas.shape[0]//2))
+        canvas_save  = cv2.resize(self.canvas, (self.canvas.shape[1]//2, self.canvas.shape[0]//2))
         cv2.imwrite(str(self.debug_path / Path(f"{self.counter}.png")), canvas_save)
 
         cv2.waitKey(1)

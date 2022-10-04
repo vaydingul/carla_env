@@ -74,7 +74,8 @@ class ActorModule(module.Module):
 			self.render_dict["rotation"] = self.player.get_transform().rotation
 			self.render_dict["acceleration"] = self.player.get_acceleration()
 			self.render_dict["control"] = self.player.get_control()
-			
+			self.render_dict["x_extent_meters"] = self.player.bounding_box.extent.x * 2
+			self.render_dict["y_extent_meters"] = self.player.bounding_box.extent.y * 2
 		return self.render_dict			
 
 	def close(self):

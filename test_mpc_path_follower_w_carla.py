@@ -34,7 +34,7 @@ def main(config):
             torch.load(config.ego_forward_model_path))
         ego_forward_model.to(config.device)
 
-        mpc_module = mpc.MPC(config.device, 2, 20, 30, ego_forward_model)
+        mpc_module = mpc.MPC(config.device, 2, 10, 30, ego_forward_model)
         mpc_module.to(config.device)
 
     elif config.kinematic_model == "WoR":
@@ -50,7 +50,7 @@ def main(config):
     else:
         raise ValueError("Invalid kinematic model")
 
-    c = carla_env_mpc_path_follower.CarlaEnvironment(config = {"render" : True, "save": True}) 
+    c = carla_env_mpc_path_follower.CarlaEnvironment(config = {"render" : True, "save": True, "allowed_sensors" : ["VehicleSensorModule", "CollisionSensorModule"]}) 
 
     current_transform, current_velocity, target_waypoint = c.step()
 
@@ -69,7 +69,7 @@ def main(config):
             current_state[..., 2] = current_transform.rotation.yaw * \
                 torch.pi / 180.0
             current_state[..., 3] = math.sqrt(
-                current_velocity.x**2 + current_velocity.y**2)
+                current_velocity.x**2 + current_velocity.y**2) + 0.01
             current_state.requires_grad_(True)
 
             logging.debug(f"Current state: {current_state}")

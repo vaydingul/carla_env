@@ -16,6 +16,7 @@ class SensorModule(module.Module):
         self.client = client
         self.world = self.client.get_world()
         self.map = self.world.get_map()
+        self.save_to_queue = True
 
     def _start(self):
         """Start the sensor module"""
