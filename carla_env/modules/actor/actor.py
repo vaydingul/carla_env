@@ -96,6 +96,9 @@ class ActorModule(module.Module):
         """Get the config of the actor manager"""
         return self.config
 
+    def get_actor(self):
+        """Get the actor"""
+        return self.player
     def _set_default_config(self):
         """Set the default config of actor manager"""
         self.config = {"actor": vehicle.VehicleModule(None, self.client),

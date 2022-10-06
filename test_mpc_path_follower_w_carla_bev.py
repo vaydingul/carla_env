@@ -1,8 +1,9 @@
-from carla_env import carla_env_mpc_path_follower
+from carla_env import carla_env_mpc_path_follower_bev
 from carla_env.mpc import mpc
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel, KinematicBicycleModelV2
 from carla_env.models.dynamic.vehicle_WoR import EgoModel
 from carla_env.cost.vanilla_cost import WeightedL1Cost
+
 import torch
 import time
 import logging
@@ -31,7 +32,7 @@ def main(config):
         config.device, 2, config.rollout_length, 30, ego_forward_model, cost)
     mpc_module.to(config.device)
 
-    c = carla_env_mpc_path_follower.CarlaEnvironment(
+    c = carla_env_mpc_path_follower_bev.CarlaEnvironment(
         config={
             "render": True,
             "save": True,

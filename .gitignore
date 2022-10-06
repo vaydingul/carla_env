@@ -138,6 +138,8 @@ tickable_modules
 logs/
 wandb/
 pretrained_models/
+cache/
+
 
 # Individual files
 WoR_ego_model_parameters

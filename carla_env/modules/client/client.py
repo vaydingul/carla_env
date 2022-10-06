@@ -83,6 +83,18 @@ class ClientModule(module.Module):
         """Get the config of the client"""
         return self.config
 
+    def get_world(self):
+        """Get the world"""
+        return self.world
+
+    def get_map(self):
+        """Get the map"""
+        return self.map
+    
+    def get_client(self):
+        """Get the client"""
+        return self.client
+    
     def _set_default_config(self):
         """Set the default config of the client"""
         self.config = {
