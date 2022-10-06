@@ -16,7 +16,6 @@ def world_2_pixel(world_point, world_2_camera, height, width):
     K[1, 1] = FOCAL
     K[0, 2] = WIDTH / 2.0
     K[1, 2] = HEIGHTH / 2.
-	
 
     world_point_ = np.ones((4, ))
     world_point_[:3] = world_point
@@ -62,7 +61,8 @@ def world_2_pixel(world_point, world_2_camera, height, width):
     # At this point, points_2d[0, :] contains all the x and points_2d[1, :]
     # contains all the y values of our points. In order to properly
     # visualize everything on a screen, the points that are out of the screen
-    # must be discarded, the same with points behind the camera projection plane.
+    # must be discarded, the same with points behind the camera projection
+    # plane.
     points_2d = points_2d.T
     points_in_canvas_mask = \
         (points_2d[0] > 0.0) & (points_2d[0] < WIDTH) & \

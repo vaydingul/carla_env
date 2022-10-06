@@ -17,168 +17,172 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class ActionDesigner(object):
-	
-	@classmethod
-	def step(cls, t = None):
-		
-		
-		if t < 5:
 
-			action = [0.0, 0.0, 0.0]
+    @classmethod
+    def step(cls, t=None):
 
-		elif t > 5 and t < 10:
+        if t < 5:
 
-			action = [1.0, 0.0, 0.0]
+            action = [0.0, 0.0, 0.0]
 
-		elif t > 10 and t < 10.5:
+        elif t > 5 and t < 10:
 
-			action = [0.0, -0.1, 0.0]
+            action = [1.0, 0.0, 0.0]
 
-		elif t > 10.5 and t < 13.5:
+        elif t > 10 and t < 10.5:
 
-			action = [0.1, 0.0, 0.0]
+            action = [0.0, -0.1, 0.0]
 
-		elif t > 13.5 and t < 14:
+        elif t > 10.5 and t < 13.5:
 
-			action = [0.0, 0.1, 0.0]
+            action = [0.1, 0.0, 0.0]
 
-		elif t > 14 and t < 16:
+        elif t > 13.5 and t < 14:
 
-			action = [0.0, 0.0, 1.0]
+            action = [0.0, 0.1, 0.0]
 
-		else:
+        elif t > 14 and t < 16:
 
-			action = None
-		
-		return action
+            action = [0.0, 0.0, 1.0]
+
+        else:
+
+            action = None
+
+        return action
+
+
 class CarlaEnvironment(Environment):
-	"""Concrete implementation of Environment abstract base class"""
+    """Concrete implementation of Environment abstract base class"""
 
-	def __init__(self, config):
-		"""Initialize the environment"""
-		super().__init__()
+    def __init__(self, config):
+        """Initialize the environment"""
+        super().__init__()
 
-		self._set_default_config()
-		if config is not None:
-			for k in config.keys():
-				self.config[k] = config[k]
+        self._set_default_config()
+        if config is not None:
+            for k in config.keys():
+                self.config[k] = config[k]
 
-		# We have our server and client up and running
-		self.server = s.ServerModule(None)
-		self.client = c.ClientModule(None)
+        # We have our server and client up and running
+        self.server = s.ServerModule(None)
+        self.client = c.ClientModule(None)
 
-		self.first_time_step = True
-		self.is_done = False
-		self.data = Queue()
+        self.first_time_step = True
+        self.is_done = False
+        self.data = Queue()
 
-		self.reset()
+        self.reset()
 
-	def reset(self):
-		"""Reset the environment"""
-		self.server.reset()
-		self.client.reset()
+    def reset(self):
+        """Reset the environment"""
+        self.server.reset()
+        self.client.reset()
 
-		self.spectator = self.client.world.get_spectator()
+        self.spectator = self.client.world.get_spectator()
 
-		# Let's initialize a vehicle
-		self.vehicle = v.VehicleModule(
-			{"vehicle_model": "lincoln.mkz2017"}, self.client.client)
+        # Let's initialize a vehicle
+        self.vehicle = v.VehicleModule(
+            {"vehicle_model": "lincoln.mkz2017"}, self.client.client)
 
-		# Make this vehicle actor
-		self.actor = a.ActorModule(
-			{"actor": self.vehicle, "hero": True}, self.client.client)
+        # Make this vehicle actor
+        self.actor = a.ActorModule(
+            {"actor": self.vehicle, "hero": True}, self.client.client)
 
-		self.vehicle_sensor = vs.VehicleSensorModule(
-			None, self.client.client, self.actor)
+        self.vehicle_sensor = vs.VehicleSensorModule(
+            None, self.client.client, self.actor)
 
-		self.rgb_sensor = rgbs.RGBSensorModule(
-			None, self.client.client, self.actor)
+        self.rgb_sensor = rgbs.RGBSensorModule(
+            None, self.client.client, self.actor)
 
-		time.sleep(1.0)
-		logger.info("Everything is set!")
-		# self.actor.reset()
-		# self.vehicle.reset()
-		# self.vehicle_sensor.reset()
-		# self.rgb_sensor.reset()
+        time.sleep(1.0)
+        logger.info("Everything is set!")
+        # self.actor.reset()
+        # self.vehicle.reset()
+        # self.vehicle_sensor.reset()
+        # self.rgb_sensor.reset()
 
-	def step(self, action=None):
-		"""Perform an action in the environment"""
-	
-		self.server.step()
-		self.client.step()
+    def step(self, action=None):
+        """Perform an action in the environment"""
 
-		snapshot = self.client.world.get_snapshot()
-		t = snapshot.timestamp.elapsed_seconds
-		action = ActionDesigner.step(t)
+        self.server.step()
+        self.client.step()
 
-		self.is_done = action is None
-		
-		if self.is_done:
-			return True
+        snapshot = self.client.world.get_snapshot()
+        t = snapshot.timestamp.elapsed_seconds
+        action = ActionDesigner.step(t)
 
-		self.actor.step(action)
-		self.vehicle.step()
-		self.vehicle_sensor.step()
+        self.is_done = action is None
 
-		data_dict = {}
+        if self.is_done:
+            return True
 
-		for (k, v) in self.actor.sensor_dict.items():
+        self.actor.step(action)
+        self.vehicle.step()
+        self.vehicle_sensor.step()
 
-			if v.queue.qsize() > 0:
+        data_dict = {}
 
-				try:
+        for (k, v) in self.actor.sensor_dict.items():
 
-					equivalent_frame_fetched = False
+            if v.queue.qsize() > 0:
 
-					while not equivalent_frame_fetched:
+                try:
 
-						data_ = v.queue.get(True, 10)
+                    equivalent_frame_fetched = False
 
-						equivalent_frame_fetched =  data_["frame"] == snapshot.frame #, f"Frame number mismatch: {data_['frame']} != {snapshot.frame} \n Current Sensor: {k} \n Current Data Queue Size {self.data.qsize()}"
+                    while not equivalent_frame_fetched:
 
-				except Empty:
-					print("Empty")
+                        data_ = v.queue.get(True, 10)
 
-				data_dict[k] = data_
+                        # , f"Frame number mismatch: {data_['frame']} != {snapshot.frame} \n Current Sensor: {k} \n Current Data Queue Size {self.data.qsize()}"
+                        equivalent_frame_fetched = data_[
+                            "frame"] == snapshot.frame
 
-				if k == "VehicleSensorModule":
+                except Empty:
+                    print("Empty")
 
-					ego_transform = data_dict[k]["transform"]
-					transform = ego_transform
-					transform.location.z += 2.0
+                data_dict[k] = data_
 
-					if self.first_time_step:
-						self.initial_vehicle_transform = ego_transform
-						self.first_time_step = False
+                if k == "VehicleSensorModule":
 
-		data_dict["snapshot"] = snapshot
+                    ego_transform = data_dict[k]["transform"]
+                    transform = ego_transform
+                    transform.location.z += 2.0
 
-		self.data.put(data_dict)
+                    if self.first_time_step:
+                        self.initial_vehicle_transform = ego_transform
+                        self.first_time_step = False
 
-		self.spectator.set_transform(transform)
+        data_dict["snapshot"] = snapshot
 
-		return False
+        self.data.put(data_dict)
 
-	def render(self):
-		"""Render the environment"""
-		pass
+        self.spectator.set_transform(transform)
 
-	def close(self):
-		"""Close the environment"""
-		self.vehicle.close()
-		self.actor.close()
-		self.client.close()
-		self.server.close()
+        return False
 
-	def seed(self, seed):
-		"""Set the seed for the environment"""
-		pass
+    def render(self):
+        """Render the environment"""
+        pass
 
-	def get_config(self):
-		"""Get the config of the environment"""
-		return self.config
+    def close(self):
+        """Close the environment"""
+        self.vehicle.close()
+        self.actor.close()
+        self.client.close()
+        self.server.close()
 
-	def _set_default_config(self):
-		"""Set the default config of the environment"""
-		self.config = {}
+    def seed(self, seed):
+        """Set the seed for the environment"""
+        pass
+
+    def get_config(self):
+        """Get the config of the environment"""
+        return self.config
+
+    def _set_default_config(self):
+        """Set the default config of the environment"""
+        self.config = {}

@@ -42,12 +42,10 @@ class KinematicBicycleModel(object):
         delta = steer * MAX_STEER_ANGLE  # * np.pi * 0.5
         #delta = np.clip(delta, -MAX_STEER_ANGLE, MAX_STEER_ANGLE)
 
-        beta = np.arctan2(WHEELBASE_REAR * np.tan(delta) , WHEELBASE)
+        beta = np.arctan2(WHEELBASE_REAR * np.tan(delta), WHEELBASE)
 
         self.x += self.v * np.cos(self.yaw + beta) * dt
         self.y += self.v * np.sin(self.yaw + beta) * dt
-
-        
 
         self.yaw += ((self.v * np.cos(beta)) / WHEELBASE) * np.tan(delta) * dt
         self.yaw = angle_convention(self.yaw)
@@ -82,29 +80,36 @@ class DynamicBicycleModel(object):
         self.yaw += self.omega * dt
         self.yaw = angle_convention(self.yaw)
 
-
         _delta_vf = (self.velocity_y + WHEELBASE_FRONT *
-                        self.omega) / (self.velocity_x)
+                     self.omega) / (self.velocity_x)
         _delta_vr = (self.velocity_y - WHEELBASE_REAR *
-                        self.omega) / (self.velocity_x)
+                     self.omega) / (self.velocity_x)
 
-
-
-        _delta_vf = np.where(np.isfinite(_delta_vf), _delta_vf, np.zeros_like(_delta_vf))
-        _delta_vr = np.where(np.isfinite(_delta_vr), _delta_vr, np.zeros_like(_delta_vr))
+        _delta_vf = np.where(
+            np.isfinite(_delta_vf),
+            _delta_vf,
+            np.zeros_like(_delta_vf))
+        _delta_vr = np.where(
+            np.isfinite(_delta_vr),
+            _delta_vr,
+            np.zeros_like(_delta_vr))
 
         _F_yf = 2 * CORNERING_STIFFNESS_FRONT * (steer - _delta_vf)
         _F_yr = 2 * CORNERING_STIFFNESS_REAR * (-_delta_vr)
 
         self.velocity_y += (-self.velocity_x * self.omega +
                             (1 / MASS) * (_F_yf + _F_yr)) * dt
-        
+
         self.omega += (1 / INERTIA) * (WHEELBASE_FRONT *
                                        _F_yf - WHEELBASE_REAR * _F_yr) * dt
 
-        self.omega = np.where(np.isfinite(self.omega), self.omega, np.zeros_like(self.omega))
+        self.omega = np.where(
+            np.isfinite(
+                self.omega), self.omega, np.zeros_like(
+                self.omega))
         self.omega = np.clip(self.omega, -0.1, 0.1)
-        #print(self.omega)
+        # print(self.omega)
+
     def _longitudinal_dynamics_step(self, acceleration_x, dt):
         """
         Update the longitudinal dynamics of the vehicle.

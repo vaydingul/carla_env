@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 
 # Save the log to a file name with the current date
-#logging.basicConfig(filename=f"logs/sim_log_debug",level=logging.DEBUG)
+# logging.basicConfig(filename=f"logs/sim_log_debug",level=logging.DEBUG)
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -39,7 +39,8 @@ if __name__ == "__main__":
     vehicle_control_list = []
     snapshot_list = []
 
-    initial_vehicle_transform = np.array(c.initial_vehicle_transform.get_matrix())
+    initial_vehicle_transform = np.array(
+        c.initial_vehicle_transform.get_matrix())
 
     for _ in range(c.data.qsize()):
 
@@ -48,7 +49,7 @@ if __name__ == "__main__":
 
         if data_point != {} and "VehicleSensorModule" in data_point.keys():
 
-            vehicle_control =  data_point["VehicleSensorModule"]["control"]
+            vehicle_control = data_point["VehicleSensorModule"]["control"]
             vehicle_location = data_point["VehicleSensorModule"]["location"]
             vehicle_rotation = data_point["VehicleSensorModule"]["rotation"]
             vehicle_velocity = data_point["VehicleSensorModule"]["velocity"]
@@ -64,8 +65,6 @@ if __name__ == "__main__":
                 [vehicle_rotation.pitch, vehicle_rotation.yaw, vehicle_rotation.roll])))
             vehicle_control_list.append(np.array(vehicle_control))
 
-
-
     vehicle_location = np.array(vehicle_location_list)
     vehicle_velocity = np.array(vehicle_velocity_list)
     vehicle_acceleration = np.array(vehicle_acceleration_list)
@@ -74,6 +73,11 @@ if __name__ == "__main__":
     elapsed_time = np.array(
         [snapshot.timestamp.elapsed_seconds for snapshot in snapshot_list])
 
-    np.savez("data4", vehicle_location=vehicle_location, vehicle_rotation = vehicle_rotation, vehicle_velocity=vehicle_velocity,
-             vehicle_acceleration=vehicle_acceleration, vehicle_control=vehicle_control, elapsed_time=elapsed_time)
-
+    np.savez(
+        "data4",
+        vehicle_location=vehicle_location,
+        vehicle_rotation=vehicle_rotation,
+        vehicle_velocity=vehicle_velocity,
+        vehicle_acceleration=vehicle_acceleration,
+        vehicle_control=vehicle_control,
+        elapsed_time=elapsed_time)

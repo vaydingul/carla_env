@@ -19,7 +19,7 @@ def main(config):
     # Initialize the environment
     if config.kinematic_model == "v1":
 
-        ego_forward_model = KinematicBicycleModel(dt=1/20)
+        ego_forward_model = KinematicBicycleModel(dt=1 / 20)
         ego_forward_model.load_state_dict(
             torch.load(config.ego_forward_model_path))
         ego_forward_model.to(config.device)
@@ -29,7 +29,7 @@ def main(config):
 
     elif config.kinematic_model == "v2":
 
-        ego_forward_model = KinematicBicycleModelV2(dt=1/20)
+        ego_forward_model = KinematicBicycleModelV2(dt=1 / 20)
         ego_forward_model.load_state_dict(
             torch.load(config.ego_forward_model_path))
         ego_forward_model.to(config.device)
@@ -39,7 +39,7 @@ def main(config):
 
     elif config.kinematic_model == "WoR":
 
-        ego_forward_model = EgoModel(dt=1/20)
+        ego_forward_model = EgoModel(dt=1 / 20)
         ego_forward_model.load_state_dict(
             torch.load(config.ego_forward_model_path))
         ego_forward_model.to(config.device)
@@ -115,8 +115,11 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         description="Collect data from the CARLA simulator")
-    parser.add_argument("--ego_forward_model_path", type=str, default="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt",
-                        help="Path to the forward model of the ego vehicle")
+    parser.add_argument(
+        "--ego_forward_model_path",
+        type=str,
+        default="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt",
+        help="Path to the forward model of the ego vehicle")
     parser.add_argument("--kinematic_model", type=str, default="v2")
     parser.add_argument("--device", type=str, default="cpu",
                         help="Device to use for the forward model")

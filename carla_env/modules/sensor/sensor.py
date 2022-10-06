@@ -21,6 +21,7 @@ class SensorModule(module.Module):
     def _start(self):
         """Start the sensor module"""
         pass
+
     def _stop(self):
         """Stop the sensor module"""
         pass

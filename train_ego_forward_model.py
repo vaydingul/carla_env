@@ -15,7 +15,16 @@ logging.basicConfig(level=logging.DEBUG)
 
 class Learner(object):
 
-    def __init__(self, model, dataloader_train, dataloader_val, optimizer, loss_criterion, device, num_epochs=1000, log_interval=10):
+    def __init__(
+            self,
+            model,
+            dataloader_train,
+            dataloader_val,
+            optimizer,
+            loss_criterion,
+            device,
+            num_epochs=1000,
+            log_interval=10):
         self.model = model
         self.dataloader_train = dataloader_train
         self.dataloader_val = dataloader_val
@@ -31,7 +40,8 @@ class Learner(object):
 
         counter = 0
 
-        for i, (location, rotation, velocity, _, control, _) in enumerate(self.dataloader_train):
+        for i, (location, rotation, velocity, _, control,
+                _) in enumerate(self.dataloader_train):
 
             location = location[..., :2].to(self.device)
             rotation = rotation[..., 1:2].to(self.device)
@@ -79,8 +89,10 @@ class Learner(object):
                 self.dataloader_train.batch_size + location.shape[0]
 
             if run is not None:
-                run.log({"train/step": step, "train/loss": loss,
-                        "train/loss_location": loss_location, "train/loss_rotation": loss_rotation})
+                run.log({"train/step": step,
+                         "train/loss": loss,
+                         "train/loss_location": loss_location,
+                         "train/loss_rotation": loss_rotation})
 
     def validate(self, epoch, run=None):
 
@@ -93,7 +105,8 @@ class Learner(object):
         counter = 0
         with torch.no_grad():
 
-            for i, (location, rotation, velocity, _, control, _) in enumerate(self.dataloader_val):
+            for i, (location, rotation, velocity, _, control,
+                    _) in enumerate(self.dataloader_val):
 
                 location = location[..., :2].to(self.device)
                 rotation = rotation[..., 1:2].to(self.device)
@@ -146,9 +159,12 @@ class Learner(object):
         loss_rotation = np.mean(losses_rotation)
 
         if run is not None:
-            run.log({"val/step": step, "val/loss": loss,
-                    "val/loss_location": loss_location, "val/loss_rotation": loss_rotation})
-            run.log({"model/step": step, **{f"model/{name}": param.item() for name, param in self.model.named_parameters()}})
+            run.log({"val/step": step,
+                     "val/loss": loss,
+                     "val/loss_location": loss_location,
+                     "val/loss_rotation": loss_rotation})
+            run.log({"model/step": step, **{f"model/{name}": param.item()
+                    for name, param in self.model.named_parameters()}})
 
         return loss, loss_location, loss_rotation
 
@@ -158,8 +174,9 @@ class Learner(object):
 
             self.train(epoch, run)
             loss, loss_location, loss_orientation = self.validate(epoch, run)
-            logger.info("Epoch: {}, Val Loss: {}, Val Loss Location: {}, Val Loss Orientation: {}".format(
-                epoch, loss, loss_location, loss_orientation))
+            logger.info(
+                "Epoch: {}, Val Loss: {}, Val Loss Location: {}, Val Loss Orientation: {}".format(
+                    epoch, loss, loss_location, loss_orientation))
 
 
 def main(config):
@@ -172,11 +189,17 @@ def main(config):
     logger.info(f"Validation dataset size: {len(ego_model_dataset_val)}")
 
     ego_model_dataloader_train = DataLoader(
-        ego_model_dataset_train, batch_size=config.batch_size, shuffle=True, num_workers=config.num_workers)
+        ego_model_dataset_train,
+        batch_size=config.batch_size,
+        shuffle=True,
+        num_workers=config.num_workers)
     ego_model_dataloader_val = DataLoader(
-        ego_model_dataset_val, batch_size=config.batch_size, shuffle=False, num_workers=config.num_workers)
+        ego_model_dataset_val,
+        batch_size=config.batch_size,
+        shuffle=False,
+        num_workers=config.num_workers)
 
-    ego_model = v.KinematicBicycleModelV2(dt=1/20)
+    ego_model = v.KinematicBicycleModelV2(dt=1 / 20)
     ego_model_optimizer = torch.optim.Adam(
         ego_model.parameters(), lr=config.lr)
     ego_model_loss_criterion = torch.nn.L1Loss()
@@ -185,8 +208,14 @@ def main(config):
     print(ego_model_device)
     ego_model.to(ego_model_device)
 
-    ego_model_learner = Learner(ego_model, ego_model_dataloader_train, ego_model_dataloader_val,
-                                ego_model_optimizer, ego_model_loss_criterion, ego_model_device, num_epochs=config.num_epochs)
+    ego_model_learner = Learner(
+        ego_model,
+        ego_model_dataloader_train,
+        ego_model_dataloader_val,
+        ego_model_optimizer,
+        ego_model_loss_criterion,
+        ego_model_device,
+        num_epochs=config.num_epochs)
 
     if config.wandb:
         run = wandb.init(project="mbl", group="ego-forward-model",

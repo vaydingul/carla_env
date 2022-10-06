@@ -19,232 +19,246 @@ import logging
 logger = logging.getLogger(__name__)
 maps = ["Town01", "Town02", "Town03", "Town04", "Town05", "Town06"]
 
+
 class RandomActionDesigner(object):
-	
-	def __init__(self, brake_probability = 0.03, max_throttle = 1.0, max_steering_angle = 1.0):
-		self.brake_probability = brake_probability
-		self.max_throttle = max_throttle
-		self.max_steering_angle = max_steering_angle
 
-		self.previous_action = None
-		self.previous_count = 0
-		self.action_repeat = 5
+    def __init__(
+            self,
+            brake_probability=0.03,
+            max_throttle=1.0,
+            max_steering_angle=1.0):
+        self.brake_probability = brake_probability
+        self.max_throttle = max_throttle
+        self.max_steering_angle = max_steering_angle
 
-	def step(self, count = None):
-		
-		if (self.previous_count < self.action_repeat) and self.previous_action:
+        self.previous_action = None
+        self.previous_count = 0
+        self.action_repeat = 5
 
-			self.previous_count += 1
+    def step(self, count=None):
 
-			return self.previous_action
-		
-		# Randomize control
-		if np.random.random() < self.brake_probability:
-			throttle = 0.
-			steer = 0.
-			brake = 1.
-		else:
-			throttle = np.random.uniform(0, self.max_throttle)
-			steer = np.random.uniform(-self.max_steering_angle, self.max_steering_angle)
-			brake = 0.
+        if (self.previous_count < self.action_repeat) and self.previous_action:
 
-		action = [throttle, steer, brake]
-		
-		self.previous_action = action
-		self.previous_count = 0
-		
-		return action
+            self.previous_count += 1
+
+            return self.previous_action
+
+        # Randomize control
+        if np.random.random() < self.brake_probability:
+            throttle = 0.
+            steer = 0.
+            brake = 1.
+        else:
+            throttle = np.random.uniform(0, self.max_throttle)
+            steer = np.random.uniform(-self.max_steering_angle,
+                                      self.max_steering_angle)
+            brake = 0.
+
+        action = [throttle, steer, brake]
+
+        self.previous_action = action
+        self.previous_count = 0
+
+        return action
+
 
 class RandomActionDesignerV2(object):
-	
-	def __init__(self, brake_probability = 0.03, max_throttle = 1.0, max_steering_angle = 1.0):
-		self.brake_probability = brake_probability
-		self.max_throttle = max_throttle
-		self.max_steering_angle = max_steering_angle
 
-		self.previous_action = None
-		self.previous_count = 0
-		self.action_repeat = 5
+    def __init__(
+            self,
+            brake_probability=0.03,
+            max_throttle=1.0,
+            max_steering_angle=1.0):
+        self.brake_probability = brake_probability
+        self.max_throttle = max_throttle
+        self.max_steering_angle = max_steering_angle
 
-	def step(self, count = None):
-		
-		if (self.previous_count < self.action_repeat) and self.previous_action:
+        self.previous_action = None
+        self.previous_count = 0
+        self.action_repeat = 5
 
-			self.previous_count += 1
+    def step(self, count=None):
 
-			return self.previous_action
-		
-		# Randomize control
-		if np.random.random() < self.brake_probability:
+        if (self.previous_count < self.action_repeat) and self.previous_action:
 
-			acceleration = np.random.uniform(-self.max_throttle, 0)
-			steer = np.random.uniform(-self.max_steering_angle, self.max_steering_angle)
+            self.previous_count += 1
 
-			action = [0, steer, -acceleration]
-			
-		else:
-			
-			acceleration = np.random.uniform(0, self.max_throttle)
-			steer = np.random.uniform(-self.max_steering_angle, self.max_steering_angle)
+            return self.previous_action
 
-			action = [acceleration, steer, 0]
-		
-		self.previous_action = action
-		self.previous_count = 0
-		
-		return action
+        # Randomize control
+        if np.random.random() < self.brake_probability:
+
+            acceleration = np.random.uniform(-self.max_throttle, 0)
+            steer = np.random.uniform(-self.max_steering_angle,
+                                      self.max_steering_angle)
+
+            action = [0, steer, -acceleration]
+
+        else:
+
+            acceleration = np.random.uniform(0, self.max_throttle)
+            steer = np.random.uniform(-self.max_steering_angle,
+                                      self.max_steering_angle)
+
+            action = [acceleration, steer, 0]
+
+        self.previous_action = action
+        self.previous_count = 0
+
+        return action
+
+
 class CarlaEnvironment(Environment):
-	"""Concrete implementation of Environment abstract base class"""
+    """Concrete implementation of Environment abstract base class"""
 
-	def __init__(self, config):
-		"""Initialize the environment"""
-		super().__init__()
+    def __init__(self, config):
+        """Initialize the environment"""
+        super().__init__()
 
-		self._set_default_config()
-		if config is not None:
-			for k in config.keys():
-				self.config[k] = config[k]
+        self._set_default_config()
+        if config is not None:
+            for k in config.keys():
+                self.config[k] = config[k]
 
-		# We have our server and client up and running
-		self.server = s.ServerModule(None)
-		#Select a random map
-		self.client = c.ClientModule(config = {"world":maps[np.random.randint(0, len(maps))]})
+        # We have our server and client up and running
+        self.server = s.ServerModule(None)
+        # Select a random map
+        self.client = c.ClientModule(
+            config={"world": maps[np.random.randint(0, len(maps))]})
 
+        self.first_time_step = True
+        self.do_not_collect = 100
+        self.is_done = False
+        self.counter = 0
+        self.data = Queue()
 
-		self.first_time_step = True
-		self.do_not_collect = 100
-		self.is_done = False
-		self.counter = 0
-		self.data = Queue()
+        self.action_designer = RandomActionDesignerV2()
 
-		self.action_designer = RandomActionDesignerV2()
+        self.reset()
 
-		self.reset()
+    def reset(self):
+        """Reset the environment"""
+        self.server.reset()
+        self.client.reset()
 
-	def reset(self):
-		"""Reset the environment"""
-		self.server.reset()
-		self.client.reset()
+        self.spectator = self.client.world.get_spectator()
 
-		self.spectator = self.client.world.get_spectator()
+        # Let's initialize a vehicle
+        self.vehicle = v.VehicleModule(
+            {"vehicle_model": "lincoln.mkz2017"}, self.client.client)
 
-		# Let's initialize a vehicle
-		self.vehicle = v.VehicleModule(
-			{"vehicle_model": "lincoln.mkz2017"}, self.client.client)
+        # Make this vehicle actor
+        self.actor = a.ActorModule(
+            {"actor": self.vehicle, "hero": True}, self.client.client)
 
-		# Make this vehicle actor
-		self.actor = a.ActorModule(
-			{"actor": self.vehicle, "hero": True}, self.client.client)
+        self.vehicle_sensor = vs.VehicleSensorModule(
+            None, self.client.client, self.actor)
 
-		self.vehicle_sensor = vs.VehicleSensorModule(
-			None, self.client.client, self.actor)
+        self.collision_sensor = cs.CollisionSensorModule(
+            None, self.client.client, self.actor)
 
-		self.collision_sensor = cs.CollisionSensorModule(None, self.client.client, self.actor)
+        self.rgb_sensor = rgbs.RGBSensorModule(
+            None, self.client.client, self.actor)
 
+        time.sleep(1.0)
+        logger.info("Everything is set!")
 
+        for _ in range(int(1 / self.client.config["fixed_delta_seconds"]) * 2):
+            self.client.step()
 
-		self.rgb_sensor = rgbs.RGBSensorModule(
-			None, self.client.client, self.actor)
+        # self.actor.reset()
+        # self.vehicle.reset()
+        # self.vehicle_sensor.reset()
+        # self.rgb_sensor.reset()
 
-		time.sleep(1.0)
-		logger.info("Everything is set!")
+    def step(self, action=None):
+        """Perform an action in the environment"""
 
-		for _ in range(int(1/self.client.config["fixed_delta_seconds"]) * 2):
-			self.client.step()
+        snapshot = self.client.world.get_snapshot()
+        t = snapshot.timestamp.elapsed_seconds
+        action = self.action_designer.step(t)
+        logger.debug(f"Action: {action}")
+        self.is_done = action is None or (
+            self.counter > 1000 + self.do_not_collect)
 
-		# self.actor.reset()
-		# self.vehicle.reset()
-		# self.vehicle_sensor.reset()
-		# self.rgb_sensor.reset()
+        if self.is_done:
+            return True
 
-	def step(self, action=None):
-		"""Perform an action in the environment"""
-	
-		snapshot = self.client.world.get_snapshot()
-		t = snapshot.timestamp.elapsed_seconds
-		action = self.action_designer.step(t)
-		logger.debug(f"Action: {action}")
-		self.is_done = action is None or (self.counter > 1000 + self.do_not_collect)
-		
-		if self.is_done:
-			return True
+        self.actor.step(action)
+        self.vehicle.step()
+        self.vehicle_sensor.step()
 
-		self.actor.step(action)
-		self.vehicle.step()
-		self.vehicle_sensor.step()
+        data_dict = {}
 
-		data_dict = {}
+        for (k, v) in self.actor.sensor_dict.items():
 
-		for (k, v) in self.actor.sensor_dict.items():
+            if v.queue.qsize() > 0:
 
-			if v.queue.qsize() > 0:
+                try:
 
-				try:
+                    equivalent_frame_fetched = False
 
-					equivalent_frame_fetched = False
+                    while not equivalent_frame_fetched:
 
-					while not equivalent_frame_fetched:
+                        data_ = v.queue.get(True, 10)
 
-						data_ = v.queue.get(True, 10)
+                        # , f"Frame number mismatch: {data_['frame']} != {snapshot.frame} \n Current Sensor: {k} \n Current Data Queue Size {self.data.qsize()}"
+                        equivalent_frame_fetched = data_[
+                            "frame"] == snapshot.frame
 
-						equivalent_frame_fetched =  data_["frame"] == snapshot.frame #, f"Frame number mismatch: {data_['frame']} != {snapshot.frame} \n Current Sensor: {k} \n Current Data Queue Size {self.data.qsize()}"
+                except Empty:
+                    print("Empty")
 
-				except Empty:
-					print("Empty")
+                data_dict[k] = data_
 
-				data_dict[k] = data_
+                if k == "VehicleSensorModule":
 
-				if k == "VehicleSensorModule":
+                    ego_transform = data_dict[k]["transform"]
+                    transform = ego_transform
+                    transform.location.z += 2.0
 
-					ego_transform = data_dict[k]["transform"]
-					transform = ego_transform
-					transform.location.z += 2.0
+                    if self.first_time_step:
+                        self.initial_vehicle_transform = ego_transform
+                        self.first_time_step = False
 
-					if self.first_time_step:
-						self.initial_vehicle_transform = ego_transform
-						self.first_time_step = False
+                elif k == "CollisionSensorModule":
 
-				elif k == "CollisionSensorModule":
+                    impulse = data_dict[k]["impulse"]
+                    impulse_amplitude = np.linalg.norm(impulse)
+                    logger.debug(f"Collision impulse: {impulse_amplitude}")
+                    if impulse_amplitude > 1:
+                        self.is_done = True
 
-					impulse = data_dict[k]["impulse"]
-					impulse_amplitude = np.linalg.norm(impulse)
-					logger.debug(f"Collision impulse: {impulse_amplitude}")
-					if impulse_amplitude > 1:
-						self.is_done = True
+        data_dict["snapshot"] = snapshot
 
-		data_dict["snapshot"] = snapshot
+        self.data.put(data_dict)
 
-		self.data.put(data_dict)
+        self.spectator.set_transform(transform)
 
-		self.spectator.set_transform(transform)
+        self.server.step()
+        self.client.step()
 
-		
-	
-		self.server.step()
-		self.client.step()
+        self.counter += 1
 
-		self.counter += 1
+    def render(self):
+        """Render the environment"""
+        pass
 
+    def close(self):
+        """Close the environment"""
+        self.vehicle.close()
+        self.actor.close()
+        self.client.close()
+        self.server.close()
 
-	def render(self):
-		"""Render the environment"""
-		pass
+    def seed(self, seed):
+        """Set the seed for the environment"""
+        pass
 
-	def close(self):
-		"""Close the environment"""
-		self.vehicle.close()
-		self.actor.close()
-		self.client.close()
-		self.server.close()
+    def get_config(self):
+        """Get the config of the environment"""
+        return self.config
 
-	def seed(self, seed):
-		"""Set the seed for the environment"""
-		pass
-
-	def get_config(self):
-		"""Get the config of the environment"""
-		return self.config
-
-	def _set_default_config(self):
-		"""Set the default config of the environment"""
-		self.config = {}
+    def _set_default_config(self):
+        """Set the default config of the environment"""
+        self.config = {}

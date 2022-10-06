@@ -15,95 +15,108 @@ PINK = carla.Color(r=255, g=0, b=255)
 
 
 class RouteModule(module.Module):
-	"""Concrete implementation of Module abstract base class for route management"""
-	def __init__(self, config, client) -> None:
-		super().__init__()
-		self.client = client
+    """Concrete implementation of Module abstract base class for route management"""
 
-		
-		self._set_default_config()
-		if config is not None:
-			for k in config.keys():
-				self.config[k] = config[k]
-		self.world = self.client.get_world()
-		self.grp = GlobalRoutePlanner(self.world.get_map(),self.config["sampling_resolution"])
+    def __init__(self, config, client) -> None:
+        super().__init__()
+        self.client = client
 
-		self.route = self.grp.trace_route(self.config["start"].location, self.config["end"].location)
-		self.route_length = len(self.route)
+        self._set_default_config()
+        if config is not None:
+            for k in config.keys():
+                self.config[k] = config[k]
+        self.world = self.client.get_world()
+        self.grp = GlobalRoutePlanner(
+            self.world.get_map(),
+            self.config["sampling_resolution"])
 
-		self.render_dict = {}
+        self.route = self.grp.trace_route(
+            self.config["start"].location,
+            self.config["end"].location)
+        self.route_length = len(self.route)
 
-		if self.config["debug"]:
-			self._visualize_route()
+        self.render_dict = {}
 
-		self.route_index = 0
-	def _start(self, spawn_transform):
-		"""Start the vehicle manager"""
-		pass
+        if self.config["debug"]:
+            self._visualize_route()
 
-	
-	def step(self, current_location):
-		"""Step the vehicle manager"""
-		if self.route_index < self.route_length-1:
-			if _get_distance_between_waypoints(self.route[self.route_index][0], current_location) < 0.5:#self.config["sampling_resolution"]:
-				self.route_index += 1
-			return self.route[self.route_index]
-		else:
-			return None
-	
-	def _stop(self):
-		"""Stop the vehicle manager"""
-		pass
+        self.route_index = 0
 
-	def reset(self):
-		"""Reset the vehicle manager"""
-		pass
-	
-	def render(self):
-		"""Render the vehicle manager"""
-		self.render_dict["current_waypoint"] = self.route[self.route_index][0].transform.location if self.route_index < self.route_length else None
-		self.render_dict["current_command"] = self.route[self.route_index][1] if self.route_index < self.route_length else None
-		self.render_dict["route_index"] = self.route_index
-		self.render_dict["route_length"] = self.route_length
-		return self.render_dict
+    def _start(self, spawn_transform):
+        """Start the vehicle manager"""
+        pass
 
-	def close(self):
-		"""Close the vehicle manager"""
-		pass
-	def seed(self):
-		"""Seed the vehicle manager"""
-		pass
-	
-	def get_config(self):
-		"""Get the config of the vehicle manager"""
-		return self.config
+    def step(self, current_location):
+        """Step the vehicle manager"""
+        if self.route_index < self.route_length - 1:
+            # self.config["sampling_resolution"]:
+            if _get_distance_between_waypoints(
+                    self.route[self.route_index][0], current_location) < 0.5:
+                self.route_index += 1
+            return self.route[self.route_index]
+        else:
+            return None
 
-	def _set_default_config(self):
-		"""Set the default config of the vehicle"""
-		self.config = {"sampling_resolution" : 1}
-	
-	def _visualize_route(self):
-		"""Visualize the route"""
-		for ix, (waypoint, road_option) in enumerate(self.route):
+    def _stop(self):
+        """Stop the vehicle manager"""
+        pass
 
-			# print(f"Coordinate {ix}: {waypoint.transform.location}")
-			# print(f"Road option {ix}: {road_option}")
+    def reset(self):
+        """Reset the vehicle manager"""
+        pass
 
-			if ix <= 10:
-			
-				self.world.debug.draw_string(waypoint.transform.location, 'o', color=RED, life_time=10000)
+    def render(self):
+        """Render the vehicle manager"""
+        self.render_dict["current_waypoint"] = self.route[self.route_index][
+            0].transform.location if self.route_index < self.route_length else None
+        self.render_dict["current_command"] = self.route[self.route_index][1] if self.route_index < self.route_length else None
+        self.render_dict["route_index"] = self.route_index
+        self.render_dict["route_length"] = self.route_length
+        return self.render_dict
 
-			elif ix >= self.route_length - 10:
+    def close(self):
+        """Close the vehicle manager"""
+        pass
 
-				self.world.debug.draw_string(waypoint.transform.location, 'o', color=GREEN, life_time=10000)
-				
-			else:
+    def seed(self):
+        """Seed the vehicle manager"""
+        pass
 
-				self.world.debug.draw_string(waypoint.transform.location, 'o', color=BLUE, life_time=10000)
+    def get_config(self):
+        """Get the config of the vehicle manager"""
+        return self.config
+
+    def _set_default_config(self):
+        """Set the default config of the vehicle"""
+        self.config = {"sampling_resolution": 1}
+
+    def _visualize_route(self):
+        """Visualize the route"""
+        for ix, (waypoint, road_option) in enumerate(self.route):
+
+            # print(f"Coordinate {ix}: {waypoint.transform.location}")
+            # print(f"Road option {ix}: {road_option}")
+
+            if ix <= 10:
+
+                self.world.debug.draw_string(
+                    waypoint.transform.location, 'o', color=RED, life_time=10000)
+
+            elif ix >= self.route_length - 10:
+
+                self.world.debug.draw_string(
+                    waypoint.transform.location, 'o', color=GREEN, life_time=10000)
+
+            else:
+
+                self.world.debug.draw_string(
+                    waypoint.transform.location, 'o', color=BLUE, life_time=10000)
+
 
 def _get_distance_between_waypoints(waypoint1, waypoint2):
-	"""Get the distance between two waypoints"""
-	if isinstance(waypoint2, carla.Transform):
-		return waypoint1.transform.location.distance(waypoint2.location)
-	else:
-		return waypoint1.transform.location.distance(waypoint2.transform.location)
+    """Get the distance between two waypoints"""
+    if isinstance(waypoint2, carla.Transform):
+        return waypoint1.transform.location.distance(waypoint2.location)
+    else:
+        return waypoint1.transform.location.distance(
+            waypoint2.transform.location)

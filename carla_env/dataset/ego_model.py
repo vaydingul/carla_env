@@ -6,7 +6,7 @@ import numpy as np
 
 class EgoModelDataset(Dataset):
 
-    def __init__(self, data_path, rollout_length=10, dataset_crop = 0):
+    def __init__(self, data_path, rollout_length=10, dataset_crop=0):
 
         self.location = []
         self.rotation = []
@@ -24,7 +24,8 @@ class EgoModelDataset(Dataset):
                 self.location.append(data_["vehicle_location"][dataset_crop:])
                 self.rotation.append(data_["vehicle_rotation"][dataset_crop:])
                 self.velocity.append(data_["vehicle_velocity"][dataset_crop:])
-                self.acceleration.append(data_["vehicle_acceleration"][dataset_crop:])
+                self.acceleration.append(
+                    data_["vehicle_acceleration"][dataset_crop:])
                 self.control.append(data_["vehicle_control"][dataset_crop:])
                 self.elapsed_time.append(data_["elapsed_time"][dataset_crop:])
                 self.count_array.append(self.location[-1].shape[0]
@@ -45,19 +46,27 @@ class EgoModelDataset(Dataset):
 
     def __getitem__(self, index):
 
-        I, = np.nonzero(np.logical_and((((index + self.rollout_length) - self.count_array)
-                                        >= 0), (((index + self.rollout_length) - self.count_array) < self.rollout_length)))
+        I, = np.nonzero(np.logical_and((((index +
+                                          self.rollout_length) -
+                                         self.count_array) >= 0), (((index +
+                                                                     self.rollout_length) -
+                                                                    self.count_array) < self.rollout_length)))
 
         if I.size != 0:
             index = self.count_array[I[-1]]
 
-        return self.location[index: index + self.rollout_length, :], self.rotation[index: index + self.rollout_length, :], self.velocity[index: index + self.rollout_length, :], self.acceleration[index: index + self.rollout_length, :], self.control[index: index + self.rollout_length, :], self.elapsed_time[index: index + self.rollout_length]
-
+        return self.location[index: index +
+                             self.rollout_length, :], self.rotation[index: index +
+                                                                    self.rollout_length, :], self.velocity[index: index +
+                                                                                                           self.rollout_length, :], self.acceleration[index: index +
+                                                                                                                                                      self.rollout_length, :], self.control[index: index +
+                                                                                                                                                                                            self.rollout_length, :], self.elapsed_time[index: index +
+                                                                                                                                                                                                                                       self.rollout_length]
 
 
 class EgoModelDatasetV2(Dataset):
 
-    def __init__(self, data_path, rollout_length=10, dataset_crop = 0):
+    def __init__(self, data_path, rollout_length=10, dataset_crop=0):
 
         self.location = []
         self.rotation = []
@@ -75,7 +84,8 @@ class EgoModelDatasetV2(Dataset):
                 self.location.append(data_["vehicle_location"][dataset_crop:])
                 self.rotation.append(data_["vehicle_rotation"][dataset_crop:])
                 self.velocity.append(data_["vehicle_velocity"][dataset_crop:])
-                self.acceleration.append(data_["vehicle_acceleration"][dataset_crop:])
+                self.acceleration.append(
+                    data_["vehicle_acceleration"][dataset_crop:])
                 self.control.append(data_["vehicle_control"][dataset_crop:])
                 self.elapsed_time.append(data_["elapsed_time"][dataset_crop:])
                 self.count_array.append(self.location[-1].shape[0]
@@ -96,8 +106,11 @@ class EgoModelDatasetV2(Dataset):
 
     def __getitem__(self, index):
 
-        I, = np.nonzero(np.logical_and((((index + self.rollout_length) - self.count_array)
-                                        >= 0), (((index + self.rollout_length) - self.count_array) < self.rollout_length)))
+        I, = np.nonzero(np.logical_and((((index +
+                                          self.rollout_length) -
+                                         self.count_array) >= 0), (((index +
+                                                                     self.rollout_length) -
+                                                                    self.count_array) < self.rollout_length)))
 
         if I.size != 0:
             index = self.count_array[I[-1]]
@@ -106,10 +119,14 @@ class EgoModelDatasetV2(Dataset):
         steer_ = self.control[index: index + self.rollout_length, 1]
         brake_ = self.control[index: index + self.rollout_length, 2]
 
-        acceleration_ = ((throttle_ > 0) * throttle_) + ((brake_ > 0) * -brake_)
+        acceleration_ = ((throttle_ > 0) * throttle_) + \
+            ((brake_ > 0) * -brake_)
 
         control_ = torch.stack((acceleration_, steer_), dim=1)
 
-        return self.location[index: index + self.rollout_length, :], self.rotation[index: index + self.rollout_length, :], self.velocity[index: index + self.rollout_length, :], self.acceleration[index: index + self.rollout_length, :], control_, self.elapsed_time[index: index + self.rollout_length]
-
-
+        return self.location[index: index +
+                             self.rollout_length, :], self.rotation[index: index +
+                                                                    self.rollout_length, :], self.velocity[index: index +
+                                                                                                           self.rollout_length, :], self.acceleration[index: index +
+                                                                                                                                                      self.rollout_length, :], control_, self.elapsed_time[index: index +
+                                                                                                                                                                                                           self.rollout_length]
