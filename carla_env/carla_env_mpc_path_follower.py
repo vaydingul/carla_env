@@ -19,6 +19,7 @@ import carla
 import time
 import numpy as np
 import cv2
+from cv2 import VideoWriter, VideoWriter_fourcc
 from datetime import datetime
 from pathlib import Path
 from queue import Queue, Empty
@@ -52,15 +53,15 @@ class CarlaEnvironment(Environment):
         self.counter = 0
         self.data = Queue()
 
+        if self.config["save"]:
 
+            self._create_save_folder()
 
         if self.config["render"]:
 
             self._create_render_window()
 
-        if self.config["save"]:
-
-            self._create_save_folder()
+        
         
         self.reset()
 
@@ -182,10 +183,12 @@ class CarlaEnvironment(Environment):
 
         self.counter += 1
 
-        if route_step is not None:
+        if (route_step is not None) and (self.counter <= 500):
             return current_transform, current_velocity, route_step[0]
+        
         else:
             self.is_done = True
+            self.video_writer.release()
             return current_transform, current_velocity, None
 
     def render(self, predicted_location,  **kwargs):
@@ -250,7 +253,7 @@ class CarlaEnvironment(Environment):
             cv2.circle(self.canvas, (int(bev_loc_[0]), int(
                 bev_loc_[1] + rgb_image.shape[0])), 5, (0, 255, 0), -1)
 
-        for k in range(self.render_dict["route"]["route_index"], self.render_dict["route"]["route_index"] + 5):
+        for k in range(self.render_dict["route"]["route_index"], np.minimum(self.render_dict["route"]["route_index"] + 5, self.render_dict["route"]["route_length"])):
             loc_ = self.route.route[k][0].transform.location
             loc_ = np.array([loc_.x, loc_.y, loc_.z])
             pixel_loc_ = world_2_pixel(loc_, self.render_dict["rgb_sensor"]["image_transform"].get_inverse_matrix(
@@ -270,6 +273,9 @@ class CarlaEnvironment(Environment):
 
         canvas_save  = cv2.resize(self.canvas, (self.canvas.shape[1]//2, self.canvas.shape[0]//2))
         cv2.imwrite(str(self.debug_path / Path(f"{self.counter}.png")), canvas_save)
+
+        if self.config["save_video"]:
+            self.video_writer.write(canvas_save)
 
         cv2.waitKey(1)
 
@@ -301,6 +307,10 @@ class CarlaEnvironment(Environment):
 
             # press q to terminate the loop
             cv2.destroyAllWindows()
+
+        if self.config["save_video"]:
+            fourcc = VideoWriter_fourcc(*'mp4v')
+            self.video_writer = VideoWriter(str(self.debug_path / Path("video.mp4")), fourcc, int(20), (800, 600))
 
     def _create_save_folder(self):
 

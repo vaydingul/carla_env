@@ -132,6 +132,7 @@ tickable_modules
 # File types
 *.npz
 *.png
+*.mp4
 
 # Folders
 logs/

@@ -6,7 +6,7 @@ import numpy as np
 class MPC(nn.Module):
 	"""MPC controller."""
 
-	def __init__(self, device,action_size, rollout_length, number_of_optimization_iterations, model, decay_factor = 0.97):
+	def __init__(self, device, action_size, rollout_length, number_of_optimization_iterations, model, cost):
 		"""Initialize."""
 		
 		super(MPC, self).__init__()
@@ -16,9 +16,8 @@ class MPC(nn.Module):
 		self.action_size = action_size
 		self.rollout_length = rollout_length
 		self.number_of_optimization_iterations = number_of_optimization_iterations
-		self.decay_factor = decay_factor
 		self.model = model
-
+		self.cost = cost
 
 		self.action = torch.zeros((1, self.rollout_length, self.action_size), device=self.device)
 		#self.action[..., 0] = torch.ones_like(self.action[..., 0])
@@ -91,24 +90,14 @@ class MPC(nn.Module):
 
 	def _calculate_cost(self, predicted_location, predicted_rotation, predicted_speed, target_state):
 		"""Calculate the cost."""
-		#return self.loss_criterion(predicted_location, target_location) + (self.action[..., 1:] ** 2).sum() + ((1 - self.action[..., 0]) ** 2).sum()
+
 		loss = torch.tensor(0.)
 		
-		# loss += self.loss_criterion(predicted_location[..., :1], target_state[..., :1].expand(*(predicted_location[..., :1].shape)))
-		# loss += self.loss_criterion(predicted_location[..., 1:2], target_state[..., 1:2].expand(*(predicted_location[..., 1:2].shape)))
-		# loss += self.loss_criterion(predicted_rotation, target_state[..., 2:3].expand(*(predicted_rotation.shape))) 
-		# loss += self.loss_criterion(predicted_speed, target_state[..., 3:4].expand(*(predicted_speed.shape))) * 5
-		decay_weight = torch.Tensor(range(self.rollout_length)).to(self.device)
-		decay_weight = self.decay_factor ** decay_weight
-		loss += torch.mean((torch.abs(predicted_location[..., :1] - target_state[..., :1].expand(*(predicted_location[..., :1].shape)))) * decay_weight)
-		loss += torch.mean((torch.abs(predicted_location[..., 1:2] - target_state[..., 1:2].expand(*(predicted_location[..., 1:2].shape)))) * decay_weight)
-		loss += torch.mean((torch.abs(torch.cos(predicted_rotation) - torch.cos(target_state[..., 2:3].expand(*(predicted_rotation.shape))))) * decay_weight) 
-		loss += torch.mean((torch.abs(torch.sin(predicted_rotation) - torch.sin(target_state[..., 2:3].expand(*(predicted_rotation.shape))))) * decay_weight) 
-		loss += torch.mean((torch.abs(predicted_speed - target_state[..., 3:4].expand(*(predicted_speed.shape)))) * decay_weight)
-
-
-
-		#loss += (self.action[..., 1:2] ** 2).sum()# + ((1 - self.action[..., 0]) ** 2).sum()
+		loss += self.cost(predicted_location[..., :1], target_state[..., :1].expand(*(predicted_location[..., :1].shape)))
+		loss += self.cost(predicted_location[..., 1:2], target_state[..., 1:2].expand(*(predicted_location[..., 1:2].shape)))
+		loss += self.cost(torch.cos(predicted_rotation), torch.cos(target_state[..., 2:3].expand(*(predicted_rotation.shape)))) 
+		loss += self.cost(torch.sin(predicted_rotation), torch.sin(target_state[..., 2:3].expand(*(predicted_rotation.shape)))) 
+		loss += self.cost(predicted_speed, target_state[..., 3:4].expand(*(predicted_speed.shape)))
 
 		loss += torch.diff(self.action, dim = 1).square().sum()
 
