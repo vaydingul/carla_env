@@ -39,14 +39,23 @@ DEFAULT_WIDTH = 150  # its 37.5m when density is 4px/m
 DEFAULT_CROP_TYPE = BirdViewCropType.FRONT_AND_REAR_AREA
 
 
+# class BirdViewMasks(IntEnum):
+#     PEDESTRIANS = 8
+#     RED_LIGHTS = 7
+#     YELLOW_LIGHTS = 6
+#     GREEN_LIGHTS = 5
+#     AGENT = 4
+#     VEHICLES = 3
+#     CENTERLINES = 2
+#     LANES = 1
+#     ROAD = 0
 class BirdViewMasks(IntEnum):
-    PEDESTRIANS = 8
-    RED_LIGHTS = 7
-    YELLOW_LIGHTS = 6
-    GREEN_LIGHTS = 5
-    AGENT = 4
-    VEHICLES = 3
-    CENTERLINES = 2
+    PEDESTRIANS = 7
+    RED_LIGHTS = 6
+    YELLOW_LIGHTS = 5
+    GREEN_LIGHTS = 4
+    AGENT = 3
+    VEHICLES = 2
     LANES = 1
     ROAD = 0
 
@@ -66,7 +75,7 @@ RGB_BY_MASK = {
     BirdViewMasks.GREEN_LIGHTS: RGB.GREEN,
     BirdViewMasks.AGENT: RGB.CHAMELEON,
     BirdViewMasks.VEHICLES: RGB.ORANGE,
-    BirdViewMasks.CENTERLINES: RGB.CHOCOLATE,
+    # BirdViewMasks.CENTERLINES: RGB.CHOCOLATE,
     BirdViewMasks.LANES: RGB.WHITE,
     BirdViewMasks.ROAD: RGB.DIM_GRAY,
 }
@@ -234,9 +243,9 @@ class BirdViewProducer:
         masks[BirdViewMasks.LANES.value] = self.full_lanes_cache[
             cropping_rect.vslice, cropping_rect.hslice
         ]
-        masks[BirdViewMasks.CENTERLINES.value] = self.full_centerlines_cache[
-            cropping_rect.vslice, cropping_rect.hslice
-        ]
+        # masks[BirdViewMasks.CENTERLINES.value] = self.full_centerlines_cache[
+        #     cropping_rect.vslice, cropping_rect.hslice
+        # ]
 
         # Dynamic masks
         rendering_window = RenderingWindow(

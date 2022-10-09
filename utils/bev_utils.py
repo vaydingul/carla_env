@@ -7,7 +7,7 @@ def world_2_bev(
         ego_yaw,
         image_height,
         image_width,
-        pixels_per_meter=18):
+        pixels_per_meter=20):
     """Convert world coordinates to BEV coordinates"""
     # Calculate the displacement vector between ego location and world location
     displacement_meters = ego_loc - loc
@@ -24,6 +24,6 @@ def world_2_bev(
     displacement_pixels[0] *= -1
     # Add the center of the image
     bev_loc = displacement_pixels + \
-        np.array([image_width // 2, image_height // 2])
+        np.array([image_width // 2, image_height])
 
     return bev_loc

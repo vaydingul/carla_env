@@ -57,7 +57,7 @@ class MPC(nn.Module):
 
         return location_predicted.clone(), rotation_predicted.clone(), speed_predicted.clone()
 
-    def optimize_action(self, initial_state, target_state):
+    def step(self, initial_state, target_state):
         """Optimize the action."""
 
         for _ in range(self.number_of_optimization_iterations):
@@ -130,6 +130,6 @@ class MPC(nn.Module):
                           target_state[...,
                                        3:4].expand(*(predicted_speed.shape)))
 
-        loss += torch.diff(self.action, dim=1).square().sum()
+        loss += torch.diff(self.action[..., 1], dim=1).square().sum()
 
         return loss
