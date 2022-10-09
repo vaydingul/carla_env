@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import numpy as np
 import cv2
-
+from carla_env.bev import BirdViewProducer
 
 class MPC(nn.Module):
     """MPC controller."""
@@ -128,17 +128,18 @@ class MPC(nn.Module):
             bev,
             target_state):
         """Calculate the cost."""
-        
+
         # Organize the dimensions for the cost module
         predicted_location.squeeze_(0)
         predicted_rotation.squeeze_(0)
         predicted_speed.squeeze_(0)
         target_state.squeeze_(0)
         # Convert bev to torch tensor
+        self.bev = bev
         bev = torch.from_numpy(bev).float().to(
             predicted_location.device).repeat(
             predicted_location.shape[0] - 1, 1, 1, 1)
-        
+
         # Calculate the cost
         (self.lane_cost,
             self.vehicle_cost,
@@ -149,13 +150,12 @@ class MPC(nn.Module):
             self.offroad_cost,
             self.mask_car,
             self.mask_side) = self.cost(predicted_location,
-                                   predicted_rotation,
-                                   predicted_speed,
-                                   bev)
-
+                                        predicted_rotation,
+                                        predicted_speed,
+                                        bev)
 
         cost = torch.tensor(0.0).to(self.device)
-        #cost += self.lane_cost
+        cost += self.lane_cost
         #cost += self.vehicle_cost
         #cost += self.green_light_cost
         #cost += self.yellow_light_cost
@@ -163,157 +163,67 @@ class MPC(nn.Module):
         #cost += self.pedestrian_cost
         cost += self.offroad_cost
 
-        cost /= 500
+        cost /= 250
 
-        cost += torch.nn.functional.l1_loss(predicted_location[..., :1], target_state[..., :1].expand(
-            *(predicted_location[..., :1].shape)))
-        cost += torch.nn.functional.l1_loss(predicted_location[..., 1:2], target_state[..., 1:2].expand(
-            *(predicted_location[..., 1:2].shape)))
-        cost += torch.nn.functional.l1_loss(predicted_rotation, target_state[..., 2:3].expand(
-            *(predicted_rotation.shape)))
+        cost += torch.maximum(torch.nn.functional.l1_loss(predicted_location[..., :1], target_state[..., :1].expand(
+            *(predicted_location[..., :1].shape))) , torch.nn.functional.l1_loss(predicted_location[..., 1:2], target_state[..., 1:2].expand(
+            *(predicted_location[..., 1:2].shape))))
+        # cost += torch.nn.functional.l1_loss(predicted_location[..., 1:2], target_state[..., 1:2].expand(
+        #     *(predicted_location[..., 1:2].shape)))
+        cost += torch.nn.functional.l1_loss(
+            torch.cos(predicted_rotation), torch.cos(target_state[..., 2:3].expand(*(predicted_rotation.shape))))
+        cost += torch.nn.functional.l1_loss(
+            torch.sin(predicted_rotation), torch.sin(target_state[..., 2:3].expand(*(predicted_rotation.shape))))
         cost += torch.nn.functional.l1_loss(predicted_speed,
                                             target_state[...,
                                                          3:4].expand(*(predicted_speed.shape)))
 
-        cost += torch.diff(self.action, dim=1).square().sum() * 0.2
+        # cost += torch.diff(self.action[..., 0], dim=1).square().sum() * 0.2
+        cost += torch.diff(self.action[..., 1], dim=1).square().sum() * 0.8
 
         if self.render_cost:
             self.render()
 
         return cost
 
-    # def _calculate_cost(
-    #         self,
-    #         predicted_location,
-    #         predicted_rotation,
-    #         predicted_speed,
-    #         bev,
-    #         target_state):
-    #     """Calculate the cost."""
-
-    #     lane_cost_list = []
-    #     vehicle_cost_list = []
-    #     green_light_cost_list = []
-    #     yellow_light_cost_list = []
-    #     red_light_cost_list = []
-    #     pedestrian_cost_list = []
-    #     offroad_cost_list = []
-    #     mask_car_list = []
-    #     mask_side_list = []
-
-    #     # TODO: Turn into a batched operation!
-
-    #     location_ = predicted_location[0, 0, :]
-    #     rotation_ = predicted_rotation[0, 0, :]
-    #     speed_ = predicted_speed[0, 0, :]
-
-    #     for k in range(1, predicted_location.shape[1]):
-    #         print(k)
-    #         predicted_location_ = predicted_location[0, k, :]
-    #         predicted_rotation_ = predicted_rotation[0, k, :]
-    #         predicted_speed_ = predicted_speed[0, k, :]
-
-    #         (lane_cost,
-    #          vehicle_cost,
-    #          green_light_cost,
-    #          yellow_light_cost,
-    #          red_light_cost,
-    #          pedestrian_cost,
-    #          offroad_cost,
-    #          mask_car,
-    #          mask_side) = self.cost(location_,
-    #                                 rotation_,
-    #                                 speed_,
-    #                                 predicted_location_,
-    #                                 predicted_rotation_,
-    #                                 predicted_speed_,
-    #                                 bev)
-
-    #         lane_cost_list.append(lane_cost)
-    #         vehicle_cost_list.append(vehicle_cost)
-    #         green_light_cost_list.append(green_light_cost)
-    #         yellow_light_cost_list.append(yellow_light_cost)
-    #         red_light_cost_list.append(red_light_cost)
-    #         pedestrian_cost_list.append(pedestrian_cost)
-    #         offroad_cost_list.append(offroad_cost)
-    #         mask_car_list.append(mask_car)
-    #         mask_side_list.append(mask_side)
-
-    #     decay_factor = self.decay_factor ** torch.arange(
-    #         len(lane_cost_list)).to(
-    #         self.device)
-
-    #     self.lane_cost = torch.sum(torch.stack(lane_cost_list) * decay_factor)
-    #     self.vehicle_cost = torch.sum(
-    #         torch.stack(vehicle_cost_list) * decay_factor)
-    #     self.green_light_cost = torch.sum(
-    #         torch.stack(green_light_cost_list) * decay_factor)
-    #     self.yellow_light_cost = torch.sum(
-    #         torch.stack(yellow_light_cost_list) * decay_factor)
-    #     self.red_light_cost = torch.sum(
-    #         torch.stack(red_light_cost_list) * decay_factor)
-    #     self.pedestrian_cost = torch.sum(
-    #         torch.stack(pedestrian_cost_list) * decay_factor)
-    #     self.offroad_cost = torch.sum(
-    #         torch.stack(offroad_cost_list) * decay_factor)
-
-    #     cost = torch.tensor(0.0).to(self.device)
-    #     cost += self.lane_cost
-    #     cost += self.vehicle_cost
-    #     cost += self.green_light_cost
-    #     cost += self.yellow_light_cost
-    #     cost += self.red_light_cost
-    #     cost += self.pedestrian_cost
-    #     cost += self.offroad_cost
-
-    #     cost += torch.nn.functional.l1_loss(predicted_location[..., :1], target_state[..., :1].expand(
-    #         *(predicted_location[..., :1].shape)))
-    #     cost += torch.nn.functional.l1_loss(predicted_location[..., 1:2], target_state[..., 1:2].expand(
-    #         *(predicted_location[..., 1:2].shape)))
-
-    #     cost += torch.nn.functional.l1_loss(predicted_speed,
-    #                       target_state[...,
-    #                                    3:4].expand(*(predicted_speed.shape)))
-
-    #     #cost += torch.diff(self.action[..., 1], dim=1).square().sum()
-
-    #     self.mask_car_list = mask_car_list
-    #     self.mask_side_list = mask_side_list
-
-    #     if self.render_cost:
-    #         self.render()
-
-    #     return cost
-
     def render(self):
 
         offset_x = 0
         offset_y = 0
+        bev_ = cv2.cvtColor(BirdViewProducer.as_rgb(self.bev), cv2.COLOR_BGR2RGB)
 
         for k in range(self.mask_car.shape[0]):
 
             # Draw mask_car side by side
             mask_car_ = self.mask_car[k].detach().cpu().numpy()
-
+            # Normalize to 0-255 int
+            mask_car_ = (mask_car_ - mask_car_.min()) / \
+                (mask_car_.max() - mask_car_.min()) * 255
+            mask_car_ = mask_car_.astype(np.uint8)
+            mask_car_color_map = cv2.applyColorMap(mask_car_, cv2.COLORMAP_JET)
             self.canvas[offset_y:offset_y + mask_car_.shape[0],
-                        offset_x:offset_x + mask_car_.shape[1]] = mask_car_
+                        offset_x:offset_x + mask_car_.shape[1], :] = cv2.addWeighted(bev_, 0.5, mask_car_color_map, 0.5, 0)
 
-            offset_x += mask_car_.shape[0]
+            offset_x += mask_car_.shape[1] + 10
 
         offset_x = 0
-        offset_y += mask_car_.shape[1]
+        offset_y += mask_car_.shape[0] + 20
 
         for k in range(self.mask_side.shape[0]):
 
             # Draw mask_car side by side
             mask_side_ = self.mask_side[k].detach().cpu().numpy()
-
+            # Normalize to 0-255 int
+            mask_side_ = (mask_side_ - mask_side_.min()) / \
+                (mask_side_.max() - mask_side_.min()) * 255
+            mask_side_ = mask_side_.astype(np.uint8)
+            mask_side_color_map = cv2.applyColorMap(mask_side_, cv2.COLORMAP_JET)
             self.canvas[offset_y:offset_y + mask_side_.shape[0],
-                        offset_x:offset_x + mask_side_.shape[1]] = mask_side_
+                        offset_x:offset_x + mask_side_.shape[1], :] = cv2.addWeighted(bev_, 0.5, mask_side_color_map, 0.5, 0)
 
-            offset_x += mask_side_.shape[0]
+            offset_x += mask_side_.shape[1] + 10
 
-        canvas_display = cv2.resize(self.canvas, (0, 0), fx=0.5, fy=0.5)
+        canvas_display = cv2.resize(self.canvas, (0, 0), fx=0.9, fy=0.9)
 
         cv2.imshow("Cost", canvas_display)
 
@@ -324,7 +234,7 @@ class MPC(nn.Module):
              3,
              self.rollout_length *
              self.cost.image_width,
-             ),
+             3),
             np.uint8)
         cv2.imshow("Cost", self.canvas)
 

@@ -1,7 +1,7 @@
 from carla_env.modules import module
 import carla
 from agents.navigation.global_route_planner import GlobalRoutePlanner
-
+from agents.navigation.local_planner import RoadOption
 RED = carla.Color(r=255, g=0, b=0)
 GREEN = carla.Color(r=0, g=255, b=0)
 BLUE = carla.Color(r=0, g=0, b=255)
@@ -26,13 +26,18 @@ class RouteModule(module.Module):
             for k in config.keys():
                 self.config[k] = config[k]
         self.world = self.client.get_world()
+
+        
         self.grp = GlobalRoutePlanner(
             self.world.get_map(),
             self.config["sampling_resolution"])
 
+
         self.route = self.grp.trace_route(
             self.config["start"].location,
             self.config["end"].location)
+
+        self.route = self.route[1:]
         self.route_length = len(self.route)
 
         self.render_dict = {}
@@ -51,7 +56,7 @@ class RouteModule(module.Module):
         if self.route_index < self.route_length - 1:
             # self.config["sampling_resolution"]:
             if _get_distance_between_waypoints(
-                    self.route[self.route_index][0], current_location) < 0.5:
+                    self.route[self.route_index][0], current_location) < 2:
                 self.route_index += 1
             return self.route[self.route_index]
         else:
@@ -86,6 +91,9 @@ class RouteModule(module.Module):
         """Get the config of the vehicle manager"""
         return self.config
 
+    def get_route(self):
+        """Get the route"""
+        return self.route
     def _set_default_config(self):
         """Set the default config of the vehicle"""
         self.config = {"sampling_resolution": 1}
@@ -114,9 +122,14 @@ class RouteModule(module.Module):
 
 
 def _get_distance_between_waypoints(waypoint1, waypoint2):
-    """Get the distance between two waypoints"""
+    """Get the L1 distance between two waypoints"""
+    # if isinstance(waypoint2, carla.Transform):
+    #     return waypoint1.transform.location.distance(waypoint2.location)
+    # else:
+    #     return waypoint1.transform.location.distance(
+    #         waypoint2.transform.location)
+    
     if isinstance(waypoint2, carla.Transform):
-        return waypoint1.transform.location.distance(waypoint2.location)
+        return abs(waypoint2.location.x - waypoint1.transform.location.x) + abs(waypoint2.location.y - waypoint1.transform.location.y)
     else:
-        return waypoint1.transform.location.distance(
-            waypoint2.transform.location)
+        return abs(waypoint2.transform.location.x - waypoint1.transform.location.x) + abs(waypoint2.transform.location.y - waypoint1.transform.location.y)

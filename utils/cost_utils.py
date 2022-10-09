@@ -7,8 +7,11 @@ def create_coordinate_mask(nx, ny, pixels_per_meter, device):
     meters_per_pixel = 1 / pixels_per_meter
 
     # Create a matrix of the same size as the image
-    X, Y = torch.meshgrid(torch.arange(nx, device=device), torch.arange(ny, device = device))
-    
+    X, Y = torch.meshgrid(
+        torch.arange(
+            nx, device=device), torch.arange(
+            ny, device=device))
+
     # Calculate the distance from the center of the image
     x = X - nx // 2
     y = Y  # - ny // 2
@@ -32,8 +35,8 @@ def align_coordinate_mask_with_ego_vehicle(x, y, yaw, coordinate_mask):
 
     aligned_coordinate_mask = coordinate_mask.clone()
     # Translate the coordinate mask
-    aligned_coordinate_mask[..., 0:1] -= x.reshape(-1, 1, 1, 1)
-    aligned_coordinate_mask[..., 1:2] -= y.reshape(-1, 1, 1, 1)
+    aligned_coordinate_mask[..., 0:1] -= y.reshape(-1, 1, 1, 1)
+    aligned_coordinate_mask[..., 1:2] -= x.reshape(-1, 1, 1, 1)
 
     # Rotate the coordinate mask
     rotation_matrix.unsqueeze_(1).unsqueeze_(2)
@@ -47,9 +50,9 @@ def calculate_mask(aligned_coordinate_mask, dx, dy, width, length, alpha=0.1):
     """Calculate the mask for the ego vehicle"""
 
     term_1 = (
-        dx - torch.abs(aligned_coordinate_mask[..., 0:1])) / (dx - (length / 2))
+        dx - torch.abs(aligned_coordinate_mask[..., 0:1])) / (dx - (width / 2))
     term_2 = (
-        dy - torch.abs(aligned_coordinate_mask[..., 1:2])) / (dy - (width / 2))
+        dy - torch.abs(aligned_coordinate_mask[..., 1:2])) / (dy - (length / 2))
 
     mask_car = torch.maximum(term_1, torch.tensor(
         0)) * torch.minimum(torch.maximum(term_2, torch.tensor(0)), torch.tensor(1))
@@ -90,8 +93,8 @@ def rotate_batched(location, yaw):
 
     # Calculate the rotation matrix
     theta = -yaw[0]
-    rotation_matrix = torch.tensor(
-        [[torch.cos(theta), -torch.sin(theta)], [torch.sin(theta), torch.cos(theta)]], device=location.device)
+    rotation_matrix = torch.tensor([[torch.cos(
+        theta), -torch.sin(theta)], [torch.sin(theta), torch.cos(theta)]], device=location.device)
 
     # Rotate the coordinate mask
     rotated_coordinates = torch.matmul(rotation_matrix, location.mT).mT
@@ -113,7 +116,7 @@ if __name__ == "__main__":
     dy = (vehicle_width / 2) + 3
 
     # Visualization for testing purposes
-    coordinate_mask, X, Y = create_coordinate_mask(800, 600, 18)
+    coordinate_mask, X, Y = create_coordinate_mask(800, 600, 18, 'cpu')
     aligned_coordinate_mask = align_coordinate_mask_with_ego_vehicle(
         10, 10, 30, coordinate_mask)
 

@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.INFO)
 
 def main(config):
 
-    cost = MaskedCost(image_width=200, image_height=150, device = config.device)
+    cost = MaskedCost(image_width=200, image_height=150, device=config.device)
 
     ego_forward_model = KinematicBicycleModelV2(dt=1 / 20)
 
@@ -31,7 +31,7 @@ def main(config):
         device=config.device,
         action_size=2,
         rollout_length=config.rollout_length,
-        number_of_optimization_iterations=30,
+        number_of_optimization_iterations=40,
         model=ego_forward_model,
         cost=cost,
         render_cost=True)
@@ -53,6 +53,7 @@ def main(config):
     counter = 0
 
     while not c.is_done:
+        t0 = time.time()
 
         if counter % 1 == 0:
 
@@ -101,6 +102,8 @@ def main(config):
 
         bev = c.data.get()["bev"]
 
+        t1 = time.time()
+
         c.render(
             predicted_location=location_predicted,
             bev=bev,
@@ -108,7 +111,8 @@ def main(config):
             control=control,
             current_state=current_state,
             target_state=target_state,
-            counter=counter)
+            counter=counter,
+            sim_fps=1 / (t1 - t0))
 
         mpc_module.reset()
 
@@ -127,7 +131,7 @@ if __name__ == "__main__":
         default="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt",
         help="Path to the forward model of the ego vehicle")
     parser.add_argument("--rollout_length", type=int, default=10)
-    parser.add_argument("--device", type=str, default="cpu",
+    parser.add_argument("--device", type=str, default="cuda",
                         help="Device to use for the forward model")
     config = parser.parse_args()
 

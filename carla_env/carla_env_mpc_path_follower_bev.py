@@ -17,7 +17,7 @@ from carla_env.bev import (
     BirdViewCropType,
 )
 from carla_env.bev.mask import PixelDimensions
-
+from agents.navigation.local_planner import RoadOption
 from utils.camera_utils import world_2_pixel
 from utils.bev_utils import world_2_bev
 
@@ -82,18 +82,23 @@ class CarlaEnvironment(Environment):
 
         self.spectator = self.world.get_spectator()
 
-        # Fetch all spawn points
-        spawn_points = self.map.get_spawn_points()
-        # Select two random spawn points
-        start_end_spawn_point = np.random.choice(spawn_points, 2)
-        start = start_end_spawn_point[0]
-        end = start_end_spawn_point[1]
+        while True:
+            # Fetch all spawn points
+            spawn_points = self.map.get_spawn_points()
+            # Select two random spawn points
+            start_end_spawn_point = np.random.choice(spawn_points, 2)
+            start = start_end_spawn_point[0]
+            end = start_end_spawn_point[1]
 
-        self.route = route.RouteModule(config={"start": start,
-                                               "end": end,
-                                               "sampling_resolution": 20,
-                                               "debug": True},
-                                       client=self.client)
+            self.route = route.RouteModule(config={"start": start,
+                                                "end": end,
+                                                "sampling_resolution": 20,
+                                                "debug": True},
+                                        client=self.client)
+
+            if (RoadOption.LEFT in [x[1] for x in self.route.get_route()[:5]]) and (len(self.route.get_route()) < 11):
+                break
+
         # Let's initialize a vehicle
         self.vehicle_module = vehicle.VehicleModule(
             config={
