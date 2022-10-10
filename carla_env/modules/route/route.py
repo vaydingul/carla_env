@@ -56,7 +56,7 @@ class RouteModule(module.Module):
         if self.route_index < self.route_length - 1:
             # self.config["sampling_resolution"]:
             if _get_distance_between_waypoints(
-                    self.route[self.route_index][0], current_location) < 2:
+                    self.route[self.route_index][0], current_location) < 4:
                 self.route_index += 1
             return self.route[self.route_index]
         else:

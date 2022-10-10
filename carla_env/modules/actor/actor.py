@@ -99,6 +99,11 @@ class ActorModule(module.Module):
     def get_actor(self):
         """Get the actor"""
         return self.player
+
+    def set_autopilot(self, autopilot, port=8000):
+        """Set the actor to autopilot"""
+        self.player.set_autopilot(autopilot, port)
+
     def _set_default_config(self):
         """Set the default config of actor manager"""
         self.config = {"actor": vehicle.VehicleModule(None, self.client),

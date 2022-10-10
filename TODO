@@ -1,0 +1,22 @@
+- Take last render from the COST rendering
+- Feed it to the MAIN rendering routine
+- Fill the empty space with the cost rendering
+
+- MAIN rendering size might be larger than the current version
+
+- Do everything in the notebook!
+
+
+- SCENARIO 1:
+  Max length of the route = 10
+  No vehicles or pedestrians
+  Only RIGHT exists no LEFT
+  Offroad - Target - Speed cost is open
+
+- SCENARIO 2:
+  Max length of the route = 20
+  Vehicles exist
+  Only RIGHT exists no LEFT
+  Offroad - Target - Lane cost is open
+
+- Implement following scenarios with the new visualization

@@ -102,8 +102,9 @@ class MaskedCost(nn.Module):
             x, y, yaw, coordinate_mask)
 
         dx = (vehicle_width / 2) + 1
-        
-        dy = 1.5 * (torch.maximum(torch.tensor(1), speed) + vehicle_length) + 1
+
+        # dy = 1.5 * (torch.maximum(torch.tensor(1), speed) + vehicle_length) + 1
+        dy = (speed + vehicle_length) + 0.25
 
         dy = dy.view(-1, 1, 1, 1)
 
