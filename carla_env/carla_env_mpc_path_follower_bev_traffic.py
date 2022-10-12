@@ -160,7 +160,7 @@ class CarlaEnvironment(Environment):
             pixels_per_meter=5,
             crop_type=BirdViewCropType.FRONT_AREA_ONLY)
 
-        for (k, v) in self.hero_actor_module.sensor_dict.items():
+        for (k, v) in self.hero_actor_module.get_sensor_dict().items():
             if k not in self.config["allowed_sensors"]:
                 v.save_to_queue = False
 
@@ -182,11 +182,11 @@ class CarlaEnvironment(Environment):
 
         data_dict = {}
 
-        for (k, v) in self.hero_actor_module.sensor_dict.items():
+        for (k, v) in self.hero_actor_module.get_sensor_dict().items():
 
             if k in self.config["allowed_sensors"]:
 
-                if v.queue.qsize() > 0:
+                if v.get_queue().qsize() > 0:
 
                     try:
 
@@ -194,7 +194,7 @@ class CarlaEnvironment(Environment):
 
                         while not equivalent_frame_fetched:
 
-                            data_ = v.queue.get(True, 10)
+                            data_ = v.get_queue().get(True, 10)
 
                             # , f"Frame number mismatch: {data_['frame']} != {snapshot.frame} \n Current Sensor: {k} \n Current Data Queue Size {self.data.qsize()}"
                             equivalent_frame_fetched = data_[

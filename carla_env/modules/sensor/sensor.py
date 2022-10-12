@@ -63,11 +63,28 @@ class SensorModule(module.Module):
         """Get the config of the sensor"""
         return self.config
 
+    def get_queue(self):
+        """Get the queue of the sensor"""
+        return self.queue
+
     def _set_default_config(self):
         """Set the default config of the sensor"""
         self.config = {}
 
     def attach_to_actor(self, actor):
         """Attach the sensor to an actor"""
-        actor.sensor_dict[f"{self.__class__.__name__}"] = self
-        self.actor = actor
+
+        # TODO: Implement a ID-based naming scheme.
+        # TODO: ID should be an optional input for the sensor modules
+        # TODO: If it is not provided, the sensor module should generate a unique ID
+
+        if f"{self.__class__.__name__}_0" not in actor.sensor_dict.keys():
+            
+            actor.sensor_dict[f"{self.__class__.__name__}_0"] = self
+            self.actor = actor
+            
+        else:
+
+            sorted_keys = sorted([int(key_.split("_")[-1]) for key_ in actor.sensor_dict.keys() if self.__class__.__name__ in key_])            
+            actor.sensor_dict[f"{self.__class__.__name__}_{sorted_keys[-1] + 1}"] = self
+            self.actor = actor

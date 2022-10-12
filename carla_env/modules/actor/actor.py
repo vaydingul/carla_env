@@ -8,6 +8,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class ActorModule(module.Module):
     """Concrete implementation of Module abstract base class for actor management"""
 
@@ -104,11 +105,15 @@ class ActorModule(module.Module):
         """Get the actor"""
         return self.actor
 
+    def get_sensor_dict(self):
+        """Get the sensor dictionary"""
+        return self.sensor_dict
+
     def set_autopilot(self, autopilot, port=8000):
         """Set the actor to autopilot"""
         self.actor.set_autopilot(autopilot, port)
 
     def _set_default_config(self):
         """Set the default config of actor manager"""
-        self.config = {"actor": vehicle.VehicleModule(None, self.client),
+        self.config = {"vehicle": vehicle.VehicleModule(None, self.client),
                        "hero": True}

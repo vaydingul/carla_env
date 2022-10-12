@@ -192,7 +192,7 @@ class CarlaEnvironment(Environment):
 
         for (k, v) in self.actor.sensor_dict.items():
 
-            if v.queue.qsize() > 0:
+            if v.get_queue().qsize() > 0:
 
                 try:
 
@@ -200,7 +200,7 @@ class CarlaEnvironment(Environment):
 
                     while not equivalent_frame_fetched:
 
-                        data_ = v.queue.get(True, 10)
+                        data_ = v.get_queue().get(True, 10)
 
                         # , f"Frame number mismatch: {data_['frame']} != {snapshot.frame} \n Current Sensor: {k} \n Current Data Queue Size {self.data.qsize()}"
                         equivalent_frame_fetched = data_[
