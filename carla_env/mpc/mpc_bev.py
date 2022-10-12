@@ -74,7 +74,7 @@ class MPC(nn.Module):
     def step(self, initial_state, target_state, bev):
         """Optimize the action."""
 
-        for _ in range(self.number_of_optimization_iterations):
+        for k in range(self.number_of_optimization_iterations):
 
             self.optimizer.zero_grad()
 
@@ -90,15 +90,16 @@ class MPC(nn.Module):
                 predicted_rotation=rotation_predicted.clone(),
                 predicted_speed=speed_predicted.clone(),
                 bev=bev,
-                target_state=target_state.clone())
+                target_state=target_state.clone(),
+                last_step=k == self.number_of_optimization_iterations - 1)
 
             cost.backward(retain_graph=True)
 
             torch.nn.utils.clip_grad_value_(self.action, 0.5)
             self.optimizer.step()
 
-        return list(self.action[0, 0, :].detach().cpu().numpy(
-        )), location_predicted[0].detach().cpu().numpy(), cost.item()
+        return (list(self.action[0, 0, :].detach().cpu().numpy(
+        )), location_predicted[0].detach().cpu().numpy(), cost.item(), self.canvas)
 
     def reset(self, initial_guess=None):
         """Reset the controller."""
@@ -127,7 +128,8 @@ class MPC(nn.Module):
             predicted_rotation,
             predicted_speed,
             bev,
-            target_state):
+            target_state,
+            last_step=False):
         """Calculate the cost."""
 
         # Organize the dimensions for the cost module
@@ -162,12 +164,12 @@ class MPC(nn.Module):
         #cost += self.yellow_light_cost
         #cost += self.red_light_cost
         #cost += self.pedestrian_cost
-        cost += self.offroad_cost / 250
+        cost += self.offroad_cost / 500
 
         cost += torch.nn.functional.l1_loss(predicted_location[..., :1], target_state[..., :1].expand(
-            *(predicted_location[..., :1].shape)))
+            *(predicted_location[..., :1].shape))) * 10
         cost += torch.nn.functional.l1_loss(predicted_location[..., 1:2], target_state[..., 1:2].expand(
-            *(predicted_location[..., 1:2].shape)))
+            *(predicted_location[..., 1:2].shape))) * 10
         cost += torch.nn.functional.l1_loss(torch.cos(predicted_rotation), torch.cos(
             target_state[..., 2:3].expand(*(predicted_rotation.shape))))
         cost += torch.nn.functional.l1_loss(torch.sin(predicted_rotation), torch.sin(
@@ -177,14 +179,17 @@ class MPC(nn.Module):
         #                                                  3:4].expand(*(predicted_speed.shape)))
 
         cost += torch.diff(self.action[..., 0], dim=1).square().sum() * 0.01
-        cost += torch.diff(self.action[..., 1], dim=1).square().sum() * 0.5
+        cost += torch.diff(self.action[..., 1], dim=1).square().sum() * 5
 
-        if self.render_cost:
+        if self.render_cost and last_step:
+
             self.render()
 
         return cost
 
     def render(self):
+
+        self.canvas = np.zeros_like(self.canvas)
 
         offset_x = 0
         offset_y = 0
@@ -234,9 +239,46 @@ class MPC(nn.Module):
 
             offset_x += mask_side_.shape[1] + 10
 
-        canvas_display = cv2.resize(self.canvas, (0, 0), fx=0.9, fy=0.9)
+        offset_x = 0
+        offset_y += mask_side_.shape[0] + 20
 
-        cv2.imshow("Cost", canvas_display)
+        cv2.putText(
+            self.canvas,
+            f"Offroad Cost: {self.offroad_cost}",
+            (offset_x,
+             offset_y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.75,
+            (255,
+             255,
+             0),
+            1)
+        offset_y += 50
+        cv2.putText(
+            self.canvas,
+            f"Vehicle Cost: {self.vehicle_cost}",
+            (offset_x,
+                offset_y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.75,
+            (255,
+             255,
+             0),
+            1)
+        offset_y += 50
+        cv2.putText(
+            self.canvas,
+            f"Lane Cost: {self.lane_cost}",
+            (offset_x,
+                offset_y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.75,
+            (255,
+             255,
+             0),
+            1)
+
+        # canvas_display = cv2.resize(self.canvas, (0, 0), fx=0.9, fy=0.9)
 
     def _initialize_rendering(self):
 
@@ -247,9 +289,3 @@ class MPC(nn.Module):
              self.cost.image_width,
              3),
             np.uint8)
-        cv2.imshow("Cost", self.canvas)
-
-        if cv2.waitKey(1) == ord('q'):
-
-            # press q to terminate the loop
-            cv2.destroyAllWindows()

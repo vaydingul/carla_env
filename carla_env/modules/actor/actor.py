@@ -1,9 +1,12 @@
+from asyncio.log import logger
 from pickle import FALSE
 from carla_env.modules import module
 from carla_env.modules.vehicle import vehicle
 import carla
 import numpy as np
+import logging
 
+logger = logging.getLogger(__name__)
 
 class ActorModule(module.Module):
     """Concrete implementation of Module abstract base class for actor management"""
@@ -87,6 +90,7 @@ class ActorModule(module.Module):
     def close(self):
         """Close the actor manager"""
         self._stop()
+        logger.info("Actor manager closed")
 
     def seed(self):
         """Seed the actor manager"""

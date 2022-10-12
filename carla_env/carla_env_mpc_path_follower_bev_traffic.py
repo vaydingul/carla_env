@@ -97,22 +97,35 @@ class CarlaEnvironment(Environment):
 
         self.spectator = self.world.get_spectator()
 
-        while True:
-            # Fetch all spawn points
-            spawn_points = self.map.get_spawn_points()
-            # Select two random spawn points
-            start_end_spawn_point = np.random.choice(spawn_points, 2)
-            start = start_end_spawn_point[0]
-            end = start_end_spawn_point[1]
-            self.route = route.RouteModule(config={"start": start,
-                                                   "end": end,
-                                                   "sampling_resolution": 20,
-                                                   "debug": True},
-                                           client=self.client)
+        # while True:
+        #     # Fetch all spawn points
+        #     spawn_points = self.map.get_spawn_points()
+        #     # Select two random spawn points
+        #     start_end_spawn_point = np.random.choice(spawn_points, 2)
+        #     start = start_end_spawn_point[0]
+        #     end = start_end_spawn_point[1]
+        #     self.route = route.RouteModule(config={"start": start,
+        #                                            "end": end,
+        #                                            "sampling_resolution": 20,
+        #                                            "debug": True},
+        #                                    client=self.client)
 
-            if (RoadOption.LEFT not in [x[1] for x in self.route.get_route()]) and (RoadOption.RIGHT in [
-                    x[1] for x in self.route.get_route()[:2]]) and (len(self.route.get_route()) > 10):
-                break
+        #     if ((RoadOption.LEFT not in [x[1] for x in self.route.get_route()]) and (RoadOption.RIGHT in [
+        #             x[1] for x in self.route.get_route()[:2]]) and (len(self.route.get_route()) < 20) and
+        #             (len(self.route.get_route()) > 10)):
+        #         break
+
+        # Fetch all spawn points
+        spawn_points = self.map.get_spawn_points()
+        # Select two random spawn points
+        start_end_spawn_point = np.random.choice(spawn_points, 2)
+        start = start_end_spawn_point[0]
+        end = start_end_spawn_point[1]
+        self.route = route.RouteModule(config={"start": start,
+                                                "end": end,
+                                                "sampling_resolution": 20,
+                                                "debug": True},
+                                        client=self.client)
 
         # Let's initialize a vehicle
         self.vehicle_module = vehicle.VehicleModule(
@@ -233,15 +246,19 @@ class CarlaEnvironment(Environment):
 
         self.counter += 1
 
-        if (route_step is not None) and (self.counter <= 5000):
-            return current_transform, current_velocity, route_step[0], route_step[1]
+        if (route_step is not None) and (self.counter <= 50000):
+            return (
+                current_transform,
+                current_velocity,
+                route_step[0],
+                route_step[1])
 
         else:
             self.is_done = True
             self.video_writer.release()
-            return current_transform, current_velocity, None
+            return (current_transform, current_velocity, None, None)
 
-    def render(self, predicted_location, bev, **kwargs):
+    def render(self, predicted_location, bev, cost_canvas, **kwargs):
         """Render the environment"""
         for (k, v) in self.__dict__.items():
             if isinstance(v, Module):
@@ -371,15 +388,19 @@ class CarlaEnvironment(Environment):
                 loc_,
                 ego_loc,
                 self.render_dict["hero_actor_module"]["rotation"].yaw,
-                rgb_image.shape[0],
-                rgb_image.shape[1])
+                bev.shape[0],
+                bev.shape[1])
 
             if pixel_loc_.shape[0] > 0:
                 cv2.circle(self.canvas, (int(pixel_loc_[0][0]), int(
                     pixel_loc_[0][1])), 5, (0, 255, 0), -1)
+            if ((bev_loc_[0] < bev.shape[1]) and (
+                    bev_loc_[1] + rgb_image.shape[0] > rgb_image.shape[0])):
+                cv2.circle(self.canvas, (int(bev_loc_[0]), int(
+                    bev_loc_[1] + rgb_image.shape[0])), 5, (0, 0, 0), -1)
 
-            cv2.circle(self.canvas, (int(bev_loc_[0]), int(
-                bev_loc_[1] + rgb_image.shape[0])), 5, (0, 0, 0), -1)
+        self.canvas[position_y:, bev.shape[1]:] = cv2.resize(
+            cost_canvas, self.canvas[position_y:, bev.shape[1]:].shape[:-1][::-1])
 
         canvas_display = cv2.resize(
             src=self.canvas, dsize=(
@@ -405,7 +426,7 @@ class CarlaEnvironment(Environment):
         self.hero_actor_module.close()
         self.client_module.close()
         self.server_module.close()
-
+        logger.info("Environment is closed")
     def seed(self, seed):
         """Set the seed for the environment"""
         pass
@@ -436,7 +457,7 @@ class CarlaEnvironment(Environment):
 
     def _create_render_window(self):
 
-        self.canvas = np.zeros((1200, 1600, 3), np.uint8)
+        self.canvas = np.zeros((1200, 2400, 3), np.uint8)
         cv2.imshow("Environment", self.canvas)
 
         if cv2.waitKey(1) == ord('q'):
@@ -447,7 +468,7 @@ class CarlaEnvironment(Environment):
         if self.config["save_video"]:
             fourcc = VideoWriter_fourcc(*'mp4v')
             self.video_writer = VideoWriter(
-                str(self.debug_path / Path("video.mp4")), fourcc, int(20), (800, 600))
+                str(self.debug_path / Path("video.mp4")), fourcc, int(20), (self.canvas.shape[1] // 2, self.canvas.shape[0] // 2))
 
     def _create_save_folder(self):
 

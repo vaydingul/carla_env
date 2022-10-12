@@ -52,7 +52,8 @@ def main(config):
 
     counter = 0
 
-    while not c.is_done:
+    while True:
+
         t0 = time.time()
 
         if counter % 1 == 0:
@@ -89,7 +90,7 @@ def main(config):
 
             logging.debug(f"Target state: {target_state}")
             # Get the control from the MPC module
-            control, location_predicted, cost = mpc_module.step(
+            control, location_predicted, cost, cost_canvas = mpc_module.step(
                 current_state, target_state, bev)
 
         throttle, brake = acceleration_to_throttle_brake(
@@ -100,6 +101,8 @@ def main(config):
         current_transform, current_velocity, target_waypoint, navigational_command = c.step(
             action=control)
 
+        if c.is_done:
+            break
         bev = c.data.get()["bev"]
 
         t1 = time.time()
@@ -107,6 +110,7 @@ def main(config):
         c.render(
             predicted_location=location_predicted,
             bev=bev,
+            cost_canvas=cost_canvas,
             cost=cost,
             control=control,
             current_state=current_state,

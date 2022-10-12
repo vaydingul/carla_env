@@ -101,7 +101,7 @@ class ClientModule(module.Module):
             "host": "localhost",
             "port": 2000,
             "timeout": 10.0,
-            "world": "Town01",
+            "world": "Town02",
             "synchronous_mode": True,
             "fixed_delta_seconds": 1 / 20
         }
