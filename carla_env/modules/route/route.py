@@ -2,6 +2,7 @@ from carla_env.modules import module
 import carla
 from agents.navigation.global_route_planner import GlobalRoutePlanner
 from agents.navigation.local_planner import RoadOption
+
 RED = carla.Color(r=255, g=0, b=0)
 GREEN = carla.Color(r=0, g=255, b=0)
 BLUE = carla.Color(r=0, g=0, b=255)
@@ -27,11 +28,9 @@ class RouteModule(module.Module):
                 self.config[k] = config[k]
         self.world = self.client.get_world()
 
-        
         self.grp = GlobalRoutePlanner(
             self.world.get_map(),
             self.config["sampling_resolution"])
-
 
         self.route = self.grp.trace_route(
             self.config["start"].location,
@@ -94,9 +93,11 @@ class RouteModule(module.Module):
     def get_route(self):
         """Get the route"""
         return self.route
+
     def _set_default_config(self):
         """Set the default config of the vehicle"""
-        self.config = {"sampling_resolution": 1}
+        self.config = {"sampling_resolution": 1,
+                       "debug": False}
 
     def _visualize_route(self):
         """Visualize the route"""
@@ -128,8 +129,10 @@ def _get_distance_between_waypoints(waypoint1, waypoint2):
     # else:
     #     return waypoint1.transform.location.distance(
     #         waypoint2.transform.location)
-    
+
     if isinstance(waypoint2, carla.Transform):
-        return abs(waypoint2.location.x - waypoint1.transform.location.x) + abs(waypoint2.location.y - waypoint1.transform.location.y)
+        return abs(waypoint2.location.x - waypoint1.transform.location.x) + \
+            abs(waypoint2.location.y - waypoint1.transform.location.y)
     else:
-        return abs(waypoint2.transform.location.x - waypoint1.transform.location.x) + abs(waypoint2.transform.location.y - waypoint1.transform.location.y)
+        return abs(waypoint2.transform.location.x - waypoint1.transform.location.x) + \
+            abs(waypoint2.transform.location.y - waypoint1.transform.location.y)

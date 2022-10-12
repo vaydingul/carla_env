@@ -2,10 +2,10 @@ from torch import nn
 import torch
 
 
-class WeightedL1Cost(nn.Module):
+class Cost(nn.Module):
 
     def __init__(self, decay_factor, rollout_length, device):
-        super(WeightedL1Cost, self).__init__()
+        super(Cost, self).__init__()
         self.decay_factor = decay_factor
         self.rollout_length = rollout_length
         self.device = device

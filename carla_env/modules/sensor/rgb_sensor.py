@@ -20,11 +20,7 @@ class RGBSensorModule(sensor.SensorModule):
         if config is not None:
             for k in config.keys():
                 self.config[k] = config[k]
-        self.sensor_dict = {}
-        self.client = client
-        self.world = self.client.get_world()
-        self.map = self.world.get_map()
-        self.render_dict = {}
+        
         self.image_data = None
 
         if actor is not None:
@@ -35,14 +31,12 @@ class RGBSensorModule(sensor.SensorModule):
     def _start(self):
         """Start the sensor module"""
 
-        self.queue = Queue()
-
         rgb_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
 
         self.camera_transform = carla.Transform(carla.Location(x=1.5, z=2.4))
 
         self.camera = self.world.spawn_actor(
-            rgb_bp, self.camera_transform, attach_to=self.actor.player)
+            rgb_bp, self.camera_transform, attach_to=self.actor.get_actor())
 
         self.camera.listen(lambda image: self._get_sensor_data(image))
 

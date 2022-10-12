@@ -234,7 +234,7 @@ class CarlaEnvironment(Environment):
             self.map.get_waypoint(current_transform.location))
         # target_waypoint, _ = self.route.step(current_transform)
 
-        bev = self.bev_module.produce(
+        bev = self.bev_module.step(
             agent_vehicle=self.hero_actor_module.get_actor())
 
         data_dict["bev"] = bev

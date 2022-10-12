@@ -7,9 +7,9 @@ from utils.cost_utils import *
 logging.basicConfig(level=logging.INFO)
 
 
-class MaskedCost(nn.Module):
+class Cost(nn.Module):
     def __init__(self, image_width, image_height, device, decay_factor=0.97):
-        super(MaskedCost, self).__init__()
+        super(Cost, self).__init__()
 
         self.vehicle_width = 2.1
         self.vehicle_length = 4.9

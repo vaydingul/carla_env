@@ -19,12 +19,7 @@ class CollisionSensorModule(sensor.SensorModule):
         if config is not None:
             for k in config.keys():
                 self.config[k] = config[k]
-        self.sensor_dict = {}
-        self.client = client
-        self.world = self.client.get_world()
-        self.map = self.world.get_map()
-
-        self.render_dict = {}
+        
         self.impulse = None
 
         if actor is not None:
@@ -35,12 +30,11 @@ class CollisionSensorModule(sensor.SensorModule):
     def _start(self):
         """Start the sensor module"""
 
-        self.queue = Queue()
 
         collision_bp = self.world.get_blueprint_library().find('sensor.other.collision')
 
         self.collision_sensor = self.world.spawn_actor(
-            collision_bp, carla.Transform(), attach_to=self.actor.player)
+            collision_bp, carla.Transform(), attach_to=self.actor.get_actor())
 
         self.collision_sensor.listen(
             lambda collision_data: self._get_sensor_data(collision_data))

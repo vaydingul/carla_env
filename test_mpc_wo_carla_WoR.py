@@ -1,6 +1,6 @@
 from carla_env import carla_env_basic, carla_env_random_driver, carla_env_mpc
 from carla_env.mpc import mpc
-from carla_env.models.dynamic.vehicle_WoR import EgoModel
+from carla_env.models.dynamic.vehicle import KinematicBicycleModelWoR
 import torch
 import logging
 import numpy as np
@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 def main(config):
 
     # Initialize the environment
-    ego_forward_model = EgoModel(dt=1 / 20)
+    ego_forward_model = KinematicBicycleModelWoR(dt=1 / 20)
     ego_forward_model.load_state_dict(
         torch.load(config.ego_forward_model_path))
     ego_forward_model.to(config.device)

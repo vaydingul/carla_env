@@ -1,7 +1,6 @@
 from carla_env import carla_env_basic, carla_env_random_driver, carla_env_mpc
 from carla_env.mpc import mpc
-from carla_env.models.dynamic.vehicle import KinematicBicycleModel, KinematicBicycleModelV2
-from carla_env.models.dynamic.vehicle_WoR import EgoModel
+from carla_env.models.dynamic.vehicle import KinematicBicycleModel, KinematicBicycleModelV2, KinematicBicycleModelWoR
 from utils.plot_utils import plot_result_mpc
 import torch
 import logging
@@ -39,7 +38,7 @@ def main(config):
 
     elif config.kinematic_model == "WoR":
 
-        ego_forward_model = EgoModel(dt=1 / 20)
+        ego_forward_model = KinematicBicycleModelWoR(dt=1 / 20)
         ego_forward_model.load_state_dict(
             torch.load(config.ego_forward_model_path))
         ego_forward_model.to(config.device)

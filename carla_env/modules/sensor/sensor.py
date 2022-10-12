@@ -1,4 +1,5 @@
 from carla_env.modules import module
+from queue import Queue, Empty
 
 
 import carla
@@ -17,6 +18,9 @@ class SensorModule(module.Module):
         self.client = client
         self.world = self.client.get_world()
         self.map = self.world.get_map()
+        self.render_dict = {}
+        self.queue = Queue()
+
         self.save_to_queue = True
 
     def _start(self):
@@ -31,7 +35,7 @@ class SensorModule(module.Module):
         """Tick the sensor"""
         pass
 
-    def _get_sensor_data(self, image):
+    def _get_sensor_data(self, _):
         """Get the sensor data"""
         pass
 

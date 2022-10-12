@@ -16,10 +16,6 @@ class VehicleSensorModule(sensor.SensorModule):
             for k in config.keys():
                 self.config[k] = config[k]
 
-        self.client = client
-        self.world = self.client.get_world()
-        self.map = self.world.get_map()
-        self.render_dict = {}
         if actor is not None:
             self.attach_to_actor(actor)
 
@@ -27,8 +23,8 @@ class VehicleSensorModule(sensor.SensorModule):
 
     def _start(self):
         """Start the sensor module"""
-        self.queue = Queue()
-
+        pass
+    
     def _stop(self):
         """Stop the sensor module"""
         pass
@@ -39,15 +35,15 @@ class VehicleSensorModule(sensor.SensorModule):
 
     def _get_sensor_data(self):
         """Get the sensor data"""
-        vehicle_control = self.actor.player.get_control()
+        vehicle_control = self.actor.get_actor().get_control()
 
         vehicle_control_ = [vehicle_control.throttle,
                             vehicle_control.steer, vehicle_control.brake]
-        data = {'transform': self.actor.player.get_transform(),
-                'location': self.actor.player.get_location(),
-                'rotation': self.actor.player.get_transform().rotation,
-                'velocity': self.actor.player.get_velocity(),
-                'acceleration': self.actor.player.get_acceleration(),
+        data = {'transform': self.actor.get_actor().get_transform(),
+                'location': self.actor.get_actor().get_location(),
+                'rotation': self.actor.get_actor().get_transform().rotation,
+                'velocity': self.actor.get_actor().get_velocity(),
+                'acceleration': self.actor.get_actor().get_acceleration(),
                 'control': vehicle_control_,
                 'frame': self.world.get_snapshot().frame
                 }

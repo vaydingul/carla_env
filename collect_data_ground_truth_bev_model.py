@@ -1,5 +1,5 @@
 from ast import arg
-from carla_env import carla_env_basic, carla_env_random_driver
+from carla_env import carla_env_bev_data_collect
 
 import time
 import logging
@@ -18,7 +18,7 @@ def main(config):
 
     for k in range(config.num_episodes):
 
-        c = carla_env_random_driver.CarlaEnvironment(None)
+        c = carla_env_bev_data_collect.CarlaEnvironment(None)
 
         t_init = time.time()
 

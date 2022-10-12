@@ -124,9 +124,9 @@ class EgoModelDatasetV2(Dataset):
 
         control_ = torch.stack((acceleration_, steer_), dim=1)
 
-        return self.location[index: index +
-                             self.rollout_length, :], self.rotation[index: index +
-                                                                    self.rollout_length, :], self.velocity[index: index +
-                                                                                                           self.rollout_length, :], self.acceleration[index: index +
-                                                                                                                                                      self.rollout_length, :], control_, self.elapsed_time[index: index +
-                                                                                                                                                                                                           self.rollout_length]
+        return (self.location[index: index +
+                              self.rollout_length, :], self.rotation[index: index +
+                                                                     self.rollout_length, :], self.velocity[index: index +
+                                                                                                            self.rollout_length, :], self.acceleration[index: index +
+                                                                                                                                                       self.rollout_length, :], control_, self.elapsed_time[index: index +
+                                                                                                                                                                                                            self.rollout_length])

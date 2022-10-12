@@ -1,8 +1,7 @@
 from carla_env import carla_env_mpc_path_follower_bev
 from carla_env.mpc import mpc
-from carla_env.models.dynamic.vehicle import KinematicBicycleModel, KinematicBicycleModelV2
-from carla_env.models.dynamic.vehicle_WoR import EgoModel
-from carla_env.cost.vanilla_cost import WeightedL1Cost
+from carla_env.models.dynamic.vehicle import KinematicBicycleModel, KinematicBicycleModelV2, KinematicBicycleModelWoR
+from carla_env.cost.vanilla_cost import Cost
 from agents.navigation.local_planner import RoadOption
 import torch
 import time
@@ -18,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 
 def main(config):
 
-    cost = WeightedL1Cost(
+    cost = Cost(
         decay_factor=0.97,
         rollout_length=config.rollout_length,
         device=config.device)

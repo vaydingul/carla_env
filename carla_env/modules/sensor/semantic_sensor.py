@@ -21,11 +21,7 @@ class SemanticSensorModule(sensor.SensorModule):
         if config is not None:
             for k in config.keys():
                 self.config[k] = config[k]
-        self.sensor_dict = {}
-        self.client = client
-        self.world = self.client.get_world()
-        self.map = self.world.get_map()
-        self.render_dict = {}
+        
         self.image_data = None
 
         if actor is not None:
@@ -36,8 +32,6 @@ class SemanticSensorModule(sensor.SensorModule):
     def _start(self):
         """Start the sensor module"""
 
-        self.queue = Queue()
-
         semantic_bp = self.world.get_blueprint_library().find(
             'sensor.camera.semantic_segmentation')
         semantic_bp.set_attribute('fov', str(50))
@@ -47,7 +41,7 @@ class SemanticSensorModule(sensor.SensorModule):
                 pitch=-90))
 
         self.camera = self.world.spawn_actor(
-            semantic_bp, self.camera_transform, attach_to=self.actor.player)
+            semantic_bp, self.camera_transform, attach_to=self.actor.get_actor())
 
         self.camera.listen(lambda image: self._get_sensor_data(image))
 

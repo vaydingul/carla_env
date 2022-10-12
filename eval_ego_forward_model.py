@@ -1,8 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from carla_env.models.dynamic.vehicle import KinematicBicycleModel, KinematicBicycleModelV2
-from carla_env.models.dynamic.vehicle_WoR import EgoModel
-#from ego_model import EgoModel
+from carla_env.models.dynamic.vehicle import KinematicBicycleModel, KinematicBicycleModelV2, KinematicBicycleModelWoR
 import logging
 import os
 import pathlib
@@ -115,7 +113,7 @@ def main(config):
         model.state_dict = torch.load(config.model_path)
         model.eval()
     else:
-        model = EgoModel(dt=1 / 20)
+        model = KinematicBicycleModelWoR(dt=1 / 20)
         model.load_state_dict(torch.load("pretrained_models/WoR/ego_model.th"))
         model.eval()
 

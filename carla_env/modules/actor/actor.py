@@ -20,7 +20,7 @@ class ActorModule(module.Module):
             for k in config.keys():
                 self.config[k] = config[k]
 
-        self.actor = self.config["actor"]
+        self.vehicle = self.config["vehicle"]
         self.world = self.client.get_world()
         self.hero = self.config["hero"]
         self.spawned = False
@@ -43,10 +43,10 @@ class ActorModule(module.Module):
                 selected_spawn_point = np.random.choice(
                     self.world.get_map().get_spawn_points())
 
-            self.player = self.world.try_spawn_actor(
-                self.actor.blueprint, selected_spawn_point)
+            self.actor = self.world.try_spawn_actor(
+                self.vehicle.blueprint, selected_spawn_point)
 
-            self.spawned = self.player is not None
+            self.spawned = self.actor is not None
 
     def step(self, action=None):
         """Step the actor manager"""
@@ -62,11 +62,11 @@ class ActorModule(module.Module):
                         action[0]), steer=float(
                         action[1]), brake=float(
                         action[2]))
-                self.player.apply_control(vehicle_control)
+                self.actor.apply_control(vehicle_control)
 
     def _stop(self):
         """Stop the actor manager"""
-        self.player.destroy()
+        self.actor.destroy()
 
         for sensor in self.sensor_dict.values():
             sensor.close()
@@ -78,13 +78,13 @@ class ActorModule(module.Module):
     def render(self):
         """Render the actor manager"""
         if self.spawned:
-            self.render_dict["velocity"] = self.player.get_velocity()
-            self.render_dict["location"] = self.player.get_location()
-            self.render_dict["rotation"] = self.player.get_transform().rotation
-            self.render_dict["acceleration"] = self.player.get_acceleration()
-            self.render_dict["control"] = self.player.get_control()
-            self.render_dict["x_extent_meters"] = self.player.bounding_box.extent.x * 2
-            self.render_dict["y_extent_meters"] = self.player.bounding_box.extent.y * 2
+            self.render_dict["velocity"] = self.actor.get_velocity()
+            self.render_dict["location"] = self.actor.get_location()
+            self.render_dict["rotation"] = self.actor.get_transform().rotation
+            self.render_dict["acceleration"] = self.actor.get_acceleration()
+            self.render_dict["control"] = self.actor.get_control()
+            self.render_dict["x_extent_meters"] = self.actor.bounding_box.extent.x * 2
+            self.render_dict["y_extent_meters"] = self.actor.bounding_box.extent.y * 2
         return self.render_dict
 
     def close(self):
@@ -102,11 +102,11 @@ class ActorModule(module.Module):
 
     def get_actor(self):
         """Get the actor"""
-        return self.player
+        return self.actor
 
     def set_autopilot(self, autopilot, port=8000):
         """Set the actor to autopilot"""
-        self.player.set_autopilot(autopilot, port)
+        self.actor.set_autopilot(autopilot, port)
 
     def _set_default_config(self):
         """Set the default config of actor manager"""

@@ -28,7 +28,6 @@ class MPC(nn.Module):
 
         self.action = torch.zeros(
             (1, self.rollout_length, self.action_size), device=self.device)
-        #self.action[..., 0] = torch.ones_like(self.action[..., 0])
         self.action = nn.Parameter(self.action, requires_grad=True)
         self.optimizer = torch.optim.SGD((self.action, ), lr=.5)
 
@@ -70,40 +69,32 @@ class MPC(nn.Module):
 
             location_predicted, rotation_predicted, speed_predicted = self.forward(
                 location, rotation, speed)
+            
             cost = self._calculate_cost(
                 location_predicted,
                 rotation_predicted,
                 speed_predicted,
                 target_state)
-            # print(cost)
-            # print(self.action)
+            
             cost.backward(retain_graph=True)
 
             torch.nn.utils.clip_grad_value_(self.action, 0.1)
+
             self.optimizer.step()
 
         return list(self.action[0, 0, :].detach().cpu().numpy(
         )), location_predicted[0].detach().cpu().numpy(), cost.item()
 
-    def reset(self, initial_guess=None):
+    def reset(self):
         """Reset the controller."""
-        if initial_guess is None:
-            # Reset the action
-            # action = torch.randn((1, self.rollout_length, 3), device=self.device)
-            # action[..., 2] = torch.randint(0, 2, (1, self.rollout_length), device=self.device, dtype=torch.float32)
-            action = torch.zeros(
-                (1,
-                 self.rollout_length,
-                 self.action_size),
-                device=self.device,
-                dtype=torch.float32)
-            #action[..., -1] = torch.randint_like(action[..., -1], 0, 2, dtype=torch.float32)
-            self.action = nn.Parameter(action)
-        else:
-            self.action = nn.Parameter(
-                initial_guess.clone().detach().requires_grad_(True).repeat(
-                    1, self.rollout_length, 1))
 
+        action = torch.zeros(
+            (1,
+                self.rollout_length,
+                self.action_size),
+            device=self.device,
+            dtype=torch.float32)
+        self.action = nn.Parameter(action)
         self.optimizer = torch.optim.Adam((self.action, ), lr=0.05)
 
     def _calculate_cost(

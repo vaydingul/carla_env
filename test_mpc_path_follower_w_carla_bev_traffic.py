@@ -1,8 +1,7 @@
 from carla_env import carla_env_mpc_path_follower_bev_traffic
 from carla_env.mpc.mpc_bev import MPC
-from carla_env.models.dynamic.vehicle import KinematicBicycleModel, KinematicBicycleModelV2
-from carla_env.models.dynamic.vehicle_WoR import EgoModel
-from carla_env.cost.masked_cost_batched import MaskedCost
+from carla_env.models.dynamic.vehicle import KinematicBicycleModel, KinematicBicycleModelV2, KinematicBicycleModelWoR
+from carla_env.cost.masked_cost_batched import Cost
 from agents.navigation.local_planner import RoadOption
 import torch
 import time
@@ -18,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 
 def main(config):
 
-    cost = MaskedCost(image_width=200, image_height=150, device=config.device)
+    cost = Cost(image_width=200, image_height=150, device=config.device)
 
     ego_forward_model = KinematicBicycleModelV2(dt=1 / 20)
 

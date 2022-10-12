@@ -72,7 +72,6 @@ class DynamicBicycleModel(object):
         """
         Update the lateral dynamics of the vehicle.
         """
-        # TODO : Implement lateral dynamics!
 
         self.y += (self.velocity_x * np.sin(self.yaw) -
                    self.velocity_y * np.cos(self.yaw)) * dt
@@ -114,7 +113,7 @@ class DynamicBicycleModel(object):
         """
         Update the longitudinal dynamics of the vehicle.
         """
-        # TODO : Implement longitudinal dynamics!
+        
         self.x += (self.velocity_x * np.cos(self.yaw) +
                    self.velocity_y * np.sin(self.yaw)) * dt
 

@@ -212,7 +212,7 @@ class BirdViewProducer:
         )
         return str(cache_dir / cache_filename)
 
-    def produce(self, agent_vehicle: carla.Actor) -> BirdView:
+    def step(self, agent_vehicle: carla.Actor) -> BirdView:
         all_actors = actors.query_all(world=self._world)
         segregated_actors = actors.segregate_by_type(actors=all_actors)
         agent_vehicle_loc = agent_vehicle.get_location()
