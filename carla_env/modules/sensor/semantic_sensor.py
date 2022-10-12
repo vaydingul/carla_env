@@ -17,6 +17,7 @@ class SemanticSensorModule(sensor.SensorModule):
     def __init__(self, config, client, actor=None) -> None:
         super().__init__(config, client)
 
+        self._set_default_config()
         if config is not None:
             for k in config.keys():
                 self.config[k] = config[k]

@@ -10,6 +10,7 @@ class SensorModule(module.Module):
     def __init__(self, config, client) -> None:
         super().__init__()
 
+        self._set_default_config()
         if config is not None:
             for k in config.keys():
                 self.config[k] = config[k]
