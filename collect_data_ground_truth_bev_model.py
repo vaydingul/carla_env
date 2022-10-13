@@ -22,7 +22,7 @@ def main(config):
             "render": False,
             "save": False,
             "save_video": False,
-            "worlds":["Town01", "Town02"]})
+            "worlds": ["Town01", "Town02"]})
 
         t_init = time.time()
 
@@ -30,7 +30,7 @@ def main(config):
 
             c.step()
             # TODO: Write data to a file here
-            
+
         c.close()
 
     return True

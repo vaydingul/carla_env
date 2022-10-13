@@ -1,8 +1,5 @@
 from carla_env.modules import module
-from queue import Queue, Empty
-
-
-import carla
+from queue import Queue
 
 
 class SensorModule(module.Module):
@@ -71,20 +68,30 @@ class SensorModule(module.Module):
         """Set the default config of the sensor"""
         self.config = {}
 
-    def attach_to_actor(self, actor):
+    def attach_to_actor(self, actor, id=None):
         """Attach the sensor to an actor"""
 
-        # TODO: Implement a ID-based naming scheme.
-        # TODO: ID should be an optional input for the sensor modules
-        # TODO: If it is not provided, the sensor module should generate a unique ID
+        
 
-        if f"{self.__class__.__name__}_0" not in actor.sensor_dict.keys():
-            
-            actor.sensor_dict[f"{self.__class__.__name__}_0"] = self
-            self.actor = actor
-            
+        if (id is not None):
+
+            if (id not in actor.sensor_dict.keys()):
+                actor.sensor_dict[id] = self
+            else:
+                raise ("A sensor with same ID exists!")
+
         else:
 
-            sorted_keys = sorted([int(key_.split("_")[-1]) for key_ in actor.sensor_dict.keys() if self.__class__.__name__ in key_])            
-            actor.sensor_dict[f"{self.__class__.__name__}_{sorted_keys[-1] + 1}"] = self
-            self.actor = actor
+            if f"{self.__class__.__name__}_0" not in actor.sensor_dict.keys():
+
+                actor.sensor_dict[f"{self.__class__.__name__}_0"] = self
+                self.actor = actor
+
+            else:
+
+                sorted_keys = sorted([int(key_.split("_")[-1])
+                                      for key_ in actor.sensor_dict.keys()
+                                      if self.__class__.__name__ in key_])
+
+                actor.sensor_dict[f"{self.__class__.__name__}_{sorted_keys[-1] + 1}"] = self
+                self.actor = actor
