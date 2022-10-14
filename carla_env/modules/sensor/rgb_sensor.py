@@ -12,19 +12,18 @@ logger = logging.getLogger(__name__)
 class RGBSensorModule(sensor.SensorModule):
     """Concrete implementation of SensorModule abstract base class for rgb sensor management"""
 
-    def __init__(self, config, client, actor=None) -> None:
+    def __init__(self, config, client, actor=None, id=None) -> None:
         super().__init__(config, client)
-
 
         self._set_default_config()
         if config is not None:
             for k in config.keys():
                 self.config[k] = config[k]
-        
+
         self.image_data = None
 
         if actor is not None:
-            self.attach_to_actor(actor)
+            self.attach_to_actor(actor, id)
 
         self.reset()
 

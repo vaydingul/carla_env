@@ -109,21 +109,21 @@ class CarlaEnvironment(Environment):
         self.rgb_sensor_1 = rgb_sensor.RGBSensorModule(
             config={"yaw": -60}, client=self.client,
             actor=self.hero_actor_module)
-        self.rgb_sensor_2 = rgb_sensor.RGBSensorModule(
-            config={"yaw": 0}, client=self.client,
-            actor=self.hero_actor_module)
-        self.rgb_sensor_3 = rgb_sensor.RGBSensorModule(
-            config={"yaw": 60}, client=self.client,
-            actor=self.hero_actor_module)
-        self.rgb_sensor_4 = rgb_sensor.RGBSensorModule(
-            config={"yaw": 120}, client=self.client,
-            actor=self.hero_actor_module)
-        self.rgb_sensor_5 = rgb_sensor.RGBSensorModule(
-            config={"yaw": 180}, client=self.client,
-            actor=self.hero_actor_module)
-        self.rgb_sensor_6 = rgb_sensor.RGBSensorModule(
-            config={"yaw": 240}, client=self.client,
-            actor=self.hero_actor_module)
+        # self.rgb_sensor_2 = rgb_sensor.RGBSensorModule(
+        #     config={"yaw": 0}, client=self.client,
+        #     actor=self.hero_actor_module)
+        # self.rgb_sensor_3 = rgb_sensor.RGBSensorModule(
+        #     config={"yaw": 60}, client=self.client,
+        #     actor=self.hero_actor_module)
+        # self.rgb_sensor_4 = rgb_sensor.RGBSensorModule(
+        #     config={"yaw": 120}, client=self.client,
+        #     actor=self.hero_actor_module)
+        # self.rgb_sensor_5 = rgb_sensor.RGBSensorModule(
+        #     config={"yaw": 180}, client=self.client,
+        #     actor=self.hero_actor_module)
+        # self.rgb_sensor_6 = rgb_sensor.RGBSensorModule(
+        #     config={"yaw": 240}, client=self.client,
+        #     actor=self.hero_actor_module)
 
         self.bev_module = BirdViewProducer(
             client=self.client,
@@ -225,7 +225,8 @@ class CarlaEnvironment(Environment):
         rgb_image_2 = self.render_dict["rgb_sensor_2"]["image_data"]
         rgb_image_2 = cv2.cvtColor(rgb_image_2, cv2.COLOR_BGR2RGB)
         # Put image into canvas
-        self.canvas[:rgb_image_2.shape[0], rgb_image_1.shape[1]                    :rgb_image_1.shape[1] + rgb_image_2.shape[1]] = rgb_image_2
+        self.canvas[:rgb_image_2.shape[0], rgb_image_1.shape[1]
+            :rgb_image_1.shape[1] + rgb_image_2.shape[1]] = rgb_image_2
 
         rgb_image_3 = self.render_dict["rgb_sensor_3"]["image_data"]
         rgb_image_3 = cv2.cvtColor(rgb_image_3, cv2.COLOR_BGR2RGB)

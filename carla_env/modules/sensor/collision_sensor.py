@@ -12,24 +12,23 @@ logger = logging.getLogger(__name__)
 class CollisionSensorModule(sensor.SensorModule):
     """Concrete implementation of SensorModule abstract base class for collision sensor management"""
 
-    def __init__(self, config, client, actor=None) -> None:
+    def __init__(self, config, client, actor=None, id=None) -> None:
         super().__init__(config, client)
 
         self._set_default_config()
         if config is not None:
             for k in config.keys():
                 self.config[k] = config[k]
-        
+
         self.impulse = None
 
         if actor is not None:
-            self.attach_to_actor(actor)
+            self.attach_to_actor(actor, id)
 
         self.reset()
 
     def _start(self):
         """Start the sensor module"""
-
 
         collision_bp = self.world.get_blueprint_library().find('sensor.other.collision')
 

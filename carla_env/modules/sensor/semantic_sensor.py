@@ -1,10 +1,9 @@
-from carla_env.modules.sensor import sensor
-from queue import Queue, Empty
-import carla
-import copy
-import numpy as np
 import logging
-import time
+
+import carla
+import numpy as np
+
+from carla_env.modules.sensor import sensor
 
 logger = logging.getLogger(__name__)
 
@@ -14,18 +13,18 @@ OTHER_MAP = [1, 2, 5, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
 class SemanticSensorModule(sensor.SensorModule):
     """Concrete implementation of SensorModule abstract base class for semantic sensor management"""
 
-    def __init__(self, config, client, actor=None) -> None:
+    def __init__(self, config, client, actor=None, id=None) -> None:
         super().__init__(config, client)
 
         self._set_default_config()
         if config is not None:
             for k in config.keys():
                 self.config[k] = config[k]
-        
+
         self.image_data = None
 
         if actor is not None:
-            self.attach_to_actor(actor)
+            self.attach_to_actor(actor, id)
 
         self.reset()
 
@@ -41,7 +40,9 @@ class SemanticSensorModule(sensor.SensorModule):
                 pitch=-90))
 
         self.camera = self.world.spawn_actor(
-            semantic_bp, self.camera_transform, attach_to=self.actor.get_actor())
+            semantic_bp,
+            self.camera_transform,
+            attach_to=self.actor.get_actor())
 
         self.camera.listen(lambda image: self._get_sensor_data(image))
 

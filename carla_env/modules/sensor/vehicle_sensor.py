@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 class VehicleSensorModule(sensor.SensorModule):
     """Concrete implementation of SensorModule abstract base class for vehicle sensor management"""
 
-    def __init__(self, config, client, actor=None) -> None:
+    def __init__(self, config, client, actor=None, id=None) -> None:
         super().__init__(config, client)
 
         self._set_default_config()
@@ -17,14 +17,14 @@ class VehicleSensorModule(sensor.SensorModule):
                 self.config[k] = config[k]
 
         if actor is not None:
-            self.attach_to_actor(actor)
+            self.attach_to_actor(actor, id)
 
         self.reset()
 
     def _start(self):
         """Start the sensor module"""
         pass
-    
+
     def _stop(self):
         """Stop the sensor module"""
         pass
