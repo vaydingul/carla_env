@@ -32,17 +32,30 @@ class RGBSensorModule(sensor.SensorModule):
 
         rgb_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
 
-        self.camera_transform = carla.Transform(carla.Location(x=1.5, z=2.4))
+        self.camera_transform = carla.Transform(carla.Location(x=self.config["x"], 
+                                                y=self.config["y"], 
+                                                z=self.config["z"]), 
+                                                carla.Rotation(
+                                                    roll=self.config["roll"], 
+                                                    pitch=self.config["pitch"], 
+                                                    yaw=self.config["yaw"]))
 
         self.camera = self.world.spawn_actor(
             rgb_bp, self.camera_transform, attach_to=self.actor.get_actor())
 
         self.camera.listen(lambda image: self._get_sensor_data(image))
 
+        self.is_attached = True
+
     def _stop(self):
         """Stop the sensor module"""
-        self.camera.destroy()
+        
+        if self.is_attached:
 
+            self.camera.destroy()
+
+        self.is_attached = False
+        
     def _tick(self):
         """Tick the sensor"""
         pass
@@ -75,6 +88,7 @@ class RGBSensorModule(sensor.SensorModule):
 
     def reset(self):
         """Reset the sensor"""
+        self._stop()
         self._start()
 
     def render(self):
@@ -99,7 +113,12 @@ class RGBSensorModule(sensor.SensorModule):
 
     def _set_default_config(self):
         """Set the default config of the sensor"""
-        self.config = {}
+        self.config = {"x":1.5,
+                        "y":0.0, 
+                        "z":2.4,
+                        "roll":0.0,
+                        "pitch":0.0,
+                        "yaw":0.0}
 
     def _queue_operation(self, data):
         """Queue the sensor data and additional stuff"""

@@ -38,10 +38,14 @@ class CollisionSensorModule(sensor.SensorModule):
         self.collision_sensor.listen(
             lambda collision_data: self._get_sensor_data(collision_data))
 
+        self.is_attached = True
+
     def _stop(self):
         """Stop the sensor module"""
-        self.collision_sensor.destroy()
+        if self.is_attached:
+            self.collision_sensor.destroy()
 
+        self.is_attached = False
     def _tick(self):
         """Tick the sensor"""
         pass
@@ -65,12 +69,14 @@ class CollisionSensorModule(sensor.SensorModule):
         if self.save_to_queue:
             self._queue_operation(data)
 
+        
     def step(self):
         """Step the sensor"""
         self._tick()
 
     def reset(self):
         """Reset the sensor"""
+        self._stop()
         self._start()
 
     def render(self):

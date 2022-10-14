@@ -46,9 +46,15 @@ class SemanticSensorModule(sensor.SensorModule):
 
         self.camera.listen(lambda image: self._get_sensor_data(image))
 
+        self.is_attached = True
+
     def _stop(self):
         """Stop the sensor module"""
-        self.camera.destroy()
+        if self.is_attached:
+
+            self.camera.destroy()
+
+        self.is_attached = False
 
     def _tick(self):
         """Tick the sensor"""
@@ -77,6 +83,7 @@ class SemanticSensorModule(sensor.SensorModule):
 
     def reset(self):
         """Reset the sensor"""
+        self._stop()
         self._start()
 
     def render(self):

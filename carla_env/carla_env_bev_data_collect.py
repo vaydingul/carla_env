@@ -58,12 +58,11 @@ class CarlaEnvironment(Environment):
 
         # We have our server and client up and running
         self.server_module = server.ServerModule(None)
-        # Select a random town
-        world_ = np.random.choice(self.config["worlds"])
-        self.client_module = client.ClientModule(config={"world": world_})
+        
 
         self.render_dict = {}
 
+        self.is_first_reset = True
         self.is_done = False
         self.counter = 0
 
@@ -81,8 +80,15 @@ class CarlaEnvironment(Environment):
 
     def reset(self):
         """Reset the environment"""
-        self.server_module.reset()
-        self.client_module.reset()
+        # self.server_module.reset()
+        if self.is_first_reset:
+            self.is_first_reset = False
+        else:
+            self.traffic_manager_module.close()
+
+        # Select a random town
+        world_ = np.random.choice(self.config["worlds"])
+        self.client_module = client.ClientModule(config={"world": world_, })
 
         self.world = self.client_module.get_world()
         self.map = self.client_module.get_map()
@@ -139,6 +145,10 @@ class CarlaEnvironment(Environment):
         for _ in range(
                 int(1 / self.client_module.config["fixed_delta_seconds"]) * 2):
             self.client_module.step()
+
+        self.is_done = False
+        self.counter = 0
+        self.data = Queue()
 
     def step(self, action=None):
         """Perform an action in the environment"""
@@ -302,7 +312,8 @@ class CarlaEnvironment(Environment):
 
     def close(self):
         """Close the environment"""
-        self.hero_actor_module.close()
+        self.traffic_manager_module.close()
+        # self.hero_actor_module.close()
         self.client_module.close()
         self.server_module.close()
         logger.info("Environment is closed")

@@ -41,36 +41,43 @@ class InstanceWriter:
 
     def write(self, count, data):
 
-        for key, (value, type) in self.data_dict.items():
+        # Check if all keys exist
+        ALL_KEYS_EXIST = True
+        for key in self.data_dict.keys():
+            ALL_KEYS_EXIST = ALL_KEYS_EXIST and (key in data.keys())
 
-            if type == InstanceWriterType.JSON:
+        if ALL_KEYS_EXIST:
+            
+            for key, (value, type) in self.data_dict.items():
 
-                with open(self.path / key / f"{count}.json", 'w') as f:
+                if type == InstanceWriterType.JSON:
 
-                    json.dump(
-                        obj=data[value],
-                        fp=f,
-                        indent=10,
-                        default=DEFAULT_JSON)
+                    with open(self.path / key / f"{count}.json", 'w') as f:
 
-            elif type == InstanceWriterType.RGB_IMAGE:
+                        json.dump(
+                            obj=data[value],
+                            fp=f,
+                            indent=10,
+                            default=DEFAULT_JSON)
 
-                # Take the image
-                image = data[value]["data"]
+                elif type == InstanceWriterType.RGB_IMAGE:
 
-                # Convert to BGR
-                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+                    # Take the image
+                    image = data[value]["data"]
 
-                # Save the image
-                cv2.imwrite(str(self.path / key / f"{count}.png"), image)
+                    # Convert to BGR
+                    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-            elif type == InstanceWriterType.BEV_IMAGE:
+                    # Save the image
+                    cv2.imwrite(str(self.path / key / f"{count}.png"), image)
 
-                # Take the image
-                bev = data[value]
+                elif type == InstanceWriterType.BEV_IMAGE:
 
-                # Save the BEV
-                np.savez(str(self.path / key / f"{count}.npz"), bev=bev)
+                    # Take the image
+                    bev = data[value]
+
+                    # Save the BEV
+                    np.savez(str(self.path / key / f"{count}.npz"), bev=bev)
 
 # class H5DFWriter(Object):
 #     def __init__(self, data, path):

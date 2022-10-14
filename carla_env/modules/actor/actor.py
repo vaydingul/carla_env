@@ -1,5 +1,4 @@
 from asyncio.log import logger
-from pickle import FALSE
 from carla_env.modules import module
 from carla_env.modules.vehicle import vehicle
 import carla
@@ -67,13 +66,16 @@ class ActorModule(module.Module):
 
     def _stop(self):
         """Stop the actor manager"""
-        self.actor.destroy()
+        if self.spawned:
+            
+            self.actor.destroy()
 
-        for sensor in self.sensor_dict.values():
-            sensor.close()
+            for sensor in self.sensor_dict.values():
+                sensor.close()
 
     def reset(self):
         """Reset the actor manager"""
+        self._stop()
         self._start()
 
     def render(self):

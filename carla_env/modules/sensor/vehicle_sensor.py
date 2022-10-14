@@ -26,11 +26,12 @@ class VehicleSensorModule(sensor.SensorModule):
 
     def _start(self):
         """Start the sensor module"""
-        pass
+        self.is_attached = True
+
 
     def _stop(self):
         """Stop the sensor module"""
-        pass
+        self.is_attached = False
 
     def _tick(self):
         """Tick the sensor"""
@@ -94,8 +95,8 @@ class VehicleSensorModule(sensor.SensorModule):
 
     def reset(self):
         """Reset the sensor"""
+        self._stop()
         self._start()
-
     def render(self):
         """Render the sensor"""
         return self.render_dict

@@ -18,6 +18,12 @@ logging.basicConfig(level=logging.INFO)
 
 
 def main(config):
+    c = carla_env_bev_data_collect.CarlaEnvironment(config={
+                "render": False,
+                "save": False,
+                "save_video": False,
+                "worlds": ["Town01", "Town03", "Town04", "Town06"],
+                "max_steps" : 1000})
 
     for k in range(config.num_episodes):
 
@@ -34,12 +40,7 @@ def main(config):
         writer.add_key("bev", "bev", InstanceWriterType.BEV_IMAGE)
         writer.add_key("ego", "ego", InstanceWriterType.JSON)
 
-        c = carla_env_bev_data_collect.CarlaEnvironment(config={
-            "render": False,
-            "save": False,
-            "save_video": False,
-            "worlds": ["Town01", "Town02"],
-            "max_steps" : 1000})
+        
 
         while not c.is_done:
 
@@ -48,7 +49,7 @@ def main(config):
             # TODO: Write data to a file here
 
         # TODO: Do not close the environment, just reset it!
-        c.close()
+        c.reset()
 
     return True
 

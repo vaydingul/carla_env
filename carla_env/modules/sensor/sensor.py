@@ -18,6 +18,7 @@ class SensorModule(module.Module):
         self.render_dict = {}
         self.queue = Queue()
 
+        self.is_attached = False
         self.save_to_queue = True
 
     def _start(self):

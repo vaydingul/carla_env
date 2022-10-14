@@ -31,6 +31,7 @@ class TrafficManagerModule(module.Module):
 
 	def reset(self):
 		"""Reset the client"""
+		
 		self.traffic_manager.set_synchronous_mode(
 			self.config["synchronous_mode"])
 		
@@ -44,7 +45,8 @@ class TrafficManagerModule(module.Module):
 
 	def close(self):
 		"""Close the client"""
-		pass
+		for vehicle in self.config["vehicle_list"]:
+			vehicle.close()
 
 	def seed(self):
 		"""Seed the client"""
