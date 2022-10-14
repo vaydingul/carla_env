@@ -102,13 +102,13 @@ class CarlaEnvironment(Environment):
         # Sensor suite
         self.vehicle_sensor = vehicle_sensor.VehicleSensorModule(
             config=None, client=self.client,
-            actor=self.hero_actor_module)
+            actor=self.hero_actor_module, id="ego")
         self.collision_sensor = collision_sensor.CollisionSensorModule(
             config=None, client=self.client,
-            actor=self.hero_actor_module)
+            actor=self.hero_actor_module, id="col")
         self.rgb_sensor_1 = rgb_sensor.RGBSensorModule(
             config={"yaw": -60}, client=self.client,
-            actor=self.hero_actor_module)
+            actor=self.hero_actor_module, id="rgb")
         # self.rgb_sensor_2 = rgb_sensor.RGBSensorModule(
         #     config={"yaw": 0}, client=self.client,
         #     actor=self.hero_actor_module)
@@ -172,10 +172,9 @@ class CarlaEnvironment(Environment):
 
                 data_dict[k] = data_
 
-                if k == "VehicleSensorModule_0":
+                if k == "ego":
 
                     current_transform = data_dict[k]["transform"]
-                    current_velocity = data_dict[k]["velocity"]
 
                     transform = current_transform
                     transform.location.z += 2.0
@@ -184,7 +183,7 @@ class CarlaEnvironment(Environment):
                         self.initial_vehicle_transform = current_transform
                         self.first_time_step = False
 
-                elif k == "CollisionSensorModule_0":
+                elif k == "collision":
 
                     impulse = data_dict[k]["impulse"]
                     impulse_amplitude = np.linalg.norm(impulse)
@@ -341,7 +340,7 @@ class CarlaEnvironment(Environment):
 
     def get_data(self):
         """Get the data of the environment"""
-        return self.data.get_data()
+        return self.data.get()
 
     def get_counter(self):
         """Get the counter of the environment"""

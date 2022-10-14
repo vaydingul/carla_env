@@ -1,12 +1,15 @@
-from carla_env.modules.sensor import sensor
-from queue import Queue, Empty
 import logging
+
+import numpy as np
+
+from carla_env.modules.sensor import sensor
 
 logger = logging.getLogger(__name__)
 
 
 class VehicleSensorModule(sensor.SensorModule):
-    """Concrete implementation of SensorModule abstract base class for vehicle sensor management"""
+    """Concrete implementation of SensorModule abstract base class for
+     vehicle sensor management"""
 
     def __init__(self, config, client, actor=None, id=None) -> None:
         super().__init__(config, client)
@@ -45,8 +48,34 @@ class VehicleSensorModule(sensor.SensorModule):
                 'velocity': self.actor.get_actor().get_velocity(),
                 'acceleration': self.actor.get_actor().get_acceleration(),
                 'control': vehicle_control_,
-                'frame': self.world.get_snapshot().frame
-                }
+                'frame': self.world.get_snapshot().frame,
+                'location_array': [self.actor.get_actor().
+                                   get_transform().location.x,
+                                   self.actor.get_actor().
+                                   get_transform().location.y,
+                                   self.actor.get_actor().
+                                   get_transform().location.z],
+                'rotation_array': [self.actor.get_actor().
+                                   get_transform().rotation.roll,
+                                   self.actor.get_actor().
+                                   get_transform().rotation.pitch,
+                                   self.actor.get_actor().
+                                   get_transform().rotation.yaw],
+                'velocity_array': [self.actor.get_actor().
+                                   get_velocity().x,
+                                   self.actor.get_actor().
+                                   get_velocity().y,
+                                   self.actor.get_actor().
+                                   get_velocity().z],
+                'acceleration_array': [self.actor.get_actor().
+                                       get_acceleration().x,
+                                       self.actor.get_actor().
+                                       get_acceleration().y,
+                                       self.actor.get_actor().
+                                       get_acceleration().z],
+                'control_array': [vehicle_control.throttle,
+                                  vehicle_control.steer,
+                                  vehicle_control.brake]}
 
         logger.debug(f"Location: {data['location']}")
         logger.debug(f"Rotation: {data['rotation']}")

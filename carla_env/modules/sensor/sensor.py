@@ -71,8 +71,6 @@ class SensorModule(module.Module):
     def attach_to_actor(self, actor, id=None):
         """Attach the sensor to an actor"""
 
-        
-
         if (id is not None):
 
             if (id not in actor.sensor_dict.keys()):
@@ -85,7 +83,6 @@ class SensorModule(module.Module):
             if f"{self.__class__.__name__}_0" not in actor.sensor_dict.keys():
 
                 actor.sensor_dict[f"{self.__class__.__name__}_0"] = self
-                self.actor = actor
 
             else:
 
@@ -94,4 +91,5 @@ class SensorModule(module.Module):
                                       if self.__class__.__name__ in key_])
 
                 actor.sensor_dict[f"{self.__class__.__name__}_{sorted_keys[-1] + 1}"] = self
-                self.actor = actor
+
+        self.actor = actor

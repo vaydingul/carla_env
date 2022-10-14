@@ -1,16 +1,22 @@
 import json
 import os
-from pathlib import Path
 from enum import Enum, auto
+from pathlib import Path
 
-import h5py
 import cv2
+import h5py
+import numpy as np
+
+
+def DEFAULT_JSON(o):
+    return f"<<Non-serializable: {type(o).__qualname__}>>"
 
 
 class InstanceWriterType(Enum):
     """Type of instance writer."""
     JSON = auto()
-    IMAGE = auto()
+    RGB_IMAGE = auto()
+    BEV_IMAGE = auto()
 
 
 class InstanceWriter:
@@ -41,12 +47,16 @@ class InstanceWriter:
 
                 with open(self.path / key / f"{count}.json", 'w') as f:
 
-                    json.dump(obj=data[value], fp=f, indent=10)
+                    json.dump(
+                        obj=data[value],
+                        fp=f,
+                        indent=10,
+                        default=DEFAULT_JSON)
 
-            if type == InstanceWriterType.IMAGE:
+            elif type == InstanceWriterType.RGB_IMAGE:
 
                 # Take the image
-                image = data[value]
+                image = data[value]["data"]
 
                 # Convert to BGR
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -54,6 +64,13 @@ class InstanceWriter:
                 # Save the image
                 cv2.imwrite(str(self.path / key / f"{count}.png"), image)
 
+            elif type == InstanceWriterType.BEV_IMAGE:
+
+                # Take the image
+                bev = data[value]
+
+                # Save the BEV
+                np.savez(str(self.path / key / f"{count}.npz"), bev=bev)
 
 # class H5DFWriter(Object):
 #     def __init__(self, data, path):

@@ -28,8 +28,8 @@ def main(config):
         writer = InstanceWriter(data_save_path_)
 
         # Add the keys to the writer
-        writer.add_key("rgb", "rgb_front", InstanceWriterType.IMAGE)
-        writer.add_key("bev", "bev", InstanceWriterType.IMAGE)
+        writer.add_key("rgb", "rgb", InstanceWriterType.RGB_IMAGE)
+        writer.add_key("bev", "bev", InstanceWriterType.BEV_IMAGE)
         writer.add_key("ego", "ego", InstanceWriterType.JSON)
 
         c = carla_env_bev_data_collect.CarlaEnvironment(config={
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_episodes",
         type=int,
-        default=100,
+        default=1,
         help="Number of episodes to collect data from")
     config = parser.parse_args()
 

@@ -133,6 +133,7 @@ tickable_modules
 *.npz
 *.png
 *.mp4
+*.json
 
 # Folders
 logs/
