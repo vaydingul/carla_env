@@ -64,7 +64,6 @@ class CarlaEnvironment(Environment):
 
         self.render_dict = {}
 
-        self.first_time_step = True
         self.is_done = False
         self.counter = 0
 
@@ -108,13 +107,13 @@ class CarlaEnvironment(Environment):
             actor=self.hero_actor_module, id="col")
         self.rgb_sensor_1 = rgb_sensor.RGBSensorModule(
             config={"yaw": -60}, client=self.client,
-            actor=self.hero_actor_module, id="rgb")
-        # self.rgb_sensor_2 = rgb_sensor.RGBSensorModule(
-        #     config={"yaw": 0}, client=self.client,
-        #     actor=self.hero_actor_module)
-        # self.rgb_sensor_3 = rgb_sensor.RGBSensorModule(
-        #     config={"yaw": 60}, client=self.client,
-        #     actor=self.hero_actor_module)
+            actor=self.hero_actor_module, id="rgb_right")
+        self.rgb_sensor_2 = rgb_sensor.RGBSensorModule(
+            config={"yaw": 0}, client=self.client,
+            actor=self.hero_actor_module, id="rgb_front")
+        self.rgb_sensor_3 = rgb_sensor.RGBSensorModule(
+            config={"yaw": 60}, client=self.client,
+            actor=self.hero_actor_module, id="rgb_left")
         # self.rgb_sensor_4 = rgb_sensor.RGBSensorModule(
         #     config={"yaw": 120}, client=self.client,
         #     actor=self.hero_actor_module)
@@ -179,17 +178,9 @@ class CarlaEnvironment(Environment):
                     transform = current_transform
                     transform.location.z += 2.0
 
-                    if self.first_time_step:
-                        self.initial_vehicle_transform = current_transform
-                        self.first_time_step = False
+                    
 
-                elif k == "collision":
-
-                    impulse = data_dict[k]["impulse"]
-                    impulse_amplitude = np.linalg.norm(impulse)
-                    logger.debug(f"Collision impulse: {impulse_amplitude}")
-                    if impulse_amplitude > 1:
-                        self.is_done = True
+                
 
         data_dict["snapshot"] = snapshot
 
@@ -206,6 +197,8 @@ class CarlaEnvironment(Environment):
         self.client_module.step()
 
         self.counter += 1
+
+        self.is_done = self.counter >= self.config["max_steps"]
 
     def render(self, bev):
         """Render the environment"""

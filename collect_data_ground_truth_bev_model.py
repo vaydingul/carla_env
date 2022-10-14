@@ -28,7 +28,9 @@ def main(config):
         writer = InstanceWriter(data_save_path_)
 
         # Add the keys to the writer
-        writer.add_key("rgb", "rgb", InstanceWriterType.RGB_IMAGE)
+        writer.add_key("rgb_front", "rgb_front", InstanceWriterType.RGB_IMAGE)
+        writer.add_key("rgb_left", "rgb_left", InstanceWriterType.RGB_IMAGE)
+        writer.add_key("rgb_right", "rgb_right", InstanceWriterType.RGB_IMAGE)
         writer.add_key("bev", "bev", InstanceWriterType.BEV_IMAGE)
         writer.add_key("ego", "ego", InstanceWriterType.JSON)
 
@@ -36,7 +38,8 @@ def main(config):
             "render": False,
             "save": False,
             "save_video": False,
-            "worlds": ["Town01", "Town02"]})
+            "worlds": ["Town01", "Town02"],
+            "max_steps" : 1000})
 
         while not c.is_done:
 
@@ -62,7 +65,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_episodes",
         type=int,
-        default=1,
+        default=10,
         help="Number of episodes to collect data from")
     config = parser.parse_args()
 
