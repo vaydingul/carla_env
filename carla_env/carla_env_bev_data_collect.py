@@ -225,8 +225,7 @@ class CarlaEnvironment(Environment):
         rgb_image_2 = self.render_dict["rgb_sensor_2"]["image_data"]
         rgb_image_2 = cv2.cvtColor(rgb_image_2, cv2.COLOR_BGR2RGB)
         # Put image into canvas
-        self.canvas[:rgb_image_2.shape[0], rgb_image_1.shape[1]
-            :rgb_image_1.shape[1] + rgb_image_2.shape[1]] = rgb_image_2
+        self.canvas[:rgb_image_2.shape[0], rgb_image_1.shape[1]                    :rgb_image_1.shape[1] + rgb_image_2.shape[1]] = rgb_image_2
 
         rgb_image_3 = self.render_dict["rgb_sensor_3"]["image_data"]
         rgb_image_3 = cv2.cvtColor(rgb_image_3, cv2.COLOR_BGR2RGB)
@@ -338,6 +337,14 @@ class CarlaEnvironment(Environment):
     def get_hero_actor(self):
         """Get the hero actor of the environment"""
         return self.hero_actor_module.get_actor()
+
+    def get_data(self):
+        """Get the data of the environment"""
+        return self.data.get_data()
+
+    def get_counter(self):
+        """Get the counter of the environment"""
+        return self.counter
 
     def _set_default_config(self):
         """Set the default config of the environment"""

@@ -1,13 +1,16 @@
-from ast import arg
-from carla_env import carla_env_bev_data_collect
-
-import time
-import logging
-import cv2
-import os
-import numpy as np
 import argparse
+import logging
+import os
 import sys
+from this import d
+import time
+from pathlib import Path
+
+import cv2
+import numpy as np
+
+from carla_env import carla_env_bev_data_collect
+from carla_env.writer.writer import InstanceWriter, InstanceWriterType
 # Save the log to a file name with the current date
 # logging.basicConfig(filename=f"logs/sim_log_debug",level=logging.DEBUG)
 
@@ -18,19 +21,30 @@ def main(config):
 
     for k in range(config.num_episodes):
 
+        # Create the data writer
+        data_save_path_ = Path(config.data_save_path) / f"episode_{k}"
+        os.makedirs(data_save_path_, exist_ok=True)
+
+        writer = InstanceWriter(data_save_path_)
+
+        # Add the keys to the writer
+        writer.add_key("rgb", "rgb_front", InstanceWriterType.IMAGE)
+        writer.add_key("bev", "bev", InstanceWriterType.IMAGE)
+        writer.add_key("ego", "ego", InstanceWriterType.JSON)
+
         c = carla_env_bev_data_collect.CarlaEnvironment(config={
             "render": False,
             "save": False,
             "save_video": False,
             "worlds": ["Town01", "Town02"]})
 
-        t_init = time.time()
-
         while not c.is_done:
 
             c.step()
+            writer.write(c.get_counter(), c.get_data())
             # TODO: Write data to a file here
 
+        # TODO: Do not close the environment, just reset it!
         c.close()
 
     return True
@@ -43,7 +57,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_save_path",
         type=str,
-        default="./data/kinematic_model_data_train_3",
+        default="./data/ground_truth_bev_model_train_data",
         help="Path to save the data")
     parser.add_argument(
         "--num_episodes",
