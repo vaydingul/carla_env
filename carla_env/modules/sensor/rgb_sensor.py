@@ -31,17 +31,23 @@ class RGBSensorModule(sensor.SensorModule):
         """Start the sensor module"""
 
         rgb_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
-
-        self.camera_transform = carla.Transform(carla.Location(x=self.config["x"], 
-                                                y=self.config["y"], 
-                                                z=self.config["z"]), 
-                                                carla.Rotation(
-                                                    roll=self.config["roll"], 
-                                                    pitch=self.config["pitch"], 
-                                                    yaw=self.config["yaw"]))
+        rgb_bp.set_attribute("image_size_x", str(self.config["width"]))
+        rgb_bp.set_attribute("image_size_y", str(self.config["height"]))
+        rgb_bp.set_attribute("fov", str(self.config["fov"]))
+        self.camera_transform = carla.Transform(
+            carla.Location(
+                x=self.config["x"],
+                y=self.config["y"],
+                z=self.config["z"]),
+            carla.Rotation(
+                roll=self.config["roll"],
+                pitch=self.config["pitch"],
+                yaw=self.config["yaw"]))
 
         self.camera = self.world.spawn_actor(
             rgb_bp, self.camera_transform, attach_to=self.actor.get_actor())
+
+        
 
         self.camera.listen(lambda image: self._get_sensor_data(image))
 
@@ -49,13 +55,13 @@ class RGBSensorModule(sensor.SensorModule):
 
     def _stop(self):
         """Stop the sensor module"""
-        
+
         if self.is_attached:
 
             self.camera.destroy()
 
         self.is_attached = False
-        
+
     def _tick(self):
         """Tick the sensor"""
         pass
@@ -113,12 +119,15 @@ class RGBSensorModule(sensor.SensorModule):
 
     def _set_default_config(self):
         """Set the default config of the sensor"""
-        self.config = {"x":1.5,
-                        "y":0.0, 
-                        "z":2.4,
-                        "roll":0.0,
-                        "pitch":0.0,
-                        "yaw":0.0}
+        self.config = {"x": 1.5,
+                       "y": 0.0,
+                       "z": 2.4,
+                       "roll": 0.0,
+                       "pitch": 0.0,
+                       "yaw": 0.0,
+                       "width": 800,
+                       "height": 600,
+                       "fov": 100}
 
     def _queue_operation(self, data):
         """Queue the sensor data and additional stuff"""

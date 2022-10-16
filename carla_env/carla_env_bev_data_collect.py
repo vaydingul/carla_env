@@ -58,7 +58,6 @@ class CarlaEnvironment(Environment):
 
         # We have our server and client up and running
         self.server_module = server.ServerModule(None)
-        
 
         self.render_dict = {}
 
@@ -67,14 +66,6 @@ class CarlaEnvironment(Environment):
         self.counter = 0
 
         self.data = Queue()
-
-        if self.config["save"]:
-
-            self._create_save_folder()
-
-        if self.config["render"]:
-
-            self._create_render_window()
 
         self.reset()
 
@@ -86,9 +77,9 @@ class CarlaEnvironment(Environment):
         else:
             self.traffic_manager_module.close()
 
-        # Select a random town
-        world_ = np.random.choice(self.config["worlds"])
-        self.client_module = client.ClientModule(config={"world": world_, })
+        # Select a random task
+        selected_task = np.random.choice(self.config["tasks"])
+        self.client_module = client.ClientModule(config={"world": selected_task["world"], })
 
         self.world = self.client_module.get_world()
         self.map = self.client_module.get_map()
@@ -98,7 +89,7 @@ class CarlaEnvironment(Environment):
 
         # Make this vehicle actor
         actor_list = create_multiple_actors_for_traffic_manager(
-            self.client, 50)
+            self.client, selected_task["num_vehicles"])
         self.hero_actor_module = actor_list[0]
 
         self.traffic_manager_module = traffic_manager.TrafficManagerModule(
@@ -112,32 +103,23 @@ class CarlaEnvironment(Environment):
             config=None, client=self.client,
             actor=self.hero_actor_module, id="col")
         self.rgb_sensor_1 = rgb_sensor.RGBSensorModule(
-            config={"yaw": -60}, client=self.client,
+            config={"yaw": -60, "width": 900, "height": 256}, client=self.client,
             actor=self.hero_actor_module, id="rgb_right")
         self.rgb_sensor_2 = rgb_sensor.RGBSensorModule(
-            config={"yaw": 0}, client=self.client,
+            config={"yaw": 0, "width": 900, "height": 256}, client=self.client,
             actor=self.hero_actor_module, id="rgb_front")
         self.rgb_sensor_3 = rgb_sensor.RGBSensorModule(
-            config={"yaw": 60}, client=self.client,
+            config={"yaw": 60, "width": 900, "height": 256}, client=self.client,
             actor=self.hero_actor_module, id="rgb_left")
-        # self.rgb_sensor_4 = rgb_sensor.RGBSensorModule(
-        #     config={"yaw": 120}, client=self.client,
-        #     actor=self.hero_actor_module)
-        # self.rgb_sensor_5 = rgb_sensor.RGBSensorModule(
-        #     config={"yaw": 180}, client=self.client,
-        #     actor=self.hero_actor_module)
-        # self.rgb_sensor_6 = rgb_sensor.RGBSensorModule(
-        #     config={"yaw": 240}, client=self.client,
-        #     actor=self.hero_actor_module)
 
         self.bev_module = BirdViewProducer(
             client=self.client,
             target_size=PixelDimensions(
-                1600,
-                1200),
+                192,
+                192),
             render_lanes_on_junctions=False,
-            pixels_per_meter=15,
-            crop_type=BirdViewCropType.FRONT_AND_REAR_AREA)
+            pixels_per_meter=5,
+            crop_type=BirdViewCropType.FRONT_AREA_ONLY)
 
         time.sleep(1.0)
         logger.info("Everything is set!")
@@ -149,6 +131,14 @@ class CarlaEnvironment(Environment):
         self.is_done = False
         self.counter = 0
         self.data = Queue()
+
+        if self.config["save"]:
+
+            self._create_save_folder()
+
+        if self.config["render"]:
+
+            self._create_render_window()
 
     def step(self, action=None):
         """Perform an action in the environment"""
@@ -188,10 +178,6 @@ class CarlaEnvironment(Environment):
                     transform = current_transform
                     transform.location.z += 2.0
 
-                    
-
-                
-
         data_dict["snapshot"] = snapshot
 
         self.spectator.set_transform(transform)
@@ -212,6 +198,7 @@ class CarlaEnvironment(Environment):
 
     def render(self, bev):
         """Render the environment"""
+        if not self.config["render"]: return 
         for (k, v) in self.__dict__.items():
             if isinstance(v, Module):
                 self.render_dict[k] = v.render()
@@ -238,72 +225,62 @@ class CarlaEnvironment(Environment):
                     rgb_image_2.shape[1] +
                     rgb_image_3.shape[1]] = rgb_image_3
 
-        rgb_image_4 = self.render_dict["rgb_sensor_4"]["image_data"]
-        rgb_image_4 = cv2.cvtColor(rgb_image_4, cv2.COLOR_BGR2RGB)
+        bev = self.bev_module.as_rgb(bev)
+        bev = cv2.cvtColor(bev, cv2.COLOR_BGR2RGB)
         # Put image into canvas
-        self.canvas[rgb_image_1.shape[0]:rgb_image_1.shape[0] +
-                    rgb_image_4.shape[0], rgb_image_1.shape[1] +
+        self.canvas[rgb_image_1.shape[0] + 10:rgb_image_1.shape[0] + 
+                    10 + bev.shape[0], rgb_image_1.shape[1] +
                     rgb_image_2.shape[1]:rgb_image_1.shape[1] +
                     rgb_image_2.shape[1] +
-                    rgb_image_4.shape[1]] = rgb_image_4
+                    bev.shape[1]] = bev
 
-        rgb_image_5 = self.render_dict["rgb_sensor_5"]["image_data"]
-        rgb_image_5 = cv2.cvtColor(rgb_image_5, cv2.COLOR_BGR2RGB)
-        # Put image into canvas
-        self.canvas[rgb_image_1.shape[0]:rgb_image_1.shape[0] +
-                    rgb_image_5.shape[0], rgb_image_1.shape[1]:rgb_image_1.shape[1] +
-                    rgb_image_5.shape[1]] = rgb_image_5
+        # Put text for other modules
+        position_x = rgb_image_1.shape[1] * 3 + 10
+        position_y = 20
+        for (module, render_dict) in self.render_dict.items():
+            if "rgb" not in module:
 
-        rgb_image_6 = self.render_dict["rgb_sensor_6"]["image_data"]
-        rgb_image_6 = cv2.cvtColor(rgb_image_6, cv2.COLOR_BGR2RGB)
-        # Put image into canvas
-        self.canvas[rgb_image_1.shape[0]:rgb_image_1.shape[0] +
-                    rgb_image_6.shape[0], :rgb_image_6.shape[1]] = rgb_image_6
+                if bool(render_dict):
 
-        bev_1 = self.bev_module.as_rgb(bev)
-        bev_1 = cv2.cvtColor(bev_1, cv2.COLOR_BGR2RGB)
-        # Put image into canvas
-        self.canvas[:bev_1.shape[0], rgb_image_1.shape[1] +
-                    rgb_image_2.shape[1] +
-                    rgb_image_3.shape[1]:rgb_image_1.shape[1] +
-                    rgb_image_2.shape[1] +
-                    rgb_image_3.shape[1] +
-                    bev_1.shape[1]] = bev_1
+                    cv2.putText(
+                        self.canvas,
+                        f"{module.capitalize()}",
+                        (position_x,
+                         position_y),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5,
+                        (0,
+                         255,
+                         255),
+                        1,
+                        cv2.LINE_AA)
+                    position_y += 40
 
-        bev_2 = bev.copy()
-        bev_2[..., 2] = 0
-        bev_2[..., 3] = 0
-        bev_2 = self.bev_module.as_rgb(bev_2)
-        bev_2 = cv2.cvtColor(bev_2, cv2.COLOR_BGR2RGB)
-        # Put image into canvas
-        self.canvas[bev_1.shape[0]:bev_1.shape[0] +
-                    bev_2.shape[0], :bev_2.shape[1]] = bev_2
+                    for (k, v) in render_dict.items():
 
-        bev_3 = bev.copy()
-        bev_3[..., 0] = 0
-        bev_3[..., 1] = 0
-        bev_3[..., 4] = 0
-        bev_3[..., 5] = 0
-        bev_3[..., 6] = 0
-        bev_3[..., 7] = 0
-        bev_3 = self.bev_module.as_rgb(bev_3)
-        bev_3 = cv2.cvtColor(bev_3, cv2.COLOR_BGR2RGB)
-        # Put image into canvas
-        self.canvas[bev_1.shape[0]:bev_1.shape[0] +
-                    bev_3.shape[0], bev_2.shape[1] +
-                    100:bev_2.shape[1] +
-                    100 +
-                    bev_3.shape[1]] = bev_3
+                        cv2.putText(
+                            self.canvas,
+                            f"{k}: {v}",
+                            (position_x,
+                             position_y),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.5,
+                            (255,
+                             255,
+                             0),
+                            1)
+                        position_y += 20
 
         canvas_display = cv2.resize(
             src=self.canvas, dsize=(
                 0, 0), fx=0.5, fy=0.5)
-
+        
         cv2.imshow("Environment", canvas_display)
 
-        canvas_save = self.canvas
-        cv2.imwrite(str(self.debug_path /
-                        Path(f"{self.counter}.png")), canvas_save)
+        if self.config["save"]:
+            canvas_save = self.canvas
+            cv2.imwrite(str(self.debug_path /
+                            Path(f"{self.counter}.png")), canvas_save)
 
         if self.config["save_video"]:
             self.video_writer.write(canvas_save)
@@ -355,14 +332,9 @@ class CarlaEnvironment(Environment):
         self.config = {}
 
     def _create_render_window(self):
-
-        self.canvas = np.zeros((2400, 4000, 3), np.uint8)
+        cv2.destroyAllWindows()
+        self.canvas = np.zeros((256 + 192 + 50, 900 * 3 + 1200, 3), np.uint8)
         cv2.imshow("Environment", self.canvas)
-
-        if cv2.waitKey(1) == ord('q'):
-
-            # press q to terminate the loop
-            cv2.destroyAllWindows()
 
         if self.config["save_video"]:
             fourcc = VideoWriter_fourcc(*'mp4v')

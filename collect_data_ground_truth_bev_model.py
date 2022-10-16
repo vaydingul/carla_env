@@ -18,12 +18,15 @@ logging.basicConfig(level=logging.INFO)
 
 
 def main(config):
-    c = carla_env_bev_data_collect.CarlaEnvironment(config={
-                "render": False,
-                "save": False,
-                "save_video": False,
-                "worlds": ["Town01", "Town03", "Town04", "Town06"],
-                "max_steps" : 1000})
+    c = carla_env_bev_data_collect.CarlaEnvironment(
+        config={
+            "render": False, "save": False, "save_video": False,
+            "tasks": [
+                {
+                    "world": "Town01", "num_vehicles": 250},
+                {
+                    "world": "Town03", "num_vehicles": 200}],
+            "max_steps": 1000})
 
     for k in range(config.num_episodes):
 
@@ -40,15 +43,17 @@ def main(config):
         writer.add_key("bev", "bev", InstanceWriterType.BEV_IMAGE)
         writer.add_key("ego", "ego", InstanceWriterType.JSON)
 
-        
-
         while not c.is_done:
 
             c.step()
-            writer.write(c.get_counter(), c.get_data())
-            # TODO: Write data to a file here
 
-        # TODO: Do not close the environment, just reset it!
+            data_ = c.get_data()
+
+            c.render(bev=data_["bev"])
+
+            writer.write(c.get_counter(), data_)
+            time.sleep(0.1)
+
         c.reset()
 
     return True
@@ -66,7 +71,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_episodes",
         type=int,
-        default=10,
+        default=2,
         help="Number of episodes to collect data from")
     config = parser.parse_args()
 
