@@ -207,7 +207,6 @@ class MapMaskGenerator:
 
     def road_mask(self) -> Mask:
         canvas = self.make_empty_mask()
-        # FIXME Refactor that crap
         for road_waypoints in self._each_road_waypoints:
             road_left_side = [
                 lateral_shift(
@@ -223,7 +222,6 @@ class MapMaskGenerator:
             if len(polygon) > 2:
                 polygon = np.array([polygon], dtype=np.int32)
 
-                # FIXME Hard to notice the difference without polylines
                 cv.polylines(
                     img=canvas,
                     pts=polygon,
