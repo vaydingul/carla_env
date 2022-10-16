@@ -10,6 +10,11 @@ Tensor = TypeVar('torch.tensor')
 
 
 class BEVWorldModel(nn.Module):
+    # TODO: Input will be BEV at (t) and (t+1)
+    # TODO: Figure out how the BEV at two different time-steps will be combined (sum or concat?)
+    # TODO: Output will be the recounstruction of the BEV at (t+1)
+    # TODO: What we care is the latent code to encode to have an idea about
+    # the change in the environment
 
     def __init__(self,
                  in_channels: int,
