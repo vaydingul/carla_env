@@ -1,5 +1,5 @@
-from torch import nn
 import torchvision
+from torch import nn
 
 
 class View(nn.Module):
