@@ -11,7 +11,7 @@ Tensor = TypeVar('torch.tensor')
 
 class BEVWorldModel(nn.Module):
     # TODO: Input will be BEV at (t) and (t+1)
-    # TODO: Figure out how the BEV at two different time-steps will be combined (sum or concat?) ANSWER: IT IS SUM
+    # TODO: Figure out how the BEV at two different time-steps will be combined (sum or concat?) ANSWER: IT IS ENCODED SUM
     # TODO: Create a function Combine layer to fuse different ideas (sum and concat)
     # TODO: Output will be the reconstruction of the BEV at (t+1)
     # TODO: It will basically be a conditional autoencoder which is conditioned on BEV at (t)
