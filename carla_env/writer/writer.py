@@ -44,7 +44,7 @@ class InstanceWriter:
             ALL_KEYS_EXIST = ALL_KEYS_EXIST and (key in data.keys())
 
         if ALL_KEYS_EXIST:
-            
+
             for key, (value, type) in self.data_dict.items():
 
                 if type == InstanceWriterType.JSON:

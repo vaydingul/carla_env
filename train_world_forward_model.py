@@ -12,7 +12,7 @@ import wandb
 
 import torch
 from torch.utils.data import DataLoader
-from carla_env.dataset.world_model import WorldModelDataset
+from carla_env.dataset.instance import WorldModelDataset
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.trainer.world_model import Trainer
 
@@ -57,14 +57,12 @@ def main(config):
         num_epochs=config.num_epochs)
 
     if config.wandb:
-        run = wandb.init(project="mbl", group="ego-forward-model",
-                         name="training_new_model", config=config)
+        run = wandb.init(project="mbl", group="world-forward-model",
+                         name="model", config=config)
         run.define_metric("train/step")
         run.define_metric("val/step")
-        run.define_metric("model/step")
         run.define_metric(name="train/*", step_metric="train/step")
         run.define_metric(name="val/*", step_metric="val/step")
-        run.define_metric(name="model/*", step_metric="model/step")
 
     else:
 

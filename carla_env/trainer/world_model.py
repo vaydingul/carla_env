@@ -1,13 +1,11 @@
-import torch
-from torch import nn
-from torch.nn import functional as F
-
 import numpy as np
+import torch
+from torch.nn import functional as F
 
 
 class Trainer(object):
     # TODO: Change according to the new dataloader
-	
+
     def __init__(
             self,
             model,
@@ -31,11 +29,13 @@ class Trainer(object):
 
         self.model.train()
 
-        for i, (_, _, _, world_current_bev, world_future_bev, _,
-                _) in enumerate(self.dataloader_train):
+        for i, (data) in enumerate(self.dataloader_train):
+
+            world_current_bev = data["bev"][:, 0]
+            world_future_bev = data["bev"][:, 1]
 
             # Predict the future bev
-            world_future_bev_predicted, mu, logvar = model(
+            world_future_bev_predicted, mu, logvar = self.model(
                 world_current_bev, world_future_bev)
 
             # Calculate the KL divergence loss
@@ -70,11 +70,12 @@ class Trainer(object):
 
         with torch.no_grad():
 
-            for i, (_, _, _, world_current_bev, world_future_bev, _,
-                    _) in enumerate(self.dataloader_val):
+            for i, (data) in enumerate(self.dataloader_val):
 
+                world_current_bev = data["bev"][:, 0]
+                world_future_bev = data["bev"][:, 1]
                 # Predict the future bev
-                world_future_bev_predicted, mu, logvar = model(
+                world_future_bev_predicted, mu, logvar = self.model(
                     world_current_bev, world_future_bev)
 
                 # Calculate the KL divergence loss
