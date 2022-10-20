@@ -1,6 +1,9 @@
+import logging
 import numpy as np
 import torch
 from torch.nn import functional as F
+
+logger = logging.getLogger(__name__)
 
 
 class Trainer(object):
@@ -25,14 +28,16 @@ class Trainer(object):
         self.train_step = 0
         self.val_step = 0
 
+        self.model.to(self.device)
+
     def train(self, run):
 
         self.model.train()
 
         for i, (data) in enumerate(self.dataloader_train):
 
-            world_current_bev = data["bev"][:, 0]
-            world_future_bev = data["bev"][:, 1]
+            world_current_bev = data["bev"][:, :-1].to(self.device)
+            world_future_bev = data["bev"][:, -2:-1].to(self.device)
 
             # Predict the future bev
             world_future_bev_predicted, mu, logvar = self.model(
@@ -44,7 +49,7 @@ class Trainer(object):
 
             # Calculate the reconstruction loss
             loss_reconstruction = F.mse_loss(
-                world_future_bev_predicted, world_future_bev)
+                world_future_bev_predicted, world_future_bev.squeeze())
 
             loss = loss_kl_div + loss_reconstruction
 
@@ -72,8 +77,8 @@ class Trainer(object):
 
             for i, (data) in enumerate(self.dataloader_val):
 
-                world_current_bev = data["bev"][:, 0]
-                world_future_bev = data["bev"][:, 1]
+                world_current_bev = data["bev"][:, :-1].to(self.device)
+                world_future_bev = data["bev"][:, -2:-1].to(self.device)
                 # Predict the future bev
                 world_future_bev_predicted, mu, logvar = self.model(
                     world_current_bev, world_future_bev)

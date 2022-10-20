@@ -12,7 +12,7 @@ import wandb
 
 import torch
 from torch.utils.data import DataLoader
-from carla_env.dataset.instance import WorldModelDataset
+from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.trainer.world_model import Trainer
 
@@ -24,8 +24,14 @@ def main(config):
 
     data_path_train = config.data_path_train
     data_path_val = config.data_path_val
-    world_model_dataset_train = WorldModelDataset(data_path_train)
-    world_model_dataset_val = WorldModelDataset(data_path_val)
+
+    world_model_dataset_train = InstanceDataset(
+        data_path=data_path_train,
+        sequence_length=config.num_time_step)
+    world_model_dataset_val = InstanceDataset(
+        data_path=data_path_val,
+        sequence_length=config.num_time_step)
+
     logger.info(f"Train dataset size: {len(world_model_dataset_train)}")
     logger.info(f"Val dataset size: {len(world_model_dataset_val)}")
 
@@ -40,7 +46,15 @@ def main(config):
         shuffle=False,
         num_workers=config.num_workers)
 
-    world_bev_model = WorldBEVModel()
+    # TODO: Add adaptive strategy for multi time-step input (i.e., tensor.view(B, -1, H, W))
+    # TODO: Number of timesteps should be a parameter for World Model to
+    # modify encoder input sizes
+    world_bev_model = WorldBEVModel(
+        input_shape=[
+            7,
+            192,
+            192],
+        num_time_step=config.num_time_step)
 
     world_model_optimizer = torch.optim.Adam(
         world_bev_model.parameters(), lr=config.lr)
@@ -68,6 +82,7 @@ def main(config):
 
         run = None
 
+    logger.info("Training started!")
     world_model_trainer.learn(run)
 
     world_bev_model.to("cpu")
@@ -89,19 +104,20 @@ if __name__ == "__main__":
     checkpoint_path.mkdir(parents=True, exist_ok=True)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--lr", type=float, default=0.01)
-    parser.add_argument("--num_epochs", type=int, default=1000)
-    parser.add_argument("--batch_size", type=int, default=5000)
-    parser.add_argument("--num_workers", type=int, default=0)
+    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--num_epochs", type=int, default=50)
+    parser.add_argument("--batch_size", type=int, default=25)
+    parser.add_argument("--num_workers", type=int, default=4)
+    parser.add_argument("--num_time_step", type=int, default=5)
     parser.add_argument("--data_path_train", type=str,
-                        default="./data/kinematic_model_data_train_3/")
+                        default="data/ground_truth_bev_model_data_dummy/")
     parser.add_argument("--data_path_val", type=str,
-                        default="./data/kinematic_model_data_val_3/")
+                        default="data/ground_truth_bev_model_data_dummy/")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
     parser.add_argument("--wandb", type=bool, default=True)
     config = parser.parse_args()
 
-    # config.wandb = False
+    config.wandb = False
 
     main(config)
