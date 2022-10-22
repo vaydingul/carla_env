@@ -1,9 +1,3 @@
-
-# TODO: Create a trainer for world forward model
-# TODO: It should be very similar to the one in ego forward model
-# TODO: Consider to add new folder to carla_gym for trainers!
-
-
 import argparse
 from datetime import datetime
 from pathlib import Path
@@ -46,9 +40,6 @@ def main(config):
         shuffle=False,
         num_workers=config.num_workers)
 
-    # TODO: Add adaptive strategy for multi time-step input (i.e., tensor.view(B, -1, H, W))
-    # TODO: Number of timesteps should be a parameter for World Model to
-    # modify encoder input sizes
     world_bev_model = WorldBEVModel(
         input_shape=[
             7,

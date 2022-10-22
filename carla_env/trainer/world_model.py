@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 
 class Trainer(object):
-    # TODO: Change according to the new dataloader
 
     def __init__(
             self,
@@ -48,7 +47,7 @@ class Trainer(object):
                 torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
             # Calculate the reconstruction loss
-            loss_reconstruction = F.mse_loss(
+            loss_reconstruction = F.cross_entropy(
                 world_future_bev_predicted, world_future_bev.squeeze())
 
             loss = loss_kl_div + loss_reconstruction
@@ -88,7 +87,7 @@ class Trainer(object):
                     torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
                 # Calculate the reconstruction loss
-                loss_reconstruction = F.mse_loss(
+                loss_reconstruction = F.cross_entropy(
                     world_future_bev_predicted, world_future_bev)
 
                 loss = loss_kl_div + loss_reconstruction

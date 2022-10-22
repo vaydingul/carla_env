@@ -13,17 +13,6 @@ Tensor = TypeVar('torch.tensor')
 
 
 class WorldBEVModel(nn.Module):
-    # TODO: Input will be BEV at (t) and (t+1)
-    # TODO: Figure out how the BEV at two different time-steps will be combined (sum or concat?) ANSWER: IT IS SUM
-    # TODO: Create a function Combine layer to fuse different ideas (sum and concat)
-    # TODO: Output will be the reconstruction of the BEV at (t+1)
-    # TODO: It will basically be a conditional autoencoder which is conditioned on BEV at (t)
-    # TODO: What we care is the latent code to encode to have an idea about
-    # the change in the environment
-
-    # ! NOTE: Everything is encoded before it is processed.
-
-    # FIXME: Apart from everything, fix the code! WTF is this?
 
     def __init__(self,
                  input_shape: List[int],
@@ -76,7 +65,11 @@ class WorldBEVModel(nn.Module):
             output_channel=self.input_shape_future[0],
             layers=self.num_encoder_layer)
 
-    def forward(self, world_previous_bev, world_future_bev):
+    def forward(
+            self,
+            world_previous_bev,
+            world_future_bev=None,
+            sample_latent=False):
 
         world_previous_bev = world_previous_bev.view(
             world_previous_bev.shape[0],
@@ -84,27 +77,49 @@ class WorldBEVModel(nn.Module):
             world_previous_bev.shape[-2],
             world_previous_bev.shape[-1])
 
-        world_future_bev = world_future_bev.view(
-            world_future_bev.shape[0],
-            -1,
-            world_future_bev.shape[-2],
-            world_future_bev.shape[-1])
+        if world_future_bev is not None:
 
-        world_previous_bev_encoded = self.world_previous_bev_encoder(
-            world_previous_bev)
-        world_future_bev_encoded = self.world_future_bev_encoder(
-            world_future_bev)
+            world_future_bev = world_future_bev.view(
+                world_future_bev.shape[0],
+                -1,
+                world_future_bev.shape[-2],
+                world_future_bev.shape[-1])
 
-        latent_representation, mu, logvar = self.probabilistic_encoder(
-            world_previous_bev_encoded + world_future_bev_encoded)
+        if not sample_latent:
 
-        h = self.latent_expander(latent_representation) + \
-            world_previous_bev_encoded.flatten(start_dim=1)
+            world_previous_bev_encoded = self.world_previous_bev_encoder(
+                world_previous_bev)
+            world_future_bev_encoded = self.world_future_bev_encoder(
+                world_future_bev)
 
-        world_future_bev_predicted = self.world_bev_decoder(
-            h.view(world_previous_bev_encoded.shape))
+            latent_representation, mu, logvar = self.probabilistic_encoder(
+                world_previous_bev_encoded + world_future_bev_encoded)
 
-        return world_future_bev_predicted, mu, logvar
+            h = self.latent_expander(latent_representation) + \
+                world_previous_bev_encoded.flatten(start_dim=1)
+
+            world_future_bev_predicted = self.world_bev_decoder(
+                h.view(world_previous_bev_encoded.shape))
+
+            return (world_future_bev_predicted, mu, logvar)
+
+        else:
+
+            world_previous_bev_encoded = self.world_previous_bev_encoder(
+                world_previous_bev)
+            world_future_bev_encoded = self.world_future_bev_encoder(
+                world_future_bev)
+
+            latent_representation = torch.randn(
+                world_previous_bev_encoded.shape[0], self.latent_size)
+
+            h = self.latent_expander(latent_representation) + \
+                world_previous_bev_encoded.flatten(start_dim=1)
+
+            world_future_bev_predicted = self.world_bev_decoder(
+                h.view(world_previous_bev_encoded.shape))
+
+            return world_future_bev_predicted
 
 
 if __name__ == "__main__":
