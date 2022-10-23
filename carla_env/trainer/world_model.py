@@ -2,7 +2,7 @@ import logging
 import numpy as np
 import torch
 from torch.nn import functional as F
-
+from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
@@ -16,7 +16,8 @@ class Trainer(object):
             optimizer,
             device,
             num_epochs=1000,
-            log_interval=10):
+            log_interval=10,
+            save_path=None):
         self.model = model
         self.dataloader_train = dataloader_train
         self.dataloader_val = dataloader_val
@@ -24,6 +25,7 @@ class Trainer(object):
         self.device = device
         self.num_epochs = num_epochs
         self.log_interval = log_interval
+        self.save_path = save_path
         self.train_step = 0
         self.val_step = 0
 
@@ -88,7 +90,7 @@ class Trainer(object):
 
                 # Calculate the reconstruction loss
                 loss_reconstruction = F.cross_entropy(
-                    world_future_bev_predicted, world_future_bev)
+                    world_future_bev_predicted, world_future_bev.squeeze())
 
                 loss = loss_kl_div + loss_reconstruction
 
@@ -105,8 +107,8 @@ class Trainer(object):
         if run is not None:
             run.log({"val/step": self.val_step,
                      "val/loss": loss,
-                     "val/loss_location": loss_kl_div,
-                     "val/loss_rotation": loss_reconstruction})
+                     "val/loss_kl_divergence": loss_kl_div,
+                     "val/loss_reconstruction": loss_reconstruction})
 
         return loss, loss_kl_div, loss_reconstruction
 
@@ -119,3 +121,12 @@ class Trainer(object):
             logger.info(
                 "Epoch: {}, Val Loss: {}, Val Loss KL Div: {}, Val Loss Reconstruction: {}".format(
                     epoch, loss, loss_kl_div, loss_reconstruction))
+
+            if ((epoch + 1) % 5 == 0) and self.save_path is not None:
+                torch.save(
+                    self.model.state_dict(),
+                    self.save_path /
+                    Path(f"world_model_{epoch}.pt"))
+
+                run.save(str(self.save_path /
+                         Path(f"world_model_{epoch}.pt")))

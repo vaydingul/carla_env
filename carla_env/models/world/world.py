@@ -17,11 +17,12 @@ class WorldBEVModel(nn.Module):
     def __init__(self,
                  input_shape: List[int],
                  latent_size: int = 256,
-                 hidden_channel: int = 32,
+                 hidden_channel: int = 256,
                  output_channel: int = 512,
                  num_encoder_layer: int = 4,
                  num_probabilistic_encoder_layer: int = 2,
-                 num_time_step: int = 2
+                 num_time_step: int = 2,
+                 dropout: float = 0.2
                  ) -> None:
         super(WorldBEVModel, self).__init__()
 
@@ -42,18 +43,21 @@ class WorldBEVModel(nn.Module):
         self.world_previous_bev_encoder = Encoder2D(
             input_shape=self.input_shape_previous,
             output_channel=hidden_channel,
-            layers=self.num_encoder_layer)
+            layers=self.num_encoder_layer,
+            dropout=dropout)
 
         self.world_future_bev_encoder = Encoder2D(
             input_shape=self.input_shape_future,
             output_channel=hidden_channel,
-            layers=self.num_encoder_layer)
+            layers=self.num_encoder_layer,
+            dropout=dropout)
 
         self.probabilistic_encoder = ProbabilisticEncoder2D(
             input_shape=self.world_previous_bev_encoder.get_output_shape(),
             output_channel=output_channel,
             layers=self.num_probabilistic_encoder_layer,
-            latent_size=latent_size)
+            latent_size=latent_size,
+            dropout=dropout)
 
         self.latent_expander = nn.Sequential(
             nn.Linear(
@@ -63,7 +67,8 @@ class WorldBEVModel(nn.Module):
         self.world_bev_decoder = Decoder2D(
             input_shape=self.world_previous_bev_encoder.get_output_shape(),
             output_channel=self.input_shape_future[0],
-            layers=self.num_encoder_layer)
+            layers=self.num_encoder_layer,
+            dropout=dropout)
 
     def forward(
             self,
