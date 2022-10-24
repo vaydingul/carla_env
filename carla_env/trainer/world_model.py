@@ -46,6 +46,10 @@ class Trainer(object):
             world_future_bev_predicted, mu, logvar = self.model(
                 world_previous_bev, world_future_bev)
 
+            if self.reconstruction_loss == F.mse_loss:
+                world_future_bev_predicted = F.sigmoid(
+                    world_future_bev_predicted)
+
             # Calculate the KL divergence loss
             loss_kl_div = -0.5 * \
                 torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
@@ -85,6 +89,10 @@ class Trainer(object):
                 # Predict the future bev
                 world_future_bev_predicted, mu, logvar = self.model(
                     world_previous_bev, world_future_bev)
+
+                if self.reconstruction_loss == F.mse_loss:
+                    world_future_bev_predicted = F.sigmoid(
+                        world_future_bev_predicted)
 
                 # Calculate the KL divergence loss
                 loss_kl_div = -0.5 * \
