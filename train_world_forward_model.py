@@ -115,6 +115,6 @@ if __name__ == "__main__":
     parser.add_argument("--wandb", type=bool, default=True)
     config = parser.parse_args()
 
-    config.wandb = False
+    config.wandb = True
 
     main(config)
