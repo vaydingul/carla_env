@@ -68,6 +68,24 @@ class BirdViewMasks(IntEnum):
         return list(reversed(BirdViewMasks.top_to_bottom()))
 
 
+class BirdViewMasksModel(IntEnum):
+    PEDESTRIANS = 6
+    RED_LIGHTS = 5
+    YELLOW_LIGHTS = 4
+    GREEN_LIGHTS = 3
+    VEHICLES = 2
+    LANES = 1
+    ROAD = 0
+
+    @staticmethod
+    def top_to_bottom() -> List[int]:
+        return list(BirdViewMasksModel)
+
+    @staticmethod
+    def bottom_to_top() -> List[int]:
+        return list(reversed(BirdViewMasksModel.top_to_bottom()))
+
+
 RGB_BY_MASK = {
     BirdViewMasks.PEDESTRIANS: RGB.VIOLET,
     BirdViewMasks.RED_LIGHTS: RGB.RED,
@@ -269,6 +287,21 @@ class BirdViewProducer:
         def nonzero_indices(arr): return arr == COLOR_ON
 
         for mask_type in BirdViewMasks.bottom_to_top():
+            rgb_color = RGB_BY_MASK[mask_type]
+            mask = birdview[:, :, mask_type]
+            # If mask above contains 0, don't overwrite content of canvas (0
+            # indicates transparency)
+            rgb_canvas[nonzero_indices(mask)] = rgb_color
+        return rgb_canvas
+
+    @staticmethod
+    def as_rgb_model(birdview: BirdView) -> RgbCanvas:
+        h, w, d = birdview.shape
+        assert d == len(BirdViewMasksModel)
+        rgb_canvas = np.zeros(shape=(h, w, 3), dtype=np.uint8)
+        def nonzero_indices(arr): return arr == COLOR_ON
+
+        for mask_type in BirdViewMasksModel.bottom_to_top():
             rgb_color = RGB_BY_MASK[mask_type]
             mask = birdview[:, :, mask_type]
             # If mask above contains 0, don't overwrite content of canvas (0

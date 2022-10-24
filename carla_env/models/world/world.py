@@ -112,11 +112,11 @@ class WorldBEVModel(nn.Module):
 
             world_previous_bev_encoded = self.world_previous_bev_encoder(
                 world_previous_bev)
-            world_future_bev_encoded = self.world_future_bev_encoder(
-                world_future_bev)
 
             latent_representation = torch.randn(
-                world_previous_bev_encoded.shape[0], self.latent_size)
+                world_previous_bev_encoded.shape[0],
+                self.latent_size).to(
+                world_previous_bev.device)
 
             h = self.latent_expander(latent_representation) + \
                 world_previous_bev_encoded.flatten(start_dim=1)

@@ -66,6 +66,7 @@ def main(config):
         world_model_optimizer,
         world_model_device,
         num_epochs=config.num_epochs,
+        reconstruction_loss=config.reconstruction_loss,
         save_path=config.pretrained_model_path)
 
     if config.wandb:
@@ -101,9 +102,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--num_epochs", type=int, default=25)
-    parser.add_argument("--batch_size", type=int, default=256)
+    parser.add_argument("--batch_size", type=int, default=90)
     parser.add_argument("--num_workers", type=int, default=4)
-    parser.add_argument("--num_time_step", type=int, default=2)
+    parser.add_argument("--num_time_step", type=int, default=11)
+    parser.add_argument("--reconstruction_loss", type=str, default="mse_loss")
     parser.add_argument("--data_path_train", type=str,
                         default="data/ground_truth_bev_model_train_data/")
     parser.add_argument("--data_path_val", type=str,
@@ -113,6 +115,6 @@ if __name__ == "__main__":
     parser.add_argument("--wandb", type=bool, default=True)
     config = parser.parse_args()
 
-    config.wandb = True
+    config.wandb = False
 
     main(config)

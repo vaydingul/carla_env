@@ -17,6 +17,7 @@ class Trainer(object):
             device,
             num_epochs=1000,
             log_interval=10,
+            reconstruction_loss="mse_loss",
             save_path=None):
         self.model = model
         self.dataloader_train = dataloader_train
@@ -25,6 +26,7 @@ class Trainer(object):
         self.device = device
         self.num_epochs = num_epochs
         self.log_interval = log_interval
+        self.reconstruction_loss = F.mse_loss if reconstruction_loss == "mse_loss" else F.cross_entropy
         self.save_path = save_path
         self.train_step = 0
         self.val_step = 0
@@ -37,19 +39,19 @@ class Trainer(object):
 
         for i, (data) in enumerate(self.dataloader_train):
 
-            world_current_bev = data["bev"][:, :-1].to(self.device)
+            world_previous_bev = data["bev"][:, :-1].to(self.device)
             world_future_bev = data["bev"][:, -2:-1].to(self.device)
 
             # Predict the future bev
             world_future_bev_predicted, mu, logvar = self.model(
-                world_current_bev, world_future_bev)
+                world_previous_bev, world_future_bev)
 
             # Calculate the KL divergence loss
             loss_kl_div = -0.5 * \
                 torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
             # Calculate the reconstruction loss
-            loss_reconstruction = F.cross_entropy(
+            loss_reconstruction = self.reconstruction_loss(
                 world_future_bev_predicted, world_future_bev.squeeze())
 
             loss = loss_kl_div + loss_reconstruction
@@ -58,7 +60,7 @@ class Trainer(object):
             loss.backward()
             self.optimizer.step()
 
-            self.train_step += world_current_bev.shape[0]
+            self.train_step += world_previous_bev.shape[0]
 
             if run is not None:
                 run.log({"train/step": self.train_step,
@@ -78,18 +80,18 @@ class Trainer(object):
 
             for i, (data) in enumerate(self.dataloader_val):
 
-                world_current_bev = data["bev"][:, :-1].to(self.device)
+                world_previous_bev = data["bev"][:, :-1].to(self.device)
                 world_future_bev = data["bev"][:, -2:-1].to(self.device)
                 # Predict the future bev
                 world_future_bev_predicted, mu, logvar = self.model(
-                    world_current_bev, world_future_bev)
+                    world_previous_bev, world_future_bev)
 
                 # Calculate the KL divergence loss
                 loss_kl_div = -0.5 * \
                     torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
                 # Calculate the reconstruction loss
-                loss_reconstruction = F.cross_entropy(
+                loss_reconstruction = self.reconstruction_loss(
                     world_future_bev_predicted, world_future_bev.squeeze())
 
                 loss = loss_kl_div + loss_reconstruction
@@ -98,7 +100,7 @@ class Trainer(object):
                 losses_kl_div.append(loss_kl_div.item())
                 losses_reconstruction.append(loss_reconstruction.item())
 
-                self.val_step += world_current_bev.shape[0]
+                self.val_step += world_previous_bev.shape[0]
 
         loss = np.mean(losses_total)
         loss_kl_div = np.mean(losses_kl_div)

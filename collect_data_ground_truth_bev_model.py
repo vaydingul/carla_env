@@ -23,25 +23,36 @@ def main(config):
             "render": False, "save": False, "save_video": False,
             "tasks": [
                 {
-                    "world": "Town01", "num_vehicles": 250},
-                {
-                    "world": "Town03", "num_vehicles": 200}],
+                    "world": "Town02", "num_vehicles": 100},
+            ],
             "max_steps": 1000})
 
     for k in range(config.num_episodes):
 
         # Create the data writer
-        data_save_path_ = Path(config.data_save_path) / f"episode_{k}"
+        data_save_path_ = Path(config.data_save_path) / f"episode_{k+9}"
         os.makedirs(data_save_path_, exist_ok=True)
 
         writer = InstanceWriter(data_save_path_)
 
         # Add the keys to the writer
-        writer.add_key("rgb_front", "rgb_front", InstanceWriterType.RGB_IMAGE)
-        writer.add_key("rgb_left", "rgb_left", InstanceWriterType.RGB_IMAGE)
-        writer.add_key("rgb_right", "rgb_right", InstanceWriterType.RGB_IMAGE)
-        writer.add_key("bev", "bev", InstanceWriterType.BEV_IMAGE)
-        writer.add_key("ego", "ego", InstanceWriterType.JSON)
+        writer.add_key(
+            key="rgb_front",
+            value="rgb_front",
+            type=InstanceWriterType.RGB_IMAGE)
+        writer.add_key(
+            key="rgb_left",
+            value="rgb_left",
+            type=InstanceWriterType.RGB_IMAGE)
+        writer.add_key(
+            key="rgb_right",
+            value="rgb_right",
+            type=InstanceWriterType.RGB_IMAGE)
+        writer.add_key(
+            key="bev",
+            value="bev",
+            type=InstanceWriterType.BEV_IMAGE)
+        writer.add_key(key="ego", value="ego", type=InstanceWriterType.JSON)
 
         while not c.is_done:
 
@@ -56,6 +67,8 @@ def main(config):
 
         c.reset()
 
+    c.close()
+
     return True
 
 
@@ -66,12 +79,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_save_path",
         type=str,
-        default="./data/ground_truth_bev_model_train_data",
+        default="./data/ground_truth_bev_model_test_data",
         help="Path to save the data")
     parser.add_argument(
         "--num_episodes",
         type=int,
-        default=2,
+        default=1,
         help="Number of episodes to collect data from")
     config = parser.parse_args()
 
