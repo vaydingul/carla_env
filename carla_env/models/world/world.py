@@ -15,15 +15,18 @@ Tensor = TypeVar('torch.tensor')
 class WorldBEVModel(nn.Module):
 
     def __init__(self,
-                 input_shape: List[int],
-                 latent_size: int = 256,
-                 hidden_channel: int = 256,
-                 output_channel: int = 512,
-                 num_encoder_layer: int = 4,
-                 num_probabilistic_encoder_layer: int = 2,
-                 num_time_step: int = 2,
-                 dropout: float = 0.2
-                 ) -> None:
+                 input_shape: List[int] = [
+            7,
+            192,
+            192],
+        latent_size: int = 256,
+        hidden_channel: int = 256,
+        output_channel: int = 512,
+        num_encoder_layer: int = 4,
+        num_probabilistic_encoder_layer: int = 2,
+        num_time_step: int = 2,
+        dropout: float = 0.2
+    ) -> None:
         super(WorldBEVModel, self).__init__()
 
         self.input_shape_previous = input_shape.copy()

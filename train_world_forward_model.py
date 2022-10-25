@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.trainer.world_model import Trainer
+from utils.model_utils import fetch_model_from_wandb
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -43,12 +44,18 @@ def main(config):
         shuffle=False,
         num_workers=config.num_workers)
 
-    world_bev_model = WorldBEVModel(
-        input_shape=[
-            7,
-            192,
-            192],
-        num_time_step=config.num_time_step)
+    if not config.resume:
+        world_bev_model = WorldBEVModel(
+            input_shape=[
+                7,
+                192,
+                192],
+            num_time_step=config.num_time_step)
+    else:
+        assert config.wandb_link is not None, "Please provide the wandb link to resume training"
+        model_file, run = fetch_model_from_wandb(wandb_link=config.wandb_link)
+        world_bev_model = WorldBEVModel(num_time_step=run.config["num_time_step"])
+        world_bev_model.load_state_dict(torch.load(model_file.name))
 
     logger.info(
         f"Number of parameters: {sum(p.numel() for p in world_bev_model.parameters() if p.requires_grad)}")
@@ -67,15 +74,20 @@ def main(config):
         world_model_device,
         num_epochs=config.num_epochs,
         reconstruction_loss=config.reconstruction_loss,
-        save_path=config.pretrained_model_path)
+        save_path=config.pretrained_model_path,
+        train_step=run.summary["train/step"] if config.resume else 0,
+        val_step=run.summary["val/step"] if config.resume else 0)
 
     if config.wandb:
-        run = wandb.init(project="mbl", group="world-forward-model",
-                         name="model", config=config)
-        run.define_metric("train/step")
-        run.define_metric("val/step")
-        run.define_metric(name="train/*", step_metric="train/step")
-        run.define_metric(name="val/*", step_metric="val/step")
+
+        if not config.resume:
+
+            run = wandb.init(project="mbl", group="world-forward-model",
+                             name="model", config=config)
+            run.define_metric("train/step")
+            run.define_metric("val/step")
+            run.define_metric(name="train/*", step_metric="train/step")
+            run.define_metric(name="val/*", step_metric="val/step")
 
     else:
 
@@ -102,7 +114,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--num_epochs", type=int, default=25)
-    parser.add_argument("--batch_size", type=int, default=90)
+    parser.add_argument("--batch_size", type=int, default=5)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--num_time_step", type=int, default=11)
     parser.add_argument("--reconstruction_loss", type=str, default="mse_loss")
@@ -113,6 +125,8 @@ if __name__ == "__main__":
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
     parser.add_argument("--wandb", type=bool, default=True)
+    parser.add_argument("--resume", type=bool, default=True)
+    parser.add_argument("--wandb_link", type=str, default="vaydingul/mbl/1gi2qjiw")
     config = parser.parse_args()
 
     config.wandb = True

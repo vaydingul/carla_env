@@ -18,7 +18,9 @@ class Trainer(object):
             num_epochs=1000,
             log_interval=10,
             reconstruction_loss="mse_loss",
-            save_path=None):
+            save_path=None,
+            train_step=0,
+            val_step=0):
         self.model = model
         self.dataloader_train = dataloader_train
         self.dataloader_val = dataloader_val
@@ -28,8 +30,8 @@ class Trainer(object):
         self.log_interval = log_interval
         self.reconstruction_loss = F.mse_loss if reconstruction_loss == "mse_loss" else F.cross_entropy
         self.save_path = save_path
-        self.train_step = 0
-        self.val_step = 0
+        self.train_step = train_step
+        self.val_step = val_step
 
         self.model.to(self.device)
 
