@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class Trainer(object):
-
+    # TODO: Modify training scheme based on the multi-step prediction
     def __init__(
             self,
             model,

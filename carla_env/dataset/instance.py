@@ -10,6 +10,8 @@ from typing import List, Union
 class InstanceDataset(Dataset):
     """This dataset is very similar to InstanceWriter. It reads the data
      from different folders and appends to a Dict."""
+    # TODO: Increase sequence length during multi-step prediction for
+    # ground-truth data
 
     def __init__(
             self,

@@ -54,7 +54,8 @@ def main(config):
     else:
         assert config.wandb_link is not None, "Please provide the wandb link to resume training"
         model_file, run = fetch_model_from_wandb(wandb_link=config.wandb_link)
-        world_bev_model = WorldBEVModel(num_time_step=run.config["num_time_step"])
+        world_bev_model = WorldBEVModel(
+            num_time_step=run.config["num_time_step"])
         world_bev_model.load_state_dict(torch.load(model_file.name))
 
     logger.info(
@@ -78,6 +79,7 @@ def main(config):
         train_step=run.summary["train/step"] if config.resume else 0,
         val_step=run.summary["val/step"] if config.resume else 0)
 
+    # TODO: Finish resume feature
     if config.wandb:
 
         if not config.resume:
@@ -110,7 +112,7 @@ if __name__ == "__main__":
 
     checkpoint_path = checkpoint_path / date_ / time_
     checkpoint_path.mkdir(parents=True, exist_ok=True)
-
+    # TODO: Add detailed wandb parameters such as project name etc.
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--num_epochs", type=int, default=25)
@@ -126,7 +128,10 @@ if __name__ == "__main__":
                         type=str, default=checkpoint_path)
     parser.add_argument("--wandb", type=bool, default=True)
     parser.add_argument("--resume", type=bool, default=True)
-    parser.add_argument("--wandb_link", type=str, default="vaydingul/mbl/1gi2qjiw")
+    parser.add_argument(
+        "--wandb_link",
+        type=str,
+        default="vaydingul/mbl/1gi2qjiw")
     config = parser.parse_args()
 
     config.wandb = True

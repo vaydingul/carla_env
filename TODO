@@ -1,1 +1,4 @@
 FIXME: Think about a more modularized structure
+
+TODO: Multi-step prediction will mostly take place at trainer class. Because the main world model still should be focused on predicting only the next time-step
+TODO: 
