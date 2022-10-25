@@ -12,11 +12,13 @@ class Evaluator(object):
             model,
             dataloader,
             device,
+            evaluation_scheme,
             num_time_step_predict,
             save_path=None):
         self.model = model
         self.dataloader = dataloader
         self.device = device
+        self.evaluation_scheme = evaluation_scheme
         self.num_time_step_predict = num_time_step_predict
         self.save_path = save_path
 
@@ -42,17 +44,26 @@ class Evaluator(object):
                 # Predict the future bev
                 world_future_bev_predicted = self.model(
                     world_previous_bev, sample_latent=True)
-                world_future_bev_predicted = torch.nn.functional.softmax(
-                    world_future_bev_predicted)
-                world_future_bev_predicted_max_indices = torch.argmax(
-                    world_future_bev_predicted, dim=1)
-                world_future_bev_predicted = torch.nn.functional.one_hot(
-                    world_future_bev_predicted_max_indices,
-                    num_classes=world_future_bev_predicted.shape[1]).permute(
-                    0,
-                    3,
-                    1,
-                    2)
+
+                if self.evaluation_scheme == "softmax":
+
+                    world_future_bev_predicted = torch.nn.functional.softmax(
+                        world_future_bev_predicted)
+                    world_future_bev_predicted_max_indices = torch.argmax(
+                        world_future_bev_predicted, dim=1)
+                    world_future_bev_predicted = torch.nn.functional.one_hot(
+                        world_future_bev_predicted_max_indices,
+                        num_classes=world_future_bev_predicted.shape[1]).permute(
+                        0,
+                        3,
+                        1,
+                        2)
+
+                else:
+
+                    world_future_bev_predicted[world_future_bev_predicted > 0.3] = 1
+                    world_future_bev_predicted[world_future_bev_predicted <= 0.3] = 0
+
                 #  Append the predicted future bev to the list
                 world_future_bev_predicted_list.append(
                     world_future_bev_predicted)

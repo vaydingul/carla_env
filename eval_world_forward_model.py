@@ -49,12 +49,15 @@ def main(config):
     world_model_device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")
 
+    loss_function_ = run.config['reconstruction_loss'] if 'reconstruction_loss' in run.config else 'cross_entropy'
+
     evaluator = Evaluator(
         model=model,
         dataloader=world_model_dataloader_test,
         device=world_model_device,
+        evaluation_scheme="threshold" if loss_function_ == "mse_loss" else "softmax",
         num_time_step_predict=config.num_time_step_predict,
-        save_path=config.save_path)
+        save_path=f"{config.save_path}/{loss_function_}-{run.config['num_time_step']}")
 
     evaluator.evaluate(render=False, save=True)
 
@@ -67,10 +70,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--save_path",
         type=str,
-        default="figures/world_forward_model_evaluation_2/")
+        default="figures/world_forward_model_evaluation/")
     parser.add_argument("--wandb_link",
                         type=str,
-                        default="vaydingul/mbl/14k60iqj")
+                        default="vaydingul/mbl/3g4s21ye")
     parser.add_argument("--num_time_step_predict", type=int, default=10)
 
     config = parser.parse_args()
