@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.evaluator.world_model import Evaluator
-from utils.model_utils import fetch_model_from_wandb
+from utils.model_utils import fetch_model_from_wandb_link
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -23,7 +23,7 @@ def main(config):
     # Load the pretrained model
 
     logger.info(f"Downloading model from wandb run {config.wandb_link}")
-    (model_file, run) = fetch_model_from_wandb(wandb_link=config.wandb_link)
+    (model_file, run) = fetch_model_from_wandb_link(wandb_link=config.wandb_link)
 
     model = WorldBEVModel(
         input_shape=[

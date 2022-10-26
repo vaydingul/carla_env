@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class Trainer(object):
-    # TODO: Modify training scheme based on the multi-step prediction
+
     def __init__(
             self,
             model,
@@ -15,8 +15,9 @@ class Trainer(object):
             dataloader_val,
             optimizer,
             device,
+            num_time_step_previous=10,
+            num_time_step_future=10,
             num_epochs=1000,
-            log_interval=10,
             reconstruction_loss="mse_loss",
             save_path=None,
             train_step=0,
@@ -26,8 +27,9 @@ class Trainer(object):
         self.dataloader_val = dataloader_val
         self.optimizer = optimizer
         self.device = device
+        self.num_time_step_previous = num_time_step_previous
+        self.num_time_step_future = num_time_step_future
         self.num_epochs = num_epochs
-        self.log_interval = log_interval
         self.reconstruction_loss = F.mse_loss if reconstruction_loss == "mse_loss" else F.cross_entropy
         self.save_path = save_path
         self.train_step = train_step
@@ -41,27 +43,51 @@ class Trainer(object):
 
         for i, (data) in enumerate(self.dataloader_train):
 
-            world_previous_bev = data["bev"][:, :-1].to(self.device)
-            world_future_bev = data["bev"][:, -2:-1].to(self.device)
+            world_previous_bev = data["bev"][:,
+                                             :self.num_time_step_previous].to(self.device)
+            world_future_bev = data["bev"][:, self.num_time_step_previous:
+                                           self.num_time_step_previous + self.num_time_step_future].to(self.device)
 
-            # Predict the future bev
-            world_future_bev_predicted, mu, logvar = self.model(
-                world_previous_bev, world_future_bev)
+            world_future_bev_predicted_list = []
+            mu_list = []
+            logvar_list = []
 
-            if self.reconstruction_loss == F.mse_loss:
-                world_future_bev_predicted = F.sigmoid(
+            for k in range(self.num_time_step_future):
+
+                # Predict the future bev
+                world_future_bev_predicted, mu, logvar = self.model(
+                    world_previous_bev)
+
+                if self.reconstruction_loss == F.mse_loss:
+                    world_future_bev_predicted = F.sigmoid(
+                        world_future_bev_predicted)
+
+                world_future_bev_predicted_list.append(
                     world_future_bev_predicted)
+                mu_list.append(mu)
+                logvar_list.append(logvar)
 
-            # Calculate the KL divergence loss
+                # Update the previous bev
+                world_previous_bev = torch.cat(
+                    (world_previous_bev[:, 1:], world_future_bev_predicted.unsqueeze(1)), dim=1)
+
+            world_future_bev_predicted = torch.stack(
+                world_future_bev_predicted_list, dim=1)
+            mu = torch.stack(mu_list, dim=1)
+            logvar = torch.stack(logvar_list, dim=1)
+
+            # Compute the loss
+            loss_reconstruction = self.reconstruction_loss(
+                world_future_bev_predicted, world_future_bev, reduction="sum")
+
+            # Compute the KL divergence
             loss_kl_div = -0.5 * \
                 torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
-            # Calculate the reconstruction loss
-            loss_reconstruction = self.reconstruction_loss(
-                world_future_bev_predicted, world_future_bev.squeeze())
+            # Compute the total loss
+            loss = loss_reconstruction + loss_kl_div
 
-            loss = loss_kl_div + loss_reconstruction
-
+            # Backward pass
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -86,15 +112,38 @@ class Trainer(object):
 
             for i, (data) in enumerate(self.dataloader_val):
 
-                world_previous_bev = data["bev"][:, :-1].to(self.device)
-                world_future_bev = data["bev"][:, -2:-1].to(self.device)
-                # Predict the future bev
-                world_future_bev_predicted, mu, logvar = self.model(
-                    world_previous_bev, world_future_bev)
+                world_previous_bev = data["bev"][:,
+                                                 :self.num_time_step_previous].to(self.device)
+                world_future_bev = data["bev"][:, self.num_time_step_previous:
+                                               self.num_time_step_previous + self.num_time_step_future].to(self.device)
 
-                if self.reconstruction_loss == F.mse_loss:
-                    world_future_bev_predicted = F.sigmoid(
+                world_future_bev_predicted_list = []
+                mu_list = []
+                logvar_list = []
+
+                for k in range(self.num_time_step_future):
+
+                    # Predict the future bev
+                    world_future_bev_predicted, mu, logvar = self.model(
+                        world_previous_bev)
+
+                    if self.reconstruction_loss == F.mse_loss:
+                        world_future_bev_predicted = F.sigmoid(
+                            world_future_bev_predicted)
+
+                    world_future_bev_predicted_list.append(
                         world_future_bev_predicted)
+                    mu_list.append(mu)
+                    logvar_list.append(logvar)
+
+                    # Update the previous bev
+                    world_previous_bev = torch.cat(
+                        (world_previous_bev[:, 1:], world_future_bev_predicted.unsqueeze(1)), dim=1)
+
+                world_future_bev_predicted = torch.stack(
+                    world_future_bev_predicted_list, dim=1)
+                mu = torch.stack(mu_list, dim=1)
+                logvar = torch.stack(logvar_list, dim=1)
 
                 # Calculate the KL divergence loss
                 loss_kl_div = -0.5 * \

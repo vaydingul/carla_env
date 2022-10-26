@@ -13,10 +13,6 @@ Tensor = TypeVar('torch.tensor')
 
 
 class WorldBEVModel(nn.Module):
-    # TODO: Add multistep prediction functionality
-    # TODO: Add num_time_step_condition and num_time_step_prediction
-
-
 
     def __init__(self,
                  input_shape: List[int] = [

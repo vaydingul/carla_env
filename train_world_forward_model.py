@@ -3,13 +3,15 @@ from datetime import datetime
 from pathlib import Path
 import logging
 import wandb
-
+from typing import Union
 import torch
 from torch.utils.data import DataLoader
 from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.trainer.world_model import Trainer
-from utils.model_utils import fetch_model_from_wandb
+from utils.model_utils import (
+    fetch_model_from_wandb_link,
+    fetch_model_from_wandb_run)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -20,15 +22,15 @@ logging.basicConfig(
 
 def main(config):
 
-    data_path_train = config.data_path_train
-    data_path_val = config.data_path_val
-
+    # Load the dataset its loader
     world_model_dataset_train = InstanceDataset(
-        data_path=data_path_train,
-        sequence_length=config.num_time_step)
+        data_path=config.data_path_train,
+        sequence_length=config.num_time_step_previous +
+        config.num_time_step_future)
     world_model_dataset_val = InstanceDataset(
-        data_path=data_path_val,
-        sequence_length=config.num_time_step)
+        data_path=config.data_path_val,
+        sequence_length=config.num_time_step_previous +
+        config.num_time_step_future)
 
     logger.info(f"Train dataset size: {len(world_model_dataset_train)}")
     logger.info(f"Val dataset size: {len(world_model_dataset_val)}")
@@ -44,18 +46,51 @@ def main(config):
         shuffle=False,
         num_workers=config.num_workers)
 
+    # Setup the wandb
+    if config.wandb:
+
+        run = wandb.init(
+            id=config.wandb_id if config.wandb_id is not None else wandb.util.generate_id(),
+            project=config.wandb_project,
+            group=config.wandb_group,
+            name=config.wandb_name,
+            resume=config.wandb_resume,
+            config=config)
+
+        if config.wandb_id is None:
+            run.config["wandb_id"] = run.id
+
+        run.define_metric("train/step")
+        run.define_metric("val/step")
+        run.define_metric(name="train/*", step_metric="train/step")
+        run.define_metric(name="val/*", step_metric="val/step")
+
+    else:
+
+        run = None
+
     if not config.resume:
         world_bev_model = WorldBEVModel(
-            input_shape=[
-                7,
-                192,
-                192],
-            num_time_step=config.num_time_step)
+            input_shape=config.input_shape,
+            hidden_channel=config.hidden_channel,
+            output_channel=config.output_channel,
+            num_encoder_layer=config.num_encoder_layer,
+            num_probabilistic_encoder_layer=config.num_probabilistic_encoder_layer,
+            num_time_step=config.num_time_step_previous + 1,
+            dropout=config.dropout)
     else:
-        assert config.wandb_link is not None, "Please provide the wandb link to resume training"
-        model_file, run = fetch_model_from_wandb(wandb_link=config.wandb_link)
+
+        model_file, run = fetch_model_from_wandb_run(
+            wandb_link=config.wandb_link)
         world_bev_model = WorldBEVModel(
-            num_time_step=run.config["num_time_step"])
+            input_shape=run.config["input_shape"],
+            hidden_channel=run.config["hidden_channel"],
+            output_channel=run.config["output_channel"],
+            num_encoder_layer=run.config["num_encoder_layer"],
+            num_probabilistic_encoder_layer=run.config[
+                "num_probabilistic_encoder_layer"],
+            num_time_step=run.config["num_time_step_previous"] + 1,
+            dropout=run.config["dropout"])
         world_bev_model.load_state_dict(torch.load(model_file.name))
 
     logger.info(
@@ -79,26 +114,8 @@ def main(config):
         train_step=run.summary["train/step"] if config.resume else 0,
         val_step=run.summary["val/step"] if config.resume else 0)
 
-    # TODO: Finish resume feature
-    if config.wandb:
-
-        if not config.resume:
-
-            run = wandb.init(project="mbl", group="world-forward-model",
-                             name="model", config=config)
-            run.define_metric("train/step")
-            run.define_metric("val/step")
-            run.define_metric(name="train/*", step_metric="train/step")
-            run.define_metric(name="val/*", step_metric="val/step")
-
-    else:
-
-        run = None
-
     logger.info("Training started!")
     world_model_trainer.learn(run)
-
-    world_bev_model.to("cpu")
 
     run.finish()
 
@@ -112,28 +129,51 @@ if __name__ == "__main__":
 
     checkpoint_path = checkpoint_path / date_ / time_
     checkpoint_path.mkdir(parents=True, exist_ok=True)
-    # TODO: Add detailed wandb parameters such as project name etc.
+
     parser = argparse.ArgumentParser()
+
+    # TRAINING PARAMETERS
+
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--num_epochs", type=int, default=25)
     parser.add_argument("--batch_size", type=int, default=5)
     parser.add_argument("--num_workers", type=int, default=4)
-    parser.add_argument("--num_time_step", type=int, default=11)
-    parser.add_argument("--reconstruction_loss", type=str, default="mse_loss")
     parser.add_argument("--data_path_train", type=str,
                         default="data/ground_truth_bev_model_train_data/")
     parser.add_argument("--data_path_val", type=str,
                         default="data/ground_truth_bev_model_train_data/")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
-    parser.add_argument("--wandb", type=bool, default=True)
     parser.add_argument("--resume", type=bool, default=True)
-    parser.add_argument(
-        "--wandb_link",
-        type=str,
-        default="vaydingul/mbl/1gi2qjiw")
-    config = parser.parse_args()
 
-    config.wandb = True
+    # MODEL PARAMETERS
+    parser.add_argument("--input_shape", type=list, default=[7, 192, 192])
+    parser.add_argument("--hidden_channel", type=int, default=256)
+    parser.add_argument("--hidden_channel", type=int, default=256)
+    parser.add_argument("--output_channel", type=int, default=512)
+    parser.add_argument("--num_encoder_layer", type=int, default=4)
+    parser.add_argument(
+        "--num_probabilistic_encoder_layer",
+        type=int,
+        default=2)
+    parser.add_argument("--dropout", type=float, default=0.2)
+    parser.add_argument("--num_time_step_previous", type=int, default=10)
+    parser.add_argument("--num_time_step_future", type=int, default=10)
+    parser.add_argument("--reconstruction_loss", type=str, default="mse_loss")
+
+    # WANDB RELATED PARAMETERS
+    parser.add_argument("--wandb", type=bool, default=True)
+    parser.add_argument("--wandb_project", type=str, default="mbl")
+    parser.add_argument(
+        "--wandb_group",
+        type=str,
+        default="world-forward-model-multi-step")
+    parser.add_argument("--wandb_name", type=str, default="trial1")
+
+    parser.add_argument("--wandb_id", type=str, default=None)
+    parser.add_argument(
+        "--wandb_resume", type=Union[str, bool], default="allow")
+
+    config = parser.parse_args()
 
     main(config)
