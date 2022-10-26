@@ -98,6 +98,17 @@ RGB_BY_MASK = {
     BirdViewMasks.ROAD: RGB.DIM_GRAY,
 }
 
+RGB_BY_MASK_MODEL = {
+    BirdViewMasksModel.PEDESTRIANS: RGB.VIOLET,
+    BirdViewMasksModel.RED_LIGHTS: RGB.RED,
+    BirdViewMasksModel.YELLOW_LIGHTS: RGB.YELLOW,
+    BirdViewMasksModel.GREEN_LIGHTS: RGB.GREEN,
+    BirdViewMasksModel.VEHICLES: RGB.ORANGE,
+    # BirdViewMasks.CENTERLINES: RGB.CHOCOLATE,
+    BirdViewMasksModel.LANES: RGB.WHITE,
+    BirdViewMasksModel.ROAD: RGB.DIM_GRAY,
+}
+
 
 def rotate(image, angle, center=None, scale=1.0):
     assert image.dtype == np.uint8
@@ -302,7 +313,7 @@ class BirdViewProducer:
         def nonzero_indices(arr): return arr == COLOR_ON
 
         for mask_type in BirdViewMasksModel.bottom_to_top():
-            rgb_color = RGB_BY_MASK[mask_type]
+            rgb_color = RGB_BY_MASK_MODEL[mask_type]
             mask = birdview[:, :, mask_type]
             # If mask above contains 0, don't overwrite content of canvas (0
             # indicates transparency)

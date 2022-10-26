@@ -5,6 +5,8 @@ from torch.utils.data import Dataset
 import os
 import numpy as np
 from typing import List, Union
+import cv2
+import json
 
 
 class InstanceDataset(Dataset):
@@ -38,8 +40,8 @@ class InstanceDataset(Dataset):
 
                 episode_key_path = episode_path / key_
 
-                step_list = os.listdir(episode_key_path)
-                step_list.sort(key=lambda x: int(x.split('.')[0]))
+                step_list = sorted([int(x.split('.')[0])
+                                   for x in os.listdir(episode_key_path)])
 
                 counter = 0
                 for step in step_list:
@@ -80,11 +82,20 @@ class InstanceDataset(Dataset):
             if (read_key == "rgb_front" or read_key ==
                             "rgb_right" or read_key == "rgb_left"):
 
-                data_ = self._load_rgb(index, read_key)
+                data_ = torch.stack([self._load_rgb(index + k, read_key)
+                                     for k in range(self.sequence_length)],
+                                    dim=0)
 
             if read_key == "ego":
 
-                data_ = self._load_ego(index)
+                data_ = [self._load_ego(index + k)
+                         for k in range(self.sequence_length)]
+                data_stacked = {}
+
+                for key in data_[0].keys():
+                    data_stacked[key] = torch.stack(
+                        [data_[k][key] for k in range(self.sequence_length)], dim=0)
+                data_ = data_stacked
 
             data[read_key] = data_
 
@@ -92,7 +103,7 @@ class InstanceDataset(Dataset):
 
     def _load_bev(self, index):
 
-        load_path = self.data[index][0] / "bev" / self.data[index][1]
+        load_path = self.data[index][0] / "bev" / f"{self.data[index][1]}.npz"
         data = np.load(load_path)
         bev = data["bev"]
         bev = torch.from_numpy(bev).float()
@@ -103,10 +114,23 @@ class InstanceDataset(Dataset):
         return bev
 
     def _load_rgb(self, index, read_key):
-        pass
+        load_path = self.data[index][0] / \
+            read_key / f"{self.data[index][1]}.png"
+        image = cv2.imread(str(load_path))
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = torch.from_numpy(image).float()
+        image = image.permute(2, 0, 1)
+        return image
 
     def _load_ego(self, index):
-        pass
+
+        load_path = self.data[index][0] / "ego" / f"{self.data[index][1]}.json"
+        ego = json.load(open(load_path))
+        ego_ = {}
+        for key in ego.keys():
+            if key.endswith("array"):
+                ego_[key] = torch.tensor(ego[key])
+        return ego_
 
 
 if __name__ == "__main__":

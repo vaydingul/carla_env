@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-wandb_links=("vaydingul/mbl/25zll1v7" "vaydingul/mbl/14k60iqj" "vaydingul/mbl/gob4jjru" "vaydingul/mbl/3g4s21ye")
+wandb_links=("vaydingul/mbl/25zll1v7" "vaydingul/mbl/14k60iqj" "vaydingul/mbl/gob4jjru" "vaydingul/mbl/3g4s21ye" "vaydingul/mbl/1gi2qjiw")
 
 # Run the world model
 

@@ -49,20 +49,24 @@ class Evaluator(object):
 
                     world_future_bev_predicted = torch.nn.functional.softmax(
                         world_future_bev_predicted)
-                    world_future_bev_predicted_max_indices = torch.argmax(
-                        world_future_bev_predicted, dim=1)
-                    world_future_bev_predicted = torch.nn.functional.one_hot(
-                        world_future_bev_predicted_max_indices,
-                        num_classes=world_future_bev_predicted.shape[1]).permute(
-                        0,
-                        3,
-                        1,
-                        2)
-
-                else:
 
                     world_future_bev_predicted[world_future_bev_predicted > 0.3] = 1
                     world_future_bev_predicted[world_future_bev_predicted <= 0.3] = 0
+                    # world_future_bev_predicted_max_indices = torch.argmax(
+                    #     world_future_bev_predicted, dim=1)
+                    # world_future_bev_predicted = torch.nn.functional.one_hot(
+                    #     world_future_bev_predicted_max_indices,
+                    #     num_classes=world_future_bev_predicted.shape[1]).permute(
+                    #     0,
+                    #     3,
+                    #     1,
+                    #     2)
+
+                else:
+                    world_future_bev_predicted = torch.nn.functional.sigmoid(
+                        world_future_bev_predicted)
+                    world_future_bev_predicted[world_future_bev_predicted > 0.2] = 1
+                    world_future_bev_predicted[world_future_bev_predicted <= 0.2] = 0
 
                 #  Append the predicted future bev to the list
                 world_future_bev_predicted_list.append(
@@ -94,18 +98,53 @@ class Evaluator(object):
 
         # Draw the previous bev
         for j in range(self.dataloader.dataset.sequence_length - 1):
-            self.canvas[:data["bev"].shape[-2], j * data["bev"].shape[-1]:(
-                j + 1) * data["bev"].shape[-1]] = self._bev_to_rgb(data["bev"][0, j].detach().cpu().numpy())
-
+            self.canvas[:data["bev"].shape[-2], j * data["bev"].shape[-1]:(j + 1) * data["bev"].shape[-1]] = cv2.cvtColor(
+                self._bev_to_rgb(data["bev"][0, j].detach().cpu().numpy()), cv2.COLOR_RGB2BGR)
+            # Put text on the top-middle of the image
+            cv2.putText(self.canvas,
+                        f"GT t - {self.dataloader.dataset.sequence_length - j -2}",
+                        (data["bev"].shape[-1] * j + 10,
+                         20),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5,
+                        (255,
+                         255,
+                         255),
+                        2,
+                        cv2.LINE_AA)
         # Draw the future bev
         for j in range(self.num_time_step_predict):
-            self.canvas[:data["bev"].shape[-2], (self.dataloader.dataset.sequence_length - 1 + j) * data["bev"].shape[-1]:(
-                self.dataloader.dataset.sequence_length + j) * data["bev"].shape[-1]] = self._bev_to_rgb(world_future_bev_predicted_list[j][0].detach().cpu().numpy())
+            self.canvas[:data["bev"].shape[-2], (self.dataloader.dataset.sequence_length - 1 + j) * data["bev"].shape[-1]:(self.dataloader.dataset.sequence_length + j)
+                        * data["bev"].shape[-1]] = cv2.cvtColor(self._bev_to_rgb(world_future_bev_predicted_list[j][0].detach().cpu().numpy()), cv2.COLOR_RGB2BGR)
+            # Put text on the top middle of the image
+            cv2.putText(self.canvas,
+                        f"P t + {j + 1}",
+                        (data["bev"].shape[-1] * (self.dataloader.dataset.sequence_length - 1 + j) + 10,
+                         20),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5,
+                        (255,
+                         255,
+                         255),
+                        2,
+                        cv2.LINE_AA)
 
         # Draw the ground truth future bev below line
         for j in range(data["bev"].shape[0]):
             self.canvas[data["bev"].shape[-2] + 200:, (self.dataloader.dataset.sequence_length - 1 + j) * data["bev"].shape[-1]:(
-                self.dataloader.dataset.sequence_length + j) * data["bev"].shape[-1]] = self._bev_to_rgb(data["bev"][j, -1].detach().cpu().numpy())
+                self.dataloader.dataset.sequence_length + j) * data["bev"].shape[-1]] = cv2.cvtColor(self._bev_to_rgb(data["bev"][j, -1].detach().cpu().numpy()), cv2.COLOR_RGB2BGR)
+            # Put text on the top middle of the image
+            cv2.putText(self.canvas,
+                        f"GT t + {j + 1}",
+                        (data["bev"].shape[-1] * (self.dataloader.dataset.sequence_length - 1 + j) + 10,
+                         data["bev"].shape[-2] + 200 + 20),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5,
+                        (255,
+                         255,
+                         255),
+                        2,
+                        cv2.LINE_AA)
 
     def _bev_to_rgb(self, bev):
 
