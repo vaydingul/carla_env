@@ -109,6 +109,13 @@ class InstanceDataset(Dataset):
         # Permute the dimensions such that the channel dim is the first one
         bev = bev[..., [k for k in range(bev.shape[-1]) if k != 3]]
         bev = bev.permute(2, 0, 1)
+        # Add offroad mask to BEV representation
+        offroad_mask = torch.where(
+            torch.all(
+                bev == 0, dim=0), torch.ones_like(
+                bev[0]), torch.zeros_like(
+                bev[0]))
+        bev = torch.cat([bev, offroad_mask.unsqueeze(0)], dim=0)
 
         return bev
 

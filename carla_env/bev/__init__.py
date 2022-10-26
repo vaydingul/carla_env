@@ -69,6 +69,7 @@ class BirdViewMasks(IntEnum):
 
 
 class BirdViewMasksModel(IntEnum):
+    OFFROAD = 7
     PEDESTRIANS = 6
     RED_LIGHTS = 5
     YELLOW_LIGHTS = 4
@@ -99,6 +100,7 @@ RGB_BY_MASK = {
 }
 
 RGB_BY_MASK_MODEL = {
+    BirdViewMasksModel.OFFROAD: RGB.BLACK,
     BirdViewMasksModel.PEDESTRIANS: RGB.VIOLET,
     BirdViewMasksModel.RED_LIGHTS: RGB.RED,
     BirdViewMasksModel.YELLOW_LIGHTS: RGB.YELLOW,

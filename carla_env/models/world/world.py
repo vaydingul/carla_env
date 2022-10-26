@@ -16,7 +16,7 @@ class WorldBEVModel(nn.Module):
 
     def __init__(self,
                  input_shape: List[int] = [
-            7,
+            8,
             192,
             192],
         latent_size: int = 256,

@@ -56,7 +56,7 @@ class Trainer(object):
 
                 # Predict the future bev
                 world_future_bev_predicted, mu, logvar = self.model(
-                    world_previous_bev)
+                    world_previous_bev, world_future_bev[:, k])
 
                 if self.reconstruction_loss == F.mse_loss:
                     world_future_bev_predicted = F.sigmoid(
@@ -78,7 +78,7 @@ class Trainer(object):
 
             # Compute the loss
             loss_reconstruction = self.reconstruction_loss(
-                world_future_bev_predicted, world_future_bev, reduction="sum")
+                world_future_bev_predicted, world_future_bev)
 
             # Compute the KL divergence
             loss_kl_div = -0.5 * \
@@ -125,7 +125,7 @@ class Trainer(object):
 
                     # Predict the future bev
                     world_future_bev_predicted, mu, logvar = self.model(
-                        world_previous_bev)
+                        world_previous_bev, world_future_bev[:, k])
 
                     if self.reconstruction_loss == F.mse_loss:
                         world_future_bev_predicted = F.sigmoid(
@@ -151,7 +151,7 @@ class Trainer(object):
 
                 # Calculate the reconstruction loss
                 loss_reconstruction = self.reconstruction_loss(
-                    world_future_bev_predicted, world_future_bev.squeeze())
+                    world_future_bev_predicted, world_future_bev)
 
                 loss = loss_kl_div + loss_reconstruction
 
@@ -182,12 +182,17 @@ class Trainer(object):
             logger.info(
                 "Epoch: {}, Val Loss: {}, Val Loss KL Div: {}, Val Loss Reconstruction: {}".format(
                     epoch, loss, loss_kl_div, loss_reconstruction))
-
+                    
             if ((epoch + 1) % 5 == 0) and self.save_path is not None:
-                torch.save(
-                    self.model.state_dict(),
+
+                torch.save({
+                    "model_state_dict": self.model.state_dict(),
+                    "optimizer_state_dict": self.optimizer.state_dict(),
+                    "epoch": epoch,
+                    "train_step": self.train_step,
+                    "val_step": self.val_step},
                     self.save_path /
-                    Path(f"world_model_{epoch}.pt"))
+                    Path(f"checkpoint_{epoch}.pt"))
 
                 run.save(str(self.save_path /
-                         Path(f"world_model_{epoch}.pt")))
+                         Path(f"checkpoint_{epoch}.pt")))
