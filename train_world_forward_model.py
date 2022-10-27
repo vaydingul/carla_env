@@ -181,7 +181,7 @@ if __name__ == "__main__":
         default=2)
     parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--num_time_step_previous", type=int, default=10)
-    parser.add_argument("--num_time_step_future", type=int, default=1)
+    parser.add_argument("--num_time_step_future", type=int, default=10)
     parser.add_argument("--reconstruction_loss", type=str, default="mse_loss")
 
     # WANDB RELATED PARAMETERS
