@@ -19,8 +19,8 @@ python3 train_world_forward_model.py \
 	--resume=false \
 	--num_time_step_previous=10 \
 	--num_time_step_future=10 \
-	--reconstruction_loss="cross_entropy" \
+	--reconstruction_loss="mse_loss" \
 	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="world-forward-model-multi-step" \
-	--wandb_name="10-10-cross_entropy" \
+	--wandb_name="10-10-mse_loss" \

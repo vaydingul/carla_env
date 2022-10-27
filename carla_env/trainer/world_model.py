@@ -32,7 +32,7 @@ class Trainer(object):
         self.num_time_step_future = num_time_step_future
         self.num_epochs = num_epochs
         self.current_epoch = current_epoch
-        self.reconstruction_loss = F.mse_loss if reconstruction_loss == "mse_loss" else F.cross_entropy
+        self.reconstruction_loss = F.mse_loss if reconstruction_loss == "mse_loss" else F.nll_loss
         self.save_path = save_path
         self.train_step = train_step
         self.val_step = val_step
@@ -62,7 +62,10 @@ class Trainer(object):
 
                 if self.reconstruction_loss == F.mse_loss:
                     world_future_bev_predicted = F.sigmoid(
-                        world_future_bev_predicted)
+                        world_future_bev_predicted, dim=1)
+                else:
+                    world_future_bev_predicted = F.log_softmax(
+                        world_future_bev_predicted, dim=1)
 
                 world_future_bev_predicted_list.append(
                     world_future_bev_predicted)
@@ -184,7 +187,7 @@ class Trainer(object):
             logger.info(
                 "Epoch: {}, Val Loss: {}, Val Loss KL Div: {}, Val Loss Reconstruction: {}".format(
                     epoch, loss, loss_kl_div, loss_reconstruction))
-                    
+
             if ((epoch + 1) % 5 == 0) and self.save_path is not None:
 
                 torch.save({
@@ -197,4 +200,4 @@ class Trainer(object):
                     Path(f"checkpoint_{epoch}.pt"))
 
                 run.save(str(self.save_path /
-                         Path(f"checkpoint_{epoch}.pt")))
+                             Path(f"checkpoint_{epoch}.pt")))
