@@ -20,8 +20,6 @@ logging.basicConfig(
 
 
 def main(config):
-    print(config)
-    exit()
     # Load the dataset its loader
     world_model_dataset_train = InstanceDataset(
         data_path=config.data_path_train,
@@ -166,7 +164,11 @@ if __name__ == "__main__":
                         default="data/ground_truth_bev_model_data_dummy")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
-    parser.add_argument("--resume", type=bool, default=False)
+    parser.add_argument(
+        "--resume",
+        type=lambda x: (
+            str(x).lower() == 'true'),
+        default=False)
 
     # MODEL PARAMETERS
     parser.add_argument("--input_shape", type=list, default=[8, 192, 192])
@@ -183,7 +185,11 @@ if __name__ == "__main__":
     parser.add_argument("--reconstruction_loss", type=str, default="mse_loss")
 
     # WANDB RELATED PARAMETERS
-    parser.add_argument("--wandb", type=bool, default=True)
+    parser.add_argument(
+        "--wandb",
+        type=lambda x: (
+            str(x).lower() == 'true'),
+        default=True)
     parser.add_argument("--wandb_project", type=str, default="mbl")
     parser.add_argument(
         "--wandb_group",
