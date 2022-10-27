@@ -20,7 +20,8 @@ logging.basicConfig(
 
 
 def main(config):
-
+    print(config)
+    exit()
     # Load the dataset its loader
     world_model_dataset_train = InstanceDataset(
         data_path=config.data_path_train,
