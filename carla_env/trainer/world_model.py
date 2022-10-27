@@ -62,7 +62,7 @@ class Trainer(object):
 
                 if self.reconstruction_loss == F.mse_loss:
                     world_future_bev_predicted = F.sigmoid(
-                        world_future_bev_predicted, dim=1)
+                        world_future_bev_predicted)
                 else:
                     world_future_bev_predicted = F.log_softmax(
                         world_future_bev_predicted, dim=1)
