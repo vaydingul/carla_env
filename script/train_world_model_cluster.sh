@@ -16,11 +16,11 @@ python3 train_world_forward_model.py \
 	--batch_size=256 \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data/" \
-	--resume=False \
+	--resume=false \
 	--num_time_step_previous=10 \
 	--num_time_step_future=10 \
 	--reconstruction_loss="cross_entropy" \
-	--wandb=True \
+	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="world-forward-model-multi-step" \
 	--wandb_name="10-10-cross_entropy" \
