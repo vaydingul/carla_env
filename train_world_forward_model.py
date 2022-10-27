@@ -9,8 +9,8 @@ from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.trainer.world_model import Trainer
 from utils.model_utils import (
-    fetch_model_from_wandb_link,
-    fetch_model_from_wandb_run)
+    fetch_checkpoint_from_wandb_link,
+    fetch_checkpoint_from_wandb_run)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -45,6 +45,9 @@ def main(config):
         shuffle=False,
         num_workers=config.num_workers)
 
+    world_model_device = torch.device(
+        "cuda:0" if torch.cuda.is_available() else "cpu")
+
     # Setup the wandb
     if config.wandb:
 
@@ -77,7 +80,6 @@ def main(config):
 
         run = None
 
-    # TODO: Convert everything to if not resumed:
     if not config.resume:
         world_bev_model = WorldBEVModel(
             input_shape=config.input_shape,
@@ -89,8 +91,11 @@ def main(config):
             dropout=config.dropout)
     else:
 
-        checkpoint = fetch_model_from_wandb_run(
+        checkpoint = fetch_checkpoint_from_wandb_run(
             run=run)
+        checkpoint = torch.load(
+            checkpoint.name,
+            map_location=world_model_device)
         world_bev_model = WorldBEVModel(
             input_shape=run.config["input_shape"],
             hidden_channel=run.config["hidden_channel"],
@@ -100,16 +105,21 @@ def main(config):
                 "num_probabilistic_encoder_layer"],
             num_time_step=run.config["num_time_step_previous"] + 1,
             dropout=run.config["dropout"])
-        world_bev_model.load_state_dict(torch.load(model_file.name))
+        world_bev_model.load_state_dict(checkpoint["model_state_dict"])
+
+    world_bev_model.to(world_model_device)
 
     logger.info(
         f"Number of parameters: {sum(p.numel() for p in world_bev_model.parameters() if p.requires_grad)}")
 
-    world_model_optimizer = torch.optim.Adam(
-        world_bev_model.parameters(), lr=config.lr)
-
-    world_model_device = torch.device(
-        "cuda:0" if torch.cuda.is_available() else "cpu")
+    if not config.resume:
+        world_model_optimizer = torch.optim.Adam(
+            world_bev_model.parameters(), lr=config.lr)
+    else:
+        world_model_optimizer = torch.optim.Adam(
+            world_bev_model.parameters(), lr=run.config["lr"])
+        world_model_optimizer.load_state_dict(
+            checkpoint["optimizer_state_dict"])
 
     world_model_trainer = Trainer(
         world_bev_model,
@@ -120,10 +130,11 @@ def main(config):
         num_time_step_previous=config.num_time_step_previous,
         num_time_step_future=config.num_time_step_future,
         num_epochs=config.num_epochs,
+        current_epoch=checkpoint["epoch"] + 1 if config.resume else 0,
         reconstruction_loss=config.reconstruction_loss,
         save_path=config.pretrained_model_path,
-        train_step=run_summary["train/step"] if config.resume else 0,
-        val_step=run_summary["val/step"] if config.resume else 0)
+        train_step=checkpoint["train_step"] if config.resume else 0,
+        val_step=checkpoint["val_step"] if config.resume else 0)
 
     logger.info("Training started!")
     world_model_trainer.learn(run)
@@ -144,8 +155,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # TRAINING PARAMETERS
-    parser.add_argument("--lr", type=float, default=5e-5)
-    parser.add_argument("--num_epochs", type=int, default=5)
+    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--num_epochs", type=int, default=50)
     parser.add_argument("--batch_size", type=int, default=10)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--data_path_train", type=str,
@@ -154,7 +165,7 @@ if __name__ == "__main__":
                         default="data/ground_truth_bev_model_data_dummy")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
-    parser.add_argument("--resume", type=bool, default=True)
+    parser.add_argument("--resume", type=bool, default=False)
 
     # MODEL PARAMETERS
     parser.add_argument("--input_shape", type=list, default=[8, 192, 192])
@@ -165,7 +176,7 @@ if __name__ == "__main__":
         "--num_probabilistic_encoder_layer",
         type=int,
         default=2)
-    parser.add_argument("--dropout", type=float, default=0.0)
+    parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--num_time_step_previous", type=int, default=10)
     parser.add_argument("--num_time_step_future", type=int, default=1)
     parser.add_argument("--reconstruction_loss", type=str, default="mse_loss")
@@ -179,9 +190,7 @@ if __name__ == "__main__":
         default="world-forward-model-multi-step")
     parser.add_argument("--wandb_name", type=str, default="trial1")
 
-    parser.add_argument("--wandb_id", type=str, default="3u4oa2p5")
-    parser.add_argument(
-        "--wandb_resume", type=str, default="allow")
+    parser.add_argument("--wandb_id", type=str, default=None)
 
     config = parser.parse_args()
 

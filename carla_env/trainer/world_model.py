@@ -18,6 +18,7 @@ class Trainer(object):
             num_time_step_previous=10,
             num_time_step_future=10,
             num_epochs=1000,
+            current_epoch=0,
             reconstruction_loss="mse_loss",
             save_path=None,
             train_step=0,
@@ -30,6 +31,7 @@ class Trainer(object):
         self.num_time_step_previous = num_time_step_previous
         self.num_time_step_future = num_time_step_future
         self.num_epochs = num_epochs
+        self.current_epoch = current_epoch
         self.reconstruction_loss = F.mse_loss if reconstruction_loss == "mse_loss" else F.cross_entropy
         self.save_path = save_path
         self.train_step = train_step
@@ -175,7 +177,7 @@ class Trainer(object):
 
     def learn(self, run=None):
 
-        for epoch in range(self.num_epochs):
+        for epoch in range(self.current_epoch, self.num_epochs):
 
             self.train(run)
             loss, loss_kl_div, loss_reconstruction = self.validate(run)
