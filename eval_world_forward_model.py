@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.evaluator.world_model import Evaluator
-from utils.model_utils import fetch_model_from_wandb_link
+from utils.model_utils import fetch_checkpoint_from_wandb_run
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -20,31 +20,47 @@ logging.basicConfig(
 
 def main(config):
 
-    # Load the pretrained model
+    # Load the pretrained world_bev_model
 
-    logger.info(f"Downloading model from wandb run {config.wandb_link}")
-    (model_file, run) = fetch_model_from_wandb_link(wandb_link=config.wandb_link)
+    logger.info(
+        f"Downloading world_bev_model from wandb run {config.wandb_project}-{config.wandb_group}")
+    run = wandb.init(
+        project=config.wandb_project,
+        group=config.wandb_group,
+        id=config.wandb_id,
+        resume="allow")
 
-    model = WorldBEVModel(
-        input_shape=[
-            7,
-            192,
-            192],
-        num_time_step=run.config["num_time_step"])
-    model.load_state_dict(torch.load(model_file.name))
-    model.eval()
+    world_model_device = torch.device(
+        "cuda:0" if torch.cuda.is_available() else "cpu")
+
+    checkpoint = fetch_checkpoint_from_wandb_run(run, 9)
+    logger.info(f"Checkpoint downloaded: {checkpoint.name}")
+    checkpoint = torch.load(
+        checkpoint.name,
+        map_location=world_model_device)
+    world_bev_model = WorldBEVModel(
+        input_shape=run.config["input_shape"],
+        hidden_channel=run.config["hidden_channel"],
+        output_channel=run.config["output_channel"],
+        num_encoder_layer=run.config["num_encoder_layer"],
+        num_probabilistic_encoder_layer=run.config["num_probabilistic_encoder_layer"],
+        num_time_step=run.config["num_time_step_previous"] + 1,
+        dropout=run.config["dropout"])
+    world_bev_model.load_state_dict(checkpoint["model_state_dict"])
+    world_bev_model.eval()
 
     # Create dataset and its loader
     data_path_test = config.data_path_test
     world_model_dataset_test = InstanceDataset(
         data_path=data_path_test,
-        sequence_length=run.config["num_time_step"])
+        sequence_length=run.config["num_time_step_previous"] +
+        config.num_time_step_predict)
 
     logger.info(f"Test dataset size: {len(world_model_dataset_test)}")
 
     world_model_dataloader_test = DataLoader(
         dataset=world_model_dataset_test,
-        batch_size=config.num_time_step_predict)
+        batch_size=1)
 
     world_model_device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")
@@ -52,12 +68,13 @@ def main(config):
     loss_function_ = run.config['reconstruction_loss'] if 'reconstruction_loss' in run.config else 'cross_entropy'
 
     evaluator = Evaluator(
-        model=model,
+        model=world_bev_model,
         dataloader=world_model_dataloader_test,
         device=world_model_device,
         evaluation_scheme="threshold" if loss_function_ == "mse_loss" else "softmax",
+        num_time_step_previous=run.config["num_time_step_previous"],
         num_time_step_predict=config.num_time_step_predict,
-        save_path=f"{config.save_path}/{loss_function_}-{run.config['num_time_step']}")
+        save_path=f"{config.save_path}/{run.config['num_time_step_previous']}-{run.config['num_time_step_future']}-{run.config['reconstruction_loss']}")
 
     evaluator.evaluate(render=False, save=True)
 
@@ -71,9 +88,16 @@ if __name__ == "__main__":
         "--save_path",
         type=str,
         default="figures/world_forward_model_evaluation/")
-    parser.add_argument("--wandb_link",
+    parser.add_argument("--wandb_project",
                         type=str,
-                        default="vaydingul/mbl/3g4s21ye")
+                        default="mbl")
+    parser.add_argument("--wandb_group",
+                        type=str,
+                        default="world-forward-model-multi-step")
+    parser.add_argument("--wandb_id",
+                        type=str,
+                        default="3aqhglkb")
+
     parser.add_argument("--num_time_step_predict", type=int, default=10)
 
     config = parser.parse_args()
