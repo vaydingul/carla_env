@@ -95,6 +95,8 @@ class Trainer(object):
             # Backward pass
             self.optimizer.zero_grad()
             loss.backward()
+            # Clip the gradients
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.1)
             self.optimizer.step()
 
             self.train_step += world_previous_bev.shape[0]
