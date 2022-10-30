@@ -23,4 +23,4 @@ python3 train_world_forward_model.py \
 	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="world-forward-model-multi-step" \
-	--wandb_name="10-10-mse_loss-gradient-watch" \
+	--wandb_name="10-10-mse_loss-gradient_clip" \
