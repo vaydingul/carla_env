@@ -23,4 +23,4 @@ python3 train_world_forward_model.py \
 	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="world-forward-model-multi-step" \
-	--wandb_name="20-10-binary_cross_entropy-gradient_clip" \
+	--wandb_name="10-10-binary_cross_entropy-gradient_clip" \
