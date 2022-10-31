@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.evaluator.world_model import Evaluator
-from utils.model_utils import fetch_checkpoint_from_wandb_run
+from utils.model_utils import fetch_checkpoint_from_wandb_run, fetch_checkpoint_from_wandb_link
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -22,18 +22,27 @@ def main(config):
 
     # Load the pretrained world_bev_model
 
-    logger.info(
-        f"Downloading world_bev_model from wandb run {config.wandb_project}-{config.wandb_group}")
-    run = wandb.init(
-        project=config.wandb_project,
-        group=config.wandb_group,
-        id=config.wandb_id,
-        resume="allow")
+    if config.wandb_link:
+        logger.info(
+            f"Fetching checkpoint from wandb link: {config.wandb_link}")
+        run = wandb.Api().run(config.wandb_link)
+        checkpoint = fetch_checkpoint_from_wandb_link(
+            config.wandb_link, config.checkpoint_number)
+
+    else:
+        logger.info(
+            f"Downloading world_bev_model from wandb run {config.wandb_project}-{config.wandb_group}")
+        run = wandb.init(
+            project=config.wandb_project,
+            group=config.wandb_group,
+            id=config.wandb_id,
+            resume="allow")
+        checkpoint = fetch_checkpoint_from_wandb_run(
+            run, config.checkpoint_number)
 
     world_model_device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")
 
-    checkpoint = fetch_checkpoint_from_wandb_run(run, 9)
     logger.info(f"Checkpoint downloaded: {checkpoint.name}")
     checkpoint = torch.load(
         checkpoint.name,
@@ -74,7 +83,7 @@ def main(config):
         evaluation_scheme="threshold" if loss_function_ == "mse_loss" else "softmax",
         num_time_step_previous=run.config["num_time_step_previous"],
         num_time_step_predict=config.num_time_step_predict,
-        save_path=f"{config.save_path}/{run.config['num_time_step_previous']}-{run.config['num_time_step_future']}-{run.config['reconstruction_loss']}")
+        save_path=f"{config.save_path}/{run.config['num_time_step_previous']}-{run.config['num_time_step_future']}-{run.config['reconstruction_loss']}-{config.checkpoint_number}-{run.name}")
 
     evaluator.evaluate(render=False, save=True)
 
@@ -88,6 +97,10 @@ if __name__ == "__main__":
         "--save_path",
         type=str,
         default="figures/world_forward_model_evaluation/")
+    parser.add_argument(
+        "--wandb_link",
+        type=str,
+        default="vaydingul/mbl/q4xzu1de")
     parser.add_argument("--wandb_project",
                         type=str,
                         default="mbl")
@@ -97,7 +110,7 @@ if __name__ == "__main__":
     parser.add_argument("--wandb_id",
                         type=str,
                         default="3aqhglkb")
-
+    parser.add_argument("--checkpoint_number", type=int, default=-1)
     parser.add_argument("--num_time_step_predict", type=int, default=10)
 
     config = parser.parse_args()

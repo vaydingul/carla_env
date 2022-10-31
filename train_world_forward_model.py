@@ -89,7 +89,7 @@ def main(config):
             num_time_step=config.num_time_step_previous + 1,
             dropout=config.dropout)
     else:
-            
+
         checkpoint = fetch_checkpoint_from_wandb_run(
             run=run)
         checkpoint = torch.load(
@@ -119,9 +119,8 @@ def main(config):
             world_bev_model.parameters(), lr=run.config["lr"])
         world_model_optimizer.load_state_dict(
             checkpoint["optimizer_state_dict"])
-    
-    run.watch(world_bev_model)
 
+    run.watch(world_bev_model)
 
     world_model_trainer = Trainer(
         world_bev_model,
@@ -185,7 +184,7 @@ if __name__ == "__main__":
     parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--num_time_step_previous", type=int, default=10)
     parser.add_argument("--num_time_step_future", type=int, default=10)
-    parser.add_argument("--reconstruction_loss", type=str, default="nll_loss")
+    parser.add_argument("--reconstruction_loss", type=str, default="mse_loss")
 
     # WANDB RELATED PARAMETERS
     parser.add_argument(

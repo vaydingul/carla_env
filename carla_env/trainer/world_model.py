@@ -32,7 +32,7 @@ class Trainer(object):
         self.num_time_step_future = num_time_step_future
         self.num_epochs = num_epochs
         self.current_epoch = current_epoch
-        self.reconstruction_loss = F.mse_loss if reconstruction_loss == "mse_loss" else F.nll_loss
+        self.reconstruction_loss = F.mse_loss if reconstruction_loss == "mse_loss" else F.binary_cross_entropy
         self.save_path = save_path
         self.train_step = train_step
         self.val_step = val_step
@@ -60,12 +60,14 @@ class Trainer(object):
                 world_future_bev_predicted, mu, logvar = self.model(
                     world_previous_bev, world_future_bev[:, k])
 
-                if self.reconstruction_loss == F.mse_loss:
-                    world_future_bev_predicted = F.sigmoid(
-                        world_future_bev_predicted)
-                else:
-                    world_future_bev_predicted = F.log_softmax(
-                        world_future_bev_predicted, dim=1)
+                # if self.reconstruction_loss == F.mse_loss:
+                #     world_future_bev_predicted = F.sigmoid(
+                #         world_future_bev_predicted)
+                # else:
+                #     world_future_bev_predicted = F.log_softmax(
+                #         world_future_bev_predicted, dim=1)
+                world_future_bev_predicted = F.sigmoid(
+                    world_future_bev_predicted)
 
                 world_future_bev_predicted_list.append(
                     world_future_bev_predicted)
@@ -82,8 +84,15 @@ class Trainer(object):
             logvar = torch.stack(logvar_list, dim=1)
 
             # Compute the loss
-            loss_reconstruction = self.reconstruction_loss(
-                world_future_bev_predicted, world_future_bev)
+            if self.reconstruction_loss == F.mse_loss:
+                loss_reconstruction = self.reconstruction_loss(
+                    world_future_bev_predicted, world_future_bev)
+            else:
+                # Flatten the predicted and actual values
+                loss_reconstruction = self.reconstruction_loss(
+                    world_future_bev_predicted.view(
+                        world_future_bev_predicted.shape[0], -1), world_future_bev.view(
+                        world_future_bev.shape[0], -1))
 
             # Compute the KL divergence
             loss_kl_div = -0.5 * \
@@ -134,9 +143,11 @@ class Trainer(object):
                     world_future_bev_predicted, mu, logvar = self.model(
                         world_previous_bev, world_future_bev[:, k])
 
-                    if self.reconstruction_loss == F.mse_loss:
-                        world_future_bev_predicted = F.sigmoid(
-                            world_future_bev_predicted)
+                    # if self.reconstruction_loss == F.mse_loss:
+                    #     world_future_bev_predicted = F.sigmoid(
+                    #         world_future_bev_predicted)
+                    world_future_bev_predicted = F.sigmoid(
+                        world_future_bev_predicted)
 
                     world_future_bev_predicted_list.append(
                         world_future_bev_predicted)
@@ -157,8 +168,15 @@ class Trainer(object):
                     torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
                 # Calculate the reconstruction loss
-                loss_reconstruction = self.reconstruction_loss(
-                    world_future_bev_predicted, world_future_bev)
+                if self.reconstruction_loss == F.mse_loss:
+                    loss_reconstruction = self.reconstruction_loss(
+                        world_future_bev_predicted, world_future_bev)
+                else:
+                    # Flatten the predicted and actual values
+                    loss_reconstruction = self.reconstruction_loss(
+                        world_future_bev_predicted.view(
+                            world_future_bev_predicted.shape[0], -1), world_future_bev.view(
+                            world_future_bev.shape[0], -1))
 
                 loss = loss_kl_div + loss_reconstruction
 
