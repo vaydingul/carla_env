@@ -50,28 +50,11 @@ class Evaluator(object):
                 world_future_bev_predicted = self.model(
                     world_previous_bev, sample_latent=True)
 
-                if self.evaluation_scheme == "softmax":
-
-                    world_future_bev_predicted = torch.nn.functional.softmax(
-                        world_future_bev_predicted)
-
-                    world_future_bev_predicted[world_future_bev_predicted > 0.3] = 1
-                    world_future_bev_predicted[world_future_bev_predicted <= 0.3] = 0
-                    # world_future_bev_predicted_max_indices = torch.argmax(
-                    #     world_future_bev_predicted, dim=1)
-                    # world_future_bev_predicted = torch.nn.functional.one_hot(
-                    #     world_future_bev_predicted_max_indices,
-                    #     num_classes=world_future_bev_predicted.shape[1]).permute(
-                    #     0,
-                    #     3,
-                    #     1,
-                    #     2)
-
-                else:
-                    world_future_bev_predicted = torch.nn.functional.sigmoid(
-                        world_future_bev_predicted)
-                    world_future_bev_predicted[world_future_bev_predicted > 0.2] = 1
-                    world_future_bev_predicted[world_future_bev_predicted <= 0.2] = 0
+                
+                world_future_bev_predicted = torch.nn.functional.sigmoid(
+                    world_future_bev_predicted)
+                world_future_bev_predicted[world_future_bev_predicted > 0.25] = 1
+                world_future_bev_predicted[world_future_bev_predicted <= 0.25] = 0
 
                 #  Append the predicted future bev to the list
                 world_future_bev_predicted_list.append(
@@ -139,7 +122,8 @@ class Evaluator(object):
                 self.num_time_step_previous,
                 self.num_time_step_previous +
                 self.num_time_step_predict):
-            self.canvas[data["bev"].shape[-2] + 200:, (j) * data["bev"].shape[-1]:(j + 1) * data["bev"].shape[-1]] = cv2.cvtColor(self._bev_to_rgb(data["bev"][0, j].detach().cpu().numpy()), cv2.COLOR_RGB2BGR)
+            self.canvas[data["bev"].shape[-2] + 200:, (j) * data["bev"].shape[-1]:(j + 1) * data["bev"].shape[-1]] = cv2.cvtColor(
+                self._bev_to_rgb(data["bev"][0, j].detach().cpu().numpy()), cv2.COLOR_RGB2BGR)
             # Put text on the top middle of the image
             cv2.putText(self.canvas,
                         f"GT t + {j + 1 - self.num_time_step_previous}",
