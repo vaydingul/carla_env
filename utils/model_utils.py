@@ -1,5 +1,5 @@
 import wandb
-
+import os
 
 def fetch_checkpoint_from_wandb_link(wandb_link, checkpoint_number=-1):
 
@@ -12,7 +12,9 @@ def fetch_checkpoint_from_wandb_link(wandb_link, checkpoint_number=-1):
         "/")[-1].split(".")[0].split("_")[-1]) - checkpoint_number if checkpoint_number >= 0 else 0))
 
     checkpoint = torch_files_[0 if checkpoint_number >= 0 else -1]
-    checkpoint.download(replace=True)
+    # Check if it exists, if not, download it
+    if not os.path.exists(checkpoint.name):
+        checkpoint.download(replace=True)
 
     return checkpoint
 

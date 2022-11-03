@@ -30,7 +30,7 @@ def main(config):
     for k in range(config.num_episodes):
 
         # Create the data writer
-        data_save_path_ = Path(config.data_save_path) / f"episode_{k+9}"
+        data_save_path_ = Path(config.data_save_path) / f"episode_{k + 6}"
         os.makedirs(data_save_path_, exist_ok=True)
 
         writer = InstanceWriter(data_save_path_)
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_save_path",
         type=str,
-        default="./data/ground_truth_bev_model_test_data",
+        default="./data/ground_truth_bev_model_test_data_2",
         help="Path to save the data")
     parser.add_argument(
         "--num_episodes",

@@ -15,6 +15,7 @@ class Evaluator(object):
             evaluation_scheme,
             num_time_step_previous=10,
             num_time_step_predict=10,
+            threshold=0.25,
             save_path=None):
         self.model = model
         self.dataloader = dataloader
@@ -22,6 +23,7 @@ class Evaluator(object):
         self.evaluation_scheme = evaluation_scheme
         self.num_time_step_previous = num_time_step_previous
         self.num_time_step_predict = num_time_step_predict
+        self.threshold = threshold
         self.save_path = save_path
 
         # Create folder at save_path
@@ -50,11 +52,12 @@ class Evaluator(object):
                 world_future_bev_predicted = self.model(
                     world_previous_bev, sample_latent=True)
 
-                
                 world_future_bev_predicted = torch.nn.functional.sigmoid(
                     world_future_bev_predicted)
-                world_future_bev_predicted[world_future_bev_predicted > 0.25] = 1
-                world_future_bev_predicted[world_future_bev_predicted <= 0.25] = 0
+                world_future_bev_predicted[world_future_bev_predicted >
+                                           self.threshold] = 1
+                world_future_bev_predicted[world_future_bev_predicted <=
+                                           self.threshold] = 0
 
                 #  Append the predicted future bev to the list
                 world_future_bev_predicted_list.append(

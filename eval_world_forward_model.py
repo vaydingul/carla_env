@@ -5,7 +5,7 @@ import logging
 import wandb
 
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.evaluator.world_model import Evaluator
@@ -68,8 +68,9 @@ def main(config):
     logger.info(f"Test dataset size: {len(world_model_dataset_test)}")
 
     world_model_dataloader_test = DataLoader(
-        dataset=world_model_dataset_test,
-        batch_size=1)
+        dataset=world_model_dataset_test if config.test_set_step == 1 else Subset(
+            world_model_dataset_test, range(
+                0, len(world_model_dataset_test), config.test_set_step)), batch_size=1)
 
     world_model_device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")
@@ -83,7 +84,8 @@ def main(config):
         evaluation_scheme="threshold" if loss_function_ == "mse_loss" else "softmax",
         num_time_step_previous=run.config["num_time_step_previous"],
         num_time_step_predict=config.num_time_step_predict,
-        save_path=f"{config.save_path}/{run.config['num_time_step_previous']}-{run.config['num_time_step_future']}-{run.config['reconstruction_loss']}-{config.checkpoint_number}-{run.name}")
+        threshold=config.threshold,
+        save_path=f"{config.save_path}/{run.config['num_time_step_previous']}-{run.config['num_time_step_future']}-{run.config['reconstruction_loss']}-{config.threshold}-{config.checkpoint_number}-{run.name}")
 
     evaluator.evaluate(render=False, save=True)
 
@@ -92,7 +94,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_path_test", type=str,
-                        default="data/ground_truth_bev_model_test_data/")
+                        default="data/ground_truth_bev_model_test_data_2/")
+    parser.add_argument("--test_set_step", type=int, default=10)
     parser.add_argument(
         "--save_path",
         type=str,
@@ -100,7 +103,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--wandb_link",
         type=str,
-        default="vaydingul/mbl/q4xzu1de")
+        default="vaydingul/mbl/203kw46a")
     parser.add_argument("--wandb_project",
                         type=str,
                         default="mbl")
@@ -110,8 +113,9 @@ if __name__ == "__main__":
     parser.add_argument("--wandb_id",
                         type=str,
                         default="3aqhglkb")
-    parser.add_argument("--checkpoint_number", type=int, default=-1)
+    parser.add_argument("--checkpoint_number", type=int, default=4)
     parser.add_argument("--num_time_step_predict", type=int, default=10)
+    parser.add_argument("--threshold", type=float, default=0.25)
 
     config = parser.parse_args()
 

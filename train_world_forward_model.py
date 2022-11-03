@@ -37,12 +37,14 @@ def main(config):
         world_model_dataset_train,
         batch_size=config.batch_size,
         shuffle=True,
-        num_workers=config.num_workers)
+        num_workers=config.num_workers,
+        drop_last=True)
     world_model_dataloader_val = DataLoader(
         world_model_dataset_val,
         batch_size=config.batch_size,
         shuffle=False,
-        num_workers=config.num_workers)
+        num_workers=config.num_workers,
+        drop_last=True)
 
     world_model_device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")
