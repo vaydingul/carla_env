@@ -23,9 +23,7 @@ class Trainer(object):
             logvar_clip=True,
             logvar_clip_min=-5,
             logvar_clip_max=5,
-            lr_schedule=True,
-            lr_schedule_step_size=5,
-            lr_schedule_gamma=0.5,
+            lr_scheduler=None,
             save_path=None,
             train_step=0,
             val_step=0):
@@ -42,18 +40,10 @@ class Trainer(object):
         self.logvar_clip = logvar_clip
         self.logvar_clip_min = logvar_clip_min
         self.logvar_clip_max = logvar_clip_max
-        self.lr_schedule = lr_schedule
-        self.lr_schedule_step_size = lr_schedule_step_size
-        self.lr_schedule_gamma = lr_schedule_gamma
+        self.lr_scheduler = lr_scheduler
         self.save_path = save_path
         self.train_step = train_step
         self.val_step = val_step
-
-        if self.lr_schedule:
-            self.scheduler = torch.optim.lr_scheduler.StepLR(
-                self.optimizer,
-                step_size=self.lr_schedule_step_size,
-                gamma=self.lr_schedule_gamma)
 
         self.model.to(self.device)
 
@@ -221,6 +211,8 @@ class Trainer(object):
                      "val/loss": loss,
                      "val/loss_kl_divergence": loss_kl_div,
                      "val/loss_reconstruction": loss_reconstruction})
+            if self.lr_scheduler is not None:
+                run.log({"val/lr": self.lr_scheduler.get_last_lr()[0]})
 
         return loss, loss_kl_div, loss_reconstruction
 
@@ -234,14 +226,15 @@ class Trainer(object):
                 "Epoch: {}, Val Loss: {}, Val Loss KL Div: {}, Val Loss Reconstruction: {}".format(
                     epoch, loss, loss_kl_div, loss_reconstruction))
 
-            if self.lr_scheduler:
-                self.scheduler.step()
+            if self.lr_scheduler is not None:
+                self.lr_scheduler.step()
 
             if ((epoch + 1) % 5 == 0) and self.save_path is not None:
 
                 torch.save({
                     "model_state_dict": self.model.state_dict(),
                     "optimizer_state_dict": self.optimizer.state_dict(),
+                    "scheduler_state_dict": self.scheduler.state_dict() if self.scheduler else None,
                     "epoch": epoch,
                     "train_step": self.train_step,
                     "val_step": self.val_step},

@@ -116,11 +116,23 @@ def main(config):
     if not config.resume:
         world_model_optimizer = torch.optim.Adam(
             world_bev_model.parameters(), lr=config.lr)
+        if config.lr_schedule:
+            world_model_lr_scheduler = torch.optim.lr_scheduler.StepLR(
+                world_model_optimizer,
+                step_size=config.lr_schedule_step_size,
+                gamma=config.lr_schedule_gamma)
     else:
         world_model_optimizer = torch.optim.Adam(
             world_bev_model.parameters(), lr=run.config["lr"])
         world_model_optimizer.load_state_dict(
             checkpoint["optimizer_state_dict"])
+        if config.lr_schedule:
+            world_model_lr_scheduler = torch.optim.lr_scheduler.StepLR(
+                world_model_optimizer,
+                step_size=run.config["lr_schedule_step_size"],
+                gamma=run.config["lr_schedule_gamma"])
+            world_model_lr_scheduler.load_state_dict(
+                checkpoint["lr_scheduler_state_dict"])
 
     run.watch(world_bev_model)
 
@@ -138,9 +150,7 @@ def main(config):
         logvar_clip=config.logvar_clip,
         logvar_clip_min=config.logvar_clip_min,
         logvar_clip_max=config.logvar_clip_max,
-        lr_schedule=config.lr_schedule,
-        lr_schedule_step_size=config.lr_schedule_step_size,
-        lr_schedule_gamma=config.lr_schedule_gamma,
+        lr_scheduler=world_model_lr_scheduler if config.lr_schedule else None,
         save_path=config.pretrained_model_path,
         train_step=checkpoint["train_step"] if config.resume else 0,
         val_step=checkpoint["val_step"] if config.resume else 0)
@@ -220,5 +230,5 @@ if __name__ == "__main__":
 
     # Create a string with all parameters combined
     config.wandb_name = f"lr_{config.lr}_epochs_{config.num_epochs}_batch_size_{config.batch_size}_num_workers_{config.num_workers}_data_path_train_{config.data_path_train}_data_path_val_{config.data_path_val}_pretrained_model_path_{config.pretrained_model_path}_resume_{config.resume}_input_shape_{config.input_shape}_hidden_channel_{config.hidden_channel}_output_channel_{config.output_channel}_num_encoder_layer_{config.num_encoder_layer}_num_probabilistic_encoder_layer_{config.num_probabilistic_encoder_layer}_dropout_{config.dropout}_num_time_step_previous_{config.num_time_step_previous}_num_time_step_future_{config.num_time_step_future}_reconstruction_loss_{config.reconstruction_loss}_logvar_clip_{config.logvar_clip}_logvar_clip_min_{config.logvar_clip_min}_logvar_clip_max_{config.logvar_clip_max}_lr_schedule_{config.lr_schedule}_lr_schedule_step_size_{config.lr_schedule_step_size}_lr_schedule_gamma_{config.lr_schedule_gamma}_wandb_{config.wandb}_wandb_project_{config.wandb_project}_wandb_group_{config.wandb_group}_wandb_name_{config.wandb_name}_wandb_id_{config.wandb_id}"
-    
+
     main(config)
