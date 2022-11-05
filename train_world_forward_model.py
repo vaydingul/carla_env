@@ -135,6 +135,12 @@ def main(config):
         num_epochs=config.num_epochs,
         current_epoch=checkpoint["epoch"] + 1 if config.resume else 0,
         reconstruction_loss=config.reconstruction_loss,
+        logvar_clip=config.logvar_clip,
+        logvar_clip_min=config.logvar_clip_min,
+        logvar_clip_max=config.logvar_clip_max,
+        lr_schedule=config.lr_schedule,
+        lr_schedule_step_size=config.lr_schedule_step_size,
+        lr_schedule_gamma=config.lr_schedule_gamma,
         save_path=config.pretrained_model_path,
         train_step=checkpoint["train_step"] if config.resume else 0,
         val_step=checkpoint["val_step"] if config.resume else 0)
@@ -187,7 +193,14 @@ if __name__ == "__main__":
     parser.add_argument("--num_time_step_previous", type=int, default=10)
     parser.add_argument("--num_time_step_future", type=int, default=10)
     parser.add_argument("--reconstruction_loss", type=str, default="mse_loss")
-
+    parser.add_argument("--logvar_clip", type=lambda x: (
+        str(x).lower() == 'true'), default=True)
+    parser.add_argument("--logvar_clip_min", type=float, default=-5)
+    parser.add_argument("--logvar_clip_max", type=float, default=5)
+    parser.add_argument("--lr_schedule", type=lambda x: (
+        str(x).lower() == 'true'), default=True)
+    parser.add_argument("--lr_schedule_step_size", type=int, default=5)
+    parser.add_argument("--lr_schedule_gamma", type=float, default=0.5)
     # WANDB RELATED PARAMETERS
     parser.add_argument(
         "--wandb",
@@ -199,10 +212,13 @@ if __name__ == "__main__":
         "--wandb_group",
         type=str,
         default="world-forward-model-multi-step")
-    parser.add_argument("--wandb_name", type=str, default="trial1")
+    parser.add_argument("--wandb_name", type=str, default="model")
 
     parser.add_argument("--wandb_id", type=str, default=None)
 
     config = parser.parse_args()
 
+    # Create a string with all parameters combined
+    config.wandb_name = f"lr_{config.lr}_epochs_{config.num_epochs}_batch_size_{config.batch_size}_num_workers_{config.num_workers}_data_path_train_{config.data_path_train}_data_path_val_{config.data_path_val}_pretrained_model_path_{config.pretrained_model_path}_resume_{config.resume}_input_shape_{config.input_shape}_hidden_channel_{config.hidden_channel}_output_channel_{config.output_channel}_num_encoder_layer_{config.num_encoder_layer}_num_probabilistic_encoder_layer_{config.num_probabilistic_encoder_layer}_dropout_{config.dropout}_num_time_step_previous_{config.num_time_step_previous}_num_time_step_future_{config.num_time_step_future}_reconstruction_loss_{config.reconstruction_loss}_logvar_clip_{config.logvar_clip}_logvar_clip_min_{config.logvar_clip_min}_logvar_clip_max_{config.logvar_clip_max}_lr_schedule_{config.lr_schedule}_lr_schedule_step_size_{config.lr_schedule_step_size}_lr_schedule_gamma_{config.lr_schedule_gamma}_wandb_{config.wandb}_wandb_project_{config.wandb_project}_wandb_group_{config.wandb_group}_wandb_name_{config.wandb_name}_wandb_id_{config.wandb_id}"
+    
     main(config)

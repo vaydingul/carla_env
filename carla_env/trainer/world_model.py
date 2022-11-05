@@ -20,6 +20,12 @@ class Trainer(object):
             num_epochs=1000,
             current_epoch=0,
             reconstruction_loss="mse_loss",
+            logvar_clip=True,
+            logvar_clip_min=-5,
+            logvar_clip_max=5,
+            lr_schedule=True,
+            lr_schedule_step_size=5,
+            lr_schedule_gamma=0.5,
             save_path=None,
             train_step=0,
             val_step=0):
@@ -33,9 +39,21 @@ class Trainer(object):
         self.num_epochs = num_epochs
         self.current_epoch = current_epoch
         self.reconstruction_loss = F.mse_loss if reconstruction_loss == "mse_loss" else F.binary_cross_entropy
+        self.logvar_clip = logvar_clip
+        self.logvar_clip_min = logvar_clip_min
+        self.logvar_clip_max = logvar_clip_max
+        self.lr_schedule = lr_schedule
+        self.lr_schedule_step_size = lr_schedule_step_size
+        self.lr_schedule_gamma = lr_schedule_gamma
         self.save_path = save_path
         self.train_step = train_step
         self.val_step = val_step
+
+        if self.lr_schedule:
+            self.scheduler = torch.optim.lr_scheduler.StepLR(
+                self.optimizer,
+                step_size=self.lr_schedule_step_size,
+                gamma=self.lr_schedule_gamma)
 
         self.model.to(self.device)
 
@@ -82,6 +100,10 @@ class Trainer(object):
                 world_future_bev_predicted_list, dim=1)
             mu = torch.stack(mu_list, dim=1)
             logvar = torch.stack(logvar_list, dim=1)
+
+            if self.logvar_clip:
+                logvar = torch.clamp(logvar, self.logvar_clip_min,
+                                     self.logvar_clip_max)
 
             # Compute the loss
             if self.reconstruction_loss == F.mse_loss:
@@ -163,6 +185,10 @@ class Trainer(object):
                 mu = torch.stack(mu_list, dim=1)
                 logvar = torch.stack(logvar_list, dim=1)
 
+                if self.logvar_clip:
+                    logvar = torch.clamp(logvar, self.logvar_clip_min,
+                                         self.logvar_clip_max)
+
                 # Calculate the KL divergence loss
                 loss_kl_div = -0.5 * \
                     torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
@@ -207,6 +233,9 @@ class Trainer(object):
             logger.info(
                 "Epoch: {}, Val Loss: {}, Val Loss KL Div: {}, Val Loss Reconstruction: {}".format(
                     epoch, loss, loss_kl_div, loss_reconstruction))
+
+            if self.lr_scheduler:
+                self.scheduler.step()
 
             if ((epoch + 1) % 5 == 0) and self.save_path is not None:
 

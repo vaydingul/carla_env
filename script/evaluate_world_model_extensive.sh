@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 
-wandb_links=("vaydingul/mbl/203kw46a" "vaydingul/mbl/q4xzu1de" "vaydingul/mbl/phys7134" "vaydingul/mbl/3vbs6lik" "vaydingul/mbl/3qkyatvq" "vaydingul/mbl/1q48qjcg")
+#wandb_links=("vaydingul/mbl/203kw46a" "vaydingul/mbl/q4xzu1de" "vaydingul/mbl/phys7134" "vaydingul/mbl/3vbs6lik" "vaydingul/mbl/3qkyatvq" "vaydingul/mbl/1q48qjcg")
+#wandb_links=("vaydingul/mbl/phys7134" "vaydingul/mbl/3vbs6lik" "vaydingul/mbl/3qkyatvq" "vaydingul/mbl/1q48qjcg")
+wandb_links=("vaydingul/mbl/wvdt0p1k")
 checkpoint_numbers=(4 9 14 19 24 29 34 39 44 49)
 thresholds=(0.1 0.25 0.5)
+#thresholds=(0.5)
 
 length_wandb_links=${#wandb_links[@]}
 length_checkpoint_numbers=${#checkpoint_numbers[@]}
@@ -24,3 +27,4 @@ for ((i = 0; i < $length_wandb_links; i++)); do
 		done
 	done
 done
+
