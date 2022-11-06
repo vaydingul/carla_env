@@ -13,6 +13,8 @@ import sys
 
 logging.basicConfig(level=logging.DEBUG)
 
+# TODO: Make it similar to world model data collection
+
 
 def main(config):
 

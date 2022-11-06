@@ -1,5 +1,7 @@
 import abc
 
+# TODO: Make all environments have same architecture
+
 
 class Environment(abc.ABC):
     """Abstract base class for simulator environment"""

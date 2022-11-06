@@ -12,6 +12,11 @@ import time
 
 logger = logging.getLogger(__name__)
 
+# TODO: Add main function
+# TODO: Add argument parser
+# TODO: Add Evaluator class for ego model as in world model
+# TODO: Fetch data from datasets
+
 
 def evaluate(fname, data, model, config):
 
