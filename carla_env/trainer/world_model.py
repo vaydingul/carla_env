@@ -234,7 +234,7 @@ class Trainer(object):
                 torch.save({
                     "model_state_dict": self.model.state_dict(),
                     "optimizer_state_dict": self.optimizer.state_dict(),
-                    "scheduler_state_dict": self.scheduler.state_dict() if self.scheduler else None,
+                    "scheduler_state_dict": self.lr_scheduler.state_dict() if self.lr_scheduler else None,
                     "epoch": epoch,
                     "train_step": self.train_step,
                     "val_step": self.val_step},

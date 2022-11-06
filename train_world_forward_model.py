@@ -131,8 +131,9 @@ def main(config):
                 world_model_optimizer,
                 step_size=run.config["lr_schedule_step_size"],
                 gamma=run.config["lr_schedule_gamma"])
-            world_model_lr_scheduler.load_state_dict(
-                checkpoint["lr_scheduler_state_dict"])
+            if checkpoint["lr_scheduler_state_dict"] is not None:
+                world_model_lr_scheduler.load_state_dict(
+                    checkpoint["lr_scheduler_state_dict"])
 
     run.watch(world_bev_model)
 
