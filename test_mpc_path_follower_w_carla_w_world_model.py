@@ -13,6 +13,7 @@ import argparse
 from utils.kinematic_utils import acceleration_to_throttle_brake
 from utils.model_utils import (
     load_world_model_from_wandb_run,
+    load_ego_model_from_checkpoint,
     fetch_checkpoint_from_wandb_link)
 
 logging.basicConfig(level=logging.INFO)
@@ -22,9 +23,10 @@ def main(config):
 
     cost = Cost(image_width=192, image_height=192, device=config.device)
 
-    ego_forward_model = KinematicBicycleModelV2(dt=1 / 20)
-    ego_forward_model.load_state_dict(
-        state_dict=torch.load(f=config.ego_forward_model_path))
+    ego_forward_model = load_ego_model_from_checkpoint(
+        checkpoint=config.ego_forward_model_path,
+        cls=KinematicBicycleModelV2,
+        dt=1 / 20)
     ego_forward_model.to(device=config.device)
 
     run = wandb.Api().run(config.wandb_link)

@@ -49,3 +49,9 @@ def load_world_model_from_wandb_run(
     world_bev_model.load_state_dict(checkpoint["model_state_dict"])
 
     return world_bev_model, checkpoint
+
+
+def load_ego_model_from_checkpoint(checkpoint, cls, dt):
+    ego_forward_model = cls(dt=dt)
+    ego_forward_model.load_state_dict(
+        state_dict=torch.load(f=checkpoint))
