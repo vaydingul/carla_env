@@ -102,7 +102,7 @@ def main(config):
             else:
                 world_model_lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
                     world_model_optimizer,
-                    step_size=[int(s) for s in run.config["lr_schedule_step_size"].split("-")],
+                    milestones=[int(s) for s in run.config["lr_schedule_step_size"].split("-")],
                     gamma=config.lr_schedule_gamma)
     else:
         world_model_optimizer = torch.optim.Adam(
@@ -119,7 +119,7 @@ def main(config):
             else:
                 world_model_lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
                     world_model_optimizer,
-                    step_size=[int(s) for s in run.config["lr_schedule_step_size"].split("-")],
+                    milestones=[int(s) for s in run.config["lr_schedule_step_size"].split("-")],
                     gamma=run.config["lr_schedule_gamma"])
 
             if checkpoint["lr_scheduler_state_dict"] is not None:
