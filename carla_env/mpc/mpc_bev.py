@@ -171,7 +171,7 @@ class ModelPredictiveControl(nn.Module):
         #                                                  3:4].expand(*(predicted_speed.shape)))
 
         cost += torch.diff(self.action[..., 0], dim=1).square().sum() * 0.01
-        cost += torch.diff(self.action[..., 1], dim=1).square().sum() * 5
+        cost += torch.diff(self.action[..., 1], dim=1).square().sum() * 1
 
         if self.render_cost and last_step:
 

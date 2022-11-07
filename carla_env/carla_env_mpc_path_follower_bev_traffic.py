@@ -17,6 +17,8 @@ from carla_env.bev import (
     BirdViewCropType,
 )
 from carla_env.bev.mask import PixelDimensions
+from agents.navigation.local_planner import RoadOption
+
 from utils.camera_utils import world_2_pixel
 from utils.bev_utils import world_2_bev
 
@@ -90,35 +92,35 @@ class CarlaEnvironment(Environment):
 
         self.spectator = self.world.get_spectator()
 
-        # while True:
-        #     # Fetch all spawn points
-        #     spawn_points = self.map.get_spawn_points()
-        #     # Select two random spawn points
-        #     start_end_spawn_point = np.random.choice(spawn_points, 2)
-        #     start = start_end_spawn_point[0]
-        #     end = start_end_spawn_point[1]
-        #     self.route = route.RouteModule(config={"start": start,
-        #                                            "end": end,
-        #                                            "sampling_resolution": 20,
-        #                                            "debug": True},
-        #                                    client=self.client)
+        while True:
+            # Fetch all spawn points
+            spawn_points = self.map.get_spawn_points()
+            # Select two random spawn points
+            start_end_spawn_point = np.random.choice(spawn_points, 2)
+            start = start_end_spawn_point[0]
+            end = start_end_spawn_point[1]
+            self.route = route.RouteModule(config={"start": start,
+                                                   "end": end,
+                                                   "sampling_resolution": 20,
+                                                   "debug": False},
+                                           client=self.client)
 
-        #     if ((RoadOption.LEFT not in [x[1] for x in self.route.get_route()]) and (RoadOption.RIGHT in [
-        #             x[1] for x in self.route.get_route()[:2]]) and (len(self.route.get_route()) < 20) and
-        #             (len(self.route.get_route()) > 10)):
-        #         break
+            if ((RoadOption.LEFT not in [x[1] for x in self.route.get_route()]) and (RoadOption.RIGHT in [
+                    x[1] for x in self.route.get_route()[:2]]) and (len(self.route.get_route()) < 30) and
+                    (len(self.route.get_route()) > 20)):
+                break
 
-        # Fetch all spawn points
-        spawn_points = self.map.get_spawn_points()
-        # Select two random spawn points
-        start_end_spawn_point = np.random.choice(spawn_points, 2)
-        start = start_end_spawn_point[0]
-        end = start_end_spawn_point[1]
-        self.route = route.RouteModule(config={"start": start,
-                                               "end": end,
-                                               "sampling_resolution": 20,
-                                               "debug": True},
-                                       client=self.client)
+        # # Fetch all spawn points
+        # spawn_points = self.map.get_spawn_points()
+        # # Select two random spawn points
+        # start_end_spawn_point = np.random.choice(spawn_points, 2)
+        # start = start_end_spawn_point[0]
+        # end = start_end_spawn_point[1]
+        # self.route = route.RouteModule(config={"start": start,
+        #                                        "end": end,
+        #                                        "sampling_resolution": 20,
+        #                                        "debug": True},
+        #                                client=self.client)
 
         # Let's initialize a vehicle
         self.vehicle_module = vehicle.VehicleModule(
@@ -213,7 +215,7 @@ class CarlaEnvironment(Environment):
                     transform = current_transform
                     transform.location.z += 2.0
 
-                elif k == "CollisionSensorModule":
+                elif k == "col":
 
                     impulse = data_dict[k]["impulse"]
                     impulse_amplitude = np.linalg.norm(impulse)
@@ -353,8 +355,8 @@ class CarlaEnvironment(Environment):
                 loc_,
                 ego_loc,
                 self.render_dict["hero_actor_module"]["rotation"].yaw,
-                rgb_image.shape[0],
-                rgb_image.shape[1],
+                bev.shape[0],
+                bev.shape[1],
                 pixels_per_meter=5)
 
             if pixel_loc_.shape[0] > 0:
