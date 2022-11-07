@@ -1,5 +1,7 @@
 import wandb
 import os
+import torch
+
 
 def fetch_checkpoint_from_wandb_link(wandb_link, checkpoint_number=-1):
 
@@ -24,3 +26,26 @@ def fetch_checkpoint_from_wandb_run(run, checkpoint_number=-1):
     checkpoint = fetch_checkpoint_from_wandb_link(run.path, checkpoint_number)
 
     return checkpoint
+
+
+def load_world_model_from_wandb_run(
+        run,
+        checkpoint,
+        cls,
+        world_model_device):
+
+    checkpoint = torch.load(
+        checkpoint.name,
+        map_location=world_model_device)
+    world_bev_model = cls(
+        input_shape=run.config["input_shape"],
+        hidden_channel=run.config["hidden_channel"],
+        output_channel=run.config["output_channel"],
+        num_encoder_layer=run.config["num_encoder_layer"],
+        num_probabilistic_encoder_layer=run.config[
+            "num_probabilistic_encoder_layer"],
+        num_time_step=run.config["num_time_step_previous"] + 1,
+        dropout=run.config["dropout"])
+    world_bev_model.load_state_dict(checkpoint["model_state_dict"])
+
+    return world_bev_model, checkpoint

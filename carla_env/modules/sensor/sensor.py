@@ -65,6 +65,10 @@ class SensorModule(module.Module):
         """Get the queue of the sensor"""
         return self.queue
 
+    def set_save_to_queue(self, save_to_queue):
+        """Set the save to queue flag"""
+        self.save_to_queue = save_to_queue
+
     def _set_default_config(self):
         """Set the default config of the sensor"""
         self.config = {}

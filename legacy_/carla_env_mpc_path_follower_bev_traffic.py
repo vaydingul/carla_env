@@ -62,27 +62,30 @@ class CarlaEnvironment(Environment):
 
         # We have our server and client up and running
         self.server_module = server.ServerModule(None)
+        # Select a random map
+        self.client_module = client.ClientModule(None)
 
         self.render_dict = {}
 
-        self.is_first_reset = True
+        self.first_time_step = True
         self.is_done = False
         self.counter = 0
-
         self.data = Queue()
+
+        if self.config["save"]:
+
+            self._create_save_folder()
+
+        if self.config["render"]:
+
+            self._create_render_window()
 
         self.reset()
 
     def reset(self):
         """Reset the environment"""
-
-        # self.server_module.reset()
-        if self.is_first_reset:
-            self.is_first_reset = False
-        else:
-            self.traffic_manager_module.close()
-
-        self.client_module = client.ClientModule(None)
+        self.server_module.reset()
+        self.client_module.reset()
 
         self.world = self.client_module.get_world()
         self.map = self.client_module.get_map()
@@ -131,29 +134,31 @@ class CarlaEnvironment(Environment):
             "hero": True,
             "selected_spawn_point": start},
             client=self.client)
-
         actor_list = create_multiple_actors_for_traffic_manager(
             self.client, 100)
         self.traffic_manager_module = traffic_manager.TrafficManagerModule(
             config={"vehicle_list": actor_list}, client=self.client)
         # Sensor suite
         self.vehicle_sensor = vehicle_sensor.VehicleSensorModule(
-            config=None, client=self.client,
-            actor=self.hero_actor_module, id="ego")
+            config=None, client=self.client, actor=self.hero_actor_module)
         self.collision_sensor = collision_sensor.CollisionSensorModule(
-            config=None, client=self.client,
-            actor=self.hero_actor_module, id="col")
+            config=None, client=self.client, actor=self.hero_actor_module)
         self.rgb_sensor = rgb_sensor.RGBSensorModule(
-            config={"yaw": 0, "width": 900, "height": 256}, client=self.client,
-            actor=self.hero_actor_module, id="rgb_front")
+            config=None, client=self.client, actor=self.hero_actor_module)
+        self.semantic_sensor = semantic_sensor.SemanticSensorModule(
+            config=None, client=self.client, actor=self.hero_actor_module)
         self.bev_module = BirdViewProducer(
             client=self.client,
             target_size=PixelDimensions(
-                192,
-                192),
+                200,
+                150),
             render_lanes_on_junctions=False,
             pixels_per_meter=5,
             crop_type=BirdViewCropType.FRONT_AREA_ONLY)
+
+        for (k, v) in self.hero_actor_module.get_sensor_dict().items():
+            if k not in self.config["allowed_sensors"]:
+                v.save_to_queue = False
 
         time.sleep(1.0)
         logger.info("Everything is set!")
@@ -162,64 +167,60 @@ class CarlaEnvironment(Environment):
                 int(1 / self.client_module.config["fixed_delta_seconds"]) * 2):
             self.client_module.step()
 
-        self.is_done = False
-        self.counter = 0
-        self.data = Queue()
-
-        if self.config["save"]:
-
-            self._create_save_folder()
-
-        if self.config["render"]:
-
-            self._create_render_window()
-
     def step(self, action=None):
         """Perform an action in the environment"""
 
         snapshot = self.client_module.world.get_snapshot()
 
         self.hero_actor_module.step(action=action)
+        self.vehicle_module.step()
         self.vehicle_sensor.step()
 
         data_dict = {}
 
         for (k, v) in self.hero_actor_module.get_sensor_dict().items():
 
-            if v.get_queue().qsize() > 0:
+            if k in self.config["allowed_sensors"]:
 
-                try:
+                if v.get_queue().qsize() > 0:
 
-                    equivalent_frame_fetched = False
+                    try:
 
-                    while not equivalent_frame_fetched:
+                        equivalent_frame_fetched = False
 
-                        data_ = v.get_queue().get(True, 10)
+                        while not equivalent_frame_fetched:
 
-                        equivalent_frame_fetched = data_[
-                            "frame"] == snapshot.frame
+                            data_ = v.get_queue().get(True, 10)
 
-                except Empty:
+                            # , f"Frame number mismatch: {data_['frame']} != {snapshot.frame} \n Current Sensor: {k} \n Current Data Queue Size {self.data.qsize()}"
+                            equivalent_frame_fetched = data_[
+                                "frame"] == snapshot.frame
 
-                    print("Empty")
+                    except Empty:
 
-                data_dict[k] = data_
+                        print("Empty")
 
-                if k == "ego":
+                    data_dict[k] = data_
 
-                    current_transform = data_dict[k]["transform"]
-                    current_velocity = data_dict[k]["velocity"]
+                    if k == "VehicleSensorModule":
 
-                    transform = current_transform
-                    transform.location.z += 2.0
+                        current_transform = data_dict[k]["transform"]
+                        current_velocity = data_dict[k]["velocity"]
 
-                elif k == "CollisionSensorModule":
+                        transform = current_transform
+                        transform.location.z += 2.0
 
-                    impulse = data_dict[k]["impulse"]
-                    impulse_amplitude = np.linalg.norm(impulse)
-                    logger.debug(f"Collision impulse: {impulse_amplitude}")
-                    if impulse_amplitude > 1:
-                        self.is_done = True
+                        if self.first_time_step:
+                            self.initial_vehicle_transform = current_transform
+                            self.first_time_step = False
+
+                    elif k == "CollisionSensorModule":
+
+                        impulse = data_dict[k]["impulse"]
+                        impulse_amplitude = np.linalg.norm(impulse)
+                        logger.debug(f"Collision impulse: {impulse_amplitude}")
+                        if impulse_amplitude > 1:
+                            self.is_done = True
 
         data_dict["snapshot"] = snapshot
 
@@ -417,7 +418,7 @@ class CarlaEnvironment(Environment):
 
     def close(self):
         """Close the environment"""
-        self.traffic_manager_module.close()
+        self.vehicle_module.close()
         self.hero_actor_module.close()
         self.client_module.close()
         self.server_module.close()
@@ -446,14 +447,6 @@ class CarlaEnvironment(Environment):
     def get_hero_actor(self):
         """Get the hero actor of the environment"""
         return self.hero_actor_module.get_actor()
-
-    def get_data(self):
-        """Get the data of the environment"""
-        return self.data.get()
-
-    def get_counter(self):
-        """Get the counter of the environment"""
-        return self.counter
 
     def _set_default_config(self):
         """Set the default config of the environment"""

@@ -1,13 +1,13 @@
-from carla_env import carla_env_mpc_path_follower_bev_traffic
-from carla_env.mpc.mpc_bev import MPC
-from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
-
-from carla_env.cost.masked_cost_batched import Cost
+from carla_env import carla_env_mpc_path_follower_bev
+from carla_env.mpc import mpc
+from carla_env.models.dynamic.vehicle import KinematicBicycleModel, KinematicBicycleModelV2, KinematicBicycleModelWoR
+from carla_env.cost.vanilla_cost import Cost
 from agents.navigation.local_planner import RoadOption
 import torch
 import time
 import logging
 import math
+import numpy as np
 import argparse
 from utils.kinematic_utils import acceleration_to_throttle_brake
 
@@ -17,7 +17,10 @@ logging.basicConfig(level=logging.INFO)
 
 def main(config):
 
-    cost = Cost(image_width=192, image_height=192, device=config.device)
+    cost = Cost(
+        decay_factor=0.97,
+        rollout_length=config.rollout_length,
+        device=config.device)
 
     ego_forward_model = KinematicBicycleModelV2(dt=1 / 20)
 
@@ -26,18 +29,17 @@ def main(config):
 
     ego_forward_model.to(device=config.device)
 
-    mpc_module = MPC(
+    mpc_module = mpc.MPC(
         device=config.device,
         action_size=2,
         rollout_length=config.rollout_length,
-        number_of_optimization_iterations=40,
+        number_of_optimization_iterations=30,
         model=ego_forward_model,
-        cost=cost,
-        render_cost=True)
+        cost=cost)
 
     mpc_module.to(device=config.device)
 
-    c = carla_env_mpc_path_follower_bev_traffic.CarlaEnvironment(
+    c = carla_env_mpc_path_follower_bev.CarlaEnvironment(
         config={
             "render": True,
             "save": True,
@@ -47,13 +49,10 @@ def main(config):
             "save_video": True})
 
     current_transform, current_velocity, target_waypoint, navigational_command = c.step()
-    bev = c.data.get()["bev"]
 
     counter = 0
 
-    while True:
-
-        t0 = time.time()
+    while not c.is_done:
 
         if counter % 1 == 0:
 
@@ -85,12 +84,12 @@ def main(config):
 
             else:
 
-                target_state[..., 3] = 5
+                target_state[..., 3] = 10
 
             logging.debug(f"Target state: {target_state}")
             # Get the control from the MPC module
-            control, location_predicted, cost, cost_canvas = mpc_module.step(
-                current_state, target_state, bev)
+            control, location_predicted, cost = mpc_module.step(
+                current_state, target_state)
 
         throttle, brake = acceleration_to_throttle_brake(
             acceleration=control[0])
@@ -100,22 +99,16 @@ def main(config):
         current_transform, current_velocity, target_waypoint, navigational_command = c.step(
             action=control)
 
-        if c.is_done:
-            break
         bev = c.data.get()["bev"]
-
-        t1 = time.time()
 
         c.render(
             predicted_location=location_predicted,
             bev=bev,
-            cost_canvas=cost_canvas,
             cost=cost,
             control=control,
             current_state=current_state,
             target_state=target_state,
-            counter=counter,
-            sim_fps=1 / (t1 - t0))
+            counter=counter)
 
         mpc_module.reset()
 
@@ -134,7 +127,7 @@ if __name__ == "__main__":
         default="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt",
         help="Path to the forward model of the ego vehicle")
     parser.add_argument("--rollout_length", type=int, default=10)
-    parser.add_argument("--device", type=str, default="cuda",
+    parser.add_argument("--device", type=str, default="cpu",
                         help="Device to use for the forward model")
     config = parser.parse_args()
 

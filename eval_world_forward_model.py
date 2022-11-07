@@ -85,7 +85,7 @@ def main(config):
         num_time_step_previous=run.config["num_time_step_previous"],
         num_time_step_predict=config.num_time_step_predict,
         threshold=config.threshold,
-        save_path=f"{config.save_path}/{run.config['num_time_step_previous']}-{run.config['num_time_step_future']}-{run.config['reconstruction_loss']}-{config.threshold}-{config.checkpoint_number}-{run.name}")
+        save_path=f"{config.save_path}/{run.config['num_time_step_previous']}-{run.config['num_time_step_future']}-{run.config['reconstruction_loss']}-{config.threshold}-{config.checkpoint_number}")
 
     evaluator.evaluate(render=False, save=True)
 

@@ -1,30 +1,40 @@
 from carla_env import carla_env_mpc_path_follower_bev_traffic
 from carla_env.mpc.mpc_bev import MPC
-from carla_env.models.dynamic.vehicle import KinematicBicycleModel, KinematicBicycleModelV2, KinematicBicycleModelWoR
+from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
+from carla_env.models.world.world import WorldBEVModel
 from carla_env.cost.masked_cost_batched import Cost
 from agents.navigation.local_planner import RoadOption
 import torch
 import time
 import logging
+import wandb
 import math
-import numpy as np
 import argparse
 from utils.kinematic_utils import acceleration_to_throttle_brake
-
-
+from utils.model_utils import load_world_model_from_wandb_run, fetch_checkpoint_from_wandb_run
+from utils.wandb_utils import create_resumed_run
 logging.basicConfig(level=logging.INFO)
 
 
 def main(config):
 
-    cost = Cost(image_width=200, image_height=150, device=config.device)
+    cost = Cost(image_width=192, image_height=192, device=config.device)
 
     ego_forward_model = KinematicBicycleModelV2(dt=1 / 20)
-
     ego_forward_model.load_state_dict(
         state_dict=torch.load(f=config.ego_forward_model_path))
-
     ego_forward_model.to(device=config.device)
+
+    run = wandb.Api().run(config.wandb_link)
+    checkpoint = fetch_checkpoint_from_wandb_link(
+        config.wandb_link, config.checkpoint_number)
+
+    world_forward_model = load_world_model_from_wandb_run(
+        run=run,
+        checkpoint=checkpoint,
+        cls=WorldBEVModel,
+        world_model_device=config.device)
+    world_forward_model.to(device=config.device)
 
     mpc_module = MPC(
         device=config.device,
@@ -41,9 +51,6 @@ def main(config):
         config={
             "render": True,
             "save": True,
-            "allowed_sensors": [
-                "VehicleSensorModule",
-                "CollisionSensorModule"],
             "save_video": True})
 
     current_transform, current_velocity, target_waypoint, navigational_command = c.step()
@@ -89,7 +96,7 @@ def main(config):
 
             logging.debug(f"Target state: {target_state}")
             # Get the control from the MPC module
-            control, location_predicted, cost, cost_canvas = mpc_module.step(
+            (control, location_predicted, cost, cost_canvas) = mpc_module.step(
                 current_state, target_state, bev)
 
         throttle, brake = acceleration_to_throttle_brake(
@@ -97,8 +104,8 @@ def main(config):
 
         control = [throttle, control[1], brake]
 
-        current_transform, current_velocity, target_waypoint, navigational_command = c.step(
-            action=control)
+        (current_transform, current_velocity, target_waypoint,
+         navigational_command) = c.step(action=control)
 
         if c.is_done:
             break
@@ -133,7 +140,11 @@ if __name__ == "__main__":
         type=str,
         default="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt",
         help="Path to the forward model of the ego vehicle")
+
     parser.add_argument("--rollout_length", type=int, default=10)
+    parser.add_argument("--wandb_link", type=str, default=None)
+    parser.add_argument("--checkpoint_number", type=int, default=-1)
+
     parser.add_argument("--device", type=str, default="cuda",
                         help="Device to use for the forward model")
     config = parser.parse_args()

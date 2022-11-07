@@ -79,7 +79,8 @@ class CarlaEnvironment(Environment):
 
         # Select a random task
         selected_task = np.random.choice(self.config["tasks"])
-        self.client_module = client.ClientModule(config={"world": selected_task["world"], })
+        self.client_module = client.ClientModule(
+            config={"world": selected_task["world"], })
 
         self.world = self.client_module.get_world()
         self.map = self.client_module.get_map()
@@ -198,7 +199,8 @@ class CarlaEnvironment(Environment):
 
     def render(self, bev):
         """Render the environment"""
-        if not self.config["render"]: return 
+        if not self.config["render"]:
+            return
         for (k, v) in self.__dict__.items():
             if isinstance(v, Module):
                 self.render_dict[k] = v.render()
@@ -214,8 +216,7 @@ class CarlaEnvironment(Environment):
         rgb_image_2 = self.render_dict["rgb_sensor_2"]["image_data"]
         rgb_image_2 = cv2.cvtColor(rgb_image_2, cv2.COLOR_BGR2RGB)
         # Put image into canvas
-        self.canvas[:rgb_image_2.shape[0], rgb_image_1.shape[1]
-            :rgb_image_1.shape[1] + rgb_image_2.shape[1]] = rgb_image_2
+        self.canvas[:rgb_image_2.shape[0], rgb_image_1.shape[1]:rgb_image_1.shape[1] + rgb_image_2.shape[1]] = rgb_image_2
 
         rgb_image_3 = self.render_dict["rgb_sensor_3"]["image_data"]
         rgb_image_3 = cv2.cvtColor(rgb_image_3, cv2.COLOR_BGR2RGB)
@@ -228,7 +229,7 @@ class CarlaEnvironment(Environment):
         bev = self.bev_module.as_rgb(bev)
         bev = cv2.cvtColor(bev, cv2.COLOR_BGR2RGB)
         # Put image into canvas
-        self.canvas[rgb_image_1.shape[0] + 10:rgb_image_1.shape[0] + 
+        self.canvas[rgb_image_1.shape[0] + 10:rgb_image_1.shape[0] +
                     10 + bev.shape[0], rgb_image_1.shape[1] +
                     rgb_image_2.shape[1]:rgb_image_1.shape[1] +
                     rgb_image_2.shape[1] +
@@ -274,7 +275,7 @@ class CarlaEnvironment(Environment):
         canvas_display = cv2.resize(
             src=self.canvas, dsize=(
                 0, 0), fx=0.5, fy=0.5)
-        
+
         cv2.imshow("Environment", canvas_display)
 
         if self.config["save"]:
