@@ -94,7 +94,7 @@ def main(config):
         world_model_optimizer = torch.optim.Adam(
             world_bev_model.parameters(), lr=config.lr)
         if config.lr_schedule:
-            if isinstance(config.lr_schedule, int):
+            if isinstance(config.config.lr_schedule_step_size, int):
                 world_model_lr_scheduler = torch.optim.lr_scheduler.StepLR(
                     world_model_optimizer,
                     step_size=config.lr_schedule_step_size,
@@ -111,7 +111,7 @@ def main(config):
             checkpoint["optimizer_state_dict"])
 
         if config.lr_schedule:
-            if isinstance(config.lr_schedule, int):
+            if isinstance(config.lr_schedule_step_size, int):
                 world_model_lr_scheduler = torch.optim.lr_scheduler.StepLR(
                     world_model_optimizer,
                     step_size=run.config["lr_schedule_step_size"],

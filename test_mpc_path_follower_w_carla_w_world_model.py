@@ -33,7 +33,7 @@ def main(config):
     checkpoint = fetch_checkpoint_from_wandb_link(
         config.wandb_link, config.checkpoint_number)
 
-    world_forward_model = load_world_model_from_wandb_run(
+    world_forward_model, _ = load_world_model_from_wandb_run(
         run=run,
         checkpoint=checkpoint,
         cls=WorldBEVModel,
@@ -58,11 +58,11 @@ def main(config):
             "save_video": True})
 
     current_transform, current_velocity, target_waypoint, navigational_command = c.step()
-    bev = c.data.get()["bev"]
+    bev = c.get_data()["bev"]
 
     counter = 0
 
-    while True:
+    while not c.is_done:
 
         t0 = time.time()
 
@@ -111,9 +111,7 @@ def main(config):
         (current_transform, current_velocity, target_waypoint,
          navigational_command) = c.step(action=control)
 
-        if c.is_done:
-            break
-        bev = c.data.get()["bev"]
+        bev = c.get_data()["bev"]
 
         t1 = time.time()
 
@@ -146,7 +144,10 @@ if __name__ == "__main__":
         help="Path to the forward model of the ego vehicle")
 
     parser.add_argument("--rollout_length", type=int, default=10)
-    parser.add_argument("--wandb_link", type=str, default=None)
+    parser.add_argument(
+        "--wandb_link",
+        type=str,
+        default="vaydingul/mbl/phys7134")
     parser.add_argument("--checkpoint_number", type=int, default=-1)
 
     parser.add_argument("--device", type=str, default="cuda",

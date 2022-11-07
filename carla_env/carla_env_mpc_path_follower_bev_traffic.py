@@ -354,7 +354,8 @@ class CarlaEnvironment(Environment):
                 ego_loc,
                 self.render_dict["hero_actor_module"]["rotation"].yaw,
                 rgb_image.shape[0],
-                rgb_image.shape[1])
+                rgb_image.shape[1],
+                pixels_per_meter=5)
 
             if pixel_loc_.shape[0] > 0:
                 cv2.circle(self.canvas, (int(pixel_loc_[0][0]), int(

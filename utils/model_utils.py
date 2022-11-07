@@ -55,3 +55,4 @@ def load_ego_model_from_checkpoint(checkpoint, cls, dt):
     ego_forward_model = cls(dt=dt)
     ego_forward_model.load_state_dict(
         state_dict=torch.load(f=checkpoint))
+    return ego_forward_model

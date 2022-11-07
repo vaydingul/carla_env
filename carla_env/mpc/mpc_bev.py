@@ -91,7 +91,7 @@ class ModelPredictiveControl(nn.Module):
                 target_state=target_state.clone(),
                 last_step=k == self.number_of_optimization_iterations - 1)
 
-            cost.backward(retain_graph=True)
+            cost.backward()
 
             torch.nn.utils.clip_grad_value_(self.action, 0.5)
 
