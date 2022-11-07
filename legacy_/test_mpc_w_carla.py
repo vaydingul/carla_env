@@ -23,7 +23,7 @@ def main(config):
             torch.load(config.ego_forward_model_path))
         ego_forward_model.to(config.device)
 
-        mpc_module = mpc.MPC(config.device, 3, 10, 30, ego_forward_model)
+        mpc_module = mpc.ModelPredictiveControl(config.device, 3, 10, 30, ego_forward_model)
         mpc_module.to(config.device)
 
     elif config.kinematic_model == "v2":
@@ -33,7 +33,7 @@ def main(config):
             torch.load(config.ego_forward_model_path))
         ego_forward_model.to(config.device)
 
-        mpc_module = mpc.MPC(config.device, 2, 20, 40, ego_forward_model)
+        mpc_module = mpc.ModelPredictiveControl(config.device, 2, 20, 40, ego_forward_model)
         mpc_module.to(config.device)
 
     elif config.kinematic_model == "WoR":
@@ -43,7 +43,7 @@ def main(config):
             torch.load(config.ego_forward_model_path))
         ego_forward_model.to(config.device)
 
-        mpc_module = mpc.MPC(config.device, 3, 10, 30, ego_forward_model)
+        mpc_module = mpc.ModelPredictiveControl(config.device, 3, 10, 30, ego_forward_model)
         mpc_module.to(config.device)
 
     else:
@@ -93,7 +93,7 @@ def main(config):
                 first_iteration = True
 
             logging.debug(f"Target state: {target_state}")
-            # Get the control from the MPC module
+            # Get the control from the ModelPredictiveControl module
             control = mpc_module.optimize_action(
                 current_state, target_state)
 

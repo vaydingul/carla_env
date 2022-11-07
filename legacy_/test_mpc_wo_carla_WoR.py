@@ -21,7 +21,7 @@ def main(config):
     ego_forward_model.load_state_dict(
         torch.load(config.ego_forward_model_path))
     ego_forward_model.to(config.device)
-    mpc_module = mpc.MPC(config.device, 10, 30, ego_forward_model)
+    mpc_module = mpc.ModelPredictiveControl(config.device, 10, 30, ego_forward_model)
     mpc_module.to(config.device)
 
     current_state = torch.zeros(

@@ -3,8 +3,8 @@ from torch import nn
 import numpy as np
 
 
-class MPC(nn.Module):
-    """MPC controller."""
+class ModelPredictiveControl(nn.Module):
+    """ModelPredictiveControl controller."""
 
     def __init__(
             self,
@@ -16,7 +16,7 @@ class MPC(nn.Module):
             cost):
         """Initialize."""
 
-        super(MPC, self).__init__()
+        super(ModelPredictiveControl, self).__init__()
 
         #self.model = model.to(device)
         self.device = device
@@ -34,7 +34,7 @@ class MPC(nn.Module):
         self.loss_criterion = nn.L1Loss()
 
     def forward(self, location, rotation, speed):
-        """Run a single step of MPC."""
+        """Run a single step of ModelPredictiveControl."""
 
         location_predicted = []
         rotation_predicted = []

@@ -23,5 +23,5 @@ python3 train_world_forward_model.py \
 	--lr_schedule_step_size="10-30-40" \
 	--wandb=true \
 	--wandb_project="mbl" \
-	--wandb_group="world-forward-model-multi-step"
+	--wandb_group="world-forward-model-multi-step" \
 	--wandb_name="10-10-mse_loss-logvar_clip-multistep_lr_schedule"

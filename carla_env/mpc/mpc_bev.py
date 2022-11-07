@@ -5,8 +5,8 @@ import cv2
 from carla_env.bev import BirdViewProducer
 
 
-class MPC(nn.Module):
-    """MPC controller."""
+class ModelPredictiveControl(nn.Module):
+    """ModelPredictiveControl controller."""
 
     def __init__(
             self,
@@ -19,7 +19,7 @@ class MPC(nn.Module):
             render_cost=False):
         """Initialize."""
 
-        super(MPC, self).__init__()
+        super(ModelPredictiveControl, self).__init__()
 
         self.device = device
         self.action_size = action_size
@@ -39,7 +39,7 @@ class MPC(nn.Module):
             self._initialize_rendering()
 
     def forward(self, location, rotation, speed):
-        """Run a single step of MPC."""
+        """Run a single step of ModelPredictiveControl."""
 
         location_predicted = []
         rotation_predicted = []

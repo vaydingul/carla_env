@@ -121,7 +121,7 @@ def plot_result_mpc_path_follow(
         savedir):
 
     plt.figure()
-    plt.plot(state[:, 0, 1], state[:, 0, 0], label="MPC")
+    plt.plot(state[:, 0, 1], state[:, 0, 0], label="ModelPredictiveControl")
     plt.plot(vehicle_location[offset:end_ix, 1],
              vehicle_location[offset:end_ix, 0], label="Ground Truth")
     plt.plot(target_state[:, 0, 1], target_state[:, 0, 0],
@@ -134,9 +134,9 @@ def plot_result_mpc_path_follow(
 
     plt.figure()
     plt.plot(np.linspace(0, 1, action.shape[0]),
-             action[:, 0, 0], label='Throttle - MPC')
+             action[:, 0, 0], label='Throttle - ModelPredictiveControl')
     plt.plot(np.linspace(0, 1, action.shape[0]),
-             action[:, 0, 1], label='Steer - MPC')
+             action[:, 0, 1], label='Steer - ModelPredictiveControl')
     plt.plot(np.linspace(0,
                          1,
                          vehicle_control[offset:end_ix].shape[0]),
@@ -154,7 +154,7 @@ def plot_result_mpc_path_follow(
     plt.savefig(savedir / "action.png")
 
     plt.figure()
-    plt.plot(np.linspace(0, 1, state.shape[0]), state[:, 0, 3], label='MPC')
+    plt.plot(np.linspace(0, 1, state.shape[0]), state[:, 0, 3], label='ModelPredictiveControl')
     plt.plot(np.linspace(0, 1, vehicle_velocity[offset:end_ix].shape[0]), np.linalg.norm(
         vehicle_velocity[offset:end_ix], axis=-1), label='Ground Truth')
     plt.legend()
@@ -163,7 +163,7 @@ def plot_result_mpc_path_follow(
 
     plt.figure()
     plt.plot(np.linspace(0, 1, state.shape[0]), np.rad2deg(
-        state[:, 0, 2]), label='MPC')
+        state[:, 0, 2]), label='ModelPredictiveControl')
     plt.plot(np.linspace(0, 1, vehicle_rotation[offset:end_ix].shape[0]), np.rad2deg(
         vehicle_rotation[offset:end_ix, 1]), label='Ground Truth')
     plt.legend()

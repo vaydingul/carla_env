@@ -1,5 +1,5 @@
 from carla_env import carla_env_mpc_path_follower_bev_traffic
-from carla_env.mpc.mpc_bev import MPC
+from carla_env.mpc.mpc_bev import ModelPredictiveControl
 from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.cost.masked_cost_batched import Cost
@@ -11,8 +11,10 @@ import wandb
 import math
 import argparse
 from utils.kinematic_utils import acceleration_to_throttle_brake
-from utils.model_utils import load_world_model_from_wandb_run, fetch_checkpoint_from_wandb_run
-from utils.wandb_utils import create_resumed_run
+from utils.model_utils import (
+    load_world_model_from_wandb_run,
+    fetch_checkpoint_from_wandb_link)
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -36,7 +38,7 @@ def main(config):
         world_model_device=config.device)
     world_forward_model.to(device=config.device)
 
-    mpc_module = MPC(
+    mpc_module = ModelPredictiveControl(
         device=config.device,
         action_size=2,
         rollout_length=config.rollout_length,
@@ -95,7 +97,7 @@ def main(config):
                 target_state[..., 3] = 5
 
             logging.debug(f"Target state: {target_state}")
-            # Get the control from the MPC module
+            # Get the control from the ModelPredictiveControl module
             (control, location_predicted, cost, cost_canvas) = mpc_module.step(
                 current_state, target_state, bev)
 

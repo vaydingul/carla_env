@@ -29,7 +29,7 @@ def main(config):
 
     ego_forward_model.to(device=config.device)
 
-    mpc_module = mpc.MPC(
+    mpc_module = mpc.ModelPredictiveControl(
         device=config.device,
         action_size=2,
         rollout_length=config.rollout_length,
@@ -87,7 +87,7 @@ def main(config):
                 target_state[..., 3] = 10
 
             logging.debug(f"Target state: {target_state}")
-            # Get the control from the MPC module
+            # Get the control from the ModelPredictiveControl module
             control, location_predicted, cost = mpc_module.step(
                 current_state, target_state)
 

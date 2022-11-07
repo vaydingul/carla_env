@@ -1,5 +1,5 @@
 from carla_env import carla_env_mpc_path_follower_bev_traffic
-from carla_env.mpc.mpc_bev import MPC
+from carla_env.mpc.mpc_bev import ModelPredictiveControl
 from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
 
 from carla_env.cost.masked_cost_batched import Cost
@@ -26,7 +26,7 @@ def main(config):
 
     ego_forward_model.to(device=config.device)
 
-    mpc_module = MPC(
+    mpc_module = ModelPredictiveControl(
         device=config.device,
         action_size=2,
         rollout_length=config.rollout_length,
@@ -88,7 +88,7 @@ def main(config):
                 target_state[..., 3] = 5
 
             logging.debug(f"Target state: {target_state}")
-            # Get the control from the MPC module
+            # Get the control from the ModelPredictiveControl module
             control, location_predicted, cost, cost_canvas = mpc_module.step(
                 current_state, target_state, bev)
 
