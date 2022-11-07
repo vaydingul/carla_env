@@ -20,7 +20,7 @@ python3 train_world_forward_model.py \
 	--num_time_step_future=10 \
 	--dropout=0.1 \
 	--reconstruction_loss="mse_loss" \
-	--lr_schedule_step_size=(10 30 40) \
+	--lr_schedule_step_size="10-30-40" \
 	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="world-forward-model-multi-step"
