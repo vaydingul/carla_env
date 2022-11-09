@@ -56,3 +56,19 @@ def load_ego_model_from_checkpoint(checkpoint, cls, dt):
     ego_forward_model.load_state_dict(
         state_dict=torch.load(f=checkpoint))
     return ego_forward_model
+
+
+def convert_standard_bev_to_model_bev(bev, device="cpu"):
+    bev = torch.from_numpy(bev).float().to(device)
+    # Permute the dimensions such that the channel dim is the first one
+    bev = bev[..., [k for k in range(bev.shape[-1]) if k != 3]]
+    bev = bev.permute(2, 0, 1)
+    # Add offroad mask to BEV representation
+    offroad_mask = torch.where(
+        torch.all(
+            bev == 0, dim=0), torch.ones_like(
+            bev[0]), torch.zeros_like(
+            bev[0]))
+    bev = torch.cat([bev, offroad_mask.unsqueeze(0)], dim=0)
+
+    return bev

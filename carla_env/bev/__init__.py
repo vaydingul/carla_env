@@ -344,6 +344,11 @@ class BirdViewProducer:
             segregated_actors.vehicles)
         masks[BirdViewMasks.PEDESTRIANS.value] = self.masks_generator.pedestrians_mask(
             segregated_actors.pedestrians)
+
+        # Delete agent mask from vehicles mask
+        masks[BirdViewMasks.VEHICLES.value] = np.bitwise_and(
+            masks[BirdViewMasks.VEHICLES.value], np.bitwise_not(masks[BirdViewMasks.AGENT.value]))
+            
         return masks
 
     def apply_agent_following_transformation_to_masks(

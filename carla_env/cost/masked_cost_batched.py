@@ -35,22 +35,20 @@ class Cost(nn.Module):
         mask_car, mask_side = self.create_masks(
             self.image_width, self.image_height, self.pixels_per_meter, x, y, yaw_, speed_, self.vehicle_width, self.vehicle_length)
 
-        # Fetch respective channels from bev representation
-        offroad_mask = torch.where(torch.all(
-            bev == 0, dim=-1), torch.ones_like(bev[..., 0]), torch.zeros_like(bev[..., 0]))
-        bev = torch.cat([bev, offroad_mask.unsqueeze(-1)], dim=-1)
+        bev = bev.clone()
+        bev[bev > 0.5] = 1
+        bev[bev <= 0.5] = 0
+        road_channel = bev[:, 0]
+        lane_channel = bev[:, 1]
+        vehicle_channel = bev[:, 2]
+        #agent_channel = bev[..., 3]
+        green_light_channel = bev[:, 3]
+        yellow_light_channel = bev[:, 4]
+        red_light_channel = bev[:, 5]
+        pedestrian_channel = bev[:, 6]
+        offroad_channel = bev[:, 7]
 
-        road_channel = bev[..., 0]
-        lane_channel = bev[..., 1]
-        vehicle_channel = bev[..., 2]
-        agent_channel = bev[..., 3]
-        green_light_channel = bev[..., 4]
-        yellow_light_channel = bev[..., 5]
-        red_light_channel = bev[..., 6]
-        pedestrian_channel = bev[..., 7]
-        offroad_channel = bev[..., 8]
-
-        vehicle_channel -= agent_channel
+        #vehicle_channel -= agent_channel
 
         # Calculate cost
 
