@@ -25,22 +25,27 @@ class Cost(nn.Module):
             location,
             yaw,
             speed,
-            bev):
+            bev,
+            agent_mask):
 
         # Create masks
         x, y, yaw_ = rotate_batched(location, yaw)
 
         speed_ = speed[1:, 0:1]
 
-        mask_car, mask_side = self.create_masks(
-            self.image_width, self.image_height, self.pixels_per_meter, x, y, yaw_, speed_, self.vehicle_width, self.vehicle_length)
+        mask_car, mask_side = self.create_masks(nx=self.image_width, ny=self.image_height, pixels_per_meter=self.pixels_per_meter,
+                                                x=x, y=y, yaw=yaw_, speed=speed_, vehicle_width=self.vehicle_width, vehicle_length=self.vehicle_length)
 
         bev = bev.clone()
         bev[bev > 0.5] = 1
         bev[bev <= 0.5] = 0
+
+        agent_mask = torch.Tensor(agent_mask, device=self.device)
+
         road_channel = bev[:, 0]
         lane_channel = bev[:, 1]
-        vehicle_channel = bev[:, 2]
+        vehicle_channel = torch.bitwise_and(
+            bev[:, 2].byte(), torch.bitwise_not(agent_mask.byte())).float()
         #agent_channel = bev[..., 3]
         green_light_channel = bev[:, 3]
         yellow_light_channel = bev[:, 4]
@@ -51,7 +56,7 @@ class Cost(nn.Module):
         #vehicle_channel -= agent_channel
 
         # Calculate cost
-
+        torch.bitwise_and
         decay_weight = torch.pow(self.decay_factor, torch.arange(
             0, speed_.shape[0], device=speed_.device).float()).view(-1, 1, 1)
 

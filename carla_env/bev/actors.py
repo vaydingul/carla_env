@@ -13,12 +13,12 @@ class SegregatedActors(NamedTuple):
     traffic_lights: List[carla.Actor]
 
 
-def segregate_by_type(actors: List[carla.Actor]) -> SegregatedActors:
+def segregate_by_type(actors: List[carla.Actor], agent_vehicle: carla.Actor) -> SegregatedActors:
     vehicles = []
     pedestrians = []
     traffic_lights = []
     for actor in actors:
-        if is_vehicle(actor):
+        if is_vehicle(actor) and actor.id != agent_vehicle.id:
             vehicles.append(actor)
         elif is_pedestrian(actor):
             pedestrians.append(actor)

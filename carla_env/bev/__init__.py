@@ -245,7 +245,8 @@ class BirdViewProducer:
 
     def step(self, agent_vehicle: carla.Actor) -> BirdView:
         all_actors = actors.query_all(world=self._world)
-        segregated_actors = actors.segregate_by_type(actors=all_actors)
+        segregated_actors = actors.segregate_by_type(
+            actors=all_actors, agent_vehicle=agent_vehicle)
         agent_vehicle_loc = agent_vehicle.get_location()
 
         # Reusing already generated static masks for whole map
@@ -290,7 +291,8 @@ class BirdViewProducer:
         )
         ordered_indices = [
             mask.value for mask in BirdViewMasks.bottom_to_top()]
-        return cropped_masks[:, :, ordered_indices]
+
+        return (cropped_masks[:, :, ordered_indices])
 
     @staticmethod
     def as_rgb(birdview: BirdView) -> RgbCanvas:
@@ -345,10 +347,6 @@ class BirdViewProducer:
         masks[BirdViewMasks.PEDESTRIANS.value] = self.masks_generator.pedestrians_mask(
             segregated_actors.pedestrians)
 
-        # Delete agent mask from vehicles mask
-        masks[BirdViewMasks.VEHICLES.value] = np.bitwise_and(
-            masks[BirdViewMasks.VEHICLES.value], np.bitwise_not(masks[BirdViewMasks.AGENT.value]))
-            
         return masks
 
     def apply_agent_following_transformation_to_masks(

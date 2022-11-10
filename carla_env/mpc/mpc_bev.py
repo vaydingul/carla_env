@@ -74,7 +74,7 @@ class ModelPredictiveControl(nn.Module):
                 bev = torch.cat([bev[:, 1:], bev_.unsqueeze(1)], dim=1)
 
                 bev_predicted.append(bev_.unsqueeze(1))
-            
+
             else:
 
                 bev_predicted.append(bev[:, -1])
@@ -90,7 +90,7 @@ class ModelPredictiveControl(nn.Module):
             speed_predicted.clone(),
             bev_predicted.clone())
 
-    def step(self, initial_state, target_state, bev):
+    def step(self, initial_state, target_state, bev, agent_mask):
         """Optimize the action."""
 
         for k in range(self.number_of_optimization_iterations):
@@ -116,6 +116,7 @@ class ModelPredictiveControl(nn.Module):
                 predicted_speed=speed_predicted.clone(),
                 predicted_bev=bev_predicted.clone(),
                 target_state=target_state.clone(),
+                agent_mask=agent_mask,
                 last_step=k == self.number_of_optimization_iterations - 1)
 
             cost.backward()
@@ -148,6 +149,7 @@ class ModelPredictiveControl(nn.Module):
             predicted_speed,
             predicted_bev,
             target_state,
+            agent_mask,
             last_step=False):
         """Calculate the cost."""
 
@@ -172,7 +174,8 @@ class ModelPredictiveControl(nn.Module):
             self.mask_side) = self.cost(predicted_location,
                                         predicted_rotation,
                                         predicted_speed,
-                                        predicted_bev)
+                                        predicted_bev,
+                                        agent_mask)
 
         cost = torch.tensor(0.0).to(self.device)
         cost += self.lane_cost / 50
@@ -210,15 +213,16 @@ class ModelPredictiveControl(nn.Module):
 
         offset_x = 0
         offset_y = 0
-        
+
         self.predicted_bev[self.predicted_bev > 0.5] = 1
         self.predicted_bev[self.predicted_bev <= 0.5] = 0
 
         for k in range(self.mask_car.shape[0]):
-            
+
             bev_ = cv2.cvtColor(
-            BirdViewProducer.as_rgb_model(
-                np.transpose(self.predicted_bev[k], (1, 2, 0))), cv2.COLOR_BGR2RGB)
+                BirdViewProducer.as_rgb_model(
+                    np.transpose(
+                        self.predicted_bev[k], (1, 2, 0))), cv2.COLOR_BGR2RGB)
 
             # Draw mask_car side by side
             mask_car_ = self.mask_car[k].detach().cpu().numpy()
@@ -242,8 +246,9 @@ class ModelPredictiveControl(nn.Module):
 
         for k in range(self.mask_side.shape[0]):
             bev_ = cv2.cvtColor(
-            BirdViewProducer.as_rgb_model(
-                np.transpose(self.predicted_bev[k], (1, 2, 0))), cv2.COLOR_BGR2RGB)
+                BirdViewProducer.as_rgb_model(
+                    np.transpose(
+                        self.predicted_bev[k], (1, 2, 0))), cv2.COLOR_BGR2RGB)
             # Draw mask_car side by side
             mask_side_ = self.mask_side[k].detach().cpu().numpy()
             # Normalize to 0-255 int

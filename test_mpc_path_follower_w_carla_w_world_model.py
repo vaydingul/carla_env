@@ -45,7 +45,7 @@ def main(config):
         device=config.mpc_device,
         action_size=2,
         rollout_length=config.rollout_length,
-        number_of_optimization_iterations=40,
+        number_of_optimization_iterations=20,
         cost=cost,
         ego_model=ego_forward_model,
         world_model=world_forward_model,
@@ -62,7 +62,9 @@ def main(config):
     (current_transform, current_velocity,
      target_waypoint, navigational_command) = c.step()
 
-    bev = c.get_data()["bev"]
+    data = c.get_data()
+    bev = data["bev"]
+    agent_mask = bev[:, :, 3]
 
     for i in range(world_forward_model.num_time_step_previous):
 
@@ -104,8 +106,13 @@ def main(config):
 
         # Convert bev tensor deque to torch tensor
         bev_tensor = torch.stack(list(bev_tensor_deque), dim=0).unsqueeze(0)
-        (control, location_predicted, cost, cost_canvas) = mpc_module.step(
-            initial_state=current_state, target_state=target_state, bev=bev_tensor)
+        (control,
+         location_predicted,
+         cost,
+         cost_canvas) = mpc_module.step(initial_state=current_state,
+                                        target_state=target_state,
+                                        bev=bev_tensor,
+                                        agent_mask=agent_mask)
 
         throttle, brake = acceleration_to_throttle_brake(
             acceleration=control[0])
@@ -115,7 +122,9 @@ def main(config):
         (current_transform, current_velocity, target_waypoint,
          navigational_command) = c.step(action=control)
 
-        bev = c.get_data()["bev"]
+        data = c.get_data()
+        bev = data["bev"]
+        agent_mask = bev[:, :, 3]
         bev_tensor_deque.append(
             convert_standard_bev_to_model_bev(
                 bev, device=config.world_device))
@@ -157,7 +166,7 @@ if __name__ == "__main__":
         type=str,
         default="vaydingul/mbl/phys7134")
 
-    parser.add_argument("--checkpoint_number", type=int, default=-1)
+    parser.add_argument("--checkpoint_number", type=int, default=24)
 
     parser.add_argument("--ego_device", type=str, default="cpu",
                         help="Device to use for the forward model")
