@@ -40,7 +40,7 @@ class Cost(nn.Module):
         bev[bev > 0.5] = 1
         bev[bev <= 0.5] = 0
 
-        agent_mask = torch.Tensor(agent_mask, device=self.device)
+        agent_mask = torch.tensor(agent_mask, device=self.device).float()
 
         road_channel = bev[:, 0]
         lane_channel = bev[:, 1]

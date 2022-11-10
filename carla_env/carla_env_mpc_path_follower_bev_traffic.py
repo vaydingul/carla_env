@@ -106,8 +106,8 @@ class CarlaEnvironment(Environment):
                                            client=self.client)
 
             if ((RoadOption.LEFT not in [x[1] for x in self.route.get_route()]) and (RoadOption.RIGHT in [
-                    x[1] for x in self.route.get_route()[:2]]) and (len(self.route.get_route()) < 30) and
-                    (len(self.route.get_route()) > 20)):
+                    x[1] for x in self.route.get_route()[:2]]) and (len(self.route.get_route()) < 50) and
+                    (len(self.route.get_route()) > 40)):
                 break
 
         # # Fetch all spawn points

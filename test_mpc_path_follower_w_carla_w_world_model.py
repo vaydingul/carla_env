@@ -168,13 +168,13 @@ if __name__ == "__main__":
 
     parser.add_argument("--checkpoint_number", type=int, default=24)
 
-    parser.add_argument("--ego_device", type=str, default="cpu",
+    parser.add_argument("--ego_device", type=str, default="cuda:0",
                         help="Device to use for the forward model")
 
-    parser.add_argument("--world_device", type=str, default="cpu",
+    parser.add_argument("--world_device", type=str, default="cuda:0",
                         help="Device to use for the world model")
 
-    parser.add_argument("--mpc_device", type=str, default="cpu",
+    parser.add_argument("--mpc_device", type=str, default="cuda:0",
                         help="Device to use for the MPC module")
 
     config = parser.parse_args()
