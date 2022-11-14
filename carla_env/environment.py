@@ -1,6 +1,5 @@
 import abc
 
-# TODO: Make all environments have same architecture
 
 
 class Environment(abc.ABC):

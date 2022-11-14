@@ -1,2 +1,4 @@
 FIXME: Think about a more modularized structure
-
+FIXME: Make all models share the same abstract class
+FIXME: Think about a way to make saving and loading models easier
+TODO: Add fixed seed option

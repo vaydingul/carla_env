@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #wandb_links=("vaydingul/mbl/203kw46a" "vaydingul/mbl/q4xzu1de" "vaydingul/mbl/phys7134" "vaydingul/mbl/3vbs6lik" "vaydingul/mbl/3qkyatvq" "vaydingul/mbl/1q48qjcg" "vaydingul/mbl/wvdt0p1k")
-wandb_links=("vaydingul/mbl/3frb4lzq" "vaydingul/mbl/1z0jhu4e")
+wandb_links=("vaydingul/mbl/1z0jhu4e")
 checkpoint_numbers=(4 9 14 19 24 29 34 39 44 49)
 # checkpoint_numbers=(4 9 14 19 24 29 34)
 # thresholds=(0.1 0.25 0.5)

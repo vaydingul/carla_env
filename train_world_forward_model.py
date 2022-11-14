@@ -13,6 +13,7 @@ from utils.model_utils import (
     fetch_checkpoint_from_wandb_run,
     load_world_model_from_wandb_run)
 from utils.wandb_utils import (create_initial_run, create_resumed_run)
+from utils.train_utils import seed_everything
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
@@ -21,6 +22,9 @@ logging.basicConfig(
 
 
 def main(config):
+
+    seed_everything(seed=config.seed)
+
     # Load the dataset its loader
     world_model_dataset_train = InstanceDataset(
         data_path=config.data_path_train,
@@ -165,6 +169,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("--seed", type=int, default=42)
+
     # TRAINING PARAMETERS
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--num_epochs", type=int, default=50)
@@ -203,6 +209,7 @@ if __name__ == "__main__":
         str(x).lower() == 'true'), default=True)
     parser.add_argument("--lr_schedule_step_size", default=5)
     parser.add_argument("--lr_schedule_gamma", type=float, default=0.5)
+
     # WANDB RELATED PARAMETERS
     parser.add_argument(
         "--wandb",
@@ -215,7 +222,6 @@ if __name__ == "__main__":
         type=str,
         default="world-forward-model-multi-step")
     parser.add_argument("--wandb_name", type=str, default="model")
-
     parser.add_argument("--wandb_id", type=str, default=None)
 
     config = parser.parse_args()
