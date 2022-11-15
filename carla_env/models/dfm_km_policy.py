@@ -1,4 +1,5 @@
 from torch import nn
+import torch
 
 
 class DecoupledForwardModelKinematicsPolicy(nn.Module):
@@ -11,9 +12,13 @@ class DecoupledForwardModelKinematicsPolicy(nn.Module):
         self.policy_model = policy_model
         self.device = device
 
-    def forward(self, ego_state, world_state):
+    def forward(
+            self,
+            ego_state: dict,
+            world_state: torch.tensor) -> torch.tensor:
 
-        action = self.policy_model(ego_state, world_state)
+        action = self.policy_model(
+            torch.cat([v for v in ego_state.values()]), world_state)
 
         (world_future_bev_predicted, _, _) = self.world_model(
             world_previous_bev=world_state)

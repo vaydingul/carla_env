@@ -81,10 +81,14 @@ class KinematicBicycleModelV2(nn.Module):
             nn.Linear(1, 1, bias=False),
         )
 
-    def forward(self, location, yaw, speed, action):
+    def forward(self, ego_state, action):
         '''
         One step semi-parametric kinematic bicycle model
         '''
+
+        location = ego_state["location"]
+        yaw = ego_state["yaw"]
+        speed = ego_state["speed"]
 
         acceleration = torch.clip(action[..., 0:1], -1, 1)
         steer = torch.clip(action[..., 1:2], -1, 1)
@@ -112,7 +116,14 @@ class KinematicBicycleModelV2(nn.Module):
         yaw_next = yaw + speed / self.rear_wheelbase * \
             torch.sin(beta) * self.dt
 
-        return location_next, yaw_next, F.relu(speed_next)
+        ego_state_next = {
+            "location": location_next,
+            "yaw": yaw_next,
+            "speed": F.relu(speed_next)
+        }
+
+        return ego_state_next
+
 
 class KinematicBicycleModelWoR(nn.Module):
     def __init__(self, dt=1. / 4):

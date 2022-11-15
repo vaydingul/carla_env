@@ -50,6 +50,21 @@ def load_world_model_from_wandb_run(
 
     return world_bev_model, checkpoint
 
+def load_policy_model_from_wandb_run(run, checkpoint, cls, policy_model_device):
+    checkpoint = torch.load(
+        checkpoint.name,
+        map_location=policy_model_device)
+    policy_model = cls(
+        input_shape_world_state=run.config["input_shape"],
+        input_shape_ego_state=run.config["input_shape_ego_state"],
+        action_size=run.config["action_size"],
+        hidden_size=run.config["hidden_size"])
+    policy_model.load_state_dict(checkpoint["model_state_dict"])
+
+    return policy_model, checkpoint
+
+
+
 
 def load_ego_model_from_checkpoint(checkpoint, cls, dt):
     ego_forward_model = cls(dt=dt)

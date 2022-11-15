@@ -36,7 +36,7 @@ class Cost(nn.Module):
         mask_car, mask_side = self.create_masks(nx=self.image_width, ny=self.image_height, pixels_per_meter=self.pixels_per_meter,
                                                 x=x, y=y, yaw=yaw_, speed=speed_, vehicle_width=self.vehicle_width, vehicle_length=self.vehicle_length)
 
-        bev = bev.clone()
+        #bev = bev.clone()
         bev[bev > 0.5] = 1
         bev[bev <= 0.5] = 0
 
@@ -74,16 +74,17 @@ class Cost(nn.Module):
             pedestrian_channel * mask_car * decay_weight)
         offroad_cost = torch.sum(offroad_channel * mask_side * decay_weight)
 
-        return (
-            lane_cost,
-            vehicle_cost,
-            green_light_cost,
-            yellow_light_cost,
-            red_light_cost,
-            pedestrian_cost,
-            offroad_cost,
-            mask_car,
-            mask_side)
+        return {
+            "lane_cost": lane_cost,
+            "vehicle_cost": vehicle_cost,
+            "green_light_cost": green_light_cost,
+            "yellow_light_cost": yellow_light_cost,
+            "red_light_cost": red_light_cost,
+            "pedestrian_cost": pedestrian_cost,
+            "offroad_cost": offroad_cost,
+            "mask_car": mask_car,
+            "mask_side": mask_side
+        }
 
     def create_masks(
             self,

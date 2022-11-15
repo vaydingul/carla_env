@@ -131,9 +131,9 @@ class WorldBEVModel(nn.Module):
 
 
 if __name__ == "__main__":
-    model = WorldBEVModel(input_shape=[7, 192, 192])
+    model = WorldBEVModel(input_shape=[8, 192, 192])
     print(model)
 
-    inp = torch.rand(1, 1, 7, 192, 192)
+    inp = torch.rand(1, 1, 8, 192, 192)
     out, _, _ = model(inp, inp)
     print(F.mse_loss(out, inp.squeeze()))

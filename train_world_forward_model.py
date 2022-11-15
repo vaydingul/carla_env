@@ -147,6 +147,8 @@ def main(config):
         logvar_clip_min=config.logvar_clip_min,
         logvar_clip_max=config.logvar_clip_max,
         lr_scheduler=world_model_lr_scheduler if config.lr_schedule else None,
+        gradient_clip_type=config.gradient_clip_type,
+        gradient_clip_value=config.gradient_clip_value,
         save_path=config.pretrained_model_path,
         train_step=checkpoint["train_step"] if config.resume else 0,
         val_step=checkpoint["val_step"] if config.resume else 0)
@@ -209,6 +211,8 @@ if __name__ == "__main__":
         str(x).lower() == 'true'), default=True)
     parser.add_argument("--lr_schedule_step_size", default=5)
     parser.add_argument("--lr_schedule_gamma", type=float, default=0.5)
+    parser.add_argument("--gradient_clip_type", type=str, default="norm")
+    parser.add_argument("--gradient_clip_value", type=float, default=0.3)
 
     # WANDB RELATED PARAMETERS
     parser.add_argument(
