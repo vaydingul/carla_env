@@ -74,9 +74,16 @@ class InstanceDataset(Dataset):
 
             if read_key == "bev":
 
-                data_ = torch.stack([self._load_bev(index + k)
-                                     for k in range(self.sequence_length)],
-                                    dim=0)
+                data_ = [self._load_bev(index + k)
+                                     for k in range(self.sequence_length)]
+                
+                data_stacked = {}
+
+                for key in data_[0].keys():
+                    data_stacked[key] = torch.stack(
+                        [data_[k][key] for k in range(self.sequence_length)], dim=0)
+                
+                data_ = data_stacked
 
             if (read_key == "rgb_front" or read_key ==
                             "rgb_right" or read_key == "rgb_left"):
