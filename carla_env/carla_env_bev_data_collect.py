@@ -1,5 +1,5 @@
 from carla_env.environment import Environment
-
+from agents.navigation.local_planner import RoadOption
 # Import modules
 from carla_env.modules.server import server
 from carla_env.modules.client import client
@@ -15,7 +15,7 @@ from carla_env.bev import (
     BirdViewCropType,
 )
 from carla_env.bev.mask import PixelDimensions
-
+from utils.carla_utils import(fetch_all_vehicles)
 
 # Import utils
 import time
@@ -33,15 +33,29 @@ logger = logging.getLogger(__name__)
 
 def create_multiple_actors_for_traffic_manager(client, n=20):
     """Create multiple vehicles in the world"""
-
-    return [
-        actor.ActorModule(
+    vehicles = fetch_all_vehicles(client)
+    vehicles = vehicles * (n // len(vehicles) + 1)
+    # Shuffle the list and take first n vehicles
+    np.random.shuffle(vehicles)
+    actors = [actor.ActorModule(
             config={
                 "actor": vehicle.VehicleModule(
                     config=None,
                     client=client),
                 "hero": False},
-            client=client) for _ in range(n)]
+            client=client)]
+    
+    for k in range(n):    
+
+        actors.append(actor.ActorModule(
+            config={
+                "vehicle": vehicle.VehicleModule(
+                    config={"vehicle_model": vehicles[k],},
+                    client=client),
+                "hero": False},
+            client=client))
+
+    return actors
 
 
 class CarlaEnvironment(Environment):
@@ -188,6 +202,14 @@ class CarlaEnvironment(Environment):
 
         data_dict["bev"] = bev
 
+        try: 
+            _next_agent_navigational_action = self.traffic_manager_module.get_next_action(self.hero_actor_module.get_actor())
+            self._next_agent_command = RoadOption[_next_agent_navigational_action[0].upper()].value
+            self._next_agent_waypoint = [_next_agent_navigational_action[1].transform.location.x, _next_agent_navigational_action[1].transform.location.y, _next_agent_navigational_action[1].transform.location.z]
+            
+            data_dict["navigation"] = {"command": self._next_agent_command, "waypoint": self._next_agent_waypoint}
+        except:
+            data_dict["navigation"] = {"command": self._next_agent_command, "waypoint": self._next_agent_waypoint}
         self.data.put(data_dict)
 
         self.server_module.step()

@@ -9,7 +9,7 @@ import numpy as np
 
 
 def DEFAULT_JSON(o):
-    return f"<<Non-serializable: {type(o).__qualname__}>>"
+    return f"<<??>>"
 
 
 class InstanceWriterType(Enum):

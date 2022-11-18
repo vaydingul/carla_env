@@ -30,16 +30,28 @@ def align_coordinate_mask_with_ego_vehicle(x, y, yaw, coordinate_mask):
 
     # Calculate the rotation matrix
     theta = yaw
-    rotation_matrix = torch.stack([torch.tensor([[torch.cos(theta[t]), -torch.sin(theta[t])], [
-                                  torch.sin(theta[t]), torch.cos(theta[t])]])for t in range(theta.shape[0])]).to(x.device)
+    # rotation_matrix = torch.stack([torch.tensor([[torch.cos(theta[t]), -torch.sin(theta[t])], [
+    # torch.sin(theta[t]), torch.cos(theta[t])]])for t in
+    # range(theta.shape[0])]).to(x.device)
+    rotation_matrix = create_2x2_rotation_tensor_from_angle_tensor(theta)
 
     aligned_coordinate_mask = coordinate_mask.clone()
     # Translate the coordinate mask
-    aligned_coordinate_mask[..., 0:1] -= y.reshape(-1, 1, 1, 1)
-    aligned_coordinate_mask[..., 1:2] -= x.reshape(-1, 1, 1, 1)
+    aligned_coordinate_mask[...,
+                            0] -= y.unsqueeze(-1).repeat(1,
+                                                           1,
+                                                           aligned_coordinate_mask.shape[2],
+                                                           aligned_coordinate_mask.shape[3],
+                                                           )
+    aligned_coordinate_mask[...,
+                            1] -= x.unsqueeze(-1).repeat(1,
+                                                           1,
+                                                           aligned_coordinate_mask.shape[2],
+                                                           aligned_coordinate_mask.shape[3],
+                                                           )
 
     # Rotate the coordinate mask
-    rotation_matrix.unsqueeze_(1).unsqueeze_(2)
+    rotation_matrix.unsqueeze_(2).unsqueeze_(3)
     aligned_coordinate_mask.unsqueeze_(-1)
     aligned_coordinate_mask = rotation_matrix @ aligned_coordinate_mask
     aligned_coordinate_mask.squeeze_(-1)
@@ -62,8 +74,8 @@ def calculate_mask(aligned_coordinate_mask, dx, dy, width, length, alpha=0.1):
         0)) * torch.maximum(term_2, torch.tensor(0))
     mask_side = torch.pow(mask_side, alpha)
 
-    mask_car = mask_car.flip(-2).permute((0, 2, 1, 3)).squeeze(-1)
-    mask_side = mask_side.flip(-2).permute((0, 2, 1, 3)).squeeze(-1)
+    mask_car = mask_car.flip(-2).permute((0, 1, 3, 2, -1)).squeeze(-1)
+    mask_side = mask_side.flip(-2).permute((0, 1, 3, 2, -1)).squeeze(-1)
 
     return (mask_car, mask_side)
 
@@ -92,18 +104,43 @@ def rotate_batched(location, yaw):
     """Rotate the location in next time step to write in the frame of first time-step"""
 
     # Calculate the rotation matrix
-    theta = -yaw[0]
-    rotation_matrix = torch.tensor([[torch.cos(
-        theta), -torch.sin(theta)], [torch.sin(theta), torch.cos(theta)]], device=location.device)
+    # theta = -yaw[0]
+    theta = -yaw[:, 0]
+
+    # rotation_matrix = torch.tensor([[torch.cos(
+    # theta), -torch.sin(theta)], [torch.sin(theta), torch.cos(theta)]],
+    # device=location.device)
+
+    rotation_matrix = create_2x2_rotation_tensor_from_angle_tensor(theta)
 
     # Rotate the coordinate mask
     rotated_coordinates = torch.matmul(rotation_matrix, location.mT).mT
 
     # Translate the coordinate mask
-    delta_x = rotated_coordinates[1:, 0:1] - rotated_coordinates[0, 0:1]
-    delta_y = rotated_coordinates[1:, 1:2] - rotated_coordinates[0, 1:2]
-    delta_theta = yaw[1:, 0:1] - yaw[0, 0:1]
+    # delta_x = rotated_coordinates[1:, 0:1] - rotated_coordinates[0, 0:1]
+    # delta_y = rotated_coordinates[1:, 1:2] - rotated_coordinates[0, 1:2]
+    delta_x = rotated_coordinates[:, 1:, 0:1] - \
+        rotated_coordinates[:, 0:1, 0:1]
+    delta_y = rotated_coordinates[:, 1:, 1:2] - \
+        rotated_coordinates[:, 0:1, 1:2]
+
+    delta_theta = yaw[:, 1:, 0:1] - yaw[:, 0:1, 0:1]
     return (delta_x, delta_y, delta_theta)
+
+
+def create_2x2_rotation_tensor_from_angle_tensor(angle_tensor):
+    """Create a 2x2 rotation tensor from an angle tensor"""
+
+    rotation_tensor = torch.zeros(*angle_tensor.shape[:-1], 2, 2,
+                                  device=angle_tensor.device,
+                                  dtype=angle_tensor.dtype)
+    cos = torch.cos(angle_tensor).squeeze(-1)
+    sin = torch.sin(angle_tensor).squeeze(-1)
+    rotation_tensor[..., 0, 0] = cos
+    rotation_tensor[..., 0, 1] = -sin
+    rotation_tensor[..., 1, 0] = sin
+    rotation_tensor[..., 1, 1] = cos
+    return rotation_tensor
 
 
 if __name__ == "__main__":

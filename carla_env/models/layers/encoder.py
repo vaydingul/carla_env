@@ -80,15 +80,15 @@ class Encoder(nn.Module):
     def __init__(
             self,
             input_size=5,
-            output_channel=256,
+            output_size=256,
             layers=4,
             dropout=0.2):
         super(Encoder, self).__init__()
 
-        assert output_channel % (
+        assert output_size % (
             2 ** (layers - 1)) == 0, "Output size must be divisible by 2^(layers - 1)"
 
-        feature_maps = [output_channel // (2 ** i)
+        feature_maps = [output_size // (2 ** i)
                         for i in range(layers - 1, 0, -1)]
 
         encoder_layers = []
@@ -102,7 +102,7 @@ class Encoder(nn.Module):
             ]
             current_size = next_size
 
-        encoder_layers.append(nn.Linear(current_size, output_channel))
+        encoder_layers.append(nn.Linear(current_size, output_size))
         self.encoder = nn.Sequential(*encoder_layers)
 
     def forward(self, x):
@@ -115,15 +115,15 @@ class ProbabilisticEncoder(Encoder):
     def __init__(
             self,
             input_size=7,
-            output_channel=256,
+            output_size=256,
             layers=4,
             dropout=0.2,
             latent_size=256):
         super(ProbabilisticEncoder, self).__init__(
-            input_size, output_channel, layers, dropout)
+            input_size, output_size, layers, dropout)
 
-        self.fc_mu = nn.Linear(output_channel, latent_size)
-        self.fc_logvar = nn.Linear(output_channel, latent_size)
+        self.fc_mu = nn.Linear(output_size, latent_size)
+        self.fc_logvar = nn.Linear(output_size, latent_size)
 
     def forward(self, x):
         x = self.encoder(x)

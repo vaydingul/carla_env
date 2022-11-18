@@ -15,7 +15,7 @@ for ((i = 0; i < $length; i++)); do
 	python3 eval_world_forward_model.py \
 		--wandb_link="${wandb_links[i]}" \
 		--checkpoint_number="${checkpoint_numbers[i]}" \
-		--data_path_test="data/ground_truth_bev_model_test_data_2/" \
+		--data_path_test="data/ground_truth_bev_model_test_data/" \
 		--test_set_step=10 \
 		--threshold=0.5
 done

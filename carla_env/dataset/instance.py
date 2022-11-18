@@ -75,26 +75,25 @@ class InstanceDataset(Dataset):
             if read_key == "bev":
 
                 data_ = [self._load_bev(index + k)
-                                     for k in range(self.sequence_length)]
-                
+                         for k in range(self.sequence_length)]
+
                 data_stacked = {}
 
                 for key in data_[0].keys():
                     data_stacked[key] = torch.stack(
                         [data_[k][key] for k in range(self.sequence_length)], dim=0)
-                
+
                 data_ = data_stacked
 
-            if (read_key == "rgb_front" or read_key ==
-                            "rgb_right" or read_key == "rgb_left"):
+            if read_key in ["rgb_front", "rgb_left", "rgb_right"]:
 
                 data_ = torch.stack([self._load_rgb(index + k, read_key)
                                      for k in range(self.sequence_length)],
                                     dim=0)
 
-            if read_key == "ego":
+            if read_key in ["ego", "navigation"]:
 
-                data_ = [self._load_ego(index + k)
+                data_ = [self._load_json(index + k, read_key)
                          for k in range(self.sequence_length)]
                 data_stacked = {}
 
@@ -115,7 +114,7 @@ class InstanceDataset(Dataset):
         bev_ = torch.from_numpy(bev_).float()
         # Permute the dimensions such that the channel dim is the first one
         agent_mask = bev_[..., 3]
-        bev_[..., 2] -= agent_mask
+        bev_[..., 2] -= agent_mask 
         bev = bev_[..., [k for k in range(bev_.shape[-1]) if k != 3]]
 
         bev = bev.permute(2, 0, 1)
@@ -139,13 +138,14 @@ class InstanceDataset(Dataset):
         image = image.permute(2, 0, 1)
         return image
 
-    def _load_ego(self, index):
+    def _load_json(self, index, read_key):
 
-        load_path = self.data[index][0] / "ego" / f"{self.data[index][1]}.json"
+        load_path = self.data[index][0] / \
+            read_key / f"{self.data[index][1]}.json"
         ego = json.load(open(load_path))
         ego_ = {}
-        for key in ego.keys():
-            if key.endswith("array"):
+        for (key, value) in ego.items():
+            if value != "<<??>>":
                 ego_[key] = torch.tensor(ego[key])
         return ego_
 

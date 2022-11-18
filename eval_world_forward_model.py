@@ -94,7 +94,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_path_test", type=str,
-                        default="data/ground_truth_bev_model_test_data_2/")
+                        default="data/ground_truth_bev_model_test_data/")
     parser.add_argument("--test_set_step", type=int, default=10)
     parser.add_argument(
         "--save_path",

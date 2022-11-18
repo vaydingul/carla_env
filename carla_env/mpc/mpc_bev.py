@@ -40,29 +40,36 @@ class ModelPredictiveControl(nn.Module):
 
             self._initialize_rendering()
 
-    def forward(self, location, rotation, speed, bev):
+    def forward(self, location, yaw, speed, bev):
         """Run a single step of ModelPredictiveControl."""
 
         location_predicted = []
-        rotation_predicted = []
+        yaw_predicted = []
         speed_predicted = []
         bev_predicted = []
 
         location_predicted.append(location)
-        rotation_predicted.append(rotation)
+        yaw_predicted.append(yaw)
         speed_predicted.append(speed)
-        #bev_predicted.append(bev[:, -1:-2])
+        bev_predicted.append(bev.unsqueeze(1))
+
+        ego_state = {"location": location,
+                     "yaw": yaw,
+                     "speed": speed}
 
         for i in range(self.rollout_length - 1):
 
             action_ = self.action[:, i, :].clone()
 
-            (location, rotation, speed) = self.ego_model(
-                location, rotation, speed, action_)
+            ego_state_next = self.ego_model(
+                ego_state, action_)
 
-            location_predicted.append(location)
-            rotation_predicted.append(rotation)
-            speed_predicted.append(speed)
+
+            location_predicted.append(ego_state_next["location"])
+            yaw_predicted.append(ego_state_next["yaw"])
+            speed_predicted.append(ego_state_next["speed"])
+
+            ego_state = ego_state_next
 
             if self.world_model is not None:
 
@@ -77,16 +84,16 @@ class ModelPredictiveControl(nn.Module):
 
             else:
 
-                bev_predicted.append(bev[:, -1])
+                bev_predicted.append(bev.unsqueeze(1))
 
         location_predicted = torch.cat(location_predicted, dim=1)
-        rotation_predicted = torch.cat(rotation_predicted, dim=1)
+        yaw_predicted = torch.cat(yaw_predicted, dim=1)
         speed_predicted = torch.cat(speed_predicted, dim=1)
         bev_predicted = torch.cat(bev_predicted, dim=1)
 
         return (
             location_predicted.clone(),
-            rotation_predicted.clone(),
+            yaw_predicted.clone(),
             speed_predicted.clone(),
             bev_predicted.clone())
 
@@ -98,30 +105,30 @@ class ModelPredictiveControl(nn.Module):
             self.optimizer.zero_grad()
 
             location = initial_state[:, :, 0:2].clone()
-            rotation = initial_state[:, :, 2:3].clone()
+            yaw = initial_state[:, :, 2:3].clone()
             speed = initial_state[:, :, 3:4].clone()
             bev_ = bev.clone()
 
             (location_predicted,
-             rotation_predicted,
+             yaw_predicted,
              speed_predicted,
              bev_predicted) = self.forward(location=location,
-                                           rotation=rotation,
+                                           yaw=yaw,
                                            speed=speed,
                                            bev=bev_)
 
             cost = self._calculate_cost(
                 predicted_location=location_predicted.clone(),
-                predicted_rotation=rotation_predicted.clone(),
+                predicted_yaw=yaw_predicted.clone(),
                 predicted_speed=speed_predicted.clone(),
                 predicted_bev=bev_predicted.clone(),
                 target_state=target_state.clone(),
-                agent_mask=agent_mask,
+                agent_mask=agent_mask.clone(),
                 last_step=k == self.number_of_optimization_iterations - 1)
 
             cost.backward()
 
-            torch.nn.utils.clip_grad_value_(self.action, 0.5)
+            torch.nn.utils.clip_grad_norm_(self.action, 1)
 
             self.optimizer.step()
 
@@ -145,7 +152,7 @@ class ModelPredictiveControl(nn.Module):
     def _calculate_cost(
             self,
             predicted_location,
-            predicted_rotation,
+            predicted_yaw,
             predicted_speed,
             predicted_bev,
             target_state,
@@ -154,28 +161,32 @@ class ModelPredictiveControl(nn.Module):
         """Calculate the cost."""
 
         # Organize the dimensions for the cost module
-        predicted_location.squeeze_(0)
-        predicted_rotation.squeeze_(0)
-        predicted_speed.squeeze_(0)
-        target_state.squeeze_(0)
-        predicted_bev.squeeze_(0)
+        # predicted_location.squeeze_(0)
+        # predicted_rotation.squeeze_(0)
+        # predicted_speed.squeeze_(0)
+        # target_state.squeeze_(0)
+        # predicted_bev.squeeze_(0)
         # Convert bev to torch tensor
-        self.predicted_bev = predicted_bev.detach().cpu().numpy()
 
         # Calculate the cost
-        (self.lane_cost,
-            self.vehicle_cost,
-            self.green_light_cost,
-            self.yellow_light_cost,
-            self.red_light_cost,
-            self.pedestrian_cost,
-            self.offroad_cost,
-            self.mask_car,
-            self.mask_side) = self.cost(predicted_location,
-                                        predicted_rotation,
-                                        predicted_speed,
-                                        predicted_bev,
-                                        agent_mask)
+        cost = self.cost(predicted_location,
+                         predicted_yaw,
+                         predicted_speed,
+                         predicted_bev,
+                         agent_mask)
+
+        self.predicted_bev = predicted_bev.clone().detach().cpu().numpy()[0]
+
+
+        self.lane_cost = cost["lane_cost"]
+        self.vehicle_cost = cost["vehicle_cost"]
+        # green_light_cost = cost["green_light_cost"]
+        # yellow_light_cost = cost["yellow_light_cost"]
+        # red_light_cost = cost["red_light_cost"]
+        # pedestrian_cost = cost["pedestrian_cost"]
+        self.offroad_cost = cost["offroad_cost"]
+        self.mask_car = cost["mask_car"][0]
+        self.mask_side = cost["mask_side"][0]
 
         cost = torch.tensor(0.0).to(self.device)
         cost += self.lane_cost / 50
@@ -184,22 +195,22 @@ class ModelPredictiveControl(nn.Module):
         #cost += self.yellow_light_cost
         #cost += self.red_light_cost
         #cost += self.pedestrian_cost
-        cost += self.offroad_cost / 250
+        cost += self.offroad_cost / 50
 
         cost += torch.nn.functional.l1_loss(predicted_location[..., :1], target_state[..., :1].expand(
             *(predicted_location[..., :1].shape))) * 10
         cost += torch.nn.functional.l1_loss(predicted_location[..., 1:2], target_state[..., 1:2].expand(
             *(predicted_location[..., 1:2].shape))) * 10
-        cost += torch.nn.functional.l1_loss(torch.cos(predicted_rotation), torch.cos(
-            target_state[..., 2:3].expand(*(predicted_rotation.shape))))
-        cost += torch.nn.functional.l1_loss(torch.sin(predicted_rotation), torch.sin(
-            target_state[..., 2:3].expand(*(predicted_rotation.shape))))
+        cost += torch.nn.functional.l1_loss(torch.cos(predicted_yaw), torch.cos(
+            target_state[..., 2:3].expand(*(predicted_yaw.shape))))
+        cost += torch.nn.functional.l1_loss(torch.sin(predicted_yaw), torch.sin(
+            target_state[..., 2:3].expand(*(predicted_yaw.shape))))
         # cost += torch.nn.functional.l1_loss(predicted_speed,
         #                                     target_state[...,
         #                                                  3:4].expand(*(predicted_speed.shape)))
 
         cost += torch.diff(self.action[..., 0], dim=1).square().sum() * 0.5
-        cost += torch.diff(self.action[..., 1], dim=1).square().sum() * 10
+        cost += torch.diff(self.action[..., 1], dim=1).square().sum() * 5
 
         if self.render_cost and last_step:
 

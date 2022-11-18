@@ -1,6 +1,8 @@
+from carla_env.bev import BirdViewProducer
 import logging
 import numpy as np
 import torch
+import cv2
 from torch.nn import functional as F
 from pathlib import Path
 logger = logging.getLogger(__name__)
@@ -21,9 +23,14 @@ class Trainer(object):
             num_epochs=1000,
             current_epoch=0,
             lr_scheduler=None,
+            gradient_clip_type="norm",
+            gradient_clip_value=0.3,
             save_path=None,
             train_step=0,
-            val_step=0):
+            val_step=0,
+            bev_width=192,
+            bev_height=192,
+            debug_render=False):
 
         self.model = model
         self.dataloader_train = dataloader_train
@@ -36,9 +43,14 @@ class Trainer(object):
         self.num_epochs = num_epochs
         self.current_epoch = current_epoch
         self.lr_scheduler = lr_scheduler
+        self.gradient_clip_type = gradient_clip_type
+        self.gradient_clip_value = gradient_clip_value
         self.save_path = save_path
         self.train_step = train_step
         self.val_step = val_step
+        self.bev_width = bev_width
+        self.bev_height = bev_height
+        self.debug_render = debug_render
 
         self.model.to(self.device)
 
@@ -49,33 +61,41 @@ class Trainer(object):
         for i, (data) in enumerate(self.dataloader_train):
 
             world_previous_bev = data["bev"]["bev"][:,
-                                             :self.num_time_step_previous].to(self.device)
+                                                    :self.num_time_step_previous].to(self.device)
             world_future_bev = data["bev"]["bev"][:, self.num_time_step_previous:
-                                           self.num_time_step_previous + self.num_time_step_future].to(self.device)
+                                                  self.num_time_step_previous + self.num_time_step_future].to(self.device)
 
             world_future_bev_predicted_list = []
 
-            ego_previous_location = data["ego"]["location"][:,
-                                                            self.num_time_step_previous - 1].to(self.device)
-            ego_future_location = data["ego"]["location"][:, self.num_time_step_previous:
-                                                          self.num_time_step_previous + self.num_time_step_future].to(self.device)
+            ego_previous_location = data["ego"]["location_array"][:,
+                                                                  self.num_time_step_previous - 1, 0:2].to(self.device)
+            ego_future_location = data["ego"]["location_array"][:,
+                                                                self.num_time_step_previous: self.num_time_step_previous + self.num_time_step_future,
+                                                                0:2].to(self.device)
             ego_future_location_predicted_list = []
 
-            ego_previous_yaw = data["ego"]["rotation"][:,
-                                                       self.num_time_step_previous - 1].to(self.device)
-            ego_future_yaw = data["ego"]["rotation"][:, self.num_time_step_previous:
-                                                     self.num_time_step_previous + self.num_time_step_future].to(self.device)
+            ego_previous_yaw = torch.deg2rad(
+                data["ego"]["rotation_array"][:, self.num_time_step_previous - 1, 1:2].to(self.device))
+            ego_future_yaw = torch.deg2rad(data["ego"]["rotation_array"][:,
+                                                                         self.num_time_step_previous: self.num_time_step_previous + self.num_time_step_future,
+                                                                         1:2].to(self.device))
             ego_future_yaw_predicted_list = []
 
-            ego_previous_speed = data["ego"]["speed"][:,
-                                                      self.num_time_step_previous - 1].to(self.device)
-            ego_future_speed = data["ego"]["speed"][:, self.num_time_step_previous:
-                                                    self.num_time_step_previous + self.num_time_step_future].to(self.device)
+            ego_previous_speed = data["ego"]["velocity_array"][:,
+                                                               self.num_time_step_previous - 1].norm(2, -1, keepdim=True).to(self.device)
+            ego_future_speed = data["ego"]["velocity_array"][:, self.num_time_step_previous: self.num_time_step_previous +
+                                                             self.num_time_step_future].norm(2, -1, keepdim=True).to(self.device)
             ego_future_speed_predicted_list = []
 
-            ego_future_action = data["ego"]["action"][:, self.num_time_step_previous:
-                                                      self.num_time_step_previous + self.num_time_step_future].to(self.device)
+            ego_future_action = data["ego"]["control_array"][:, self.num_time_step_previous:
+                                                             self.num_time_step_previous + self.num_time_step_future].to(self.device)
             ego_future_action_predicted_list = []
+
+            command = data["navigation"]["command"][:,
+                                                    self.num_time_step_previous - 1].to(self.device)
+            command = F.one_hot(command, num_classes=6).float()
+            target_location = data["navigation"]["waypoint"][:,
+                                                             self.num_time_step_previous - 1, 0:2].to(self.device)
 
             ego_state_previous = {
                 "location": ego_previous_location,
@@ -85,7 +105,11 @@ class Trainer(object):
             for k in range(self.num_time_step_future):
 
                 # Predict the future bev
-                output = self.model(ego_state_previous, world_previous_bev)
+                output = self.model(
+                    ego_state_previous,
+                    world_previous_bev,
+                    command,
+                    target_location)
 
                 ego_state_next = output["ego_state_next"]
                 world_state_next = output["world_state_next"]
@@ -124,143 +148,226 @@ class Trainer(object):
             ego_future_action_predicted = torch.stack(
                 ego_future_action_predicted_list, dim=1)
 
-            # # Compute the loss
-            # if self.reconstruction_loss == F.mse_loss:
-            #     loss_reconstruction = self.reconstruction_loss(
-            #         world_future_bev_predicted, world_future_bev)
-            # else:
-            #     # Flatten the predicted and actual values
-            #     loss_reconstruction = self.reconstruction_loss(
-            #         world_future_bev_predicted.view(
-            #             world_future_bev_predicted.shape[0], -1), world_future_bev.view(
-            #             world_future_bev.shape[0], -1))
+            # cost = self.cost(
+            #     ego_future_location_predicted,
+            #     ego_future_yaw_predicted,
+            #     ego_future_speed_predicted,
+            #     world_future_bev_predicted,
+            # )
 
-            # Compute the KL divergence
-            # loss_kl_div = -0.5 * \
-            #     torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+            cost = self.cost(
+                ego_future_location,
+                ego_future_yaw,
+                ego_future_speed,
+                world_future_bev,
+                )
 
-            # # Compute the total loss
-            # loss = loss_reconstruction + loss_kl_div
-
-            cost = self.cost(ego_future_location_predicted, ego_future_yaw_predicted, ego_future_speed_predicted, world_future_bev_predicted)
+            lane_cost = cost["lane_cost"] / world_previous_bev.shape[0]
+            vehicle_cost = cost["vehicle_cost"] / world_previous_bev.shape[0]
+            offroad_cost = cost["offroad_cost"] / world_previous_bev.shape[0]
+            ego_future_action[..., 0] -= ego_future_action[..., -1]
+            action_mse = F.mse_loss(
+                ego_future_action_predicted, ego_future_action[..., :2])
+            loss = (lane_cost + vehicle_cost + offroad_cost) / \
+                1000  # + action_mse
+            # loss = action_mse
 
             # Backward pass
             self.optimizer.zero_grad()
             loss.backward()
             # Clip the gradients
-            torch.nn.utils.clip_grad_value_(self.model.parameters(), 0.1)
+            if self.gradient_clip_type == "norm":
+                torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(), self.gradient_clip_value)
+            else:
+                torch.nn.utils.clip_grad_value_(
+                    self.model.parameters(), self.gradient_clip_value)
+
             self.optimizer.step()
 
             self.train_step += world_previous_bev.shape[0]
 
             if run is not None:
                 run.log({"train/step": self.train_step,
-                         "train/loss": loss,
-                         "train/loss_kl_divergence": loss_kl_div,
-                         "train/loss_reconstruction": loss_reconstruction})
+                         "train/lane_cost": lane_cost,
+                         "train/vehicle_cost": vehicle_cost,
+                         "train/offroad_cost": offroad_cost,
+                         "train/action_mse": action_mse,
+                         "train/loss": loss})
+
+            self.render(i, world_future_bev_predicted, cost)
 
     def validate(self, run=None):
 
         self.model.eval()
 
-        losses_total = []
-        losses_kl_div = []
-        losses_reconstruction = []
+        lane_cost_list = []
+        vehicle_cost_list = []
+        offroad_cost_list = []
+        loss_list = []
+        action_mse_list = []
 
         with torch.no_grad():
-
             for i, (data) in enumerate(self.dataloader_val):
 
-                world_previous_bev = data["bev"][:,
-                                                 :self.num_time_step_previous].to(self.device)
-                world_future_bev = data["bev"][:, self.num_time_step_previous:
-                                               self.num_time_step_previous + self.num_time_step_future].to(self.device)
+                world_previous_bev = data["bev"]["bev"][:,
+                                                        :self.num_time_step_previous].to(self.device)
+                world_future_bev = data["bev"]["bev"][:, self.num_time_step_previous:
+                                                      self.num_time_step_previous + self.num_time_step_future].to(self.device)
 
                 world_future_bev_predicted_list = []
-                mu_list = []
-                logvar_list = []
+
+                ego_previous_location = data["ego"]["location_array"][:,
+                                                                      self.num_time_step_previous - 1, 0:2].to(self.device)
+                ego_future_location = data["ego"]["location_array"][:,
+                                                                    self.num_time_step_previous: self.num_time_step_previous + self.num_time_step_future,
+                                                                    0:2].to(self.device)
+                ego_future_location_predicted_list = []
+
+                ego_previous_yaw = torch.deg2rad(
+                    data["ego"]["rotation_array"][:, self.num_time_step_previous - 1, 1:2].to(self.device))
+                ego_future_yaw = torch.deg2rad(data["ego"]["rotation_array"][:,
+                                                                             self.num_time_step_previous: self.num_time_step_previous + self.num_time_step_future,
+                                                                             1:2].to(self.device))
+                ego_future_yaw_predicted_list = []
+
+                ego_previous_speed = data["ego"]["velocity_array"][:,
+                                                                   self.num_time_step_previous - 1].norm(2, -1, keepdim=True).to(self.device)
+                ego_future_speed = data["ego"]["velocity_array"][:, self.num_time_step_previous: self.num_time_step_previous +
+                                                                 self.num_time_step_future].norm(2, -1, keepdim=True).to(self.device)
+                ego_future_speed_predicted_list = []
+
+                ego_future_action = data["ego"]["control_array"][:, self.num_time_step_previous:
+                                                                 self.num_time_step_previous + self.num_time_step_future].to(self.device)
+                ego_future_action_predicted_list = []
+
+                command = data["navigation"]["command"][:,
+                                                        self.num_time_step_previous - 1].to(self.device)
+                command = F.one_hot(command, num_classes=6).float()
+                target_location = data["navigation"]["waypoint"][:,
+                                                                 self.num_time_step_previous - 1, 0:2].to(self.device)
+
+                ego_state_previous = {
+                    "location": ego_previous_location,
+                    "yaw": ego_previous_yaw,
+                    "speed": ego_previous_speed}
 
                 for k in range(self.num_time_step_future):
 
                     # Predict the future bev
-                    world_future_bev_predicted, mu, logvar = self.model(
-                        world_previous_bev, world_future_bev[:, k])
+                    output = self.model(
+                        ego_state_previous,
+                        world_previous_bev,
+                        command,
+                        target_location)
 
-                    # if self.reconstruction_loss == F.mse_loss:
-                    #     world_future_bev_predicted = F.sigmoid(
-                    #         world_future_bev_predicted)
+                    ego_state_next = output["ego_state_next"]
+                    world_state_next = output["world_state_next"]
+                    action = output["action"]
+
                     world_future_bev_predicted = F.sigmoid(
-                        world_future_bev_predicted)
+                        world_state_next)
 
                     world_future_bev_predicted_list.append(
                         world_future_bev_predicted)
-                    mu_list.append(mu)
-                    logvar_list.append(logvar)
+                    ego_future_location_predicted_list.append(
+                        ego_state_next["location"])
+                    ego_future_yaw_predicted_list.append(ego_state_next["yaw"])
+                    ego_future_speed_predicted_list.append(
+                        ego_state_next["speed"])
+                    ego_future_action_predicted_list.append(action)
+                    # Predict the future ego location
 
                     # Update the previous bev
                     world_previous_bev = torch.cat(
                         (world_previous_bev[:, 1:], world_future_bev_predicted.unsqueeze(1)), dim=1)
 
+                    ego_state_previous = ego_state_next
+
                 world_future_bev_predicted = torch.stack(
                     world_future_bev_predicted_list, dim=1)
-                mu = torch.stack(mu_list, dim=1)
-                logvar = torch.stack(logvar_list, dim=1)
 
-                if self.logvar_clip:
-                    logvar = torch.clamp(logvar, self.logvar_clip_min,
-                                         self.logvar_clip_max)
+                ego_future_location_predicted = torch.stack(
+                    ego_future_location_predicted_list, dim=1)
 
-                # Calculate the KL divergence loss
-                loss_kl_div = -0.5 * \
-                    torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+                ego_future_yaw_predicted = torch.stack(
+                    ego_future_yaw_predicted_list, dim=1)
 
-                # Calculate the reconstruction loss
-                if self.reconstruction_loss == F.mse_loss:
-                    loss_reconstruction = self.reconstruction_loss(
-                        world_future_bev_predicted, world_future_bev)
-                else:
-                    # Flatten the predicted and actual values
-                    loss_reconstruction = self.reconstruction_loss(
-                        world_future_bev_predicted.view(
-                            world_future_bev_predicted.shape[0], -1), world_future_bev.view(
-                            world_future_bev.shape[0], -1))
+                ego_future_speed_predicted = torch.stack(
+                    ego_future_speed_predicted_list, dim=1)
 
-                loss = loss_kl_div + loss_reconstruction
+                ego_future_action_predicted = torch.stack(
+                    ego_future_action_predicted_list, dim=1)
 
-                losses_total.append(loss.item())
-                losses_kl_div.append(loss_kl_div.item())
-                losses_reconstruction.append(loss_reconstruction.item())
+                cost = self.cost(
+                    ego_future_location_predicted,
+                    ego_future_yaw_predicted,
+                    ego_future_speed_predicted,
+                    world_future_bev_predicted,
+                )
+
+                lane_cost = cost["lane_cost"] / world_previous_bev.shape[0]
+                vehicle_cost = cost["vehicle_cost"] / \
+                    world_previous_bev.shape[0]
+                offroad_cost = cost["offroad_cost"] / \
+                    world_previous_bev.shape[0]
+                ego_future_action[..., 0] -= ego_future_action[..., -1]
+                action_mse = F.mse_loss(
+                    ego_future_action_predicted, ego_future_action[..., :2])
+
+                loss = (lane_cost + vehicle_cost +
+                        offroad_cost) / 1000  # + action_mse
+                # loss = action_mse
+                lane_cost_list.append(lane_cost.item())
+                vehicle_cost_list.append(vehicle_cost.item())
+                offroad_cost_list.append(offroad_cost.item())
+                action_mse_list.append(action_mse.item())
+                loss_list.append(loss.item())
 
                 self.val_step += world_previous_bev.shape[0]
 
-        loss = np.mean(losses_total)
-        loss_kl_div = np.mean(losses_kl_div)
-        loss_reconstruction = np.mean(losses_reconstruction)
+            lane_cost_mean = np.mean(lane_cost_list)
+            vehicle_cost_mean = np.mean(vehicle_cost_list)
+            offroad_cost_mean = np.mean(offroad_cost_list)
+            action_mse_mean = np.mean(action_mse_list)
+            loss_mean = np.mean(loss_list)
 
-        if run is not None:
-            run.log({"val/step": self.val_step,
-                     "val/loss": loss,
-                     "val/loss_kl_divergence": loss_kl_div,
-                     "val/loss_reconstruction": loss_reconstruction})
-            if self.lr_scheduler is not None:
-                run.log({"val/lr": self.lr_scheduler.get_last_lr()[0]})
+            if run is not None:
+                run.log({"val/step": self.val_step,
+                         "val/lane_cost": lane_cost_mean,
+                         "val/vehicle_cost": vehicle_cost_mean,
+                         "val/offroad_cost": offroad_cost_mean,
+                         "val/action_mse": action_mse_mean,
+                         "val/loss": loss_mean})
+                if self.lr_scheduler is not None:
+                    run.log({"val/lr": self.lr_scheduler.get_last_lr()[0]})
 
-        return loss, loss_kl_div, loss_reconstruction
+            self.render(i, world_future_bev_predicted, cost)
+
+            return (
+                lane_cost_mean,
+                vehicle_cost_mean,
+                offroad_cost_mean,
+                action_mse_mean,
+                loss_mean)
 
     def learn(self, run=None):
 
         for epoch in range(self.current_epoch, self.num_epochs):
-
+            self.epoch = epoch
             self.train(run)
-            loss, loss_kl_div, loss_reconstruction = self.validate(run)
+            (lane_cost,
+             vehicle_cost,
+             offroad_cost,
+             action_mse,
+             loss) = self.validate(run)
             logger.info(
-                "Epoch: {}, Val Loss: {}, Val Loss KL Div: {}, Val Loss Reconstruction: {}".format(
-                    epoch, loss, loss_kl_div, loss_reconstruction))
+                f"Epoch: {epoch}, Lane Cost: {lane_cost}, Vehicle Cost: {vehicle_cost}, Offroad Cost: {offroad_cost}, Action MSE: {action_mse}, Loss: {loss}")
 
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
-            if ((epoch + 1) % 5 == 0) and self.save_path is not None:
+            if ((epoch + 1) % 100 == 0) and self.save_path is not None:
 
                 torch.save({
                     "model_state_dict": self.model.state_dict(),
@@ -274,3 +381,151 @@ class Trainer(object):
 
                 run.save(str(self.save_path /
                              Path(f"checkpoint_{epoch}.pt")))
+
+    def render(self, i, world_future_bev_predicted, cost):
+
+        if self.debug_render:
+            self._init_canvas()
+            x1 = 0
+            y1 = 0
+            for k in range(self.dataloader_train.batch_size):
+                for m in range(self.num_time_step_future - 1):
+                    bev = world_future_bev_predicted[k, m]
+                    bev[bev > 0.5] = 1
+                    bev[bev <= 0.5] = 0
+                    bev = bev.detach().cpu().numpy()
+
+                    mask_car = cost["mask_car"][k, m]
+                    mask_car = mask_car.detach().cpu().numpy()
+                    mask_car = (((mask_car -
+                                  mask_car.min()) /
+                                 (mask_car.max() -
+                                  mask_car.min())) *
+                                255).astype(np.uint8)
+
+                    mask_side = cost["mask_side"][k, m]
+                    mask_side = mask_side.detach().cpu().numpy()
+                    mask_side = (((mask_side -
+                                   mask_side.min()) /
+                                  (mask_side.max() -
+                                 mask_side.min())) *
+                                 255).astype(np.uint8)
+
+                    mask_car = cv2.applyColorMap(mask_car, cv2.COLORMAP_JET)
+                    mask_side = cv2.applyColorMap(mask_side, cv2.COLORMAP_JET)
+
+                    bev = cv2.cvtColor(
+                        BirdViewProducer.as_rgb_model(
+                            np.transpose(
+                                bev, (1, 2, 0))), cv2.COLOR_BGR2RGB)
+
+                    x2 = x1 + bev.shape[1]
+                    y2 = y1 + bev.shape[0]
+                    self.canvas_car[y1:y2, x1:x2] = cv2.addWeighted(
+                        bev, 0.5, mask_car, 0.5, 0)
+                    self.canvas_side[y1:y2, x1:x2] = cv2.addWeighted(
+                        bev, 0.5, mask_side, 0.5, 0)
+                    x1 = x2 + 20
+
+                x1 = 0
+                y1 = y2 + 20
+
+            y1 += 20
+
+            cv2.putText(
+                self.canvas_car,
+                f"lane_cost: {cost['lane_cost']}",
+                (x1,
+                 y1),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (255,
+                 255,
+                 255),
+                1,
+                cv2.LINE_AA)
+            y1 += 20
+            cv2.putText(
+                self.canvas_car,
+                f"vehicle_cost: {cost['vehicle_cost']}",
+                (x1,
+                 y1),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (255,
+                 255,
+                 255),
+                1,
+                cv2.LINE_AA)
+            y1 += 20
+            cv2.putText(
+                self.canvas_car,
+                f"offroad_cost: {cost['offroad_cost']}",
+                (x1,
+                 y1),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (255,
+                 255,
+                 255),
+                1,
+                cv2.LINE_AA)
+
+            cv2.putText(
+                self.canvas_side,
+                f"lane_cost: {cost['lane_cost']}",
+                (x1,
+                 y1),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (255,
+                 255,
+                 255),
+                1,
+                cv2.LINE_AA)
+            y1 += 20
+            cv2.putText(
+                self.canvas_side,
+                f"vehicle_cost: {cost['vehicle_cost']}",
+                (x1,
+                 y1),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (255,
+                 255,
+                 255),
+                1,
+                cv2.LINE_AA)
+            y1 += 20
+            cv2.putText(
+                self.canvas_side,
+                f"offroad_cost: {cost['offroad_cost']}",
+                (x1,
+                 y1),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (255,
+                 255,
+                 255),
+                1,
+                cv2.LINE_AA)
+
+            # Save the canvas
+            path_car = Path(
+                f"./figures/dfm_km_policy_training_debug/{'training' if self.model.training else 'validation'}/{self.epoch}")
+            path_car.mkdir(parents=True, exist_ok=True)
+
+            path_side = Path(
+                f"./figures/dfm_km_policy_training_debug/{'training' if self.model.training else 'validation'}/{self.epoch}")
+            path_side.mkdir(parents=True, exist_ok=True)
+
+            cv2.imwrite(str(path_car / f"{i}_car.png"), self.canvas_car)
+            cv2.imwrite(str(path_side / f"{i}_side.png"), self.canvas_side)
+
+    def _init_canvas(self):
+
+        width = (self.num_time_step_future - 1) * (self.bev_width + 20)
+        height = self.dataloader_train.batch_size * \
+            (self.bev_height + 20) + 100
+        self.canvas_car = np.zeros((height, width, 3), dtype=np.uint8)
+        self.canvas_side = np.zeros((height, width, 3), dtype=np.uint8)

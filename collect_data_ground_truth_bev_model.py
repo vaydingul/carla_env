@@ -2,7 +2,6 @@ import argparse
 import logging
 import os
 import sys
-from this import d
 import time
 from pathlib import Path
 
@@ -23,14 +22,20 @@ def main(config):
             "render": False, "save": False, "save_video": False,
             "tasks": [
                 {
-                    "world": "Town02", "num_vehicles": 100},
+                    "world": "Town01", "num_vehicles": 100},
+                {
+                    "world": "Town03", "num_vehicles": 100},
+                {
+                    "world": "Town04", "num_vehicles": 300},
+                {
+                    "world": "Town06", "num_vehicles": 300}
             ],
             "max_steps": 1000})
 
-    for k in range(config.num_episodes):
+    for k in [69, 2, 91, 9, 100, 72, 95, 6]:#range(config.num_episodes):
 
         # Create the data writer
-        data_save_path_ = Path(config.data_save_path) / f"episode_{k + 6}"
+        data_save_path_ = Path(config.data_save_path) / f"episode_{k}"
         os.makedirs(data_save_path_, exist_ok=True)
 
         writer = InstanceWriter(data_save_path_)
@@ -53,6 +58,8 @@ def main(config):
             value="bev",
             type=InstanceWriterType.BEV_IMAGE)
         writer.add_key(key="ego", value="ego", type=InstanceWriterType.JSON)
+        writer.add_key(key="navigation", value="navigation", type=InstanceWriterType.JSON)
+
 
         while not c.is_done:
 
@@ -79,12 +86,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_save_path",
         type=str,
-        default="./data/ground_truth_bev_model_test_data_2",
+        default="./data/ground_truth_bev_model_train_data_2",
         help="Path to save the data")
     parser.add_argument(
         "--num_episodes",
         type=int,
-        default=1,
+        default=40,
         help="Number of episodes to collect data from")
     config = parser.parse_args()
 

@@ -10,3 +10,7 @@ def seed_everything(seed):
     torch.manual_seed(seed)
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
+
+
+def get_device():
+    return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

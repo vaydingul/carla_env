@@ -10,7 +10,7 @@ import logging
 import math
 import argparse
 from utils.kinematic_utils import acceleration_to_throttle_brake
-
+from utils.model_utils import convert_standard_bev_to_model_bev
 
 logging.basicConfig(level=logging.INFO)
 
@@ -31,8 +31,8 @@ def main(config):
         action_size=2,
         rollout_length=config.rollout_length,
         number_of_optimization_iterations=40,
-        model=ego_forward_model,
         cost=cost,
+        ego_model=ego_forward_model,
         render_cost=True)
 
     mpc_module.to(device=config.device)
@@ -47,8 +47,13 @@ def main(config):
             "save_video": True})
 
     current_transform, current_velocity, target_waypoint, navigational_command = c.step()
-    bev = c.data.get()["bev"]
 
+    data = c.get_data()
+    bev_ = data["bev"]
+    agent_mask = torch.tensor(bev_[:, :, 3], device=config.device).float()
+    agent_mask = agent_mask.repeat(1, config.rollout_length, 1, 1)
+    bev = convert_standard_bev_to_model_bev(bev=bev_, device=config.device)
+    
     counter = 0
 
     while True:
@@ -90,7 +95,7 @@ def main(config):
             logging.debug(f"Target state: {target_state}")
             # Get the control from the ModelPredictiveControl module
             control, location_predicted, cost, cost_canvas = mpc_module.step(
-                current_state, target_state, bev)
+                current_state, target_state, bev, agent_mask=agent_mask)
 
         throttle, brake = acceleration_to_throttle_brake(
             acceleration=control[0])
@@ -102,13 +107,21 @@ def main(config):
 
         if c.is_done:
             break
-        bev = c.data.get()["bev"]
+
+        data = c.get_data()
+        bev_ = data["bev"]
+        agent_mask = torch.tensor(bev_[:, :, 3], device=config.device).float()
+        agent_mask = agent_mask.repeat(1, config.rollout_length, 1, 1)
+
+        bev = convert_standard_bev_to_model_bev(bev=bev_, device=config.device)
+
+
 
         t1 = time.time()
 
         c.render(
             predicted_location=location_predicted,
-            bev=bev,
+            bev=bev_,
             cost_canvas=cost_canvas,
             cost=cost,
             control=control,
@@ -116,6 +129,8 @@ def main(config):
             target_state=target_state,
             counter=counter,
             sim_fps=1 / (t1 - t0))
+
+       
 
         mpc_module.reset()
 
