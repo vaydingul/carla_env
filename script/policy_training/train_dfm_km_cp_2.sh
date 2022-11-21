@@ -33,12 +33,12 @@ python3 train_dfm_km_cp.py \
 	--red_light_cost_weight=0.000 \
 	--pedestrian_cost_weight=0.000 \
 	--offroad_cost_weight=0.002 \
-	--action_mse_weight=0.0 \
+	--action_mse_weight=1.0 \
 	--action_jerk_weight=0.0 \
 	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="dfm-km-cp" \
-	--wandb_name="vanilla" \
+	--wandb_name="vanilla+bc" \
 	--ego_forward_model_path="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt" \
 	--world_forward_model_wandb_link="vaydingul/mbl/1gftiw9w" \
 	--world_forward_model_checkpoint_number=39 \
