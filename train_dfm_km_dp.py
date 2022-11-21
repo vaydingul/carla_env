@@ -131,11 +131,12 @@ def main(config):
             run.config.update(
                 {"input_shape_world_state": _input_shape_world_state})
         policy_model = Policy(
+            input_shape_world_state=_input_shape_world_state,
             input_shape_ego_state=config.input_shape_ego_state,
             action_size=config.action_size,
             hidden_size=config.hidden_size,
             layers=config.num_layer)
-            
+
     else:
 
         checkpoint = fetch_checkpoint_from_wandb_run(
