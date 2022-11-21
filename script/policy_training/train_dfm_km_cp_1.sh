@@ -39,7 +39,7 @@ python3 train_dfm_km_cp.py \
 	--wandb_project="mbl" \
 	--wandb_group="dfm-km-cp" \
 	--wandb_name="vanilla" \
-	--ego_forawrd_model_path="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt" \
+	--ego_forward_model_path="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt" \
 	--world_forward_model_wandb_link="vaydingul/mbl/1gftiw9w"
 	--world_forward_model_checkpoint_number=39 \
 	
