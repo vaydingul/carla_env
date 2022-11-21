@@ -211,7 +211,7 @@ def main(config):
         optimizer,
         device,
         cost,
-        cost_weight = config.cost_weight,
+        cost_weight=config.cost_weight,
         num_time_step_previous=world_model_run.config["num_time_step_previous"],
         num_time_step_future=world_model_run.config["num_time_step_future"],
         num_epochs=config.num_epochs,
@@ -223,7 +223,7 @@ def main(config):
         save_path=config.pretrained_model_path,
         train_step=checkpoint["train_step"] if config.resume else 0,
         val_step=checkpoint["val_step"] if config.resume else 0,
-        debug_render=True)
+        debug_render=config.debug_render)
 
     logger.info("Training started!")
     trainer.learn(run)
@@ -253,9 +253,9 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=5)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--data_path_train", type=str,
-                        default="data/ground_truth_bev_model_data_dummy")
+                        default="data/ground_truth_bev_model_train_data_2")
     parser.add_argument("--data_path_val", type=str,
-                        default="data/ground_truth_bev_model_data_dummy")
+                        default="data/ground_truth_bev_model_val_data_2")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
     parser.add_argument(
@@ -275,6 +275,8 @@ if __name__ == "__main__":
     parser.add_argument("--lr_schedule_gamma", type=float, default=0.5)
     parser.add_argument("--gradient_clip_type", type=str, default="norm")
     parser.add_argument("--gradient_clip_value", type=float, default=5)
+    parser.add_argument("--debug_render", type=lambda x: (
+        str(x).lower() == 'true'), default=False)
     # POLICY MODEL PARAMETERS
     parser.add_argument("--input_shape_ego_state", type=int, default=4)
     parser.add_argument("--action_size", type=int, default=2)
@@ -285,19 +287,22 @@ if __name__ == "__main__":
     parser.add_argument("--lane_cost_weight", type=float, default=0.002)
     parser.add_argument("--vehicle_cost_weight", type=float, default=0.002)
     parser.add_argument("--green_light_cost_weight", type=float, default=0.000)
-    parser.add_argument("--yellow_light_cost_weight", type=float, default=0.000)
+    parser.add_argument(
+        "--yellow_light_cost_weight",
+        type=float,
+        default=0.000)
     parser.add_argument("--red_light_cost_weight", type=float, default=0.000)
     parser.add_argument("--pedestrian_cost_weight", type=float, default=0.000)
     parser.add_argument("--offroad_cost_weight", type=float, default=0.002)
     parser.add_argument("--action_mse_weight", type=float, default=1)
     parser.add_argument("--action_jerk_weight", type=float, default=1)
-    
+
     # WANDB RELATED PARAMETERS
     parser.add_argument(
         "--wandb",
         type=lambda x: (
             str(x).lower() == 'true'),
-        default=True)
+        default=False)
     parser.add_argument("--wandb_project", type=str, default="mbl")
     parser.add_argument(
         "--wandb_group",
@@ -323,7 +328,8 @@ if __name__ == "__main__":
         default=39)
 
     config = parser.parse_args()
-    
-    config.cost_weight = {k:v for (k,v) in vars(config).items() if "weight" in k}
+
+    config.cost_weight = {k: v for (k, v) in vars(
+        config).items() if "weight" in k}
 
     main(config)

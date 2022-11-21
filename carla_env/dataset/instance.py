@@ -6,6 +6,9 @@ import numpy as np
 from typing import List, Union
 import cv2
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class InstanceDataset(Dataset):
@@ -32,8 +35,10 @@ class InstanceDataset(Dataset):
 
                 key_lengths = np.array([len(os.listdir(episode_path / read_key))
                                         for read_key in read_keys])
-                assert np.all(
-                    key_lengths == key_lengths[0]), "All keys should include same amount of data!"
+                if not np.all(
+                    key_lengths == key_lengths[0]):
+                    logger.info("All keys should include same amount of data!")
+                    logger.info(f"Skipping {episode_path}")
 
                 key_ = read_keys[0]
 
