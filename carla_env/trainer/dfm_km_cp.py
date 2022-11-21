@@ -459,7 +459,7 @@ class Trainer(object):
             if ((epoch + 1) % 100 == 0) and self.save_path is not None:
 
                 torch.save({
-                    "model_state_dict": self.model.state_dict(),
+                    "model_state_dict": self.model.get_policy_model().state_dict(),
                     "optimizer_state_dict": self.optimizer.state_dict(),
                     "scheduler_state_dict": self.lr_scheduler.state_dict() if self.lr_scheduler else None,
                     "epoch": epoch,

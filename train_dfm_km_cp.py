@@ -1,9 +1,9 @@
 from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
 from carla_env.models.world.world import WorldBEVModel
-from carla_env.models.policy.policy import Policy
-from carla_env.models.dfm_km_policy import DecoupledForwardModelKinematicsPolicy
+from carla_env.models.policy.dfm_km_cp import Policy
+from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
 from carla_env.cost.masked_cost_batched import Cost
-from carla_env.trainer.dfm_km_policy import Trainer
+from carla_env.trainer.dfm_km_cp import Trainer
 from carla_env.dataset.instance import InstanceDataset
 import torch
 from torch.utils.data import DataLoader
@@ -149,7 +149,7 @@ def main(config):
     # ---------------------------------------------------------------------------- #
     #                              DFM_KM with Policy                              #
     # ---------------------------------------------------------------------------- #
-    model = DecoupledForwardModelKinematicsPolicy(
+    model = DecoupledForwardModelKinematicsCoupledPolicy(
         ego_model=ego_forward_model,
         world_model=world_forward_model,
         policy_model=policy_model)
@@ -253,9 +253,9 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=5)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--data_path_train", type=str,
-                        default="data/ground_truth_bev_model_train_data_2")
+                        default="data/ground_truth_bev_model_data_dummy_2")
     parser.add_argument("--data_path_val", type=str,
-                        default="data/ground_truth_bev_model_val_data_2")
+                        default="data/ground_truth_bev_model_data_dummy_2")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
     parser.add_argument(
@@ -264,17 +264,12 @@ if __name__ == "__main__":
             str(x).lower() == 'true'),
         default=False)
 
-    parser.add_argument("--reconstruction_loss", type=str, default="mse_loss")
-    parser.add_argument("--logvar_clip", type=lambda x: (
-        str(x).lower() == 'true'), default=True)
-    parser.add_argument("--logvar_clip_min", type=float, default=-5)
-    parser.add_argument("--logvar_clip_max", type=float, default=5)
     parser.add_argument("--lr_schedule", type=lambda x: (
         str(x).lower() == 'true'), default=False)
     parser.add_argument("--lr_schedule_step_size", default=5)
     parser.add_argument("--lr_schedule_gamma", type=float, default=0.5)
     parser.add_argument("--gradient_clip_type", type=str, default="norm")
-    parser.add_argument("--gradient_clip_value", type=float, default=5)
+    parser.add_argument("--gradient_clip_value", type=float, default=1)
     parser.add_argument("--debug_render", type=lambda x: (
         str(x).lower() == 'true'), default=False)
     # POLICY MODEL PARAMETERS
@@ -307,7 +302,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--wandb_group",
         type=str,
-        default="dfm_km_with_policy")
+        default="cfm_km_with_policy")
     parser.add_argument("--wandb_name", type=str, default="model")
     parser.add_argument("--wandb_id", type=str, default=None)
 
