@@ -153,9 +153,13 @@ if __name__ == "__main__":
     dy = (vehicle_width / 2) + 3
 
     # Visualization for testing purposes
-    coordinate_mask, X, Y = create_coordinate_mask(800, 600, 18, 'cpu')
+    coordinate_mask, X, Y = create_coordinate_mask(500, 500, 5, 'cpu')
+    coordinate_mask_ = coordinate_mask.repeat(1,1,1,1,1)
+    x = torch.tensor([20.0]).repeat(1,1,1)
+    y = torch.tensor([10.0]).repeat(1,1,1)
+    yaw = torch.deg2rad(torch.tensor([30.0]).repeat(1,1,1))
     aligned_coordinate_mask = align_coordinate_mask_with_ego_vehicle(
-        10, 10, 30, coordinate_mask)
+        x, y, yaw, coordinate_mask_)
 
     mask_car, mask_side = calculate_mask(
         aligned_coordinate_mask, dy, dx, vehicle_width, vehicle_length, 1)  # 8 2 2.1 4.9 1
@@ -163,7 +167,9 @@ if __name__ == "__main__":
     # coordinate_mask, X, Y = create_coordinate_mask(40, 20, 1)
     # aligned_coordinate_mask = align_coordinate_mask_with_ego_vehicle(0, 0, 0, coordinate_mask)
     # mask_car, mask_side = calculate_mask(aligned_coordinate_mask, 3, 2, 2, 3, 1)
-
+    aligned_coordinate_mask = aligned_coordinate_mask[0, 0]
+    mask_car = mask_car[0, 0]
+    mask_side = mask_side[0, 0]
     import matplotlib.pyplot as plt
 
     plt.figure()
@@ -192,11 +198,11 @@ if __name__ == "__main__":
     plt.colorbar()
 
     plt.figure()
-    plt.imshow(mask_car.flip(-1).T, cmap='hot', interpolation='nearest')
+    plt.imshow(mask_car, cmap='hot', interpolation='nearest')
     plt.colorbar()
 
     plt.figure()
-    plt.imshow(mask_side.flip(-1).T, cmap='hot', interpolation='nearest')
+    plt.imshow(mask_side, cmap='hot', interpolation='nearest')
     plt.colorbar()
 
     plt.show()

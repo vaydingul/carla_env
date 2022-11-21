@@ -40,36 +40,12 @@ class ModelPredictiveControl(nn.Module):
 
             self._initialize_rendering()
 
-    def forward(self, location, yaw, speed, bev):
-        """Run a single step of ModelPredictiveControl."""
+    def forward_world_model(self, bev):
 
-        location_predicted = []
-        yaw_predicted = []
-        speed_predicted = []
         bev_predicted = []
-
-        location_predicted.append(location)
-        yaw_predicted.append(yaw)
-        speed_predicted.append(speed)
-        bev_predicted.append(bev.unsqueeze(1))
-
-        ego_state = {"location": location,
-                     "yaw": yaw,
-                     "speed": speed}
+        bev_predicted.append(bev[:, -1].unsqueeze(1))
 
         for i in range(self.rollout_length - 1):
-
-            action_ = self.action[:, i, :].clone()
-
-            ego_state_next = self.ego_model(
-                ego_state, action_)
-
-
-            location_predicted.append(ego_state_next["location"])
-            yaw_predicted.append(ego_state_next["yaw"])
-            speed_predicted.append(ego_state_next["speed"])
-
-            ego_state = ego_state_next
 
             if self.world_model is not None:
 
@@ -86,19 +62,52 @@ class ModelPredictiveControl(nn.Module):
 
                 bev_predicted.append(bev.unsqueeze(1))
 
+        bev_predicted = torch.cat(bev_predicted, dim=1)
+
+        return bev_predicted.clone()
+
+    def forward_ego_model(self, location, yaw, speed):
+        """Run a single step of ModelPredictiveControl."""
+
+        location_predicted = []
+        yaw_predicted = []
+        speed_predicted = []
+
+        location_predicted.append(location)
+        yaw_predicted.append(yaw)
+        speed_predicted.append(speed)
+
+        ego_state = {"location": location,
+                     "yaw": yaw,
+                     "speed": speed}
+
+        for i in range(self.rollout_length - 1):
+
+            action_ = self.action[:, i, :].clone()
+
+            ego_state_next = self.ego_model(
+                ego_state, action_)
+
+            location_predicted.append(ego_state_next["location"])
+            yaw_predicted.append(ego_state_next["yaw"])
+            speed_predicted.append(ego_state_next["speed"])
+
+            ego_state = ego_state_next
+
         location_predicted = torch.cat(location_predicted, dim=1)
         yaw_predicted = torch.cat(yaw_predicted, dim=1)
         speed_predicted = torch.cat(speed_predicted, dim=1)
-        bev_predicted = torch.cat(bev_predicted, dim=1)
 
         return (
             location_predicted.clone(),
             yaw_predicted.clone(),
-            speed_predicted.clone(),
-            bev_predicted.clone())
+            speed_predicted.clone()
+        )
 
-    def step(self, initial_state, target_state, bev, agent_mask):
+    def step(self, initial_state, target_state, bev):
         """Optimize the action."""
+
+        bev_predicted = self.forward_world_model(bev.clone())
 
         for k in range(self.number_of_optimization_iterations):
 
@@ -107,26 +116,25 @@ class ModelPredictiveControl(nn.Module):
             location = initial_state[:, :, 0:2].clone()
             yaw = initial_state[:, :, 2:3].clone()
             speed = initial_state[:, :, 3:4].clone()
-            bev_ = bev.clone()
 
             (location_predicted,
              yaw_predicted,
-             speed_predicted,
-             bev_predicted) = self.forward(location=location,
-                                           yaw=yaw,
-                                           speed=speed,
-                                           bev=bev_)
+             speed_predicted
+             ) = self.forward_ego_model(location=location,
+                                        yaw=yaw,
+                                        speed=speed
+                                        )
+            bev_predicted_ = bev_predicted.clone()
 
             cost = self._calculate_cost(
                 predicted_location=location_predicted.clone(),
                 predicted_yaw=yaw_predicted.clone(),
                 predicted_speed=speed_predicted.clone(),
-                predicted_bev=bev_predicted.clone(),
+                predicted_bev=bev_predicted_,
                 target_state=target_state.clone(),
-                agent_mask=agent_mask.clone(),
                 last_step=k == self.number_of_optimization_iterations - 1)
 
-            cost.backward()
+            cost.backward(retain_graph=True)
 
             torch.nn.utils.clip_grad_norm_(self.action, 1)
 
@@ -156,7 +164,6 @@ class ModelPredictiveControl(nn.Module):
             predicted_speed,
             predicted_bev,
             target_state,
-            agent_mask,
             last_step=False):
         """Calculate the cost."""
 
@@ -173,10 +180,9 @@ class ModelPredictiveControl(nn.Module):
                          predicted_yaw,
                          predicted_speed,
                          predicted_bev,
-                         agent_mask)
+                         )
 
         self.predicted_bev = predicted_bev.clone().detach().cpu().numpy()[0]
-
 
         self.lane_cost = cost["lane_cost"]
         self.vehicle_cost = cost["vehicle_cost"]

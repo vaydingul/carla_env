@@ -35,11 +35,10 @@ class Cost(nn.Module):
         x, y, yaw_ = rotate_batched(location, yaw)
 
         speed_ = speed[:, 1:, 0:1]
-        bev = bev[:, 1:]
         mask_car, mask_side = self.create_masks(
             x=x, y=y, yaw=yaw_, speed=speed_, vehicle_width=self.vehicle_width, vehicle_length=self.vehicle_length)
 
-        bev = bev.clone()
+        bev = bev[:, 1:].clone()
         bev[bev > 0.5] = 1
         bev[bev <= 0.5] = 0
 
@@ -106,7 +105,7 @@ class Cost(nn.Module):
             vehicle_width,
             vehicle_length):
 
-        coordinate_mask = self.coordinate_mask.repeat(
+        coordinate_mask = self.coordinate_mask.clone().repeat(
             x.shape[0], x.shape[1], 1, 1, 1)
 
         aligned_coordinate_mask = align_coordinate_mask_with_ego_vehicle(
@@ -115,7 +114,7 @@ class Cost(nn.Module):
         dx = (vehicle_width / 2) + 1
 
         # dy = 1.5 * (torch.maximum(torch.tensor(1), speed) + vehicle_length) + 1
-        dy = (speed / 10 + vehicle_length) + 0.25
+        dy = (speed + vehicle_length) + 0.25
 
         dy = dy.unsqueeze(-1).unsqueeze(-1)
 

@@ -211,6 +211,7 @@ def main(config):
         optimizer,
         device,
         cost,
+        cost_weight = config.cost_weight,
         num_time_step_previous=world_model_run.config["num_time_step_previous"],
         num_time_step_future=world_model_run.config["num_time_step_future"],
         num_epochs=config.num_epochs,
@@ -248,7 +249,7 @@ if __name__ == "__main__":
 
     # TRAINING PARAMETERS
     parser.add_argument("--lr", type=float, default=1e-4)
-    parser.add_argument("--num_epochs", type=int, default=50)
+    parser.add_argument("--num_epochs", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=5)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--data_path_train", type=str,
@@ -273,12 +274,24 @@ if __name__ == "__main__":
     parser.add_argument("--lr_schedule_step_size", default=5)
     parser.add_argument("--lr_schedule_gamma", type=float, default=0.5)
     parser.add_argument("--gradient_clip_type", type=str, default="norm")
-    parser.add_argument("--gradient_clip_value", type=float, default=1)
+    parser.add_argument("--gradient_clip_value", type=float, default=5)
     # POLICY MODEL PARAMETERS
     parser.add_argument("--input_shape_ego_state", type=int, default=4)
     parser.add_argument("--action_size", type=int, default=2)
-    parser.add_argument("--hidden_size", type=int, default=128)
-    parser.add_argument("--num_layer", type=int, default=2)
+    parser.add_argument("--hidden_size", type=int, default=256)
+    parser.add_argument("--num_layer", type=int, default=6)
+
+    # COST WEIGHTS
+    parser.add_argument("--lane_cost_weight", type=float, default=0.002)
+    parser.add_argument("--vehicle_cost_weight", type=float, default=0.002)
+    parser.add_argument("--green_light_cost_weight", type=float, default=0.000)
+    parser.add_argument("--yellow_light_cost_weight", type=float, default=0.000)
+    parser.add_argument("--red_light_cost_weight", type=float, default=0.000)
+    parser.add_argument("--pedestrian_cost_weight", type=float, default=0.000)
+    parser.add_argument("--offroad_cost_weight", type=float, default=0.002)
+    parser.add_argument("--action_mse_weight", type=float, default=1)
+    parser.add_argument("--action_jerk_weight", type=float, default=1)
+    
     # WANDB RELATED PARAMETERS
     parser.add_argument(
         "--wandb",
@@ -290,7 +303,7 @@ if __name__ == "__main__":
         "--wandb_group",
         type=str,
         default="dfm_km_with_policy")
-    parser.add_argument("--wandb_name", type=str, default="model_yaw_corrected")
+    parser.add_argument("--wandb_name", type=str, default="model")
     parser.add_argument("--wandb_id", type=str, default=None)
 
     parser.add_argument(
@@ -310,5 +323,7 @@ if __name__ == "__main__":
         default=39)
 
     config = parser.parse_args()
+    
+    config.cost_weight = {k:v for (k,v) in vars(config).items() if "weight" in k}
 
     main(config)

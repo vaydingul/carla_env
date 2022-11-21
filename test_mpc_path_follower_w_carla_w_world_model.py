@@ -64,7 +64,6 @@ def main(config):
 
     data = c.get_data()
     bev = data["bev"]
-    agent_mask = bev[:, :, 3]
 
     for i in range(world_forward_model.num_time_step_previous):
 
@@ -105,14 +104,15 @@ def main(config):
         # Get the control from the ModelPredictiveControl module
 
         # Convert bev tensor deque to torch tensor
-        bev_tensor = torch.stack(list(bev_tensor_deque), dim=0).unsqueeze(0)
+        bev_tensor = torch.cat(list(bev_tensor_deque), dim=0).unsqueeze(0)
+
         (control,
          location_predicted,
          cost,
          cost_canvas) = mpc_module.step(initial_state=current_state,
                                         target_state=target_state,
-                                        bev=bev_tensor,
-                                        agent_mask=agent_mask)
+                                        bev=bev_tensor.detach(),
+                                        )
 
         throttle, brake = acceleration_to_throttle_brake(
             acceleration=control[0])
@@ -124,7 +124,6 @@ def main(config):
 
         data = c.get_data()
         bev = data["bev"]
-        agent_mask = bev[:, :, 3]
         bev_tensor_deque.append(
             convert_standard_bev_to_model_bev(
                 bev, device=config.world_device))
@@ -168,13 +167,13 @@ if __name__ == "__main__":
 
     parser.add_argument("--checkpoint_number", type=int, default=24)
 
-    parser.add_argument("--ego_device", type=str, default="cuda:0",
+    parser.add_argument("--ego_device", type=str, default="cpu",
                         help="Device to use for the forward model")
 
-    parser.add_argument("--world_device", type=str, default="cuda:0",
+    parser.add_argument("--world_device", type=str, default="cpu",
                         help="Device to use for the world model")
 
-    parser.add_argument("--mpc_device", type=str, default="cuda:0",
+    parser.add_argument("--mpc_device", type=str, default="cpu",
                         help="Device to use for the MPC module")
 
     config = parser.parse_args()

@@ -50,8 +50,7 @@ def main(config):
 
     data = c.get_data()
     bev_ = data["bev"]
-    agent_mask = torch.tensor(bev_[:, :, 3], device=config.device).float()
-    agent_mask = agent_mask.repeat(1, config.rollout_length, 1, 1)
+
     bev = convert_standard_bev_to_model_bev(bev=bev_, device=config.device)
     
     counter = 0
@@ -95,7 +94,7 @@ def main(config):
             logging.debug(f"Target state: {target_state}")
             # Get the control from the ModelPredictiveControl module
             control, location_predicted, cost, cost_canvas = mpc_module.step(
-                current_state, target_state, bev, agent_mask=agent_mask)
+                current_state, target_state, bev)
 
         throttle, brake = acceleration_to_throttle_brake(
             acceleration=control[0])
@@ -110,9 +109,7 @@ def main(config):
 
         data = c.get_data()
         bev_ = data["bev"]
-        agent_mask = torch.tensor(bev_[:, :, 3], device=config.device).float()
-        agent_mask = agent_mask.repeat(1, config.rollout_length, 1, 1)
-
+       
         bev = convert_standard_bev_to_model_bev(bev=bev_, device=config.device)
 
 

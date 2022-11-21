@@ -47,7 +47,7 @@ if __name__ == "__main__":
     inp3 = torch.randn(10, 6)
     inp4 = torch.randn(10, 2)
     model = DecoupledForwardModelKinematicsPolicy(
-        ego_model, world_model, policy_model, "cpu")
+        ego_model, world_model, policy_model)
     out = model(inp1, inp2, inp3, inp4)
     print(out["ego_state_next"])
     print(out["world_state_next"].shape)
