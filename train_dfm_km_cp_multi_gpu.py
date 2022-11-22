@@ -158,7 +158,7 @@ def main(config):
         ego_model=ego_forward_model,
         world_model=world_forward_model,
         policy_model=policy_model)
-    
+
     if config.num_gpu > 1:
         model = nn.DataParallel(model)
 
@@ -281,7 +281,7 @@ if __name__ == "__main__":
     parser.add_argument("--debug_render", type=lambda x: (
         str(x).lower() == 'true'), default=False)
     parser.add_argument("--save_interval", type=int, default=5)
-    parser.add_argument("--num_gpu", type=int, default=1)
+    parser.add_argument("--num_gpu", type=int, default=4)
     # POLICY MODEL PARAMETERS
     parser.add_argument("--input_shape_ego_state", type=int, default=4)
     parser.add_argument("--action_size", type=int, default=2)
@@ -337,7 +337,6 @@ if __name__ == "__main__":
     config.cost_weight = {k: v for (k, v) in vars(
         config).items() if "weight" in k}
 
-    if config.num_gpu > 1:
-        config.batch_size *= config.num_gpu
+    config.batch_size *= config.num_gpu
 
     main(config)

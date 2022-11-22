@@ -13,7 +13,7 @@ echo "Conda environment is activated"
 python3 train_dfm_km_cp_multi_gpu.py \
 	--lr=1e-4 \
 	--num_epochs=50 \
-	--batch_size=50 \
+	--batch_size=20 \
 	--num_workers=4 \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_2/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_2/" \
@@ -40,7 +40,7 @@ python3 train_dfm_km_cp_multi_gpu.py \
 	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="dfm-km-cp" \
-	--wandb_name="vanilla" \
+	--wandb_name="vanilla_multi_gpu" \
 	--ego_forward_model_path="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt" \
 	--world_forward_model_wandb_link="vaydingul/mbl/1gftiw9w" \
 	--world_forward_model_checkpoint_number=39 \
