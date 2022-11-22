@@ -56,7 +56,7 @@ class Trainer(object):
         self.debug_render = debug_render
         self.save_interval = save_interval
 
-        self.model.to(self.device)
+        self.model = self.model.to(self.device)
 
         self.cost_weight = {}
         self.cost_weight["lane_cost_weight"] = 0.005

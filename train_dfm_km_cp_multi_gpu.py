@@ -56,7 +56,7 @@ def main(config):
         checkpoint=config.ego_forward_model_path,
         cls=KinematicBicycleModelV2,
         dt=1 / 20)
-    ego_forward_model.to(device=device)
+    ego_forward_model = ego_forward_model.to(device=device)
 
     # ---------------------------------------------------------------------------- #
     #                        Pretrained world forward model                        #
@@ -71,7 +71,7 @@ def main(config):
         checkpoint=checkpoint,
         cls=WorldBEVModel,
         world_model_device=device)
-    world_forward_model.to(device=device)
+    world_forward_model = world_forward_model.to(device=device)
 
     # ---------------------------------------------------------------------------- #
     #                                    Dataset                                   #
@@ -150,7 +150,7 @@ def main(config):
             checkpoint=checkpoint,
             cls=Policy,
             policy_model_device=device)
-
+    policy_model = policy_model.to(device=device)
     # ---------------------------------------------------------------------------- #
     #                              DFM_KM with Policy                              #
     # ---------------------------------------------------------------------------- #
