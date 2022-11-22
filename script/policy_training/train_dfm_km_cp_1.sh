@@ -22,6 +22,7 @@ python3 train_dfm_km_cp.py \
 	--gradient_clip_type="norm" \
 	--gradient_clip_value=1.0 \
 	--debug_render=false \
+	--save_interval=5 \
 	--input_shape_ego_state=4 \
 	--action_size=2 \
 	--hidden_size=256 \

@@ -31,7 +31,8 @@ class Trainer(object):
             val_step=0,
             bev_width=192,
             bev_height=192,
-            debug_render=False):
+            debug_render=False,
+            save_interval=5):
 
         self.model = model
         self.dataloader_train = dataloader_train
@@ -52,7 +53,8 @@ class Trainer(object):
         self.bev_width = bev_width
         self.bev_height = bev_height
         self.debug_render = debug_render
-
+        self.save_interval = save_interval
+        
         self.model.to(self.device)
 
         self.cost_weight = {}

@@ -272,6 +272,7 @@ if __name__ == "__main__":
     parser.add_argument("--gradient_clip_value", type=float, default=1)
     parser.add_argument("--debug_render", type=lambda x: (
         str(x).lower() == 'true'), default=False)
+    parser.add_argument("--save_interval", type=int, default=5)
     # POLICY MODEL PARAMETERS
     parser.add_argument("--input_shape_ego_state", type=int, default=4)
     parser.add_argument("--action_size", type=int, default=2)

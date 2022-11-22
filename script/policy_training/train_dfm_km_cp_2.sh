@@ -8,7 +8,6 @@ source activate carla
 
 echo "Conda environment is activated"
 
-
 # Run the world model
 python3 train_dfm_km_cp.py \
 	--lr=1e-4 \
@@ -22,6 +21,7 @@ python3 train_dfm_km_cp.py \
 	--gradient_clip_type="norm" \
 	--gradient_clip_value=1.0 \
 	--debug_render=false \
+	--save_interval=5 \
 	--input_shape_ego_state=4 \
 	--action_size=2 \
 	--hidden_size=256 \
@@ -41,5 +41,4 @@ python3 train_dfm_km_cp.py \
 	--wandb_name="vanilla+bc" \
 	--ego_forward_model_path="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt" \
 	--world_forward_model_wandb_link="vaydingul/mbl/1gftiw9w" \
-	--world_forward_model_checkpoint_number=39 \
-	
+	--world_forward_model_checkpoint_number=39
