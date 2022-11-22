@@ -158,7 +158,7 @@ def main(config):
         ego_model=ego_forward_model,
         world_model=world_forward_model,
         policy_model=policy_model)
-
+    
     if config.num_gpu > 1:
         model = nn.DataParallel(model)
 
