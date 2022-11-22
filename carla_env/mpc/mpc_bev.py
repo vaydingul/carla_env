@@ -50,7 +50,7 @@ class ModelPredictiveControl(nn.Module):
             if self.world_model is not None:
 
                 bev_ = self.world_model(bev, sample_latent=True)
-                bev_ = torch.nn.functional.sigmoid(bev_)
+                bev_ = torch.sigmoid(bev_)
                 #bev_[bev_ > 0.5] = 1
                 #bev_[bev_ <= 0.5] = 0
 

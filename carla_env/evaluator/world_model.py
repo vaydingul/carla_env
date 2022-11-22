@@ -52,7 +52,7 @@ class Evaluator(object):
                 world_future_bev_predicted = self.model(
                     world_previous_bev, sample_latent=True)
 
-                world_future_bev_predicted = torch.nn.functional.sigmoid(
+                world_future_bev_predicted = torch.sigmoid(
                     world_future_bev_predicted)
                 world_future_bev_predicted[world_future_bev_predicted >
                                            self.threshold] = 1

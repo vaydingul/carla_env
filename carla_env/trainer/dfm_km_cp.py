@@ -136,7 +136,7 @@ class Trainer(object):
                 world_state_next = output["world_state_next"]
                 action = output["action"]
 
-                world_future_bev_predicted = F.sigmoid(
+                world_future_bev_predicted = torch.sigmoid(
                     world_state_next)
 
                 world_future_bev_predicted_list.append(
@@ -317,7 +317,7 @@ class Trainer(object):
                     world_state_next = output["world_state_next"]
                     action = output["action"]
 
-                    world_future_bev_predicted = F.sigmoid(
+                    world_future_bev_predicted = torch.sigmoid(
                         world_state_next)
 
                     world_future_bev_predicted_list.append(

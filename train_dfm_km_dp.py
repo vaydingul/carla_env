@@ -3,7 +3,7 @@ from carla_env.models.world.world import WorldBEVModel
 from carla_env.models.policy.dfm_km_dp import Policy
 from carla_env.models.dfm_km_dp import DecoupledForwardModelKinematicsDecoupledPolicy
 from carla_env.cost.masked_cost_batched import Cost
-from carla_env.trainer.dfm_km_cp import Trainer
+from carla_env.trainer.dfm_km_dp import Trainer
 from carla_env.dataset.instance import InstanceDataset
 import torch
 from torch.utils.data import DataLoader
