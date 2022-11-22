@@ -13,7 +13,7 @@ echo "Conda environment is activated"
 python3 train_dfm_km_cp_multi_gpu.py \
 	--lr=1e-4 \
 	--num_epochs=50 \
-	--batch_size=50 \
+	--batch_size=60 \
 	--num_workers=4 \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_2/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_2/" \
