@@ -160,7 +160,7 @@ def main(config):
         policy_model=policy_model)
 
     if config.num_gpu > 1:
-        model = nn.DataParallel(model)
+        model = nn.DataParallel(model, device_ids=list(range(config.num_gpu)))
 
     # ---------------------------------------------------------------------------- #
 
