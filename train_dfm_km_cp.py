@@ -1,3 +1,5 @@
+import logging
+
 from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.models.policy.dfm_km_cp import Policy
@@ -8,7 +10,6 @@ from carla_env.dataset.instance import InstanceDataset
 import torch
 from torch.utils.data import DataLoader
 import time
-import logging
 import wandb
 import math
 import argparse

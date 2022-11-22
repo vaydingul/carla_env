@@ -4,9 +4,6 @@ import numpy as np
 import logging
 from utils.cost_utils import *
 
-logging.basicConfig(level=logging.INFO)
-
-
 class Cost(nn.Module):
     def __init__(self, image_width, image_height, device, decay_factor=0.97):
         super(Cost, self).__init__()
