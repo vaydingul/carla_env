@@ -38,6 +38,7 @@ def main(config):
     logger.info(f"Train dataset size: {len(world_model_dataset_train)}")
     logger.info(f"Val dataset size: {len(world_model_dataset_val)}")
 
+
     world_model_dataloader_train = DataLoader(
         world_model_dataset_train,
         batch_size=config.batch_size,

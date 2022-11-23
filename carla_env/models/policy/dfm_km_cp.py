@@ -62,7 +62,7 @@ class Policy(nn.Module):
             nn.ReLU(),
         )
         self.fc_acceleration = nn.Sequential(nn.Linear(self.hidden_size, 1),
-                                             nn.Sigmoid())
+                                             nn.Tanh())
         self.fc_steer = nn.Sequential(nn.Linear(self.hidden_size, 1),
                                       nn.Tanh())
 

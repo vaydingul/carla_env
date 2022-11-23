@@ -92,35 +92,35 @@ class CarlaEnvironment(Environment):
 
         self.spectator = self.world.get_spectator()
 
-        while True:
-            # Fetch all spawn points
-            spawn_points = self.map.get_spawn_points()
-            # Select two random spawn points
-            start_end_spawn_point = np.random.choice(spawn_points, 2)
-            start = start_end_spawn_point[0]
-            end = start_end_spawn_point[1]
-            self.route = route.RouteModule(config={"start": start,
-                                                   "end": end,
-                                                   "sampling_resolution": 20,
-                                                   "debug": False},
-                                           client=self.client)
+        # while True:
+        #     # Fetch all spawn points
+        #     spawn_points = self.map.get_spawn_points()
+        #     # Select two random spawn points
+        #     start_end_spawn_point = np.random.choice(spawn_points, 2)
+        #     start = start_end_spawn_point[0]
+        #     end = start_end_spawn_point[1]
+        #     self.route = route.RouteModule(config={"start": start,
+        #                                            "end": end,
+        #                                            "sampling_resolution": 20,
+        #                                            "debug": False},
+        #                                    client=self.client)
 
-            if ((RoadOption.LEFT not in [x[1] for x in self.route.get_route()]) and (RoadOption.RIGHT in [
-                    x[1] for x in self.route.get_route()[:2]]) and (len(self.route.get_route()) < 50) and
-                    (len(self.route.get_route()) > 40)):
-                break
-
-        # # Fetch all spawn points
-        # spawn_points = self.map.get_spawn_points()
-        # # Select two random spawn points
-        # start_end_spawn_point = np.random.choice(spawn_points, 2)
-        # start = start_end_spawn_point[0]
-        # end = start_end_spawn_point[1]
-        # self.route = route.RouteModule(config={"start": start,
-        #                                        "end": end,
-        #                                        "sampling_resolution": 20,
-        #                                        "debug": True},
-        #                                client=self.client)
+        #     if ((RoadOption.LEFT not in [x[1] for x in self.route.get_route()]) and (RoadOption.RIGHT in [
+        #             x[1] for x in self.route.get_route()[:2]]) and (len(self.route.get_route()) < 50) and
+        #             (len(self.route.get_route()) > 40)):
+        #         break
+        
+        # Fetch all spawn points
+        spawn_points = self.map.get_spawn_points()
+        # Select two random spawn points
+        start_end_spawn_point = np.random.choice(spawn_points, 2)
+        start = start_end_spawn_point[0]
+        end = start_end_spawn_point[1]
+        self.route = route.RouteModule(config={"start": start,
+                                               "end": end,
+                                               "sampling_resolution": 1,
+                                               "debug": True},
+                                       client=self.client)
 
         # Let's initialize a vehicle
         self.vehicle_module = vehicle.VehicleModule(
@@ -255,7 +255,7 @@ class CarlaEnvironment(Environment):
             self.video_writer.release()
             return (current_transform, current_velocity, None, None)
 
-    def render(self, predicted_location, bev, cost_canvas, **kwargs):
+    def render(self, predicted_location, bev, cost_canvas = None, **kwargs):
         """Render the environment"""
         for (k, v) in self.__dict__.items():
             if isinstance(v, Module):
@@ -397,8 +397,9 @@ class CarlaEnvironment(Environment):
                 cv2.circle(self.canvas, (int(bev_loc_[0]), int(
                     bev_loc_[1] + rgb_image.shape[0])), 5, (0, 0, 0), -1)
 
-        self.canvas[position_y:, bev.shape[1]:] = cv2.resize(
-            cost_canvas, self.canvas[position_y:, bev.shape[1]:].shape[:-1][::-1])
+        if cost_canvas is not None:
+            self.canvas[position_y:, bev.shape[1]:] = cv2.resize(
+                cost_canvas, self.canvas[position_y:, bev.shape[1]:].shape[:-1][::-1])
 
         canvas_display = cv2.resize(
             src=self.canvas, dsize=(

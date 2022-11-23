@@ -144,7 +144,7 @@ def main(config):
         checkpoint = fetch_checkpoint_from_wandb_run(
             run=run)
 
-        policy_model = load_policy_model_from_wandb_run(
+        policy_model, _ = load_policy_model_from_wandb_run(
             run=run,
             checkpoint=checkpoint,
             cls=Policy,
