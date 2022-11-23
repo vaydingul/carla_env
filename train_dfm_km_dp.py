@@ -228,7 +228,8 @@ def main(config):
         save_path=config.pretrained_model_path,
         train_step=checkpoint["train_step"] if config.resume else 0,
         val_step=checkpoint["val_step"] if config.resume else 0,
-        debug_render=config.debug_render)
+        debug_render=config.debug_render,
+        save_interval=config.save_interval)
 
     logger.info("Training started!")
     trainer.learn(run)
@@ -297,6 +298,7 @@ if __name__ == "__main__":
     parser.add_argument("--offroad_cost_weight", type=float, default=0.002)
     parser.add_argument("--action_mse_weight", type=float, default=1)
     parser.add_argument("--action_jerk_weight", type=float, default=1)
+    parser.add_argument("--target_mse_weight", type=float, default=1.0)
 
     # WANDB RELATED PARAMETERS
     parser.add_argument(

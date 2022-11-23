@@ -200,6 +200,9 @@ class Trainer(object):
                 ego_future_action_predicted,
                 dim=1).square().sum()
 
+            target_mse = F.mse_loss(
+                ego_previous_location, target_location, reduction="sum")
+
             loss = lane_cost * self.cost_weight["lane_cost_weight"] + \
                 vehicle_cost * self.cost_weight["vehicle_cost_weight"] + \
                 green_light_cost * self.cost_weight["green_light_cost_weight"] + \
@@ -208,7 +211,8 @@ class Trainer(object):
                 pedestrian_cost * self.cost_weight["pedestrian_cost_weight"] + \
                 offroad_cost * self.cost_weight["offroad_cost_weight"] + \
                 action_mse * self.cost_weight["action_mse_weight"] + \
-                action_jerk * self.cost_weight["action_jerk_weight"]
+                action_jerk * self.cost_weight["action_jerk_weight"] + \
+                target_mse * self.cost_weight["target_mse_weight"]
 
             loss /= world_previous_bev.shape[0] * \
                 world_previous_bev.shape[1]
@@ -239,6 +243,7 @@ class Trainer(object):
                          "train/offroad_cost": offroad_cost,
                          "train/action_mse": action_mse,
                          "train/action_jerk": action_jerk,
+                         "train/target_mse": target_mse,
                          "train/loss": loss})
 
             self.render(i, world_future_bev_predicted, cost)
@@ -256,6 +261,7 @@ class Trainer(object):
         offroad_cost_list = []
         action_mse_list = []
         action_jerk_list = []
+        target_mse_list = []
         loss_list = []
 
         with torch.no_grad():
@@ -381,6 +387,9 @@ class Trainer(object):
                     ego_future_action_predicted,
                     dim=1).square().sum()
 
+                target_mse = F.mse_loss(
+                    ego_previous_location, target_location, reduction="sum")
+
                 loss = lane_cost * self.cost_weight["lane_cost_weight"] + \
                     vehicle_cost * self.cost_weight["vehicle_cost_weight"] + \
                     green_light_cost * self.cost_weight["green_light_cost_weight"] + \
@@ -389,7 +398,8 @@ class Trainer(object):
                     pedestrian_cost * self.cost_weight["pedestrian_cost_weight"] + \
                     offroad_cost * self.cost_weight["offroad_cost_weight"] + \
                     action_mse * self.cost_weight["action_mse_weight"] + \
-                    action_jerk * self.cost_weight["action_jerk_weight"]
+                    action_jerk * self.cost_weight["action_jerk_weight"] + \
+                    target_mse * self.cost_weight["target_mse_weight"]
 
                 loss /= world_previous_bev.shape[0] * \
                     world_previous_bev.shape[1]
@@ -403,6 +413,7 @@ class Trainer(object):
                 offroad_cost_list.append(offroad_cost.item())
                 action_mse_list.append(action_mse.item())
                 action_jerk_list.append(action_jerk.item())
+                target_mse_list.append(target_mse.item())
                 loss_list.append(loss.item())
 
                 self.val_step += world_previous_bev.shape[0]
@@ -418,6 +429,7 @@ class Trainer(object):
             offroad_cost_mean = np.mean(offroad_cost_list)
             action_mse_mean = np.mean(action_mse_list)
             action_jerk_mean = np.mean(action_jerk_list)
+            target_mse_mean = np.mean(target_mse_list)
             loss_mean = np.mean(loss_list)
 
             if run is not None:
@@ -431,6 +443,7 @@ class Trainer(object):
                          "val/offroad_cost": offroad_cost_mean,
                          "val/action_mse": action_mse_mean,
                          "val/action_jerk": action_jerk_mean,
+                         "val/target_mse": target_mse_mean,
                          "val/loss": loss_mean})
                 if self.lr_scheduler is not None:
                     run.log({"val/lr": self.lr_scheduler.get_last_lr()[0]})
@@ -471,8 +484,9 @@ class Trainer(object):
                     self.save_path /
                     Path(f"checkpoint_{epoch}.pt"))
 
-                run.save(str(self.save_path /
-                             Path(f"checkpoint_{epoch}.pt")))
+                if run is not None:
+                    run.save(str(self.save_path /
+                                 Path(f"checkpoint_{epoch}.pt")))
 
     def render(self, i, world_future_bev_predicted, cost):
 
