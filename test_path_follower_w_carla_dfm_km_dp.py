@@ -1,8 +1,8 @@
 from carla_env import carla_env_mpc_path_follower_bev_traffic
-from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
+from carla_env.models.dfm_km_dp import DecoupledForwardModelKinematicsDecoupledPolicy
 from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
 from carla_env.models.world.world import WorldBEVModel
-from carla_env.models.policy.dfm_km_cp import Policy
+from carla_env.models.policy.dfm_km_dp import Policy
 from carla_env.cost.masked_cost_batched import Cost
 import torch
 import time
@@ -73,12 +73,12 @@ def main(config):
     # ---------------------------------------------------------------------------- #
     #                              DFM_KM with Policy                              #
     # ---------------------------------------------------------------------------- #
-    model = DecoupledForwardModelKinematicsCoupledPolicy(
+    model = DecoupledForwardModelKinematicsDecoupledPolicy(
         ego_model=ego_forward_model,
         world_model=world_forward_model,
         policy_model=policy_model)
     model = model.to(device=device).eval()
-
+    
     c = carla_env_mpc_path_follower_bev_traffic.CarlaEnvironment(
         config={
             "render": True,
@@ -205,7 +205,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/1j3ollqu")
+        default="vaydingul/mbl/27nlxkq2")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
