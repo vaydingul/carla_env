@@ -167,7 +167,7 @@ def main(config):
         t1 = time.time()
 
         c.render(
-            predicted_location=output["ego_state_next"]["location"],
+            predicted_location=output["ego_state_next"]["location"].detach().cpu().numpy(),
             bev=bev,
             control=output["action"][0],
             current_state=ego_state["location"],
@@ -205,12 +205,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/1j3ollqu")
+        default="vaydingul/mbl/1024jagy")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=4)
+        default=14)
 
     config = parser.parse_args()
 

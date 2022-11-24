@@ -22,7 +22,7 @@ def world_2_bev(
     displacement_pixels[0], displacement_pixels[1] = displacement_pixels[1], displacement_pixels[0]
     # Flip the y axis
     displacement_pixels[0] *= -1
-    # Add the center of the image
+    # Add to the top of the ego vehicle
     bev_loc = displacement_pixels + \
         np.array([image_width // 2, image_height])
 

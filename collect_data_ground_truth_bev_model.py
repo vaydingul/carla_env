@@ -22,20 +22,14 @@ def main(config):
             "render": False, "save": False, "save_video": False,
             "tasks": [
                 {
-                    "world": "Town01", "num_vehicles": 100},
-                {
-                    "world": "Town03", "num_vehicles": 100},
-                {
-                    "world": "Town04", "num_vehicles": 300},
-                {
-                    "world": "Town06", "num_vehicles": 300}
+                    "world": "Town05", "num_vehicles": 300},
             ],
             "max_steps": 1000})
 
-    for k in [69, 2, 91, 9, 100, 72, 95, 6]:#range(config.num_episodes):
+    for k in range(config.num_episodes):
 
         # Create the data writer
-        data_save_path_ = Path(config.data_save_path) / f"episode_{k}"
+        data_save_path_ = Path(config.data_save_path) / f"episode_{k+10}"
         os.makedirs(data_save_path_, exist_ok=True)
 
         writer = InstanceWriter(data_save_path_)
@@ -86,12 +80,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_save_path",
         type=str,
-        default="./data/ground_truth_bev_model_train_data_2",
+        default="./data/ground_truth_bev_model_test_data_2",
         help="Path to save the data")
     parser.add_argument(
         "--num_episodes",
         type=int,
-        default=40,
+        default=10,
         help="Number of episodes to collect data from")
     config = parser.parse_args()
 

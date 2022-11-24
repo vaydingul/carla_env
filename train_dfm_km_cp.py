@@ -295,9 +295,10 @@ if __name__ == "__main__":
     parser.add_argument("--red_light_cost_weight", type=float, default=0.000)
     parser.add_argument("--pedestrian_cost_weight", type=float, default=0.000)
     parser.add_argument("--offroad_cost_weight", type=float, default=0.002)
-    parser.add_argument("--action_mse_weight", type=float, default=0)
+    parser.add_argument("--action_mse_weight", type=float, default=1.0)
     parser.add_argument("--action_jerk_weight", type=float, default=0)
-    parser.add_argument("--target_mse_weight", type=float, default=1.0)
+    parser.add_argument("--target_mse_weight", type=float, default=0.0)
+    parser.add_argument("--target_l1_weight", type=float, default=1.0)
     # WANDB RELATED PARAMETERS
     parser.add_argument(
         "--wandb",

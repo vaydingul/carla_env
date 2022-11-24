@@ -204,6 +204,9 @@ class Trainer(object):
             target_mse = F.mse_loss(
                 ego_previous_location, target_location, reduction="sum")
 
+            target_l1 = F.l1_loss(
+                ego_previous_location, target_location, reduction="sum")
+
             loss = lane_cost * self.cost_weight["lane_cost_weight"] + \
                 vehicle_cost * self.cost_weight["vehicle_cost_weight"] + \
                 green_light_cost * self.cost_weight["green_light_cost_weight"] + \
@@ -213,7 +216,8 @@ class Trainer(object):
                 offroad_cost * self.cost_weight["offroad_cost_weight"] + \
                 action_mse * self.cost_weight["action_mse_weight"] + \
                 action_jerk * self.cost_weight["action_jerk_weight"] + \
-                target_mse * self.cost_weight["target_mse_weight"]
+                target_mse * self.cost_weight["target_mse_weight"] + \
+                target_l1 * self.cost_weight["target_l1_weight"]
 
             loss /= world_previous_bev.shape[0] * \
                 world_previous_bev.shape[1]
@@ -245,6 +249,7 @@ class Trainer(object):
                          "train/action_mse": action_mse,
                          "train/action_jerk": action_jerk,
                          "train/target_mse": target_mse,
+                         "train/target_l1": target_l1,
                          "train/loss": loss})
 
             self.render(i, world_future_bev_predicted, cost)
@@ -263,6 +268,7 @@ class Trainer(object):
         action_mse_list = []
         action_jerk_list = []
         target_mse_list = []
+        target_l1_list = []
         loss_list = []
 
         with torch.no_grad():
@@ -391,6 +397,9 @@ class Trainer(object):
                 target_mse = F.mse_loss(
                     ego_previous_location, target_location, reduction="sum")
 
+                target_l1 = F.l1_loss(
+                    ego_previous_location, target_location, reduction="sum")
+
                 loss = lane_cost * self.cost_weight["lane_cost_weight"] + \
                     vehicle_cost * self.cost_weight["vehicle_cost_weight"] + \
                     green_light_cost * self.cost_weight["green_light_cost_weight"] + \
@@ -400,7 +409,8 @@ class Trainer(object):
                     offroad_cost * self.cost_weight["offroad_cost_weight"] + \
                     action_mse * self.cost_weight["action_mse_weight"] + \
                     action_jerk * self.cost_weight["action_jerk_weight"] + \
-                    target_mse * self.cost_weight["target_mse_weight"]
+                    target_mse * self.cost_weight["target_mse_weight"] + \
+                    target_l1 * self.cost_weight["target_l1_weight"]
 
                 loss /= world_previous_bev.shape[0] * \
                     world_previous_bev.shape[1]
@@ -415,6 +425,7 @@ class Trainer(object):
                 action_mse_list.append(action_mse.item())
                 action_jerk_list.append(action_jerk.item())
                 target_mse_list.append(target_mse.item())
+                target_l1_list.append(target_l1.item())
                 loss_list.append(loss.item())
 
                 self.val_step += world_previous_bev.shape[0]
@@ -431,6 +442,7 @@ class Trainer(object):
             action_mse_mean = np.mean(action_mse_list)
             action_jerk_mean = np.mean(action_jerk_list)
             target_mse_mean = np.mean(target_mse_list)
+            target_l1_mean = np.mean(target_l1_list)
             loss_mean = np.mean(loss_list)
 
             if run is not None:
@@ -445,6 +457,7 @@ class Trainer(object):
                          "val/action_mse": action_mse_mean,
                          "val/action_jerk": action_jerk_mean,
                          "val/target_mse": target_mse_mean,
+                         "val/target_l1": target_l1_mean,
                          "val/loss": loss_mean})
                 if self.lr_scheduler is not None:
                     run.log({"val/lr": self.lr_scheduler.get_last_lr()[0]})
