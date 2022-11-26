@@ -81,7 +81,7 @@ def main(config):
         model=world_bev_model,
         dataloader=world_model_dataloader_test,
         device=world_model_device,
-        evaluation_scheme="threshold" if loss_function_ == "mse_loss" else "softmax",
+        report_iou=config.report_iou,
         num_time_step_previous=run.config["num_time_step_previous"],
         num_time_step_predict=config.num_time_step_predict,
         threshold=config.threshold,
@@ -100,6 +100,8 @@ if __name__ == "__main__":
         "--save_path",
         type=str,
         default="figures/world_forward_model_evaluation/")
+    parser.add_argument("--report_iou", type=lambda x: (
+        str(x).lower() == 'true'), default=True)
     parser.add_argument(
         "--wandb_link",
         type=str,

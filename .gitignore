@@ -134,6 +134,7 @@ tickable_modules
 *.png
 *.mp4
 *.json
+*.csv
 
 # Folders
 logs/

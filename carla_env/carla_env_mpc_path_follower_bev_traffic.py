@@ -84,7 +84,7 @@ class CarlaEnvironment(Environment):
         else:
             self.traffic_manager_module.close()
 
-        self.client_module = client.ClientModule(None)
+        self.client_module = client.ClientModule(config={"world": "Town02"})
 
         self.world = self.client_module.get_world()
         self.map = self.client_module.get_map()
@@ -101,7 +101,7 @@ class CarlaEnvironment(Environment):
         #     end = start_end_spawn_point[1]
         #     self.route = route.RouteModule(config={"start": start,
         #                                            "end": end,
-        #                                            "sampling_resolution": 20,
+        #                                            "sampling_resolution": 10,
         #                                            "debug": False},
         #                                    client=self.client)
 

@@ -130,7 +130,7 @@ class Trainer(object):
                     ego_state_previous,
                     world_previous_bev,
                     command,
-                    target_location)
+                    target_location - ego_previous_location)
 
                 ego_state_next = output["ego_state_next"]
                 world_state_next = output["world_state_next"]
