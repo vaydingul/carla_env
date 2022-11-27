@@ -156,7 +156,7 @@ class CarlaEnvironment(Environment):
                 192),
             render_lanes_on_junctions=False,
             pixels_per_meter=5,
-            crop_type=BirdViewCropType.FRONT_AREA_ONLY)
+            crop_type=BirdViewCropType.FRONT_AND_REAR_AREA)
 
         time.sleep(1.0)
         logger.info("Everything is set!")
@@ -304,7 +304,7 @@ class CarlaEnvironment(Environment):
 
         canvas_display = cv2.resize(
             src=self.canvas, dsize=(
-                0, 0), fx=0.5, fy=0.5)
+                0, 0), fx=1.0, fy=1.0)
 
         cv2.imshow("Environment", canvas_display)
 

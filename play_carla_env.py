@@ -12,8 +12,7 @@ from carla_env import carla_env_playground
 # Save the log to a file name with the current date
 # logging.basicConfig(filename=f"logs/sim_log_debug",level=logging.DEBUG)
 
-logging.basicConfig(level=logging.INFO)
-
+logger = logging.getLogger(__name__)
 
 def main(config):
     c = carla_env_playground.CarlaEnvironment(

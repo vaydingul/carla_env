@@ -72,7 +72,7 @@ def main(config):
     policy_model = policy_model.to(device=device)
     # ---------------------------------------------------------------------------- #
     #                              DFM_KM with Policy                              #
-    # ---------------------------------------------------------------------------- #
+    # --------------------  -------------------------------------------------------- #
     model = DecoupledForwardModelKinematicsCoupledPolicy(
         ego_model=ego_forward_model,
         world_model=world_forward_model,
@@ -173,7 +173,11 @@ def main(config):
             current_state=ego_state["location"],
             target_state=target_location,
             counter=counter,
-            sim_fps=1 / (t1 - t0))
+            sim_fps=1 / (t1 - t0),
+            world_forward_model_wandb_link=config.world_forward_model_wandb_link,
+            world_forward_model_checkpoint_number=config.world_forward_model_checkpoint_number,
+            policy_model_wandb_link=config.policy_model_wandb_link,
+            policy_model_checkpoint_number=config.policy_model_checkpoint_number)
 
         counter += 1
 
@@ -208,13 +212,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/7zytym7p")
+        default="vaydingul/mbl/1024jagy")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=4)
-
+        default=34)
 
     config = parser.parse_args()
 

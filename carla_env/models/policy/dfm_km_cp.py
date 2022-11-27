@@ -32,7 +32,6 @@ class Policy(nn.Module):
             layers=self.layers,
             dropout=self.dropout)
 
-        print(self.world_state_encoder.get_output_shape())
         self.world_state_encoder_fc = nn.Linear(
             in_features=self.world_state_encoder.get_output_shape().numel(),
             out_features=self.hidden_size)
