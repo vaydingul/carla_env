@@ -202,10 +202,20 @@ class Trainer(object):
                 dim=1).square().sum()
 
             target_mse = F.mse_loss(
-                ego_previous_location, target_location, reduction="sum")
+                ego_future_location_predicted,
+                target_location.unsqueeze(1).repeat(
+                    1,
+                    self.num_time_step_future,
+                    1),
+                reduction="sum")
 
             target_l1 = F.l1_loss(
-                ego_previous_location, target_location, reduction="sum")
+                ego_future_location_predicted,
+                target_location.unsqueeze(1).repeat(
+                    1,
+                    self.num_time_step_future,
+                    1),
+                reduction="sum")
 
             loss = lane_cost * self.cost_weight["lane_cost_weight"] + \
                 vehicle_cost * self.cost_weight["vehicle_cost_weight"] + \
@@ -395,10 +405,16 @@ class Trainer(object):
                     dim=1).square().sum()
 
                 target_mse = F.mse_loss(
-                    ego_previous_location, target_location, reduction="sum")
+                    ego_future_location_predicted, target_location.unsqueeze(1).repeat(
+                        1, self.num_time_step_future, 1), reduction="sum")
 
                 target_l1 = F.l1_loss(
-                    ego_previous_location, target_location, reduction="sum")
+                    ego_future_location_predicted,
+                    target_location.unsqueeze(1).repeat(
+                        1,
+                        self.num_time_step_future,
+                        1),
+                    reduction="sum")
 
                 loss = lane_cost * self.cost_weight["lane_cost_weight"] + \
                     vehicle_cost * self.cost_weight["vehicle_cost_weight"] + \
