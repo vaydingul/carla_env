@@ -48,6 +48,11 @@ class OccupancySensorModule(sensor.SensorModule):
         bound_y = 0.5 + self.actor.get_actor().bounding_box.extent.y
         bound_z = 0.5 + self.actor.get_actor().bounding_box.extent.z
 
+        # TODO: Modify the threshold such that it is a function of the bounding box of the actor
+        #! and the given threshold
+
+
+
         self.radar_sensor_list = []
         for (i, angle) in enumerate(self.angle_list):
 
@@ -98,7 +103,7 @@ class OccupancySensorModule(sensor.SensorModule):
         points = np.frombuffer(radar_data.raw_data, dtype=np.dtype('f4'))
         points = np.reshape(points, (len(radar_data), 4))
         depth = points[:, -1]
-
+        # TODO: First, check whether it is empty or not
         self.occupancy[i] = np.nanmean(depth)
         if np.any(depth < self.config["threshold"]):
             self.occupancy[i] = 1
@@ -143,7 +148,7 @@ class OccupancySensorModule(sensor.SensorModule):
     def _set_default_config(self):
         """Set the default config of the sensor"""
         self.config = {"threshold": 3.0,
-                       "number_of_radars": 4}
+                       "number_of_radars": 8}
 
     def _queue_operation(self, data):
         """Queue the sensor data and additional stuff"""

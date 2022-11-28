@@ -212,12 +212,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/1024jagy")
+        default="vaydingul/mbl/2eygjstg")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=34)
+        default=19)
 
     config = parser.parse_args()
 
