@@ -35,7 +35,7 @@ python3 train_dfm_km_cp.py \
 	--offroad_cost_weight=0.01 \
 	--action_mse_weight=1.0 \
 	--action_jerk_weight=0.0 \
-	--target_mse_weight=0.1 \
+	--target_mse_weight=0.001 \
 	--target_l1_weight=0.0 \
 	--wandb=true \
 	--wandb_project="mbl" \
