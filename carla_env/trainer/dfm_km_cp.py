@@ -184,22 +184,28 @@ class Trainer(object):
             #     world_future_bev,
             # )
 
-            lane_cost = cost["lane_cost"]
-            vehicle_cost = cost["vehicle_cost"]
-            green_light_cost = cost["green_light_cost"]
-            yellow_light_cost = cost["yellow_light_cost"]
-            red_light_cost = cost["red_light_cost"]
-            pedestrian_cost = cost["pedestrian_cost"]
-            offroad_cost = cost["offroad_cost"]
+            lane_cost = cost["lane_cost"] / \
+                (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+            vehicle_cost = cost["vehicle_cost"] / \
+                (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+            green_light_cost = cost["green_light_cost"] / \
+                (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+            yellow_light_cost = cost["yellow_light_cost"] / \
+                (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+            red_light_cost = cost["red_light_cost"] / \
+                (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+            pedestrian_cost = cost["pedestrian_cost"] / \
+                (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+            offroad_cost = cost["offroad_cost"] / \
+                (world_previous_bev.shape[0] * world_previous_bev.shape[1])
 
             ego_future_action[..., 0] -= ego_future_action[..., -1]
 
-            action_mse = F.mse_loss(
-                ego_future_action_predicted, ego_future_action[..., :2], reduction="sum")
+            action_mse = F.mse_loss(ego_future_action_predicted, ego_future_action[..., :2], reduction="sum") / (
+                world_previous_bev.shape[0] * world_previous_bev.shape[1])
 
-            action_jerk = torch.diff(
-                ego_future_action_predicted,
-                dim=1).square().sum()
+            action_jerk = torch.diff(ego_future_action_predicted, dim=1).square(
+            ).sum() / (world_previous_bev.shape[0] * world_previous_bev.shape[1])
 
             target_mse = F.mse_loss(
                 ego_future_location_predicted,
@@ -207,7 +213,7 @@ class Trainer(object):
                     1,
                     self.num_time_step_future,
                     1),
-                reduction="sum")
+                reduction="sum") / (world_previous_bev.shape[0] * world_previous_bev.shape[1])
 
             target_l1 = F.l1_loss(
                 ego_future_location_predicted,
@@ -215,7 +221,7 @@ class Trainer(object):
                     1,
                     self.num_time_step_future,
                     1),
-                reduction="sum")
+                reduction="sum") / (world_previous_bev.shape[0] * world_previous_bev.shape[1])
 
             loss = lane_cost * self.cost_weight["lane_cost_weight"] + \
                 vehicle_cost * self.cost_weight["vehicle_cost_weight"] + \
@@ -228,9 +234,6 @@ class Trainer(object):
                 action_jerk * self.cost_weight["action_jerk_weight"] + \
                 target_mse * self.cost_weight["target_mse_weight"] + \
                 target_l1 * self.cost_weight["target_l1_weight"]
-
-            loss /= world_previous_bev.shape[0] * \
-                world_previous_bev.shape[1]
 
             # Backward pass
             self.optimizer.zero_grad()
@@ -387,26 +390,33 @@ class Trainer(object):
                 #     world_future_bev,
                 # )
 
-                lane_cost = cost["lane_cost"]
-                vehicle_cost = cost["vehicle_cost"]
-                green_light_cost = cost["green_light_cost"]
-                yellow_light_cost = cost["yellow_light_cost"]
-                red_light_cost = cost["red_light_cost"]
-                pedestrian_cost = cost["pedestrian_cost"]
-                offroad_cost = cost["offroad_cost"]
+                lane_cost = cost["lane_cost"] / \
+                    (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+                vehicle_cost = cost["vehicle_cost"] / \
+                    (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+                green_light_cost = cost["green_light_cost"] / \
+                    (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+                yellow_light_cost = cost["yellow_light_cost"] / \
+                    (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+                red_light_cost = cost["red_light_cost"] / \
+                    (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+                pedestrian_cost = cost["pedestrian_cost"] / \
+                    (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+                offroad_cost = cost["offroad_cost"] / \
+                    (world_previous_bev.shape[0] * world_previous_bev.shape[1])
 
                 ego_future_action[..., 0] -= ego_future_action[..., -1]
 
-                action_mse = F.mse_loss(
-                    ego_future_action_predicted, ego_future_action[..., :2], reduction="sum")
+                action_mse = F.mse_loss(ego_future_action_predicted, ego_future_action[..., :2], reduction="sum") / (
+                    world_previous_bev.shape[0] * world_previous_bev.shape[1])
 
-                action_jerk = torch.diff(
-                    ego_future_action_predicted,
-                    dim=1).square().sum()
+                action_jerk = torch.diff(ego_future_action_predicted, dim=1).square(
+                ).sum() / (world_previous_bev.shape[0] * world_previous_bev.shape[1])
 
                 target_mse = F.mse_loss(
                     ego_future_location_predicted, target_location.unsqueeze(1).repeat(
-                        1, self.num_time_step_future, 1), reduction="sum")
+                        1, self.num_time_step_future, 1), reduction="sum") / (
+                    world_previous_bev.shape[0] * world_previous_bev.shape[1])
 
                 target_l1 = F.l1_loss(
                     ego_future_location_predicted,
@@ -414,7 +424,7 @@ class Trainer(object):
                         1,
                         self.num_time_step_future,
                         1),
-                    reduction="sum")
+                    reduction="sum") / (world_previous_bev.shape[0] * world_previous_bev.shape[1])
 
                 loss = lane_cost * self.cost_weight["lane_cost_weight"] + \
                     vehicle_cost * self.cost_weight["vehicle_cost_weight"] + \
@@ -427,9 +437,6 @@ class Trainer(object):
                     action_jerk * self.cost_weight["action_jerk_weight"] + \
                     target_mse * self.cost_weight["target_mse_weight"] + \
                     target_l1 * self.cost_weight["target_l1_weight"]
-
-                loss /= world_previous_bev.shape[0] * \
-                    world_previous_bev.shape[1]
 
                 lane_cost_list.append(lane_cost.item())
                 vehicle_cost_list.append(vehicle_cost.item())
@@ -461,8 +468,7 @@ class Trainer(object):
             target_l1_mean = np.mean(target_l1_list)
             loss_mean = np.mean(loss_list)
 
-            if run is not None:
-                run.log({"val/step": self.val_step,
+            loss_dict = {"val/step": self.val_step,
                          "val/lane_cost": lane_cost_mean,
                          "val/vehicle_cost": vehicle_cost_mean,
                          "val/green_light_cost": green_light_cost_mean,
@@ -474,29 +480,26 @@ class Trainer(object):
                          "val/action_jerk": action_jerk_mean,
                          "val/target_mse": target_mse_mean,
                          "val/target_l1": target_l1_mean,
-                         "val/loss": loss_mean})
+                         "val/loss": loss_mean}
+
+            if run is not None:
+                run.log(loss_dict)
                 if self.lr_scheduler is not None:
                     run.log({"val/lr": self.lr_scheduler.get_last_lr()[0]})
 
-            return (
-                lane_cost_mean,
-                vehicle_cost_mean,
-                offroad_cost_mean,
-                action_mse_mean,
-                loss_mean)
+            return loss_dict
 
     def learn(self, run=None):
 
         for epoch in range(self.current_epoch, self.num_epochs):
             self.epoch = epoch
             self.train(run)
-            (lane_cost,
-             vehicle_cost,
-             offroad_cost,
-             action_mse,
-             loss) = self.validate(run)
+            loss_dict = self.validate(run)
             logger.info(
-                f"Epoch: {epoch}, Lane Cost: {lane_cost}, Vehicle Cost: {vehicle_cost}, Offroad Cost: {offroad_cost}, Action MSE: {action_mse}, Loss: {loss}")
+                f"Epoch: {epoch}")
+            for (k, v) in loss_dict.items():
+                logger.info(f"{k}: {v}")
+            logger.info("=========================================")
 
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
