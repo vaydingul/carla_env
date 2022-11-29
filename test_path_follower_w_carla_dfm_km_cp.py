@@ -25,6 +25,7 @@ logging.basicConfig(level=logging.INFO)
 
 def main(config):
 
+    seed_everything(config.seed)
     device = get_device()
 
     # ---------------------------------------------------------------------------- #
@@ -174,6 +175,7 @@ def main(config):
             target_state=target_location,
             counter=counter,
             sim_fps=1 / (t1 - t0),
+            seed=config.seed,
             world_forward_model_wandb_link=config.world_forward_model_wandb_link,
             world_forward_model_checkpoint_number=config.world_forward_model_checkpoint_number,
             policy_model_wandb_link=config.policy_model_wandb_link,
@@ -212,12 +214,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/24ijvr4l")
+        default="vaydingul/mbl/2x973gx5")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=14)
+        default=9)
 
     config = parser.parse_args()
 

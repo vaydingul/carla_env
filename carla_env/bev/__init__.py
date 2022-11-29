@@ -32,6 +32,7 @@ RgbCanvas = np.ndarray  # [np.uint8] with shape (height, width, 3)
 class BirdViewCropType(Enum):
     FRONT_AND_REAR_AREA = auto()  # Freeway mode
     FRONT_AREA_ONLY = auto()  # Like in "Learning by Cheating"
+    DYNAMIC = auto()
 
 
 DEFAULT_HEIGHT = 336  # its 84m when density is 4px/m

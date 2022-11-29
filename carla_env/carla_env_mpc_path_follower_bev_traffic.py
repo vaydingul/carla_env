@@ -285,37 +285,54 @@ class CarlaEnvironment(Environment):
         position_y = 20
         for (module, render_dict) in self.render_dict.items():
             if module not in ["rgb_sensor", "semantic_sensor"]:
-
+                
                 if bool(render_dict):
-
-                    cv2.putText(
-                        self.canvas,
-                        f"{module.capitalize()}",
-                        (position_x,
-                         position_y),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
-                        (0,
-                         255,
-                         255),
-                        1,
-                        cv2.LINE_AA)
-                    position_y += 40
-
-                    for (k, v) in render_dict.items():
+                    
+                    if "collision" not in module:
 
                         cv2.putText(
                             self.canvas,
-                            f"{k}: {v}",
+                            f"{module.capitalize()}",
                             (position_x,
-                             position_y),
+                            position_y),
                             cv2.FONT_HERSHEY_SIMPLEX,
                             0.5,
-                            (255,
-                             255,
-                             0),
-                            1)
-                        position_y += 20
+                            (0,
+                            255,
+                            255),
+                            1,
+                            cv2.LINE_AA)
+                        position_y += 40
+
+                        for (k, v) in render_dict.items():
+
+                            cv2.putText(
+                                self.canvas,
+                                f"{k}: {v}",
+                                (position_x,
+                                position_y),
+                                cv2.FONT_HERSHEY_SIMPLEX,
+                                0.5,
+                                (255,
+                                255,
+                                0),
+                                1)
+                            position_y += 20
+                    else:
+                        # Draw a big GAME OVER text in red color
+                        cv2.putText(
+                            self.canvas,
+                            "GAME OVER",
+                            (position_x,
+                            position_y),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            8,
+                            (0,
+                            0,
+                            255),
+                            5,
+                            cv2.LINE_AA)
+                        
 
         if bool(kwargs):
 
