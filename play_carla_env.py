@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def main(config):
     c = carla_env_playground.CarlaEnvironment(
-        config={"render": True, "save": False, "save_video": False,
+        config={"render": True, "save": True, "save_video": True,
                 "max_steps": 10000})
 
     for k in range(config.num_episodes):
