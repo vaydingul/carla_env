@@ -172,17 +172,19 @@ class BirdViewProducer:
         render_lanes_on_junctions: bool,
         pixels_per_meter: int = 4,
         crop_type: BirdViewCropType = BirdViewCropType.FRONT_AND_REAR_AREA,
+        dynamic_crop_margin: float = 0.1,
     ) -> None:
         self.client = client
         self.target_size = target_size
         self.pixels_per_meter = pixels_per_meter
         self._crop_type = crop_type
-
+        self.dynamic_crop_margin = dynamic_crop_margin
+        self.is_first_frame = True
         if crop_type is BirdViewCropType.FRONT_AND_REAR_AREA:
             rendering_square_size = round(
                 square_fitting_rect_at_any_rotation(self.target_size)
             )
-        elif crop_type is BirdViewCropType.FRONT_AREA_ONLY:
+        elif (crop_type is BirdViewCropType.FRONT_AREA_ONLY) or (crop_type is BirdViewCropType.DYNAMIC):
             # We must keep rendering size from FRONT_AND_REAR_AREA (in order to
             # avoid rotation issues)
             enlarged_size = PixelDimensions(
@@ -252,6 +254,7 @@ class BirdViewProducer:
 
         # Reusing already generated static masks for whole map
         self.masks_generator.disable_local_rendering_mode()
+
         agent_global_px_pos = self.masks_generator.location_to_pixel(
             agent_vehicle_loc)
 
@@ -262,6 +265,26 @@ class BirdViewProducer:
             height=self.rendering_area.height,
         )
 
+        conservative_rect = CroppingRect(
+            x=int(agent_global_px_pos.x - self.target_size.width / 2),
+            y=int(agent_global_px_pos.y - self.target_size.height / 2),
+            width=self.target_size.width,
+            height=self.target_size.height,
+        )
+
+        if self._crop_type is BirdViewCropType.DYNAMIC:
+
+            if self.is_first_frame:
+                self.is_first_frame = False
+                self.cropping_rect = cropping_rect
+                self.agent_vehicle_loc = agent_vehicle_loc
+                self.agent_vehicle_angle = agent_vehicle.get_transform().rotation.yaw + 90
+                self.agent_global_px_pos = agent_global_px_pos
+        else:
+
+            self.cropping_rect = cropping_rect
+            self.agent_vehicle_loc = agent_vehicle_loc
+
         masks = np.zeros(
             shape=(
                 len(BirdViewMasks),
@@ -271,10 +294,10 @@ class BirdViewProducer:
             dtype=np.uint8,
         )
         masks[BirdViewMasks.ROAD.value] = self.full_road_cache[
-            cropping_rect.vslice, cropping_rect.hslice
+            self.cropping_rect.vslice, self.cropping_rect.hslice
         ]
         masks[BirdViewMasks.LANES.value] = self.full_lanes_cache[
-            cropping_rect.vslice, cropping_rect.hslice
+            self.cropping_rect.vslice, self.cropping_rect.hslice
         ]
         # masks[BirdViewMasks.CENTERLINES.value] = self.full_centerlines_cache[
         #     cropping_rect.vslice, cropping_rect.hslice
@@ -282,14 +305,32 @@ class BirdViewProducer:
 
         # Dynamic masks
         rendering_window = RenderingWindow(
-            origin=agent_vehicle_loc, area=self.rendering_area
+            origin=self.agent_vehicle_loc, area=self.rendering_area
         )
+
         self.masks_generator.enable_local_rendering_mode(rendering_window)
+
         masks = self._render_actors_masks(
             agent_vehicle, segregated_actors, masks)
-        cropped_masks = self.apply_agent_following_transformation_to_masks(
-            agent_vehicle, masks
-        )
+
+        (cropped_masks, reference_change) = self.apply_agent_following_transformation_to_masks(
+            agent_vehicle,
+            masks=masks,
+            angle=self.agent_vehicle_angle if self._crop_type == BirdViewCropType.DYNAMIC else None)
+
+        if self._crop_type is BirdViewCropType.DYNAMIC:
+
+            if reference_change:
+
+                self.cropping_rect = cropping_rect
+                self.agent_vehicle_loc = agent_vehicle_loc
+                self.agent_vehicle_angle = agent_vehicle.get_transform().rotation.yaw + 90
+                self.agent_global_px_pos = agent_global_px_pos
+        else:
+
+            self.cropping_rect = cropping_rect
+            self.agent_vehicle_loc = agent_vehicle_loc
+
         ordered_indices = [
             mask.value for mask in BirdViewMasks.bottom_to_top()]
 
@@ -351,11 +392,13 @@ class BirdViewProducer:
         return masks
 
     def apply_agent_following_transformation_to_masks(
-        self, agent_vehicle: carla.Actor, masks: np.ndarray
-    ) -> np.ndarray:
+            self,
+            agent_vehicle: carla.Actor,
+            masks: np.ndarray,
+            angle=None) -> np.ndarray:
         """Returns image of shape: height, width, channels"""
         agent_transform = agent_vehicle.get_transform()
-        angle = (
+        angle_ = (
             agent_transform.rotation.yaw + 90
         )  # vehicle's front will point to the top
 
@@ -369,7 +412,10 @@ class BirdViewProducer:
         crop_with_centered_car = np.transpose(
             crop_with_car_in_the_center, axes=(1, 2, 0)
         )
-        rotated = rotate(crop_with_centered_car, angle, center=rotation_center)
+        rotated = rotate(
+            crop_with_centered_car,
+            angle=angle if angle is not None else angle_,
+            center=rotation_center)
 
         half_width = self.target_size.width // 2
         hslice = slice(
@@ -378,11 +424,12 @@ class BirdViewProducer:
             rotation_center.x +
             half_width)
 
-        if self._crop_type is BirdViewCropType.FRONT_AREA_ONLY:
+        if (self._crop_type is BirdViewCropType.FRONT_AREA_ONLY) or (
+                self._crop_type is BirdViewCropType.DYNAMIC):
             vslice = slice(
                 rotation_center.y - self.target_size.height, rotation_center.y
             )
-        elif self._crop_type is BirdViewCropType.FRONT_AND_REAR_AREA:
+        elif (self._crop_type is BirdViewCropType.FRONT_AND_REAR_AREA):
             half_height = self.target_size.height // 2
             vslice = slice(
                 rotation_center.y - half_height,
@@ -393,4 +440,8 @@ class BirdViewProducer:
             vslice.start > 0 and hslice.start > 0
         ), "Trying to access negative indexes is not allowed, check for calculation errors!"
         car_on_the_bottom = rotated[vslice, hslice]
-        return car_on_the_bottom
+
+        reference_change = car_on_the_bottom[...,
+                                             BirdViewMasks.AGENT.value].sum() == 0
+
+        return car_on_the_bottom, reference_change

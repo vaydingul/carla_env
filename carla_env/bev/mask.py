@@ -54,6 +54,21 @@ class CroppingRect(NamedTuple):
     def hslice(self) -> slice:
         return slice(self.x, self.x + self.width)
 
+    def __mul__(self, n: float):
+        return CroppingRect(
+            int(self.x - (((self.width) * (n - 1)) / (2))),
+            int(self.y - (((self.height) * (n - 1)) / (2))),
+            int(self.width * n),
+            int(self.height * n),
+        )
+
+    def __contains__(self, p: Coord) -> bool:
+        return self.x <= p.x <= self.x + \
+            self.width and self.y <= p.y <= self.y + self.height
+
+
+
+
 
 def lateral_shift(transform, shift):
     """Makes a lateral shift of the forward vector of a transform"""

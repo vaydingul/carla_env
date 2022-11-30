@@ -156,7 +156,7 @@ class CarlaEnvironment(Environment):
                 192),
             render_lanes_on_junctions=False,
             pixels_per_meter=5,
-            crop_type=BirdViewCropType.FRONT_AND_REAR_AREA)
+            crop_type=BirdViewCropType.DYNAMIC)
 
         time.sleep(1.0)
         logger.info("Everything is set!")
@@ -261,6 +261,15 @@ class CarlaEnvironment(Environment):
 
         bev = self.bev_module.as_rgb(bev)
         bev = cv2.cvtColor(bev, cv2.COLOR_BGR2RGB)
+        bev = cv2.resize(
+            bev,
+            dsize=(
+                0,
+                0),
+            fx=rgb_image_1.shape[1] //
+            bev.shape[1],
+            fy=rgb_image_1.shape[1] //
+            bev.shape[1])
         # Put image into canvas
         self.canvas[rgb_image_1.shape[0] + 10:rgb_image_1.shape[0] +
                     10 + bev.shape[0], : bev.shape[1]] = bev
@@ -365,7 +374,7 @@ class CarlaEnvironment(Environment):
 
     def _create_render_window(self):
 
-        self.canvas = np.zeros((256 + 192 + 50, 900 * 1 + 1200, 3), np.uint8)
+        self.canvas = np.zeros((256 + 192 * (900 // 192) + 50, 900 * 1 + 1200, 3), np.uint8)
         cv2.imshow("Environment", self.canvas)
 
         if cv2.waitKey(1) == ord('q'):
