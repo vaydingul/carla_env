@@ -22,8 +22,7 @@ class DecoupledForwardModelKinematicsCoupledPolicy(nn.Module):
             target_location) -> torch.tensor:
 
         # Combine second and third dimension of world state
-        action = self.policy_model(torch.cat(
-            [v for v in ego_state.values()], dim=1), world_state, command, target_location)
+        action = self.policy_model(ego_state, world_state, command, target_location)
 
         (world_future_bev_predicted) = self.world_model(
             world_previous_bev=world_state, sample_latent=True)

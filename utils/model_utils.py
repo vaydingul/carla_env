@@ -58,10 +58,13 @@ def load_policy_model_from_wandb_run(
         map_location=policy_model_device)
     policy_model = cls(
         input_shape_world_state=run.config["input_shape_world_state"],
-        input_shape_ego_state=run.config["input_shape_ego_state"],
+        input_ego_location=run.input_ego_location,
+        input_ego_yaw=run.input_ego_yaw,
+        input_ego_speed=run.input_ego_speed,
         action_size=run.config["action_size"],
         hidden_size=run.config["hidden_size"],
-        layers=run.config["num_layer"],)
+        layers=run.config["num_layer"],
+        delta_target = run.delta_target)
     policy_model.load_state_dict(checkpoint["model_state_dict"])
 
     return policy_model, checkpoint

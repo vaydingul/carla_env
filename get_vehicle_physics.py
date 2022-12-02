@@ -15,7 +15,6 @@ if __name__ == "__main__":
     c = carla_env_basic.CarlaEnvironment(None)
     vehicle = c.actor.get_actor()
     vehicle_physics_control = vehicle.get_physics_control()
-
     print(f"Vehicle Mass: {vehicle_physics_control.mass}")
     print(f"Vehicle Center of Mass: {vehicle_physics_control.center_of_mass}")
     print(
