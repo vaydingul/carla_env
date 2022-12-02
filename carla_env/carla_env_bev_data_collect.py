@@ -9,13 +9,14 @@ from carla_env.modules.traffic_manager import traffic_manager
 from carla_env.modules.sensor import vehicle_sensor
 from carla_env.modules.sensor import rgb_sensor
 from carla_env.modules.sensor import collision_sensor
+from carla_env.modules.sensor import occupancy_sensor
 from carla_env.modules.module import Module
 from carla_env.bev import (
     BirdViewProducer,
     BirdViewCropType,
 )
 from carla_env.bev.mask import PixelDimensions
-from utils.carla_utils import(fetch_all_vehicles)
+from utils.carla_utils import (fetch_all_vehicles)
 
 # Import utils
 import time
@@ -38,19 +39,19 @@ def create_multiple_actors_for_traffic_manager(client, n=20):
     # Shuffle the list and take first n vehicles
     np.random.shuffle(vehicles)
     actors = [actor.ActorModule(
-            config={
-                "actor": vehicle.VehicleModule(
-                    config=None,
-                    client=client),
-                "hero": False},
-            client=client)]
-    
-    for k in range(n):    
+        config={
+            "actor": vehicle.VehicleModule(
+                config=None,
+                client=client),
+            "hero": False},
+        client=client)]
+
+    for k in range(n):
 
         actors.append(actor.ActorModule(
             config={
                 "vehicle": vehicle.VehicleModule(
-                    config={"vehicle_model": vehicles[k],},
+                    config={"vehicle_model": vehicles[k], },
                     client=client),
                 "hero": False},
             client=client))
@@ -126,8 +127,10 @@ class CarlaEnvironment(Environment):
         self.rgb_sensor_3 = rgb_sensor.RGBSensorModule(
             config={"yaw": 60, "width": 900, "height": 256}, client=self.client,
             actor=self.hero_actor_module, id="rgb_left")
+        self.occupancy_sensor = occupancy_sensor.OccupancySensorModule(
+            config=None, client=self.client, actor=self.hero_actor_module, id="occ")
 
-        self.bev_module = BirdViewProducer(
+        self.bev_module_world = BirdViewProducer(
             client=self.client,
             target_size=PixelDimensions(
                 192,
@@ -135,6 +138,15 @@ class CarlaEnvironment(Environment):
             render_lanes_on_junctions=False,
             pixels_per_meter=5,
             crop_type=BirdViewCropType.FRONT_AREA_ONLY)
+
+        self.bev_module_ego = BirdViewProducer(
+            client=self.client,
+            target_size=PixelDimensions(
+                192,
+                192),
+            render_lanes_on_junctions=False,
+            pixels_per_meter=20,
+            crop_type=BirdViewCropType.FRONT_AND_REAR_AREA)
 
         time.sleep(1.0)
         logger.info("Everything is set!")
@@ -197,19 +209,32 @@ class CarlaEnvironment(Environment):
 
         self.spectator.set_transform(transform)
 
-        bev = self.bev_module.step(
+        bev_world = self.bev_module_world.step(
+            agent_vehicle=self.hero_actor_module.get_actor())
+        bev_ego = self.bev_module_ego.step(
             agent_vehicle=self.hero_actor_module.get_actor())
 
-        data_dict["bev"] = bev
+        data_dict["bev_world"] = bev_world
+        data_dict["bev_ego"] = bev_ego
 
-        try: 
-            _next_agent_navigational_action = self.traffic_manager_module.get_next_action(self.hero_actor_module.get_actor())
-            self._next_agent_command = RoadOption[_next_agent_navigational_action[0].upper()].value
-            self._next_agent_waypoint = [_next_agent_navigational_action[1].transform.location.x, _next_agent_navigational_action[1].transform.location.y, _next_agent_navigational_action[1].transform.location.z]
-            
-            data_dict["navigation"] = {"command": self._next_agent_command, "waypoint": self._next_agent_waypoint}
-        except:
-            data_dict["navigation"] = {"command": self._next_agent_command, "waypoint": self._next_agent_waypoint}
+        try:
+            _next_agent_navigational_action = self.traffic_manager_module.get_next_action(
+                self.hero_actor_module.get_actor())
+            self._next_agent_command = RoadOption[_next_agent_navigational_action[0].upper(
+            )].value
+            self._next_agent_waypoint = [
+                _next_agent_navigational_action[1].transform.location.x,
+                _next_agent_navigational_action[1].transform.location.y,
+                _next_agent_navigational_action[1].transform.location.z]
+
+            data_dict["navigation"] = {
+                "command": self._next_agent_command,
+                "waypoint": self._next_agent_waypoint}
+        except BaseException:
+            data_dict["navigation"] = {
+                "command": self._next_agent_command,
+                "waypoint": self._next_agent_waypoint}
+
         self.data.put(data_dict)
 
         self.server_module.step()
@@ -219,7 +244,7 @@ class CarlaEnvironment(Environment):
 
         self.is_done = self.counter >= self.config["max_steps"]
 
-    def render(self, bev):
+    def render(self, bev_list):
         """Render the environment"""
         if not self.config["render"]:
             return
@@ -238,7 +263,7 @@ class CarlaEnvironment(Environment):
         rgb_image_2 = self.render_dict["rgb_sensor_2"]["image_data"]
         rgb_image_2 = cv2.cvtColor(rgb_image_2, cv2.COLOR_BGR2RGB)
         # Put image into canvas
-        self.canvas[:rgb_image_2.shape[0], rgb_image_1.shape[1]:rgb_image_1.shape[1] + rgb_image_2.shape[1]] = rgb_image_2
+        self.canvas[:rgb_image_2.shape[0], rgb_image_1.shape[1]                    :rgb_image_1.shape[1] + rgb_image_2.shape[1]] = rgb_image_2
 
         rgb_image_3 = self.render_dict["rgb_sensor_3"]["image_data"]
         rgb_image_3 = cv2.cvtColor(rgb_image_3, cv2.COLOR_BGR2RGB)
@@ -248,14 +273,20 @@ class CarlaEnvironment(Environment):
                     rgb_image_2.shape[1] +
                     rgb_image_3.shape[1]] = rgb_image_3
 
-        bev = self.bev_module.as_rgb(bev)
-        bev = cv2.cvtColor(bev, cv2.COLOR_BGR2RGB)
-        # Put image into canvas
-        self.canvas[rgb_image_1.shape[0] + 10:rgb_image_1.shape[0] +
-                    10 + bev.shape[0], rgb_image_1.shape[1] +
-                    rgb_image_2.shape[1]:rgb_image_1.shape[1] +
-                    rgb_image_2.shape[1] +
-                    bev.shape[1]] = bev
+        offset = 0
+        # Draw bev as
+        for bev in bev_list:
+
+            bev = self.bev_module_world.as_rgb(bev)
+            bev = cv2.cvtColor(bev, cv2.COLOR_BGR2RGB)
+            # Put image into canvas
+            self.canvas[rgb_image_1.shape[0] + 10:rgb_image_1.shape[0] +
+                        10 + bev.shape[0], rgb_image_1.shape[1] +
+                        rgb_image_2.shape[1] + offset:rgb_image_1.shape[1] +
+                        rgb_image_2.shape[1] +
+                        bev.shape[1] + offset] = bev
+
+            offset += bev.shape[1] + 10
 
         # Put text for other modules
         position_x = rgb_image_1.shape[1] * 3 + 10

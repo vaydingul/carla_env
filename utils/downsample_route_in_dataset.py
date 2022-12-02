@@ -74,6 +74,8 @@ def main(config):
     for item in os.listdir(dataset_path):
         if item.startswith("episode"):
 
+            print(item)
+
             episode_path = dataset_path / item
             episode_navigation_path = episode_path / Path("navigation")
             navigation_files = [file for file in os.listdir(
@@ -110,7 +112,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--dataset_path',
         type=str,
-        default="/home/vaydingul/Documents/Codes/carla_env/data/ground_truth_bev_model_data_dummy_2")
+        default="/home/vaydingul/Documents/Codes/carla_env/data/ground_truth_bev_model_train_data_3_town_02")
     config = parser.parse_args()
 
     main(config)

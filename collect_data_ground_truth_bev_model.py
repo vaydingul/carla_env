@@ -22,14 +22,14 @@ def main(config):
             "render": False, "save": False, "save_video": False,
             "tasks": [
                 {
-                    "world": "Town05", "num_vehicles": 300},
+                    "world": "Town02", "num_vehicles": 100},
             ],
             "max_steps": 1000})
 
     for k in range(config.num_episodes):
 
         # Create the data writer
-        data_save_path_ = Path(config.data_save_path) / f"episode_{k+10}"
+        data_save_path_ = Path(config.data_save_path) / f"episode_{k}"
         os.makedirs(data_save_path_, exist_ok=True)
 
         writer = InstanceWriter(data_save_path_)
@@ -48,20 +48,24 @@ def main(config):
             value="rgb_right",
             type=InstanceWriterType.RGB_IMAGE)
         writer.add_key(
-            key="bev",
-            value="bev",
+            key="bev_world",
+            value="bev_world",
+            type=InstanceWriterType.BEV_IMAGE)
+        writer.add_key(
+            key="bev_ego",
+            value="bev_ego",
             type=InstanceWriterType.BEV_IMAGE)
         writer.add_key(key="ego", value="ego", type=InstanceWriterType.JSON)
         writer.add_key(key="navigation", value="navigation", type=InstanceWriterType.JSON)
-
-
+        writer.add_key(key="occ", value = "occ", type = InstanceWriterType.JSON)
+    
         while not c.is_done:
 
             c.step()
 
             data_ = c.get_data()
 
-            c.render(bev=data_["bev"])
+            c.render(bev_list=[data_["bev_world"], data_["bev_ego"]])
 
             writer.write(c.get_counter(), data_)
             time.sleep(0.1)
@@ -80,12 +84,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_save_path",
         type=str,
-        default="./data/ground_truth_bev_model_test_data_2",
+        default="./data/ground_truth_bev_model_train_data_3_town_02",
         help="Path to save the data")
     parser.add_argument(
         "--num_episodes",
         type=int,
-        default=10,
+        default=7,
         help="Number of episodes to collect data from")
     config = parser.parse_args()
 

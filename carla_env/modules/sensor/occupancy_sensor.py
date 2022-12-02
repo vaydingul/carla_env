@@ -37,7 +37,7 @@ class OccupancySensorModule(sensor.SensorModule):
             k for k in range(
                 self.config['number_of_radars'])]
 
-        self.occupancy = np.zeros((self.config["number_of_radars"], ))
+        self.occupancy = [0] * self.config["number_of_radars"]
 
         self.reset()
 
@@ -86,7 +86,7 @@ class OccupancySensorModule(sensor.SensorModule):
     def _stop(self):
         """Stop the sensor module"""
         if self.is_attached:
-            for sensor in self.sensor_list:
+            for sensor in self.radar_sensor_list:
                 sensor.stop()
                 sensor.destroy()
 

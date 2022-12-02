@@ -152,10 +152,10 @@ class CarlaEnvironment(Environment):
         self.bev_module = BirdViewProducer(
             client=self.client,
             target_size=PixelDimensions(
-                192,
-                192),
+                512,
+                512),
             render_lanes_on_junctions=False,
-            pixels_per_meter=5,
+            pixels_per_meter=20,
             crop_type=BirdViewCropType.DYNAMIC)
 
         time.sleep(1.0)
@@ -313,7 +313,7 @@ class CarlaEnvironment(Environment):
 
         canvas_display = cv2.resize(
             src=self.canvas, dsize=(
-                0, 0), fx=1.0, fy=1.0)
+                0, 0), fx=0.7, fy=0.7)
 
         cv2.imshow("Environment", canvas_display)
 
@@ -374,7 +374,7 @@ class CarlaEnvironment(Environment):
 
     def _create_render_window(self):
 
-        self.canvas = np.zeros((256 + 192 * (900 // 192) + 50, 900 * 1 + 1200, 3), np.uint8)
+        self.canvas = np.zeros((256 + 512 * (900 // 512) + 50, 900 * 1 + 1200, 3), np.uint8)
         cv2.imshow("Environment", self.canvas)
 
         if cv2.waitKey(1) == ord('q'):

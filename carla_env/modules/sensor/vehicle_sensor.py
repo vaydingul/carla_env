@@ -28,7 +28,6 @@ class VehicleSensorModule(sensor.SensorModule):
         """Start the sensor module"""
         self.is_attached = True
 
-
     def _stop(self):
         """Stop the sensor module"""
         self.is_attached = False
@@ -76,7 +75,8 @@ class VehicleSensorModule(sensor.SensorModule):
                                        get_acceleration().z],
                 'control_array': [vehicle_control.throttle,
                                   vehicle_control.steer,
-                                  vehicle_control.brake]}
+                                  vehicle_control.brake],
+                'town': self.world.get_map().name}
 
         logger.debug(f"Location: {data['location']}")
         logger.debug(f"Rotation: {data['rotation']}")
@@ -97,6 +97,7 @@ class VehicleSensorModule(sensor.SensorModule):
         """Reset the sensor"""
         self._stop()
         self._start()
+
     def render(self):
         """Render the sensor"""
         return self.render_dict
