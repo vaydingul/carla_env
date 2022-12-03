@@ -38,7 +38,6 @@ def main(config):
     logger.info(f"Train dataset size: {len(world_model_dataset_train)}")
     logger.info(f"Val dataset size: {len(world_model_dataset_val)}")
 
-
     world_model_dataloader_train = DataLoader(
         world_model_dataset_train,
         batch_size=config.batch_size,
@@ -84,11 +83,8 @@ def main(config):
         checkpoint = fetch_checkpoint_from_wandb_run(
             run=run)
 
-        world_bev_model = load_world_model_from_wandb_run(
-            run=run,
-            checkpoint=checkpoint,
-            cls=WorldBEVModel,
-            world_model_device=world_model_device)
+        world_bev_model, _ = WorldBEVModel.load_model_from_wandb_run(
+            run=run, checkpoint=checkpoint, device=world_model_device)
 
     world_bev_model.to(world_model_device)
 

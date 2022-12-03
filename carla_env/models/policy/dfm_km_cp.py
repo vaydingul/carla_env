@@ -83,7 +83,7 @@ class Policy(nn.Module):
         world_state = world_state.view(
             world_state.shape[0], -1, world_state.shape[-2], world_state.shape[-1])
         world_state_encoded = self.world_state_encoder(world_state)
-        
+
         # Flatten the encoded world state
         world_state_encoded = self.world_state_encoder_fc(
             world_state_encoded.view(world_state_encoded.size(0), -1))
@@ -108,6 +108,29 @@ class Policy(nn.Module):
         action = torch.cat((acceleration, steer), dim=1)
 
         return action
+
+    @classmethod
+    def load_model_from_wandb_run(cls, run, checkpoint, device):
+
+        checkpoint = torch.load(
+            checkpoint.name,
+            map_location=device)
+        model = cls(
+            input_shape_world_state=run.config["input_shape_world_state"],
+            input_ego_location=run.config["input_ego_location"],
+            input_ego_yaw=run.config["input_ego_yaw"],
+            input_ego_speed=run.config["input_ego_speed"],
+            action_size=run.config["action_size"],
+            command_size=run.config["command_size"],
+            target_location_size=run.config["target_location_size"],
+            hidden_size=run.config["hidden_size"],
+            layers=run.config["layers"],
+            delta_target=run.config["delta_target"],
+            dropout=run.config["dropout"])
+
+        model.load_state_dict(checkpoint["model_state_dict"])
+
+        return model
 
 
 if __name__ == "__main__":

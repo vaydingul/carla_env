@@ -129,6 +129,26 @@ class WorldBEVModel(nn.Module):
 
             return world_future_bev_predicted
 
+    @classmethod
+    def load_model_from_wandb_run(cls, run, checkpoint, device):
+
+        checkpoint = torch.load(
+            checkpoint.name,
+            map_location=device)
+        model = cls(
+            input_shape=run.config['input_shape'],
+            latent_size=run.config['latent_size'],
+            hidden_channel=run.config['hidden_channel'],
+            output_channel=run.config['output_channel'],
+            num_encoder_layer=run.config['num_encoder_layer'],
+            num_probabilistic_encoder_layer=run.config['num_probabilistic_encoder_layer'],
+            num_time_step=run.config['num_time_step'],
+            dropout=run.config['dropout'])
+
+        model.load_state_dict(checkpoint["model_state_dict"])
+
+        return model
+
 
 if __name__ == "__main__":
     model = WorldBEVModel(input_shape=[8, 192, 192])

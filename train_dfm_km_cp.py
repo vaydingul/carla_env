@@ -65,11 +65,8 @@ def main(config):
     checkpoint = fetch_checkpoint_from_wandb_link(
         config.world_forward_model_wandb_link,
         config.world_forward_model_checkpoint_number)
-    world_forward_model, _ = load_world_model_from_wandb_run(
-        run=world_model_run,
-        checkpoint=checkpoint,
-        cls=WorldBEVModel,
-        world_model_device=device)
+    world_forward_model, _ = WorldBEVModel.load_model_from_wandb_run(
+        run=run, checkpoint=checkpoint, device=world_model_device)
     world_forward_model.to(device=device)
 
     # ---------------------------------------------------------------------------- #
@@ -144,10 +141,9 @@ def main(config):
         checkpoint = fetch_checkpoint_from_wandb_run(
             run=run)
 
-        policy_model, _ = load_policy_model_from_wandb_run(
+        policy_model, _ = Policy.load_model_from_wandb_run(
             run=run,
             checkpoint=checkpoint,
-            cls=Policy,
             policy_model_device=device)
 
     # ---------------------------------------------------------------------------- #

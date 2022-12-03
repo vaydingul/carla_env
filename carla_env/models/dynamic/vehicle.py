@@ -124,6 +124,20 @@ class KinematicBicycleModelV2(nn.Module):
 
         return ego_state_next
 
+    @classmethod
+    def load_model_from_wandb_run(cls, run, checkpoint, device):
+
+        checkpoint = torch.load(
+            checkpoint.name,
+            map_location=device)
+        model = cls(
+            dt=run.config["dt"]
+        )
+
+        model.load_state_dict(checkpoint["model_state_dict"])
+
+        return model
+
 
 class KinematicBicycleModelWoR(nn.Module):
     def __init__(self, dt=1. / 4):
