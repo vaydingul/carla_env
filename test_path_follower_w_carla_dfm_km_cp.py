@@ -121,6 +121,7 @@ def main(config):
         location.requires_grad_(True).to(device=device)
         yaw.requires_grad_(True).to(device=device)
         speed.requires_grad_(True).to(device=device)
+
         ego_state = {"location": location,
                      "yaw": yaw,
                      "speed": speed}
@@ -214,12 +215,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/2d716u5x")
+        default="vaydingul/mbl/1w9b57if")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=14)
+        default=9)
 
     config = parser.parse_args()
 
