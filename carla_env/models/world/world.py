@@ -137,7 +137,6 @@ class WorldBEVModel(nn.Module):
             map_location=device)
         model = cls(
             input_shape=run.config['input_shape'],
-            latent_size=run.config['latent_size'],
             hidden_channel=run.config['hidden_channel'],
             output_channel=run.config['output_channel'],
             num_encoder_layer=run.config['num_encoder_layer'],
