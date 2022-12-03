@@ -2,10 +2,10 @@ import logging
 
 from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
 from carla_env.models.world.world import WorldBEVModel
-from carla_env.models.policy.policy import Policy
+from carla_env.models.policy.policy_occupancy import Policy
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
 from carla_env.cost.masked_cost_batched import Cost
-from carla_env.trainer.dfm_km_cp import Trainer
+from carla_env.trainer.dfm_km_cp_w_occ import Trainer
 from carla_env.dataset.instance import InstanceDataset
 import torch
 from torch.utils.data import DataLoader
@@ -65,8 +65,10 @@ def main(config):
     checkpoint = fetch_checkpoint_from_wandb_link(
         config.world_forward_model_wandb_link,
         config.world_forward_model_checkpoint_number)
-    world_forward_model, _ = WorldBEVModel.load_model_from_wandb_run(
-        run=run, checkpoint=checkpoint, device=world_model_device)
+    world_forward_model = WorldBEVModel.load_world_model_from_wandb_run(
+        run=world_model_run,
+        checkpoint=checkpoint,
+        world_model_device=device)
     world_forward_model.to(device=device)
 
     # ---------------------------------------------------------------------------- #
@@ -80,12 +82,12 @@ def main(config):
         data_path=data_path_train,
         sequence_length=world_model_run.config["num_time_step_previous"] +
         world_model_run.config["num_time_step_future"],
-        read_keys=["bev", "ego", "navigation"])
+        read_keys=["bev", "ego", "navigation", "occ"])
     dataset_val = InstanceDataset(
         data_path=data_path_val,
         sequence_length=world_model_run.config["num_time_step_previous"] +
         world_model_run.config["num_time_step_future"],
-        read_keys=["bev", "ego", "navigation"])
+        read_keys=["bev", "ego", "navigation", "occ"])
 
     dataloader_train = DataLoader(
         dataset_train,
@@ -132,16 +134,19 @@ def main(config):
                 {"input_shape_world_state": _input_shape_world_state})
         policy_model = Policy(
             input_shape_world_state=_input_shape_world_state,
-            input_shape_ego_state=config.input_shape_ego_state,
+            input_ego_location=config.input_ego_location,
+            input_ego_yaw=config.input_ego_yaw,
+            input_ego_speed=config.input_ego_speed,
             action_size=config.action_size,
             hidden_size=config.hidden_size,
-            layers=config.num_layer)
+            layers=config.num_layer,
+            delta_target=config.delta_target)
     else:
 
         checkpoint = fetch_checkpoint_from_wandb_run(
             run=run)
 
-        policy_model, _ = Policy.load_model_from_wandb_run(
+        policy_model = Policy.load_policy_model_from_wandb_run(
             run=run,
             checkpoint=checkpoint,
             policy_model_device=device)
@@ -196,6 +201,11 @@ def main(config):
             if checkpoint["lr_scheduler_state_dict"] is not None:
                 lr_scheduler.load_state_dict(
                     checkpoint["lr_scheduler_state_dict"])
+
+    logger.info(
+        f"Number of parameters that requires gradient: {sum(p.numel() for p in model.parameters() if p.requires_grad)}")
+    logger.info(
+        f"Number of parameters that are being optimized: {sum(p.numel() for p in policy_model.parameters() if p.requires_grad)}")
 
     if config.wandb:
         run.watch(policy_model)
@@ -275,7 +285,12 @@ if __name__ == "__main__":
         str(x).lower() == 'true'), default=True)
     parser.add_argument("--save_interval", type=int, default=100)
     # POLICY MODEL PARAMETERS
-    parser.add_argument("--input_shape_ego_state", type=int, default=4)
+    parser.add_argument("--input_ego_location", type=int, default=1)
+    parser.add_argument("--input_ego_yaw", type=int, default=1)
+    parser.add_argument("--input_ego_speed", type=int, default=1)
+    parser.add_argument("--delta_target", type=lambda x: (
+        str(x).lower() == 'true'), default=True)
+    parser.add_argument("--occupancy_size", type=int, default=8)
     parser.add_argument("--action_size", type=int, default=2)
     parser.add_argument("--hidden_size", type=int, default=256)
     parser.add_argument("--num_layer", type=int, default=6)

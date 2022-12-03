@@ -2,7 +2,7 @@ from torch import nn
 import torch
 from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
 from carla_env.models.world.world import WorldBEVModel
-from carla_env.models.policy.dfm_km_cp import Policy
+from carla_env.models.policy.policy import Policy
 
 
 class DecoupledForwardModelKinematicsCoupledPolicy(nn.Module):
@@ -19,10 +19,23 @@ class DecoupledForwardModelKinematicsCoupledPolicy(nn.Module):
             ego_state: dict,
             world_state: torch.tensor,
             command,
-            target_location) -> torch.tensor:
+            target_location,
+            occupancy=None) -> torch.tensor:
 
         # Combine second and third dimension of world state
-        action = self.policy_model(ego_state, world_state, command, target_location)
+        if occupancy is not None:
+
+            action = self.policy_model(
+                ego_state,
+                world_state,
+                command,
+                target_location,
+                occupancy)
+
+        else:
+
+            action = self.policy_model(
+                ego_state, world_state, command, target_location)
 
         (world_future_bev_predicted) = self.world_model(
             world_previous_bev=world_state, sample_latent=True)

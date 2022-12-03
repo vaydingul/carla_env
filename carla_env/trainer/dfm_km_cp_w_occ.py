@@ -118,6 +118,9 @@ class Trainer(object):
             target_location = data["navigation"]["waypoint"][:,
                                                              self.num_time_step_previous - 1, 0:2].to(self.device)
 
+            occupancy = data["occ"]["occupancy"][:,
+                                                 self.num_time_step_previous - 1].to(self.device)
+
             ego_state_previous = {
                 "location": ego_previous_location,
                 "yaw": ego_previous_yaw,
@@ -130,7 +133,8 @@ class Trainer(object):
                     ego_state_previous,
                     world_previous_bev,
                     command,
-                    target_location - ego_previous_location)
+                    target_location - ego_previous_location,
+                    occupancy)
 
                 ego_state_next = output["ego_state_next"]
                 world_state_next = output["world_state_next"]
@@ -324,6 +328,9 @@ class Trainer(object):
                 target_location = data["navigation"]["waypoint"][:,
                                                                  self.num_time_step_previous - 1, 0:2].to(self.device)
 
+                occupancy = data["occ"]["occupancy"][:,
+                                                     self.num_time_step_previous - 1].to(self.device)
+
                 ego_state_previous = {
                     "location": ego_previous_location,
                     "yaw": ego_previous_yaw,
@@ -336,7 +343,8 @@ class Trainer(object):
                         ego_state_previous,
                         world_previous_bev,
                         command,
-                        target_location)
+                        target_location,
+                        occupancy)
 
                     ego_state_next = output["ego_state_next"]
                     world_state_next = output["world_state_next"]

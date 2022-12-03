@@ -2,7 +2,7 @@ from carla_env import carla_env_mpc_path_follower_bev_traffic
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
 from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
 from carla_env.models.world.world import WorldBEVModel
-from carla_env.models.policy.dfm_km_cp import Policy
+from carla_env.models.policy.policy import Policy
 from carla_env.cost.masked_cost_batched import Cost
 import torch
 import time
@@ -50,10 +50,9 @@ def main(config):
     checkpoint = fetch_checkpoint_from_wandb_link(
         config.world_forward_model_wandb_link,
         config.world_forward_model_checkpoint_number)
-    world_forward_model, _ = load_world_model_from_wandb_run(
+    world_forward_model, _ = WorldBEVModel.load_world_model_from_wandb_run(
         run=world_model_run,
         checkpoint=checkpoint,
-        cls=WorldBEVModel,
         world_model_device=device)
     world_forward_model = world_forward_model.to(device=device)
 
@@ -65,10 +64,9 @@ def main(config):
     checkpoint = fetch_checkpoint_from_wandb_link(
         config.policy_model_wandb_link,
         config.policy_model_checkpoint_number)
-    policy_model, _ = load_policy_model_from_wandb_run(
+    policy_model, _ = Policy.load_policy_model_from_wandb_run(
         run=policy_model_run,
         checkpoint=checkpoint,
-        cls=Policy,
         policy_model_device=device)
     policy_model = policy_model.to(device=device)
     # ---------------------------------------------------------------------------- #
