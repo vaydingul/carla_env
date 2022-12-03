@@ -34,7 +34,7 @@ def main(config):
     checkpoint = fetch_checkpoint_from_wandb_link(
         config.wandb_link, config.checkpoint_number)
 
-    world_forward_model, _ = WorldBEVModel.load_world_model_from_wandb_run(
+    world_forward_model= WorldBEVModel.load_model_from_wandb_run(
         run=run,
         checkpoint=checkpoint,
         world_model_device=config.world_device)
