@@ -82,12 +82,12 @@ def main(config):
         data_path=data_path_train,
         sequence_length=world_model_run.config["num_time_step_previous"] +
         world_model_run.config["num_time_step_future"],
-        read_keys=["bev", "ego", "navigation", "occ"])
+        read_keys=["bev_world", "ego", "navigation", "occ"])
     dataset_val = InstanceDataset(
         data_path=data_path_val,
         sequence_length=world_model_run.config["num_time_step_previous"] +
         world_model_run.config["num_time_step_future"],
-        read_keys=["bev", "ego", "navigation", "occ"])
+        read_keys=["bev_world", "ego", "navigation", "occ"])
 
     dataloader_train = DataLoader(
         dataset_train,
@@ -264,9 +264,9 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=5)
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--data_path_train", type=str,
-                        default="data/ground_truth_bev_model_data_dummy_2")
+                        default="data/ground_truth_bev_model_train_data_3_town_02")
     parser.add_argument("--data_path_val", type=str,
-                        default="data/ground_truth_bev_model_data_dummy_2")
+                        default="data/ground_truth_bev_model_val_data_3_town_02")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
     parser.add_argument(

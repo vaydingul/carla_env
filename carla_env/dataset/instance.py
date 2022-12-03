@@ -36,7 +36,7 @@ class InstanceDataset(Dataset):
                 key_lengths = np.array([len(os.listdir(episode_path / read_key))
                                         for read_key in read_keys])
                 if not np.all(
-                    key_lengths == key_lengths[0]):
+                        key_lengths == key_lengths[0]):
                     logger.info("All keys should include same amount of data!")
                     logger.info(f"Skipping {episode_path}")
 
@@ -77,9 +77,9 @@ class InstanceDataset(Dataset):
 
         for read_key in self.read_keys:
 
-            if read_key == "bev":
+            if read_key in ["bev", "bev_world", "bev_ego"]:
 
-                data_ = [self._load_bev(index + k)
+                data_ = [self._load_bev(index + k, read_key)
                          for k in range(self.sequence_length)]
 
                 data_stacked = {}
@@ -96,7 +96,7 @@ class InstanceDataset(Dataset):
                                      for k in range(self.sequence_length)],
                                     dim=0)
 
-            if read_key in ["ego", "navigation"]:
+            if read_key in ["ego", "navigation", "occ"]:
 
                 data_ = [self._load_json(index + k, read_key)
                          for k in range(self.sequence_length)]
@@ -111,15 +111,16 @@ class InstanceDataset(Dataset):
 
         return data
 
-    def _load_bev(self, index):
+    def _load_bev(self, index, read_key):
 
-        load_path = self.data[index][0] / "bev" / f"{self.data[index][1]}.npz"
+        load_path = self.data[index][0] / \
+            read_key / f"{self.data[index][1]}.npz"
         data = np.load(load_path)
         bev_ = data["bev"]
         bev_ = torch.from_numpy(bev_).float()
         # Permute the dimensions such that the channel dim is the first one
         agent_mask = bev_[..., 3]
-        bev_[..., 2] -= agent_mask 
+        bev_[..., 2] -= agent_mask
         bev = bev_[..., [k for k in range(bev_.shape[-1]) if k != 3]]
 
         bev = bev.permute(2, 0, 1)
@@ -150,8 +151,8 @@ class InstanceDataset(Dataset):
         ego = json.load(open(load_path))
         ego_ = {}
         for (key, value) in ego.items():
-            if value != "<<??>>":
-                ego_[key] = torch.tensor(ego[key])
+            if value != "<<??>>" and not isinstance(value, str):
+                ego_[key] = torch.tensor(ego[key], dtype=torch.float32)
         return ego_
 
 

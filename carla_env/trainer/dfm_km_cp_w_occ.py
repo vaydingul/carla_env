@@ -79,9 +79,9 @@ class Trainer(object):
 
         for i, (data) in enumerate(self.dataloader_train):
 
-            world_previous_bev = data["bev"]["bev"][:,
+            world_previous_bev = data["bev_world"]["bev"][:,
                                                     :self.num_time_step_previous].to(self.device)
-            world_future_bev = data["bev"]["bev"][:, self.num_time_step_previous:
+            world_future_bev = data["bev_world"]["bev"][:, self.num_time_step_previous:
                                                   self.num_time_step_previous + self.num_time_step_future].to(self.device)
 
             world_future_bev_predicted_list = []
@@ -113,7 +113,7 @@ class Trainer(object):
             ego_future_action_predicted_list = []
 
             command = data["navigation"]["command"][:,
-                                                    self.num_time_step_previous - 1].to(self.device)
+                                                    self.num_time_step_previous - 1].long().to(self.device)
             command = F.one_hot(command - 1, num_classes=6).float()
             target_location = data["navigation"]["waypoint"][:,
                                                              self.num_time_step_previous - 1, 0:2].to(self.device)
@@ -291,9 +291,9 @@ class Trainer(object):
         with torch.no_grad():
             for i, (data) in enumerate(self.dataloader_val):
 
-                world_previous_bev = data["bev"]["bev"][:,
+                world_previous_bev = data["bev_world"]["bev"][:,
                                                         :self.num_time_step_previous].to(self.device)
-                world_future_bev = data["bev"]["bev"][:, self.num_time_step_previous:
+                world_future_bev = data["bev_world"]["bev"][:, self.num_time_step_previous:
                                                       self.num_time_step_previous + self.num_time_step_future].to(self.device)
 
                 world_future_bev_predicted_list = []
@@ -323,7 +323,7 @@ class Trainer(object):
                 ego_future_action_predicted_list = []
 
                 command = data["navigation"]["command"][:,
-                                                        self.num_time_step_previous - 1].to(self.device)
+                                                        self.num_time_step_previous - 1].long().to(self.device)
                 command = F.one_hot(command - 1, num_classes=6).float()
                 target_location = data["navigation"]["waypoint"][:,
                                                                  self.num_time_step_previous - 1, 0:2].to(self.device)

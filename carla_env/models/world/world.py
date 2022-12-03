@@ -136,13 +136,14 @@ class WorldBEVModel(nn.Module):
             checkpoint.name,
             map_location=device)
         model = cls(
-            input_shape=run.config['input_shape'],
-            hidden_channel=run.config['hidden_channel'],
-            output_channel=run.config['output_channel'],
-            num_encoder_layer=run.config['num_encoder_layer'],
-            num_probabilistic_encoder_layer=run.config['num_probabilistic_encoder_layer'],
-            num_time_step=run.config['num_time_step'],
-            dropout=run.config['dropout'])
+            input_shape=run.config["input_shape"],
+            hidden_channel=run.config["hidden_channel"],
+            output_channel=run.config["output_channel"],
+            num_encoder_layer=run.config["num_encoder_layer"],
+            num_probabilistic_encoder_layer=run.config[
+                "num_probabilistic_encoder_layer"],
+            num_time_step=run.config["num_time_step_previous"] + 1,
+            dropout=run.config["dropout"])
 
         model.load_state_dict(checkpoint["model_state_dict"])
 
