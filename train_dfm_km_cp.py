@@ -66,7 +66,7 @@ def main(config):
         config.world_forward_model_wandb_link,
         config.world_forward_model_checkpoint_number)
     world_forward_model, _ = WorldBEVModel.load_model_from_wandb_run(
-        run=run, checkpoint=checkpoint, device=world_model_device)
+        run=run, checkpoint=checkpoint, device=device)
     world_forward_model.to(device=device)
 
     # ---------------------------------------------------------------------------- #

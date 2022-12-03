@@ -68,7 +68,7 @@ def main(config):
     world_forward_model = WorldBEVModel.load_model_from_wandb_run(
         run=world_model_run,
         checkpoint=checkpoint,
-        world_model_device=device)
+        device=device)
     world_forward_model.to(device=device)
 
     # ---------------------------------------------------------------------------- #
@@ -149,7 +149,7 @@ def main(config):
         policy_model = Policy.load_model_from_wandb_run(
             run=run,
             checkpoint=checkpoint,
-            policy_model_device=device)
+            device=device)
 
     # ---------------------------------------------------------------------------- #
     #                              DFM_KM with Policy                              #
