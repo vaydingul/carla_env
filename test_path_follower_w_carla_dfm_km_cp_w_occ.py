@@ -2,7 +2,7 @@ from carla_env import carla_env_mpc_path_follower_bev_traffic
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
 from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
 from carla_env.models.world.world import WorldBEVModel
-from carla_env.models.policy.policy import Policy
+from carla_env.models.policy.policy_occupancy import Policy
 from carla_env.cost.masked_cost_batched import Cost
 import torch
 import time
@@ -91,7 +91,7 @@ def main(config):
 
     data = c.get_data()
     bev = data["bev"]
-
+    occupancy = data["occ"]["occupancy"]
     for i in range(world_forward_model.num_time_step_previous):
 
         bev_tensor_deque.append(
@@ -130,6 +130,8 @@ def main(config):
         target_location[..., 1] = target_waypoint.transform.location.y
         target_location = target_location.to(device=device)
 
+        occupancy = torch.tensor(occupancy, dtype=torch.float32).unsqueeze(0).to(device=device)
+
         logging.debug(f"Ego State: {ego_state}")
         logging.debug(f"Target Location: {target_location}")
 
@@ -147,7 +149,8 @@ def main(config):
             ego_state=ego_state,
             world_state=bev_tensor,
             command=navigational_command,
-            target_location=target_location)
+            target_location=target_location,
+            occupancy=occupancy)
 
         control = output["action"][0]
         throttle, brake = acceleration_to_throttle_brake(
@@ -163,6 +166,7 @@ def main(config):
         bev_tensor_deque.append(
             convert_standard_bev_to_model_bev(
                 bev, device=device))
+        occupancy = data["occ"]["occupancy"]
 
         t1 = time.time()
 
@@ -190,7 +194,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Collect data from the CARLA simulator")
 
-    parser.add_argument("--seed", type=int, default=52)
+    parser.add_argument("--seed", type=int, default=555)
 
     parser.add_argument(
         "--ego_forward_model_path",
@@ -213,7 +217,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/2o3o7ey7")
+        default="vaydingul/mbl/2tb1fsbt")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",

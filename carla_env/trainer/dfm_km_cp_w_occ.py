@@ -27,6 +27,7 @@ class Trainer(object):
             lr_scheduler=None,
             gradient_clip_type="norm",
             gradient_clip_value=0.3,
+            single_world_state_input=False,
             save_path=None,
             train_step=0,
             val_step=0,
@@ -48,6 +49,7 @@ class Trainer(object):
         self.lr_scheduler = lr_scheduler
         self.gradient_clip_type = gradient_clip_type
         self.gradient_clip_value = gradient_clip_value
+        self.single_world_state_input = single_world_state_input
         self.save_path = save_path
         self.train_step = train_step
         self.val_step = val_step
@@ -80,9 +82,9 @@ class Trainer(object):
         for i, (data) in enumerate(self.dataloader_train):
 
             world_previous_bev = data["bev_world"]["bev"][:,
-                                                    :self.num_time_step_previous].to(self.device)
+                                                          :self.num_time_step_previous].to(self.device)
             world_future_bev = data["bev_world"]["bev"][:, self.num_time_step_previous:
-                                                  self.num_time_step_previous + self.num_time_step_future].to(self.device)
+                                                        self.num_time_step_previous + self.num_time_step_future].to(self.device)
 
             world_future_bev_predicted_list = []
 
@@ -131,7 +133,7 @@ class Trainer(object):
                 # Predict the future bev
                 output = self.model(
                     ego_state_previous,
-                    world_previous_bev,
+                    world_previous_bev if not self.single_world_state_input else world_previous_bev[:, -1],
                     command,
                     target_location - ego_previous_location,
                     occupancy)
@@ -292,9 +294,9 @@ class Trainer(object):
             for i, (data) in enumerate(self.dataloader_val):
 
                 world_previous_bev = data["bev_world"]["bev"][:,
-                                                        :self.num_time_step_previous].to(self.device)
+                                                              :self.num_time_step_previous].to(self.device)
                 world_future_bev = data["bev_world"]["bev"][:, self.num_time_step_previous:
-                                                      self.num_time_step_previous + self.num_time_step_future].to(self.device)
+                                                            self.num_time_step_previous + self.num_time_step_future].to(self.device)
 
                 world_future_bev_predicted_list = []
 

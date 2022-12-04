@@ -20,7 +20,7 @@ python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--lr_schedule=false \
 	--gradient_clip_type="norm" \
 	--gradient_clip_value=1.0 \
-	--single_world_state_input=false \
+	--single_world_state_input=true \
 	--debug_render=false \
 	--save_interval=5 \
 	--input_ego_location=1 \
@@ -45,7 +45,7 @@ python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="dfm-km-cp-normalized_cost" \
-	--wandb_name="vanilla+bc+delta_target_w_occ" \
+	--wandb_name="vanilla+bc+delta_target_w_occ+single_world_state_input" \
 	--ego_forward_model_path="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt" \
 	--world_forward_model_wandb_link="vaydingul/mbl/r4la61x3" \
 	--world_forward_model_checkpoint_number=49

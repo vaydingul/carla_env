@@ -127,8 +127,9 @@ def main(config):
     #                                  Policy Model                                 #
     # ---------------------------------------------------------------------------- #
     if not config.resume:
+
         _input_shape_world_state = world_model_run.config["input_shape"]
-        _input_shape_world_state[0] *= world_model_run.config["num_time_step_previous"]
+        _input_shape_world_state[0] *= world_model_run.config["num_time_step_previous"] if not config.single_world_state_input else 1
         if config.wandb:
             run.config.update(
                 {"input_shape_world_state": _input_shape_world_state})
@@ -230,6 +231,7 @@ def main(config):
         lr_scheduler=lr_scheduler if config.lr_schedule else None,
         gradient_clip_type=config.gradient_clip_type,
         gradient_clip_value=config.gradient_clip_value,
+        single_world_state_input=config.single_world_state_input,
         save_path=config.pretrained_model_path,
         train_step=checkpoint["train_step"] if config.resume else 0,
         val_step=checkpoint["val_step"] if config.resume else 0,
@@ -263,10 +265,14 @@ if __name__ == "__main__":
     parser.add_argument("--num_epochs", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=5)
     parser.add_argument("--num_workers", type=int, default=4)
-    parser.add_argument("--data_path_train", type=str,
-                        default="data/ground_truth_bev_model_train_data_3_town_02")
-    parser.add_argument("--data_path_val", type=str,
-                        default="data/ground_truth_bev_model_val_data_3_town_02")
+    parser.add_argument(
+        "--data_path_train",
+        type=str,
+        default="data/ground_truth_bev_model_train_data_3_town_02")
+    parser.add_argument(
+        "--data_path_val",
+        type=str,
+        default="data/ground_truth_bev_model_val_data_3_town_02")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
     parser.add_argument(
@@ -281,9 +287,12 @@ if __name__ == "__main__":
     parser.add_argument("--lr_schedule_gamma", type=float, default=0.5)
     parser.add_argument("--gradient_clip_type", type=str, default="norm")
     parser.add_argument("--gradient_clip_value", type=float, default=1)
+    parser.add_argument("--single_world_state_input", type=lambda x: (
+        str(x).lower() == 'true'), default=False)
     parser.add_argument("--debug_render", type=lambda x: (
         str(x).lower() == 'true'), default=True)
     parser.add_argument("--save_interval", type=int, default=100)
+
     # POLICY MODEL PARAMETERS
     parser.add_argument("--input_ego_location", type=int, default=1)
     parser.add_argument("--input_ego_yaw", type=int, default=1)

@@ -10,6 +10,7 @@ from carla_env.modules.sensor import vehicle_sensor
 from carla_env.modules.sensor import rgb_sensor
 from carla_env.modules.sensor import semantic_sensor
 from carla_env.modules.sensor import collision_sensor
+from carla_env.modules.sensor import occupancy_sensor
 from carla_env.modules.route import route
 from carla_env.modules.module import Module
 from carla_env.bev import (
@@ -118,7 +119,7 @@ class CarlaEnvironment(Environment):
         end = start_end_spawn_point[1]
         self.route = route.RouteModule(config={"start": start,
                                                "end": end,
-                                               "sampling_resolution": 5,
+                                               "sampling_resolution": 1,
                                                "debug": True},
                                        client=self.client)
 
@@ -145,6 +146,8 @@ class CarlaEnvironment(Environment):
         self.collision_sensor = collision_sensor.CollisionSensorModule(
             config=None, client=self.client,
             actor=self.hero_actor_module, id="col")
+        self.occupancy_sensor = occupancy_sensor.OccupancySensorModule(
+            config=None, actor=self.hero_actor_module, client=self.client, id="occ")
         self.rgb_sensor = rgb_sensor.RGBSensorModule(
             config={"yaw": 0, "width": 900, "height": 256}, client=self.client,
             actor=self.hero_actor_module, id="rgb_front")
@@ -156,7 +159,7 @@ class CarlaEnvironment(Environment):
             render_lanes_on_junctions=False,
             pixels_per_meter=5,
             crop_type=BirdViewCropType.FRONT_AREA_ONLY)
-
+        
         time.sleep(1.0)
         logger.info("Everything is set!")
 

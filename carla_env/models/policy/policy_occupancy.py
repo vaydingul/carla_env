@@ -137,13 +137,11 @@ class Policy(nn.Module):
             input_ego_yaw=run.config["input_ego_yaw"],
             input_ego_speed=run.config["input_ego_speed"],
             action_size=run.config["action_size"],
-            command_size=run.config["command_size"],
-            target_location_size=run.config["target_location_size"],
             occupancy_size=run.config["occupancy_size"],
             hidden_size=run.config["hidden_size"],
-            layers=run.config["layers"],
+            layers=run.config["num_layer"],
             delta_target=run.config["delta_target"],
-            dropout=run.config["dropout"])
+            )
 
         model.load_state_dict(checkpoint["model_state_dict"])
 
