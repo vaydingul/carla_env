@@ -301,8 +301,8 @@ if __name__ == "__main__":
         str(x).lower() == 'true'), default=True)
     parser.add_argument("--occupancy_size", type=int, default=8)
     parser.add_argument("--action_size", type=int, default=2)
-    parser.add_argument("--hidden_size", type=int, default=256)
-    parser.add_argument("--num_layer", type=int, default=6)
+    parser.add_argument("--hidden_size", type=int, default=64)
+    parser.add_argument("--num_layer", type=int, default=2)
 
     # COST WEIGHTS
     parser.add_argument("--lane_cost_weight", type=float, default=0.0)
@@ -342,12 +342,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--world_forward_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/1gftiw9w")
+        default="vaydingul/mbl/r4la61x3")
 
     parser.add_argument(
         "--world_forward_model_checkpoint_number",
         type=int,
-        default=39)
+        default=49)
 
     config = parser.parse_args()
 

@@ -30,7 +30,7 @@ python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--occupancy_size=8 \
 	--action_size=2 \
 	--hidden_size=256 \
-	--num_layer=4 \
+	--num_layer=6 \
 	--lane_cost_weight=0.01 \
 	--vehicle_cost_weight=0.01 \
 	--green_light_cost_weight=0.000 \
