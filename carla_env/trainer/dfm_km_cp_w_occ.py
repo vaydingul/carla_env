@@ -133,7 +133,7 @@ class Trainer(object):
                 # Predict the future bev
                 output = self.model(
                     ego_state_previous,
-                    world_previous_bev if not self.single_world_state_input else world_previous_bev[:, -1],
+                    world_previous_bev if not self.single_world_state_input else world_previous_bev[:, -1:],
                     command,
                     target_location - ego_previous_location,
                     occupancy)
@@ -343,7 +343,7 @@ class Trainer(object):
                     # Predict the future bev
                     output = self.model(
                         ego_state_previous,
-                        world_previous_bev,
+                        world_previous_bev if not self.single_world_state_input else world_previous_bev[:, -1:],
                         command,
                         target_location,
                         occupancy)
