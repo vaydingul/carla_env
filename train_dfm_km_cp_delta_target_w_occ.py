@@ -288,7 +288,7 @@ if __name__ == "__main__":
     parser.add_argument("--gradient_clip_type", type=str, default="norm")
     parser.add_argument("--gradient_clip_value", type=float, default=1)
     parser.add_argument("--single_world_state_input", type=lambda x: (
-        str(x).lower() == 'true'), default=False)
+        str(x).lower() == 'true'), default=True)
     parser.add_argument("--debug_render", type=lambda x: (
         str(x).lower() == 'true'), default=True)
     parser.add_argument("--save_interval", type=int, default=100)

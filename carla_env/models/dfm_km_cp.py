@@ -20,14 +20,18 @@ class DecoupledForwardModelKinematicsCoupledPolicy(nn.Module):
             world_state: torch.tensor,
             command,
             target_location,
-            occupancy=None) -> torch.tensor:
+            occupancy=None,
+            single_world_state_input=False) -> torch.tensor:
+
+
+        world_state_policy = world_state if not single_world_state_input else world_state[:, -1]
 
         # Combine second and third dimension of world state
         if occupancy is not None:
 
             action = self.policy_model(
                 ego_state,
-                world_state,
+                world_state_policy,
                 command,
                 target_location,
                 occupancy)
@@ -35,7 +39,7 @@ class DecoupledForwardModelKinematicsCoupledPolicy(nn.Module):
         else:
 
             action = self.policy_model(
-                ego_state, world_state, command, target_location)
+                ego_state, world_state_policy, command, target_location)
 
         (world_future_bev_predicted) = self.world_model(
             world_previous_bev=world_state, sample_latent=True)
