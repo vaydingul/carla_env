@@ -44,7 +44,7 @@ python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--target_l1_weight=0.0 \
 	--wandb=true \
 	--wandb_project="mbl" \
-	--wandb_group="dfm-km-cp-normalized_cost" \
+	--wandb_group="dfm-km-cp-corrected_delta_target" \
 	--wandb_name="vanilla+bc+delta_target_w_occ" \
 	--ego_forward_model_path="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt" \
 	--world_forward_model_wandb_link="vaydingul/mbl/r4la61x3" \

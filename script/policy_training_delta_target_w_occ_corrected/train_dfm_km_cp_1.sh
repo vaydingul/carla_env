@@ -14,8 +14,8 @@ python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--num_epochs=50 \
 	--batch_size=80 \
 	--num_workers=4 \
-	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_2/" \
-	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_2/" \
+	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_3_town_02/" \
+	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_3_town_02/" \
 	--resume=false \
 	--lr_schedule=false \
 	--gradient_clip_type="norm" \
@@ -44,7 +44,7 @@ python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--target_l1_weight=0.0 \
 	--wandb=true \
 	--wandb_project="mbl" \
-	--wandb_group="dfm-km-cp-normalized_cost" \
+	--wandb_group="dfm-km-cp-corrected_delta_target" \
 	--wandb_name="vanilla+bc+delta_target" \
 	--ego_forward_model_path="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt" \
 	--world_forward_model_wandb_link="vaydingul/mbl/r4la61x3" \
