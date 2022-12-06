@@ -139,13 +139,14 @@ class Policy(nn.Module):
                  target_encoded,
                  occupancy_encoded),
                 dim=1)
+        else:
 
-        x = torch.cat(
-            (world_state_encoded,
-             ego_state_encoded,
-             command_encoded,
-             target_encoded),
-            dim=1)
+            x = torch.cat(
+                (world_state_encoded,
+                 ego_state_encoded,
+                 command_encoded,
+                 target_encoded),
+                dim=1)
 
         x_encoded = self.fc(x)
         acceleration = self.fc_acceleration(x_encoded)
