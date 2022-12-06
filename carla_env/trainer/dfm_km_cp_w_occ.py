@@ -662,12 +662,13 @@ class Trainer(object):
                 cv2.LINE_AA)
 
             # Save the canvas
+
             path_car = Path(
-                f"./figures/dfm_km_policy_training_debug/{'training' if self.model.training else 'validation'}/{self.epoch}")
+                f"./figures/dfm_km_policy_training_debug_w_occ/{'training' if self.model.training else 'validation'}/{self.epoch}")
             path_car.mkdir(parents=True, exist_ok=True)
 
             path_side = Path(
-                f"./figures/dfm_km_policy_training_debug/{'training' if self.model.training else 'validation'}/{self.epoch}")
+                f"./figures/dfm_km_policy_training_debug_w_occ/{'training' if self.model.training else 'validation'}/{self.epoch}")
             path_side.mkdir(parents=True, exist_ok=True)
 
             cv2.imwrite(str(path_car / f"{i}_car.png"), self.canvas_car)

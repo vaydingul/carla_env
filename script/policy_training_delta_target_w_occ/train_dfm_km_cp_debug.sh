@@ -11,8 +11,8 @@ echo "Conda environment is activated"
 # Run the world model
 python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--lr=1e-4 \
-	--num_epochs=50 \
-	--batch_size=80 \
+	--num_epochs=5 \
+	--batch_size=15 \
 	--num_workers=4 \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_3_town_02/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_3_town_02/" \
