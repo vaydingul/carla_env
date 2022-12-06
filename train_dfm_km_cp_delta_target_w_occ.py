@@ -2,10 +2,10 @@ import logging
 
 from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
 from carla_env.models.world.world import WorldBEVModel
-from carla_env.models.policy.policy_occupancy import Policy
+from carla_env.models.policy.policy import Policy
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
 from carla_env.cost.masked_cost_batched import Cost
-from carla_env.trainer.dfm_km_cp_w_occ import Trainer
+from carla_env.trainer.dfm_km_cp import Trainer
 from carla_env.dataset.instance import InstanceDataset
 import torch
 from torch.utils.data import DataLoader
@@ -140,8 +140,10 @@ def main(config):
             input_ego_speed=config.input_ego_speed,
             action_size=config.action_size,
             hidden_size=config.hidden_size,
+            occupancy_size=config.occupancy_size,
             layers=config.num_layer,
-            delta_target=config.delta_target)
+            delta_target=config.delta_target,
+            single_world_state_input=config.single_world_state_input)
     else:
 
         checkpoint = fetch_checkpoint_from_wandb_run(
@@ -231,7 +233,6 @@ def main(config):
         lr_scheduler=lr_scheduler if config.lr_schedule else None,
         gradient_clip_type=config.gradient_clip_type,
         gradient_clip_value=config.gradient_clip_value,
-        single_world_state_input=config.single_world_state_input,
         save_path=config.pretrained_model_path,
         train_step=checkpoint["train_step"] if config.resume else 0,
         val_step=checkpoint["val_step"] if config.resume else 0,
@@ -287,8 +288,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr_schedule_gamma", type=float, default=0.5)
     parser.add_argument("--gradient_clip_type", type=str, default="norm")
     parser.add_argument("--gradient_clip_value", type=float, default=1)
-    parser.add_argument("--single_world_state_input", type=lambda x: (
-        str(x).lower() == 'true'), default=True)
+
     parser.add_argument("--debug_render", type=lambda x: (
         str(x).lower() == 'true'), default=True)
     parser.add_argument("--save_interval", type=int, default=100)
@@ -298,6 +298,8 @@ if __name__ == "__main__":
     parser.add_argument("--input_ego_yaw", type=int, default=1)
     parser.add_argument("--input_ego_speed", type=int, default=1)
     parser.add_argument("--delta_target", type=lambda x: (
+        str(x).lower() == 'true'), default=True)
+    parser.add_argument("--single_world_state_input", type=lambda x: (
         str(x).lower() == 'true'), default=True)
     parser.add_argument("--occupancy_size", type=int, default=8)
     parser.add_argument("--action_size", type=int, default=2)

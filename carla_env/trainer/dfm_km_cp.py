@@ -79,10 +79,10 @@ class Trainer(object):
 
         for i, (data) in enumerate(self.dataloader_train):
 
-            world_previous_bev = data["bev"]["bev"][:,
-                                                    :self.num_time_step_previous].to(self.device)
-            world_future_bev = data["bev"]["bev"][:, self.num_time_step_previous:
-                                                  self.num_time_step_previous + self.num_time_step_future].to(self.device)
+            world_previous_bev = data["bev_world"]["bev"][:,
+                                                          :self.num_time_step_previous].to(self.device)
+            world_future_bev = data["bev_world"]["bev"][:, self.num_time_step_previous:
+                                                        self.num_time_step_previous + self.num_time_step_future].to(self.device)
 
             world_future_bev_predicted_list = []
 
@@ -113,10 +113,13 @@ class Trainer(object):
             ego_future_action_predicted_list = []
 
             command = data["navigation"]["command"][:,
-                                                    self.num_time_step_previous - 1].to(self.device)
+                                                    self.num_time_step_previous - 1].long().to(self.device)
             command = F.one_hot(command - 1, num_classes=6).float()
             target_location = data["navigation"]["waypoint"][:,
                                                              self.num_time_step_previous - 1, 0:2].to(self.device)
+
+            occupancy = data["occ"]["occupancy"][:,
+                                                 self.num_time_step_previous - 1].to(self.device)
 
             ego_state_previous = {
                 "location": ego_previous_location,
@@ -130,7 +133,8 @@ class Trainer(object):
                     ego_state_previous,
                     world_previous_bev,
                     command,
-                    target_location - ego_previous_location)
+                    target_location,
+                    occupancy)
 
                 ego_state_next = output["ego_state_next"]
                 world_state_next = output["world_state_next"]
@@ -287,10 +291,10 @@ class Trainer(object):
         with torch.no_grad():
             for i, (data) in enumerate(self.dataloader_val):
 
-                world_previous_bev = data["bev"]["bev"][:,
-                                                        :self.num_time_step_previous].to(self.device)
-                world_future_bev = data["bev"]["bev"][:, self.num_time_step_previous:
-                                                      self.num_time_step_previous + self.num_time_step_future].to(self.device)
+                world_previous_bev = data["bev_world"]["bev"][:,
+                                                              :self.num_time_step_previous].to(self.device)
+                world_future_bev = data["bev_world"]["bev"][:, self.num_time_step_previous:
+                                                            self.num_time_step_previous + self.num_time_step_future].to(self.device)
 
                 world_future_bev_predicted_list = []
 
@@ -319,10 +323,13 @@ class Trainer(object):
                 ego_future_action_predicted_list = []
 
                 command = data["navigation"]["command"][:,
-                                                        self.num_time_step_previous - 1].to(self.device)
+                                                        self.num_time_step_previous - 1].long().to(self.device)
                 command = F.one_hot(command - 1, num_classes=6).float()
                 target_location = data["navigation"]["waypoint"][:,
                                                                  self.num_time_step_previous - 1, 0:2].to(self.device)
+
+                occupancy = data["occ"]["occupancy"][:,
+                                                     self.num_time_step_previous - 1].to(self.device)
 
                 ego_state_previous = {
                     "location": ego_previous_location,
@@ -336,7 +343,8 @@ class Trainer(object):
                         ego_state_previous,
                         world_previous_bev,
                         command,
-                        target_location)
+                        target_location,
+                        occupancy)
 
                     ego_state_next = output["ego_state_next"]
                     world_state_next = output["world_state_next"]
@@ -650,12 +658,13 @@ class Trainer(object):
                 cv2.LINE_AA)
 
             # Save the canvas
+
             path_car = Path(
-                f"./figures/dfm_km_policy_training_debug/{'training' if self.model.training else 'validation'}/{self.epoch}")
+                f"./figures/dfm_km_policy_training_debug_w_occ/{'training' if self.model.training else 'validation'}/{self.epoch}")
             path_car.mkdir(parents=True, exist_ok=True)
 
             path_side = Path(
-                f"./figures/dfm_km_policy_training_debug/{'training' if self.model.training else 'validation'}/{self.epoch}")
+                f"./figures/dfm_km_policy_training_debug_w_occ/{'training' if self.model.training else 'validation'}/{self.epoch}")
             path_side.mkdir(parents=True, exist_ok=True)
 
             cv2.imwrite(str(path_car / f"{i}_car.png"), self.canvas_car)

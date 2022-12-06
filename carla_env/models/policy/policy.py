@@ -18,6 +18,7 @@ class Policy(nn.Module):
             hidden_size=256,
             layers=4,
             delta_target=True,
+            single_world_state_input=False,
             dropout=0.1):
         super(Policy, self).__init__()
 
@@ -40,6 +41,7 @@ class Policy(nn.Module):
         self.hidden_size = hidden_size
         self.layers = layers
         self.delta_target = delta_target
+        self.single_world_state_input = single_world_state_input
         self.dropout = dropout
 
         self.world_state_encoder = Encoder2D(
@@ -106,6 +108,9 @@ class Policy(nn.Module):
             command,
             target_location,
             occupancy=None):
+
+        if self.single_world_state_input:
+            world_state = world_state[:, -1:]
         world_state = world_state.view(
             world_state.shape[0], -1, world_state.shape[-2], world_state.shape[-1])
         world_state_encoded = self.world_state_encoder(world_state)
@@ -162,8 +167,10 @@ class Policy(nn.Module):
             input_ego_speed=run.config["input_ego_speed"],
             action_size=run.config["action_size"],
             hidden_size=run.config["hidden_size"],
+            occupancy_size=run.config["occupancy_size"],
             layers=run.config["num_layer"],
             delta_target=run.config["delta_target"],
+            single_world_state_input=run.config["single_world_state_input"],
         )
         model.load_state_dict(checkpoint["model_state_dict"])
 
