@@ -135,7 +135,7 @@ class Trainer(object):
                     ego_state_previous,
                     world_previous_bev,
                     command,
-                    target_location - ego_previous_location,
+                    target_location,
                     occupancy,
                     self.single_world_state_input)
 

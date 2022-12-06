@@ -14,6 +14,7 @@ class Policy(nn.Module):
             action_size,
             command_size=6,
             target_location_size=2,
+            occupancy_size=None,
             hidden_size=256,
             layers=4,
             delta_target=True,
@@ -35,6 +36,7 @@ class Policy(nn.Module):
         self.action_size = action_size
         self.command_size = command_size
         self.target_location_size = target_location_size
+        self.occupancy_size = occupancy_size
         self.hidden_size = hidden_size
         self.layers = layers
         self.delta_target = delta_target
@@ -68,18 +70,42 @@ class Policy(nn.Module):
             layers=self.layers,
             dropout=self.dropout)
 
-        self.fc = nn.Sequential(
-            nn.Linear(self.hidden_size * 4, self.hidden_size * 2),
-            nn.ReLU(),
-            nn.Linear(self.hidden_size * 2, self.hidden_size),
-            nn.ReLU(),
-        )
+        if self.occupancy_size is not None and self.occupancy_size > 0:
+
+            self.occupancy_encoder = Encoder(
+                input_size=self.occupancy_size,
+                output_size=self.hidden_size,
+                layers=self.layers,
+                dropout=self.dropout)
+
+            self.fc = nn.Sequential(
+                nn.Linear(self.hidden_size * 5, self.hidden_size * 3),
+                nn.ReLU(),
+                nn.Linear(self.hidden_size * 3, self.hidden_size),
+                nn.ReLU(),
+            )
+
+        else:
+
+            self.fc = nn.Sequential(
+                nn.Linear(self.hidden_size * 4, self.hidden_size * 2),
+                nn.ReLU(),
+                nn.Linear(self.hidden_size * 2, self.hidden_size),
+                nn.ReLU(),
+            )
+
         self.fc_acceleration = nn.Sequential(nn.Linear(self.hidden_size, 1),
                                              nn.Tanh())
         self.fc_steer = nn.Sequential(nn.Linear(self.hidden_size, 1),
                                       nn.Tanh())
 
-    def forward(self, ego_state, world_state, command, target_location):
+    def forward(
+            self,
+            ego_state,
+            world_state,
+            command,
+            target_location,
+            occupancy=None):
         world_state = world_state.view(
             world_state.shape[0], -1, world_state.shape[-2], world_state.shape[-1])
         world_state_encoded = self.world_state_encoder(world_state)
@@ -92,9 +118,22 @@ class Policy(nn.Module):
             [ego_state[k] for k in self.keys], dim=1))
 
         command_encoded = self.command_encoder(command)
+
         target_encoded = self.target_encoder(
             target_location -
             ego_state["location"] if self.delta_target else target_location)
+
+        if self.occupancy_size is not None and self.occupancy_size > 0 and occupancy is not None:
+
+            occupancy_encoded = self.occupancy_encoder(occupancy)
+
+            x = torch.cat(
+                (world_state_encoded,
+                 ego_state_encoded,
+                 command_encoded,
+                 target_encoded,
+                 occupancy_encoded),
+                dim=1)
 
         x = torch.cat(
             (world_state_encoded,
@@ -102,6 +141,7 @@ class Policy(nn.Module):
              command_encoded,
              target_encoded),
             dim=1)
+
         x_encoded = self.fc(x)
         acceleration = self.fc_acceleration(x_encoded)
         steer = self.fc_steer(x_encoded)

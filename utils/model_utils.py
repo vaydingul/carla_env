@@ -80,6 +80,8 @@ def load_ego_model_from_checkpoint(checkpoint, cls, dt):
 def convert_standard_bev_to_model_bev(bev, device="cpu"):
     bev = torch.from_numpy(bev).float().to(device)
     # Permute the dimensions such that the channel dim is the first one
+    agent_mask = bev[..., 3]
+    bev[..., 2] -= agent_mask
     bev = bev[..., [k for k in range(bev.shape[-1]) if k != 3]]
     bev = bev.permute(2, 0, 1)
     # Add offroad mask to BEV representation
