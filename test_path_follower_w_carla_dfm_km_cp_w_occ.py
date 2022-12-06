@@ -130,7 +130,10 @@ def main(config):
         target_location[..., 1] = target_waypoint.transform.location.y
         target_location = target_location.to(device=device)
 
-        occupancy = torch.tensor(occupancy, dtype=torch.float32).unsqueeze(0).to(device=device)
+        occupancy = torch.tensor(
+            occupancy,
+            dtype=torch.float32).unsqueeze(0).to(
+            device=device)
 
         logging.debug(f"Ego State: {ego_state}")
         logging.debug(f"Target Location: {target_location}")
@@ -150,7 +153,8 @@ def main(config):
             world_state=bev_tensor,
             command=navigational_command,
             target_location=target_location,
-            occupancy=occupancy)
+            occupancy=occupancy,
+            single_world_state_input=policy_model_run.config["single_world_state_input"] if "single_world_state_input" in policy_model_run.config else False)
 
         control = output["action"][0]
         throttle, brake = acceleration_to_throttle_brake(
@@ -217,12 +221,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/2tb1fsbt")
+        default="vaydingul/mbl/1wzlbho4")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=9)
+        default=19)
 
     config = parser.parse_args()
 

@@ -119,7 +119,7 @@ class CarlaEnvironment(Environment):
         end = start_end_spawn_point[1]
         self.route = route.RouteModule(config={"start": start,
                                                "end": end,
-                                               "sampling_resolution": 1,
+                                               "sampling_resolution": 30,
                                                "debug": True},
                                        client=self.client)
 

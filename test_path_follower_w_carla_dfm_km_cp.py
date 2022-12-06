@@ -218,7 +218,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=9)
+        default=29)
 
     config = parser.parse_args()
 
