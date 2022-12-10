@@ -2,6 +2,9 @@
 
 echo "DFM with KM CP Training!"
 
+# Conda activation
+module load anaconda/2022.05
+source activate carla
 
 echo "Conda environment is activated"
 
@@ -9,16 +12,16 @@ echo "Conda environment is activated"
 python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--lr=1e-4 \
 	--num_epochs=50 \
-	--batch_size=5 \
+	--batch_size=80 \
 	--num_workers=4 \
-	--data_path_train="./data/ground_truth_bev_model_dummy_data/" \
-	--data_path_val="./data/ground_truth_bev_model_dummy_data/" \
+	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_4_town_02/" \
+	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_4_town_02/" \
 	--resume=false \
 	--lr_schedule=false \
 	--gradient_clip_type="norm" \
 	--gradient_clip_value=1.0 \
-	--debug_render=true \
-	--save_interval=100 \
+	--debug_render=false \
+	--save_interval=5 \
 	--input_ego_location=0 \
 	--input_ego_yaw=0 \
 	--input_ego_speed=1 \
@@ -42,7 +45,7 @@ python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="dfm-km-cp" \
-	--wandb_name="overfit" \
+	--wandb_name="vanilla" \
 	--ego_forward_model_path="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt" \
 	--world_forward_model_wandb_link="vaydingul/mbl/r4la61x3" \
 	--world_forward_model_checkpoint_number=49

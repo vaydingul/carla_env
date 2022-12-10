@@ -291,7 +291,7 @@ class Trainer(object):
                          "train/target_l1": target_l1,
                          "train/loss": loss})
 
-            self.render(i, world_future_bev_predicted, cost)
+            self.render(i, world_future_bev_predicted, cost, ego_future_action_predicted, ego_future_action[..., :2])
             # self.render(i, world_future_bev.detach(), cost)
 
     def validate(self, run=None):
@@ -505,7 +505,7 @@ class Trainer(object):
 
                 self.val_step += world_previous_bev.shape[0]
 
-                self.render(i, world_future_bev_predicted, cost)
+                self.render(i, world_future_bev_predicted, cost, ego_future_action_predicted, ego_future_action[..., :2])
                 # self.render(i, world_future_bev.detach(), cost)
 
             lane_cost_mean = np.mean(lane_cost_list)
@@ -574,7 +574,13 @@ class Trainer(object):
                     run.save(str(self.save_path /
                                  Path(f"checkpoint_{epoch}.pt")))
 
-    def render(self, i, world_future_bev_predicted, cost):
+    def render(
+            self,
+            i,
+            world_future_bev_predicted,
+            cost,
+            action_pred,
+            action_gt):
 
         if self.debug_render:
             self._init_canvas()
@@ -629,6 +635,45 @@ class Trainer(object):
                         bev, 0.5, mask_side, 0.5, 0)
                     self.canvas_light[y1:y2, x1:x2] = cv2.addWeighted(
                         bev, 0.5, mask_light, 0.5, 0)
+
+                    # Draw ground truth action to the left corner of each bev
+                    # as vector
+                    action = action_gt[k, m]
+                    action = action.detach().cpu().numpy()
+                    action = action * 50
+                    action = action.astype(np.int32)
+                    cv2.arrowedLine(
+                        self.canvas_car,
+                        (x1+ 50,
+                        y1+ 50),
+                        (x1 + 50 +
+                        action[1],
+                        y1 + 50 + action[0]),
+                        (255,
+                        255,
+                        255),
+                        1,
+                        tipLength=0.5)
+                    
+                    # Draw predicted action to the left corner of each bev
+                    # as vector
+                    action = action_pred[k, m]
+                    action = action.detach().cpu().numpy()
+                    action = action * 50
+                    action = action.astype(np.int32)
+                    cv2.arrowedLine(
+                        self.canvas_car,
+                        (x1+ 50,
+                        y1+ 50),
+                        (x1 + 50 +
+                        action[1],
+                        y1 + 50 + action[0]),
+                        (0,
+                        255,
+                        255),
+                        1,
+                        tipLength=0.5)
+
                     x1 = x2 + 20
 
                 x1 = 0
