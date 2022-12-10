@@ -46,21 +46,24 @@ class OccupancySensorModule(sensor.SensorModule):
 
         bound_x = 0.5 + self.actor.get_actor().bounding_box.extent.x
         bound_y = 0.5 + self.actor.get_actor().bounding_box.extent.y
-        bound_z = 0.5 + self.actor.get_actor().bounding_box.extent.z
 
         # TODO: Modify the threshold such that it is a function of the bounding box of the actor
         #! and the given threshold
-
-
 
         self.radar_sensor_list = []
         for (i, angle) in enumerate(self.angle_list):
 
             radar_bp = self.world.get_blueprint_library().find('sensor.other.radar')
-            radar_bp.set_attribute('horizontal_fov', str(5))
-            radar_bp.set_attribute('vertical_fov', str(5))
-            radar_bp.set_attribute('range', str(10))
-            radar_bp.set_attribute('points_per_second', str(100))
+            radar_bp.set_attribute(
+                'horizontal_fov', str(
+                    self.config["horizontal_fov"]))
+            radar_bp.set_attribute(
+                'vertical_fov', str(
+                    self.config["vertical_fov"]))
+            radar_bp.set_attribute('range', str(self.config["range"]))
+            radar_bp.set_attribute(
+                'points_per_second', str(
+                    self.config["points_per_second"]))
 
             x, y = rotate_z(math.sqrt(math.pow(bound_x, 2) +
                             math.pow(bound_y, 2)), 0, angle)
@@ -103,12 +106,16 @@ class OccupancySensorModule(sensor.SensorModule):
         points = np.frombuffer(radar_data.raw_data, dtype=np.dtype('f4'))
         points = np.reshape(points, (len(radar_data), 4))
         depth = points[:, -1]
-        # TODO: First, check whether it is empty or not
-        self.occupancy[i] = np.nanmean(depth)
-        if np.any(depth < self.config["threshold"]):
-            self.occupancy[i] = 1
-        else:
-            self.occupancy[i] = 0
+        # Take the minimum of depth and check whether it is NaN or not and then
+        # if it is NaN, assign the radar range, else assign the minimum of
+        # depth
+        self.occupancy[i] = float(
+            np.nanmin(depth) if depth.shape[0] > 0 else self.config["range"])
+
+        # if np.any(depth < self.config["threshold"]):
+        #     self.occupancy[i] = 1
+        # else:
+        #     self.occupancy[i] = 0
 
         data = {'frame': radar_data.frame,
                 'occupancy': self.occupancy
@@ -148,7 +155,11 @@ class OccupancySensorModule(sensor.SensorModule):
     def _set_default_config(self):
         """Set the default config of the sensor"""
         self.config = {"threshold": 3.0,
-                       "number_of_radars": 8}
+                       "number_of_radars": 8,
+                       "horizontal_fov": 5,
+                       "vertical_fov": 5,
+                       "range": 10,
+                       "points_per_second": 100}
 
     def _queue_operation(self, data):
         """Queue the sensor data and additional stuff"""

@@ -1,32 +1,25 @@
 #!/usr/bin/env bash
 
-echo "DFM with KM CP Training!"
-
-# Conda activation
-module load anaconda/2022.05
-source activate carla
-
-echo "Conda environment is activated"
 
 # Run the world model
 python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--lr=1e-4 \
-	--num_epochs=5 \
-	--batch_size=15 \
+	--num_epochs=20 \
+	--batch_size=1 \
 	--num_workers=4 \
-	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_3_town_02/" \
-	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_3_town_02/" \
+	--data_path_train="/home/vaydingul/Documents/Codes/carla_env/data/ground_truth_bev_model_dummy_data/" \
+	--data_path_val="/home/vaydingul/Documents/Codes/carla_env/data/ground_truth_bev_model_dummy_data/" \
 	--resume=false \
 	--lr_schedule=false \
 	--gradient_clip_type="norm" \
 	--gradient_clip_value=1.0 \
-	--single_world_state_input=true \
 	--debug_render=true \
 	--save_interval=5 \
 	--input_ego_location=1 \
 	--input_ego_yaw=1 \
 	--input_ego_speed=1 \
 	--delta_target=true \
+	--single_world_state_input=true \
 	--occupancy_size=8 \
 	--action_size=2 \
 	--hidden_size=256 \
@@ -44,8 +37,8 @@ python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--target_l1_weight=0.0 \
 	--wandb=false \
 	--wandb_project="mbl" \
-	--wandb_group="dfm-km-cp-normalized_cost" \
-	--wandb_name="vanilla+bc+delta_target_w_occ+single_world_state_input" \
+	--wandb_group="dfm-km-cp-corrected_delta_target" \
+	--wandb_name="UPPER_BOUND" \
 	--ego_forward_model_path="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt" \
 	--world_forward_model_wandb_link="vaydingul/mbl/r4la61x3" \
 	--world_forward_model_checkpoint_number=49

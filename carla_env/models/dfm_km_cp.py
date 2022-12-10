@@ -20,7 +20,8 @@ class DecoupledForwardModelKinematicsCoupledPolicy(nn.Module):
             world_state: torch.tensor,
             command,
             target_location,
-            occupancy) -> torch.tensor:
+            occupancy,
+            benchmark=False) -> torch.tensor:
 
         action = self.policy_model(
             ego_state,
@@ -29,15 +30,20 @@ class DecoupledForwardModelKinematicsCoupledPolicy(nn.Module):
             target_location,
             occupancy)
 
-        (world_future_bev_predicted) = self.world_model(
-            world_previous_bev=world_state, sample_latent=True)
+        if benchmark:
 
-        ego_state_next = self.ego_model(ego_state, action)
+            return {"action": action}
 
-        return {
-            "ego_state_next": ego_state_next,
-            "world_state_next": world_future_bev_predicted,
-            "action": action}
+        else:
+            (world_future_bev_predicted) = self.world_model(
+                world_previous_bev=world_state, sample_latent=True)
+
+            ego_state_next = self.ego_model(ego_state, action)
+
+            return {
+                "ego_state_next": ego_state_next,
+                "world_state_next": world_future_bev_predicted,
+                "action": action}
 
     def get_policy_model(self):
         return self.policy_model

@@ -4,7 +4,7 @@ import os
 import sys
 import time
 from pathlib import Path
-
+import tqdm
 import cv2
 import numpy as np
 
@@ -22,11 +22,12 @@ def main(config):
             "render": False, "save": False, "save_video": False,
             "tasks": [
                 {
-                    "world": "Town02", "num_vehicles": 100},
+                    "world": "Town02", "num_vehicles": [60, 100]},
             ],
             "max_steps": 1000})
 
-    for k in range(config.num_episodes):
+
+    for k in [4, 5, 6]:#tqdm.tqdm(range(config.num_episodes)):
 
         # Create the data writer
         data_save_path_ = Path(config.data_save_path) / f"episode_{k}"
@@ -84,12 +85,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_save_path",
         type=str,
-        default="./data/ground_truth_bev_model_train_data_3_town_02",
+        default="./data/ground_truth_bev_model_val_data_4_town_02",
         help="Path to save the data")
     parser.add_argument(
         "--num_episodes",
         type=int,
-        default=7,
+        default=18,
         help="Number of episodes to collect data from")
     config = parser.parse_args()
 

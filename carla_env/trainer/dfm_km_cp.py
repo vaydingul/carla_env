@@ -217,7 +217,8 @@ class Trainer(object):
                     1,
                     self.num_time_step_future,
                     1),
-                reduction="sum") / (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+                reduction="sum") / (world_previous_bev.shape[0] *
+                                    world_previous_bev.shape[1])
 
             target_l1 = F.l1_loss(
                 ego_future_location_predicted,
@@ -225,7 +226,28 @@ class Trainer(object):
                     1,
                     self.num_time_step_future,
                     1),
-                reduction="sum") / (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+                reduction="sum") / (world_previous_bev.shape[0] *
+                                    world_previous_bev.shape[1])
+
+            # action_mse = F.mse_loss(ego_future_action[..., :2], ego_future_action[..., :2], reduction="sum") / (
+            #     world_previous_bev.shape[0] * world_previous_bev.shape[1])
+
+            # action_jerk = torch.diff(ego_future_action[..., :2], dim=1).square(
+            # ).sum() / (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+
+            # target_mse = F.mse_loss(
+            #     ego_future_location, target_location.unsqueeze(1).repeat(
+            #         1, self.num_time_step_future, 1), reduction="sum") / (
+            #     world_previous_bev.shape[0] * world_previous_bev.shape[1])
+
+            # target_l1 = F.l1_loss(
+            #     ego_future_location,
+            #     target_location.unsqueeze(1).repeat(
+            #         1,
+            #         self.num_time_step_future,
+            #         1),
+            # reduction="sum") / (world_previous_bev.shape[0] *
+            # world_previous_bev.shape[1])
 
             loss = lane_cost * self.cost_weight["lane_cost_weight"] + \
                 vehicle_cost * self.cost_weight["vehicle_cost_weight"] + \
@@ -270,6 +292,7 @@ class Trainer(object):
                          "train/loss": loss})
 
             self.render(i, world_future_bev_predicted, cost)
+            # self.render(i, world_future_bev.detach(), cost)
 
     def validate(self, run=None):
 
@@ -432,7 +455,28 @@ class Trainer(object):
                         1,
                         self.num_time_step_future,
                         1),
-                    reduction="sum") / (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+                    reduction="sum") / (world_previous_bev.shape[0] *
+                                        world_previous_bev.shape[1])
+
+                # action_mse = F.mse_loss(ego_future_action[..., :2], ego_future_action[..., :2], reduction="sum") / (
+                # world_previous_bev.shape[0] * world_previous_bev.shape[1])
+
+                # action_jerk = torch.diff(ego_future_action[..., :2], dim=1).square(
+                # ).sum() / (world_previous_bev.shape[0] * world_previous_bev.shape[1])
+
+                # target_mse = F.mse_loss(
+                #     ego_future_location, target_location.unsqueeze(1).repeat(
+                #         1, self.num_time_step_future, 1), reduction="sum") / (
+                # world_previous_bev.shape[0] * world_previous_bev.shape[1])
+
+                # target_l1 = F.l1_loss(
+                #     ego_future_location,
+                #     target_location.unsqueeze(1).repeat(
+                #         1,
+                #         self.num_time_step_future,
+                #         1),
+                # reduction="sum") / (world_previous_bev.shape[0] *
+                # world_previous_bev.shape[1])
 
                 loss = lane_cost * self.cost_weight["lane_cost_weight"] + \
                     vehicle_cost * self.cost_weight["vehicle_cost_weight"] + \
@@ -462,6 +506,7 @@ class Trainer(object):
                 self.val_step += world_previous_bev.shape[0]
 
                 self.render(i, world_future_bev_predicted, cost)
+                # self.render(i, world_future_bev.detach(), cost)
 
             lane_cost_mean = np.mean(lane_cost_list)
             vehicle_cost_mean = np.mean(vehicle_cost_list)
@@ -558,8 +603,18 @@ class Trainer(object):
                                  mask_side.min())) *
                                  255).astype(np.uint8)
 
+                    mask_light = cost["mask_light"][k, m]
+                    mask_light = mask_light.detach().cpu().numpy()
+                    mask_light = (((mask_light -
+                                    mask_light.min()) /
+                                   (mask_light.max() -
+                                       mask_light.min())) *
+                                  255).astype(np.uint8)
+
                     mask_car = cv2.applyColorMap(mask_car, cv2.COLORMAP_JET)
                     mask_side = cv2.applyColorMap(mask_side, cv2.COLORMAP_JET)
+                    mask_light = cv2.applyColorMap(
+                        mask_light, cv2.COLORMAP_JET)
 
                     bev = cv2.cvtColor(
                         BirdViewProducer.as_rgb_model(
@@ -572,18 +627,22 @@ class Trainer(object):
                         bev, 0.5, mask_car, 0.5, 0)
                     self.canvas_side[y1:y2, x1:x2] = cv2.addWeighted(
                         bev, 0.5, mask_side, 0.5, 0)
+                    self.canvas_light[y1:y2, x1:x2] = cv2.addWeighted(
+                        bev, 0.5, mask_light, 0.5, 0)
                     x1 = x2 + 20
 
                 x1 = 0
                 y1 = y2 + 20
 
-            y1 += 15
+            x1 = 10
+            yy = y1
+            yy += 15
 
             cv2.putText(
                 self.canvas_car,
                 f"lane_cost: {cost['lane_cost']}",
                 (x1,
-                 y1),
+                 yy),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.5,
                 (255,
@@ -591,12 +650,12 @@ class Trainer(object):
                  255),
                 1,
                 cv2.LINE_AA)
-            y1 += 15
+            yy += 15
             cv2.putText(
                 self.canvas_car,
                 f"vehicle_cost: {cost['vehicle_cost']}",
                 (x1,
-                 y1),
+                 yy),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.5,
                 (255,
@@ -604,12 +663,12 @@ class Trainer(object):
                  255),
                 1,
                 cv2.LINE_AA)
-            y1 += 15
+            yy += 15
             cv2.putText(
                 self.canvas_car,
                 f"offroad_cost: {cost['offroad_cost']}",
                 (x1,
-                 y1),
+                 yy),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.5,
                 (255,
@@ -618,11 +677,13 @@ class Trainer(object):
                 1,
                 cv2.LINE_AA)
 
+            yy = y1
+            yy += 15
             cv2.putText(
                 self.canvas_side,
                 f"lane_cost: {cost['lane_cost']}",
                 (x1,
-                 y1),
+                 yy),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.5,
                 (255,
@@ -630,12 +691,12 @@ class Trainer(object):
                  255),
                 1,
                 cv2.LINE_AA)
-            y1 += 15
+            yy += 15
             cv2.putText(
                 self.canvas_side,
                 f"vehicle_cost: {cost['vehicle_cost']}",
                 (x1,
-                 y1),
+                 yy),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.5,
                 (255,
@@ -643,14 +704,81 @@ class Trainer(object):
                  255),
                 1,
                 cv2.LINE_AA)
-            y1 += 15
+            yy += 15
             cv2.putText(
                 self.canvas_side,
                 f"offroad_cost: {cost['offroad_cost']}",
                 (x1,
-                 y1),
+                 yy),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.5,
+                (255,
+                 255,
+                 255),
+                1,
+                cv2.LINE_AA)
+
+            yy = y1
+            yy += 15
+            cv2.putText(
+                self.canvas_light,
+                f"lane_cost: {cost['lane_cost']}",
+                (x1,
+                 yy),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.3,
+                (255,
+                 255,
+                 255),
+                1,
+                cv2.LINE_AA)
+            yy += 15
+            cv2.putText(
+                self.canvas_light,
+                f"vehicle_cost: {cost['vehicle_cost']}",
+                (x1,
+                 yy),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.3,
+                (255,
+                 255,
+                 255),
+                1,
+                cv2.LINE_AA)
+            yy += 15
+            cv2.putText(
+                self.canvas_light,
+                f"offroad_cost: {cost['offroad_cost']}",
+                (x1,
+                 yy),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.3,
+                (255,
+                 255,
+                 255),
+                1,
+                cv2.LINE_AA)
+            yy += 15
+            cv2.putText(
+                self.canvas_light,
+                f"red_light_cost: {cost['red_light_cost']}",
+                (x1,
+                 yy),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.3,
+                (255,
+                 255,
+                 255),
+                1,
+                cv2.LINE_AA)
+            yy += 15
+            cv2.putText(
+                self.canvas_light,
+                f"green_light_cost: {cost['green_light_cost']}",
+                (x1,
+                 yy),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.3,
                 (255,
                  255,
                  255),
@@ -667,8 +795,13 @@ class Trainer(object):
                 f"./figures/dfm_km_policy_training_debug_w_occ/{'training' if self.model.training else 'validation'}/{self.epoch}")
             path_side.mkdir(parents=True, exist_ok=True)
 
+            path_light = Path(
+                f"./figures/dfm_km_policy_training_debug_w_occ/{'training' if self.model.training else 'validation'}/{self.epoch}")
+            path_light.mkdir(parents=True, exist_ok=True)
+
             cv2.imwrite(str(path_car / f"{i}_car.png"), self.canvas_car)
             cv2.imwrite(str(path_side / f"{i}_side.png"), self.canvas_side)
+            cv2.imwrite(str(path_light / f"{i}_light.png"), self.canvas_light)
 
     def _init_canvas(self):
 
@@ -677,3 +810,4 @@ class Trainer(object):
             (self.bev_height + 20) + 100
         self.canvas_car = np.zeros((height, width, 3), dtype=np.uint8)
         self.canvas_side = np.zeros((height, width, 3), dtype=np.uint8)
+        self.canvas_light = np.zeros((height, width, 3), dtype=np.uint8)

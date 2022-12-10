@@ -153,11 +153,11 @@ if __name__ == "__main__":
     dy = (vehicle_width / 2) + 3
 
     # Visualization for testing purposes
-    coordinate_mask, X, Y = create_coordinate_mask(500, 500, 5, 'cpu')
+    coordinate_mask, X, Y = create_coordinate_mask(500, 500, 10, 'cpu')
     coordinate_mask_ = coordinate_mask.repeat(1,1,1,1,1)
-    x = torch.tensor([20.0]).repeat(1,1,1)
+    x = torch.tensor([-10.0]).repeat(1,1,1)
     y = torch.tensor([10.0]).repeat(1,1,1)
-    yaw = torch.deg2rad(torch.tensor([30.0]).repeat(1,1,1))
+    yaw = torch.deg2rad(torch.tensor([-30.0]).repeat(1,1,1))
     aligned_coordinate_mask = align_coordinate_mask_with_ego_vehicle(
         x, y, yaw, coordinate_mask_)
 

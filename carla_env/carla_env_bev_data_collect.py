@@ -104,8 +104,15 @@ class CarlaEnvironment(Environment):
         self.spectator = self.world.get_spectator()
 
         # Make this vehicle actor
+        number_of_actors = np.random.randint(
+            *
+            selected_task["num_vehicles"]) if isinstance(
+            selected_task["num_vehicles"],
+            list) else selected_task["num_vehicles"]
+        logger.info(f"Number of actors: {number_of_actors}")
         actor_list = create_multiple_actors_for_traffic_manager(
-            self.client, selected_task["num_vehicles"])
+            self.client,
+            n=number_of_actors)
         self.hero_actor_module = actor_list[0]
 
         self.traffic_manager_module = traffic_manager.TrafficManagerModule(
@@ -217,6 +224,8 @@ class CarlaEnvironment(Environment):
         data_dict["bev_world"] = bev_world
         data_dict["bev_ego"] = bev_ego
 
+        self._next_agent_command = RoadOption.VOID.value
+        self._next_agent_waypoint = [-1, -1, -1]
         try:
             _next_agent_navigational_action = self.traffic_manager_module.get_next_action(
                 self.hero_actor_module.get_actor())
@@ -263,7 +272,8 @@ class CarlaEnvironment(Environment):
         rgb_image_2 = self.render_dict["rgb_sensor_2"]["image_data"]
         rgb_image_2 = cv2.cvtColor(rgb_image_2, cv2.COLOR_BGR2RGB)
         # Put image into canvas
-        self.canvas[:rgb_image_2.shape[0], rgb_image_1.shape[1]                    :rgb_image_1.shape[1] + rgb_image_2.shape[1]] = rgb_image_2
+        self.canvas[:rgb_image_2.shape[0], rgb_image_1.shape[1]
+            :rgb_image_1.shape[1] + rgb_image_2.shape[1]] = rgb_image_2
 
         rgb_image_3 = self.render_dict["rgb_sensor_3"]["image_data"]
         rgb_image_3 = cv2.cvtColor(rgb_image_3, cv2.COLOR_BGR2RGB)

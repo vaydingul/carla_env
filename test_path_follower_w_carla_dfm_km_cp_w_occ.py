@@ -2,7 +2,7 @@ from carla_env import carla_env_mpc_path_follower_bev_traffic
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
 from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
 from carla_env.models.world.world import WorldBEVModel
-from carla_env.models.policy.policy_occupancy import Policy
+from carla_env.models.policy.policy import Policy
 from carla_env.cost.masked_cost_batched import Cost
 import torch
 import time
@@ -154,8 +154,8 @@ def main(config):
             command=navigational_command,
             target_location=target_location,
             occupancy=occupancy,
-            single_world_state_input=policy_model_run.config["single_world_state_input"] if "single_world_state_input" in policy_model_run.config else False)
-
+            benchmark=True
+        )
         control = output["action"][0]
         throttle, brake = acceleration_to_throttle_brake(
             acceleration=control[0])
@@ -175,7 +175,7 @@ def main(config):
         t1 = time.time()
 
         c.render(
-            predicted_location=output["ego_state_next"]["location"].detach().cpu().numpy(),
+            predicted_location=ego_state["location"].detach().cpu().numpy(),
             bev=bev,
             control=output["action"][0],
             current_state=ego_state["location"],
@@ -198,7 +198,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Collect data from the CARLA simulator")
 
-    parser.add_argument("--seed", type=int, default=555)
+    parser.add_argument("--seed", type=int, default=333)
 
     parser.add_argument(
         "--ego_forward_model_path",
@@ -221,7 +221,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/1wzlbho4")
+        default="vaydingul/mbl/10pbeb47")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
