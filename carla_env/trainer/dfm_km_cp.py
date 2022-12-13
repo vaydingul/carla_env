@@ -205,7 +205,8 @@ class Trainer(object):
                     (world_previous_bev.shape[0] * self.num_time_step_future)
 
             else:
-
+                
+                cost = {}
                 lane_cost = torch.zeros(1).to(self.device)
                 vehicle_cost = torch.zeros(1).to(self.device)
                 green_light_cost = torch.zeros(1).to(self.device)
@@ -452,7 +453,8 @@ class Trainer(object):
                         (world_previous_bev.shape[0] * self.num_time_step_future)
 
                 else:
-
+                    
+                    cost = {}
                     lane_cost = torch.zeros(1).to(self.device)
                     vehicle_cost = torch.zeros(1).to(self.device)
                     green_light_cost = torch.zeros(1).to(self.device)
