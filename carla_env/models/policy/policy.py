@@ -1,7 +1,7 @@
 from torch import nn
 import torch
 from carla_env.models.layers.encoder import Encoder, Encoder2D
-
+from utils.cost_utils import create_2x2_rotation_tensor_from_angle_tensor
 
 class Policy(nn.Module):
 
@@ -124,9 +124,13 @@ class Policy(nn.Module):
 
         command_encoded = self.command_encoder(command)
 
-        target_encoded = self.target_encoder(
-            target_location -
-            ego_state["location"] if self.delta_target else target_location)
+        if self.delta_target:
+            target_location = target_location - ego_state["location"]
+            rot = create_2x2_rotation_tensor_from_angle_tensor(-ego_state["yaw"])
+            target_location = torch.matmul(rot, target_location.unsqueeze(-1)).squeeze(-1)
+
+
+        target_encoded = self.target_encoder(target_location)
 
         if occupancy is not None and self.occupancy_size is not None and self.occupancy_size > 0:
 

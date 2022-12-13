@@ -71,6 +71,11 @@ def main(config):
         device=device)
     world_forward_model.to(device=device)
 
+    config.num_time_step_previous = world_model_run.config[
+        "num_time_step_previous"] if config.num_time_step_previous < 0 else config.num_time_step_previous
+    config.num_time_step_future = world_model_run.config[
+        "num_time_step_future"] if config.num_time_step_future < 0 else config.num_time_step_future
+
     # ---------------------------------------------------------------------------- #
     #                                    Dataset                                   #
     # ---------------------------------------------------------------------------- #
@@ -80,19 +85,19 @@ def main(config):
     data_path_val = config.data_path_val
     dataset_train = InstanceDataset(
         data_path=data_path_train,
-        sequence_length=world_model_run.config["num_time_step_previous"] +
-        world_model_run.config["num_time_step_future"],
+        sequence_length=config.num_time_step_previous +
+        config.num_time_step_future,
         read_keys=["bev_world", "ego", "navigation", "occ"])
     dataset_val = InstanceDataset(
         data_path=data_path_val,
-        sequence_length=world_model_run.config["num_time_step_previous"] +
-        world_model_run.config["num_time_step_future"],
+        sequence_length=config.num_time_step_previous +
+        config.num_time_step_future,
         read_keys=["bev_world", "ego", "navigation", "occ"])
 
     dataloader_train = DataLoader(
         dataset_train,
         batch_size=config.batch_size,
-        shuffle=True,
+        shuffle=False,
         num_workers=config.num_workers,
         drop_last=True)
     dataloader_val = DataLoader(
@@ -129,7 +134,7 @@ def main(config):
     if not config.resume:
 
         _input_shape_world_state = world_model_run.config["input_shape"]
-        _input_shape_world_state[0] *= world_model_run.config["num_time_step_previous"] if not config.single_world_state_input else 1
+        _input_shape_world_state[0] *= config.num_time_step_previous if not config.single_world_state_input else 1
         if config.wandb:
             run.config.update(
                 {"input_shape_world_state": _input_shape_world_state})
@@ -225,8 +230,8 @@ def main(config):
         device,
         cost,
         cost_weight=config.cost_weight,
-        num_time_step_previous=world_model_run.config["num_time_step_previous"],
-        num_time_step_future=world_model_run.config["num_time_step_future"],
+        num_time_step_previous=config.num_time_step_previous,
+        num_time_step_future=config.num_time_step_future,
         num_epochs=config.num_epochs,
         current_epoch=checkpoint["epoch"] +
         1 if config.resume else 0,
@@ -269,11 +274,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_path_train",
         type=str,
-        default="data/ground_truth_bev_model_train_data_3_town_02")
+        default="data/ground_truth_bev_model_val_data_4_town_02")
     parser.add_argument(
         "--data_path_val",
         type=str,
-        default="data/ground_truth_bev_model_val_data_3_town_02")
+        default="data/ground_truth_bev_model_val_data_4_town_02")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
     parser.add_argument(
@@ -288,9 +293,10 @@ if __name__ == "__main__":
     parser.add_argument("--lr_schedule_gamma", type=float, default=0.5)
     parser.add_argument("--gradient_clip_type", type=str, default="norm")
     parser.add_argument("--gradient_clip_value", type=float, default=1)
-
+    parser.add_argument("--num_time_step_previous", type=int, default=-1)
+    parser.add_argument("--num_time_step_future", type=int, default=-1)
     parser.add_argument("--debug_render", type=lambda x: (
-        str(x).lower() == 'true'), default=True)
+        str(x).lower() == 'true'), default=False)
     parser.add_argument("--save_interval", type=int, default=100)
 
     # POLICY MODEL PARAMETERS
@@ -300,11 +306,11 @@ if __name__ == "__main__":
     parser.add_argument("--delta_target", type=lambda x: (
         str(x).lower() == 'true'), default=True)
     parser.add_argument("--single_world_state_input", type=lambda x: (
-        str(x).lower() == 'true'), default=True)
+        str(x).lower() == 'true'), default=False)
     parser.add_argument("--occupancy_size", type=int, default=8)
     parser.add_argument("--action_size", type=int, default=2)
-    parser.add_argument("--hidden_size", type=int, default=64)
-    parser.add_argument("--num_layer", type=int, default=2)
+    parser.add_argument("--hidden_size", type=int, default=256)
+    parser.add_argument("--num_layer", type=int, default=6)
 
     # COST WEIGHTS
     parser.add_argument("--lane_cost_weight", type=float, default=0.0)
@@ -317,7 +323,7 @@ if __name__ == "__main__":
     parser.add_argument("--red_light_cost_weight", type=float, default=0.0)
     parser.add_argument("--pedestrian_cost_weight", type=float, default=0.0)
     parser.add_argument("--offroad_cost_weight", type=float, default=0.0)
-    parser.add_argument("--action_mse_weight", type=float, default=0.0)
+    parser.add_argument("--action_mse_weight", type=float, default=1.0)
     parser.add_argument("--action_jerk_weight", type=float, default=0)
     parser.add_argument("--target_mse_weight", type=float, default=0.0)
     parser.add_argument("--target_l1_weight", type=float, default=0.0)

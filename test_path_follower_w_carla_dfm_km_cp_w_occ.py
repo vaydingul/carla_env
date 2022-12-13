@@ -26,7 +26,8 @@ logging.basicConfig(level=logging.INFO)
 
 def main(config):
 
-    seed_everything(int(np.random.rand(1) * 1000))
+    config.seed = int(np.random.rand(1) * 1000)
+    seed_everything(config.seed)
     device = get_device()
 
     # ---------------------------------------------------------------------------- #
@@ -178,13 +179,16 @@ def main(config):
 
         t1 = time.time()
 
+        target_wrt_ego = torch.matmul(target_location - ego_state["location"], torch.tensor([[math.cos(-ego_state["yaw"]), -math.sin(
+            -ego_state["yaw"])], [math.sin(-ego_state["yaw"]), math.cos(-ego_state["yaw"])]], device=device).t())
+
         c.render(
             predicted_location=ego_state["location"].detach().cpu().numpy(),
             bev=bev,
             control=output["action"][0],
             current_state=ego_state,
             target_state=target_location,
-            target_current=target_location-ego_state["location"],
+            target_current=target_wrt_ego,
             counter=counter,
             sim_fps=1 / (t1 - t0),
             seed=config.seed,
