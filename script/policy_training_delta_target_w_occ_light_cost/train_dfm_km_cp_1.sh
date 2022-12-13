@@ -45,7 +45,7 @@ python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="dfm-km-cp" \
-	--wandb_name="vanilla+bc" \
+	--wandb_name="vanilla+bc+target_wrt_ego" \
 	--ego_forward_model_path="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt" \
 	--world_forward_model_wandb_link="vaydingul/mbl/r4la61x3" \
 	--world_forward_model_checkpoint_number=49
