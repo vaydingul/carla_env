@@ -8,6 +8,7 @@ import torch
 import time
 import logging
 import wandb
+import numpy as np
 import math
 import argparse
 from collections import deque
@@ -25,7 +26,7 @@ logging.basicConfig(level=logging.INFO)
 
 def main(config):
 
-    seed_everything(config.seed)
+    seed_everything(int(np.random.rand(1) * 1000))
     device = get_device()
 
     # ---------------------------------------------------------------------------- #
@@ -40,7 +41,7 @@ def main(config):
         checkpoint=config.ego_forward_model_path,
         cls=KinematicBicycleModelV2,
         dt=1 / 20)
-    ego_forward_model = ego_forward_model.to(device=device)
+    ego_forward_model = ego_forward_model.to(device=device).eval()
 
     # ---------------------------------------------------------------------------- #
     #                        Pretrained world forward model                        #
@@ -54,7 +55,7 @@ def main(config):
         run=world_model_run,
         checkpoint=checkpoint,
         device=device)
-    world_forward_model = world_forward_model.to(device=device)
+    world_forward_model = world_forward_model.to(device=device).eval()
 
     # ---------------------------------------------------------------------------- #
     #                           Pretrained policy model                                  #
@@ -68,7 +69,7 @@ def main(config):
         run=policy_model_run,
         checkpoint=checkpoint,
         device=device)
-    policy_model = policy_model.to(device=device)
+    policy_model = policy_model.to(device=device).eval()
     # ---------------------------------------------------------------------------- #
     #                              DFM_KM with Policy                              #
     # --------------------  -------------------------------------------------------- #
@@ -135,6 +136,9 @@ def main(config):
             dtype=torch.float32).unsqueeze(0).to(
             device=device)
 
+        # occupancy[occupancy <= 5] = 1
+        # occupancy[occupancy > 5] = 0
+
         logging.debug(f"Ego State: {ego_state}")
         logging.debug(f"Target Location: {target_location}")
 
@@ -178,8 +182,9 @@ def main(config):
             predicted_location=ego_state["location"].detach().cpu().numpy(),
             bev=bev,
             control=output["action"][0],
-            current_state=ego_state["location"],
+            current_state=ego_state,
             target_state=target_location,
+            target_current=target_location-ego_state["location"],
             counter=counter,
             sim_fps=1 / (t1 - t0),
             seed=config.seed,
@@ -221,12 +226,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/10pbeb47")
+        default="vaydingul/mbl/llbbhfn1")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=14)
+        default=24)
 
     config = parser.parse_args()
 

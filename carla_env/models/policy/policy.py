@@ -128,7 +128,7 @@ class Policy(nn.Module):
             target_location -
             ego_state["location"] if self.delta_target else target_location)
 
-        if occupancy is not None:
+        if occupancy is not None and self.occupancy_size is not None and self.occupancy_size > 0:
 
             occupancy_encoded = self.occupancy_encoder(occupancy)
 

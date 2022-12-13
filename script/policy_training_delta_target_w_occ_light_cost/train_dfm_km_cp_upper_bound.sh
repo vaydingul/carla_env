@@ -9,7 +9,7 @@ echo "Conda environment is activated"
 python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--lr=1e-4 \
 	--num_epochs=50 \
-	--batch_size=5 \
+	--batch_size=9 \
 	--num_workers=4 \
 	--data_path_train="./data/ground_truth_bev_model_dummy_data/" \
 	--data_path_val="./data/ground_truth_bev_model_dummy_data/" \

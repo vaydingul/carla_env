@@ -648,7 +648,7 @@ class Trainer(object):
                         y1+ 50),
                         (x1 + 50 +
                         action[1],
-                        y1 + 50 + action[0]),
+                        y1 + 50 - action[0]),
                         (255,
                         255,
                         255),
@@ -667,7 +667,7 @@ class Trainer(object):
                         y1+ 50),
                         (x1 + 50 +
                         action[1],
-                        y1 + 50 + action[0]),
+                        y1 + 50 - action[0]),
                         (0,
                         255,
                         255),

@@ -22,6 +22,7 @@ from agents.navigation.local_planner import RoadOption
 
 from utils.camera_utils import world_2_pixel
 from utils.bev_utils import world_2_bev
+from utils.carla_utils import (fetch_all_vehicles)
 
 
 # Import utils
@@ -41,14 +42,29 @@ logger = logging.getLogger(__name__)
 def create_multiple_actors_for_traffic_manager(client, n=20):
     """Create multiple vehicles in the world"""
 
-    return [
-        actor.ActorModule(
+    vehicles = fetch_all_vehicles(client)
+    vehicles = vehicles * (n // len(vehicles) + 1)
+    # Shuffle the list and take first n vehicles
+    np.random.shuffle(vehicles)
+    actors = [actor.ActorModule(
+        config={
+            "actor": vehicle.VehicleModule(
+                config=None,
+                client=client),
+            "hero": False},
+        client=client)]
+
+    for k in range(n):
+
+        actors.append(actor.ActorModule(
             config={
-                "actor": vehicle.VehicleModule(
-                    config=None,
+                "vehicle": vehicle.VehicleModule(
+                    config={"vehicle_model": vehicles[k], },
                     client=client),
                 "hero": False},
-            client=client) for _ in range(n)]
+            client=client))
+
+    return actors
 
 
 class CarlaEnvironment(Environment):
@@ -119,7 +135,7 @@ class CarlaEnvironment(Environment):
         end = start_end_spawn_point[1]
         self.route = route.RouteModule(config={"start": start,
                                                "end": end,
-                                               "sampling_resolution": 30,
+                                               "sampling_resolution": 100,
                                                "debug": True},
                                        client=self.client)
 
@@ -136,7 +152,7 @@ class CarlaEnvironment(Environment):
             client=self.client)
 
         actor_list = create_multiple_actors_for_traffic_manager(
-            self.client, 100)
+            self.client, 90)
         self.traffic_manager_module = traffic_manager.TrafficManagerModule(
             config={"vehicle_list": actor_list}, client=self.client)
         # Sensor suite
@@ -216,7 +232,8 @@ class CarlaEnvironment(Environment):
                     current_velocity = data_dict[k]["velocity"]
 
                     transform = current_transform
-                    transform.location.z += 2.0
+                    transform.location.z += 20.0
+                    transform.rotation.pitch = -90.0
 
                 elif k == "col":
 
