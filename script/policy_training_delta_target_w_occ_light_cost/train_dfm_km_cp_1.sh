@@ -22,8 +22,8 @@ python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--gradient_clip_value=1.0 \
 	--debug_render=false \
 	--save_interval=5 \
-	--input_ego_location=0 \
-	--input_ego_yaw=0 \
+	--input_ego_location=1 \
+	--input_ego_yaw=1 \
 	--input_ego_speed=1 \
 	--delta_target=true \
 	--single_world_state_input=false \
@@ -42,10 +42,11 @@ python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--action_jerk_weight=0.0 \
 	--target_mse_weight=0.0 \
 	--target_l1_weight=0.0 \
+	--ego_state_mse_weight=0.0 \
 	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="dfm-km-cp" \
-	--wandb_name="vanilla+bc+target_wrt_ego" \
+	--wandb_name="vanilla+bc" \
 	--ego_forward_model_path="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt" \
 	--world_forward_model_wandb_link="vaydingul/mbl/r4la61x3" \
 	--world_forward_model_checkpoint_number=49

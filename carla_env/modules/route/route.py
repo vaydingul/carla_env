@@ -54,11 +54,16 @@ class RouteModule(module.Module):
         """Step the vehicle manager"""
         if self.route_index < self.route_length - 1:
             # self.config["sampling_resolution"]:
-            if _get_distance_between_waypoints(
-                    self.route[self.route_index][0], current_location) < 10:
+            distance = _get_distance_between_waypoints(
+                self.route[self.route_index][0], current_location)
+
+            if distance < 10:
                 self.route_index += 1
+
             return self.route[self.route_index]
+
         else:
+
             return None
 
     def _stop(self):
@@ -124,15 +129,15 @@ class RouteModule(module.Module):
 
 def _get_distance_between_waypoints(waypoint1, waypoint2):
     """Get the L1 distance between two waypoints"""
-    # if isinstance(waypoint2, carla.Transform):
-    #     return waypoint1.transform.location.distance(waypoint2.location)
-    # else:
-    #     return waypoint1.transform.location.distance(
-    #         waypoint2.transform.location)
-
     if isinstance(waypoint2, carla.Transform):
-        return abs(waypoint2.location.x - waypoint1.transform.location.x) + \
-            abs(waypoint2.location.y - waypoint1.transform.location.y)
+        return waypoint1.transform.location.distance(waypoint2.location)
     else:
-        return abs(waypoint2.transform.location.x - waypoint1.transform.location.x) + \
-            abs(waypoint2.transform.location.y - waypoint1.transform.location.y)
+        return waypoint1.transform.location.distance(
+            waypoint2.transform.location)
+
+    # if isinstance(waypoint2, carla.Transform):
+    #     return abs(waypoint2.location.x - waypoint1.transform.location.x) + \
+    #         abs(waypoint2.location.y - waypoint1.transform.location.y)
+    # else:
+    #     return abs(waypoint2.transform.location.x - waypoint1.transform.location.x) + \
+    #         abs(waypoint2.transform.location.y - waypoint1.transform.location.y)

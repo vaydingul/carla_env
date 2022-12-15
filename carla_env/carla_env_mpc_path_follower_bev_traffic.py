@@ -33,7 +33,7 @@ from cv2 import VideoWriter, VideoWriter_fourcc
 from datetime import datetime
 from pathlib import Path
 from queue import Queue, Empty
-
+import carla
 import logging
 
 logger = logging.getLogger(__name__)
@@ -59,13 +59,24 @@ def create_multiple_actors_for_traffic_manager(client, n=20):
         actors.append(actor.ActorModule(
             config={
                 "vehicle": vehicle.VehicleModule(
-                    config={"vehicle_model": vehicles[k], },
+                    config=None,  # {"vehicle_model": vehicles[k], },
                     client=client),
                 "hero": False},
             client=client))
 
     return actors
 
+# def create_multiple_actors_for_traffic_manager(client, n=20):
+#     """Create multiple vehicles in the world"""
+
+#     return [
+#         actor.ActorModule(
+#             config={
+#                 "actor": vehicle.VehicleModule(
+#                     config=None,
+#                     client=client),
+#                 "hero": False},
+#             client=client) for _ in range(n)]
 
 class CarlaEnvironment(Environment):
     """Concrete implementation of Environment abstract base class"""
@@ -126,7 +137,7 @@ class CarlaEnvironment(Environment):
         #             x[1] for x in self.route.get_route()[:2]]) and (len(self.route.get_route()) < 50) and
         #             (len(self.route.get_route()) > 40)):
         #         break
-        
+
         # Fetch all spawn points
         spawn_points = self.map.get_spawn_points()
         # Select two random spawn points
@@ -135,7 +146,7 @@ class CarlaEnvironment(Environment):
         end = start_end_spawn_point[1]
         self.route = route.RouteModule(config={"start": start,
                                                "end": end,
-                                               "sampling_resolution": 100,
+                                               "sampling_resolution": 30,
                                                "debug": True},
                                        client=self.client)
 
@@ -152,7 +163,7 @@ class CarlaEnvironment(Environment):
             client=self.client)
 
         actor_list = create_multiple_actors_for_traffic_manager(
-            self.client, 50)
+            self.client, 100)
         self.traffic_manager_module = traffic_manager.TrafficManagerModule(
             config={"vehicle_list": actor_list}, client=self.client)
         # Sensor suite
@@ -175,7 +186,7 @@ class CarlaEnvironment(Environment):
             render_lanes_on_junctions=False,
             pixels_per_meter=5,
             crop_type=BirdViewCropType.FRONT_AREA_ONLY)
-        
+
         time.sleep(1.0)
         logger.info("Everything is set!")
 
@@ -231,9 +242,15 @@ class CarlaEnvironment(Environment):
                     current_transform = data_dict[k]["transform"]
                     current_velocity = data_dict[k]["velocity"]
 
-                    transform = current_transform
-                    transform.location.z += 20.0
-                    transform.rotation.pitch = -90.0
+                    spectator_transform = carla.Transform(
+                        location=carla.Location(
+                            x=current_transform.location.x,
+                            y=current_transform.location.y,
+                            z=20.0),
+                        rotation=carla.Rotation(
+                            roll=0.0,
+                            yaw=0.0,
+                            pitch=-90.0))
 
                 elif k == "col":
 
@@ -245,10 +262,11 @@ class CarlaEnvironment(Environment):
 
         data_dict["snapshot"] = snapshot
 
-        self.spectator.set_transform(transform)
+        self.spectator.set_transform(spectator_transform)
 
         route_step = self.route.step(
             self.map.get_waypoint(current_transform.location))
+        # route_step = self.route.step(current_transform)
         # target_waypoint, _ = self.route.step(current_transform)
 
         bev = self.bev_module.step(
@@ -275,7 +293,7 @@ class CarlaEnvironment(Environment):
             self.video_writer.release()
             return (current_transform, current_velocity, None, None)
 
-    def render(self, predicted_location, bev, cost_canvas = None, **kwargs):
+    def render(self, predicted_location, bev, cost_canvas=None, **kwargs):
         """Render the environment"""
         for (k, v) in self.__dict__.items():
             if isinstance(v, Module):
@@ -305,21 +323,21 @@ class CarlaEnvironment(Environment):
         position_y = 20
         for (module, render_dict) in self.render_dict.items():
             if module not in ["rgb_sensor", "semantic_sensor"]:
-                
+
                 if bool(render_dict):
-                    
+
                     if "collision" not in module:
 
                         cv2.putText(
                             self.canvas,
                             f"{module.capitalize()}",
                             (position_x,
-                            position_y),
+                             position_y),
                             cv2.FONT_HERSHEY_SIMPLEX,
                             0.5,
                             (0,
-                            255,
-                            255),
+                             255,
+                             255),
                             1,
                             cv2.LINE_AA)
                         position_y += 40
@@ -330,12 +348,12 @@ class CarlaEnvironment(Environment):
                                 self.canvas,
                                 f"{k}: {v}",
                                 (position_x,
-                                position_y),
+                                 position_y),
                                 cv2.FONT_HERSHEY_SIMPLEX,
                                 0.5,
                                 (255,
-                                255,
-                                0),
+                                 255,
+                                 0),
                                 1)
                             position_y += 20
                     else:
@@ -344,15 +362,14 @@ class CarlaEnvironment(Environment):
                             self.canvas,
                             "GAME OVER",
                             (position_x,
-                            position_y),
+                             position_y),
                             cv2.FONT_HERSHEY_SIMPLEX,
                             8,
                             (0,
-                            0,
-                            255),
+                             0,
+                             255),
                             5,
                             cv2.LINE_AA)
-                        
 
         if bool(kwargs):
 
@@ -405,7 +422,7 @@ class CarlaEnvironment(Environment):
         for k in range(
             self.render_dict["route"]["route_index"],
             np.minimum(
-                self.render_dict["route"]["route_index"] + 5,
+                self.render_dict["route"]["route_index"] + 1,
                 self.render_dict["route"]["route_length"])):
             loc_ = self.route.route[k][0].transform.location
             loc_ = np.array([loc_.x, loc_.y, loc_.z])
@@ -435,8 +452,16 @@ class CarlaEnvironment(Environment):
                     bev_loc_[1] + rgb_image.shape[0])), 5, (0, 0, 0), -1)
 
         if cost_canvas is not None:
-            self.canvas[position_y:, bev.shape[1]:] = cv2.resize(
-                cost_canvas, self.canvas[position_y:, bev.shape[1]:].shape[:-1][::-1])
+
+            scale_factor = np.minimum(self.canvas[position_y:,
+                                                  bev.shape[1]:].shape[0] / cost_canvas.shape[0],
+                                      self.canvas[position_y:,
+                                                  bev.shape[1]:].shape[1] / cost_canvas.shape[1])
+            scaled_cost_canvas = cv2.resize(
+                cost_canvas, (0, 0), fx=scale_factor, fy=scale_factor)
+            self.canvas[position_y:position_y +
+                        scaled_cost_canvas.shape[0], bev.shape[1]:bev.shape[1] +
+                        scaled_cost_canvas.shape[1]] = scaled_cost_canvas
 
         canvas_display = cv2.resize(
             src=self.canvas, dsize=(
@@ -446,8 +471,8 @@ class CarlaEnvironment(Environment):
 
         canvas_save = cv2.resize(
             self.canvas,
-            (self.canvas.shape[1] // 2,
-             self.canvas.shape[0] // 2))
+            (self.canvas.shape[1] // 1,
+             self.canvas.shape[0] // 1))
         cv2.imwrite(str(self.debug_path /
                         Path(f"{self.counter}.png")), canvas_save)
 

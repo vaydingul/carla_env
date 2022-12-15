@@ -68,6 +68,10 @@ class Trainer(object):
         self.cost_weight["offroad_cost_weight"] = 0.005
         self.cost_weight["action_mse_weight"] = 0.005
         self.cost_weight["action_jerk_weight"] = 0.005
+        self.cost_weight["target_mse_weight"] = 0.005
+        self.cost_weight["target_l1_weight"] = 0.005
+        self.cost_weight["ego_state_mse_weight"] = 0.005
+        self.cost_weight["world_state_mse_weight"] = 0.005
 
         if cost_weight is not None:
             for (k, v) in cost_weight.items():
@@ -120,6 +124,8 @@ class Trainer(object):
 
             occupancy = data["occ"]["occupancy"][:,
                                                  self.num_time_step_previous - 1].to(self.device)
+            occupancy[occupancy <= 5] = 1.0
+            occupancy[occupancy > 5] = 0.0
 
             ego_state_previous = {
                 "location": ego_previous_location,
@@ -205,7 +211,7 @@ class Trainer(object):
                     (world_previous_bev.shape[0] * self.num_time_step_future)
 
             else:
-                
+
                 cost = {}
                 lane_cost = torch.zeros(1).to(self.device)
                 vehicle_cost = torch.zeros(1).to(self.device)
@@ -214,7 +220,6 @@ class Trainer(object):
                 red_light_cost = torch.zeros(1).to(self.device)
                 pedestrian_cost = torch.zeros(1).to(self.device)
                 offroad_cost = torch.zeros(1).to(self.device)
-
 
             ego_future_action[..., 0] -= ego_future_action[..., -1]
 
@@ -241,6 +246,14 @@ class Trainer(object):
                     1),
                 reduction="sum") / (world_previous_bev.shape[0] *
                                     self.num_time_step_future)
+
+            ego_state_mse = F.mse_loss(
+                ego_future_location_predicted, ego_future_location, reduction="sum") / (
+                world_previous_bev.shape[0] * self.num_time_step_future)
+            ego_state_mse += F.mse_loss(torch.cos(ego_future_yaw_predicted), torch.cos(
+                ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
+            ego_state_mse += F.mse_loss(torch.sin(ego_future_yaw_predicted), torch.sin(
+                ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
 
             # action_mse = F.mse_loss(ego_future_action[..., :2], ego_future_action[..., :2], reduction="sum") / (
             #     world_previous_bev.shape[0] * world_previous_bev.shape[1])
@@ -272,7 +285,8 @@ class Trainer(object):
                 action_mse * self.cost_weight["action_mse_weight"] + \
                 action_jerk * self.cost_weight["action_jerk_weight"] + \
                 target_mse * self.cost_weight["target_mse_weight"] + \
-                target_l1 * self.cost_weight["target_l1_weight"]
+                target_l1 * self.cost_weight["target_l1_weight"] + \
+                ego_state_mse * self.cost_weight["ego_state_mse_weight"]
 
             # Backward pass
             self.optimizer.zero_grad()
@@ -302,9 +316,11 @@ class Trainer(object):
                          "train/action_jerk": action_jerk,
                          "train/target_mse": target_mse,
                          "train/target_l1": target_l1,
+                         "train/ego_state_mse": ego_state_mse,
                          "train/loss": loss})
 
-            self.render(i, world_future_bev_predicted, cost, ego_future_action_predicted, ego_future_action[..., :2])
+            self.render(i, world_future_bev_predicted, cost,
+                        ego_future_action_predicted, ego_future_action[..., :2])
             # self.render(i, world_future_bev.detach(), cost)
 
     def validate(self, run=None):
@@ -322,6 +338,7 @@ class Trainer(object):
         action_jerk_list = []
         target_mse_list = []
         target_l1_list = []
+        ego_state_mse_list = []
         loss_list = []
 
         with torch.no_grad():
@@ -366,6 +383,8 @@ class Trainer(object):
 
                 occupancy = data["occ"]["occupancy"][:,
                                                      self.num_time_step_previous - 1].to(self.device)
+                occupancy[occupancy <= 5] = 1.0
+                occupancy[occupancy > 5] = 0.0
 
                 ego_state_previous = {
                     "location": ego_previous_location,
@@ -453,7 +472,7 @@ class Trainer(object):
                         (world_previous_bev.shape[0] * self.num_time_step_future)
 
                 else:
-                    
+
                     cost = {}
                     lane_cost = torch.zeros(1).to(self.device)
                     vehicle_cost = torch.zeros(1).to(self.device)
@@ -485,6 +504,14 @@ class Trainer(object):
                     reduction="sum") / (world_previous_bev.shape[0] *
                                         self.num_time_step_future)
 
+                ego_state_mse = F.mse_loss(
+                    ego_future_location_predicted, ego_future_location, reduction="sum") / (
+                    world_previous_bev.shape[0] * self.num_time_step_future)
+                ego_state_mse += F.mse_loss(torch.cos(ego_future_yaw_predicted), torch.cos(
+                    ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
+                ego_state_mse += F.mse_loss(torch.sin(ego_future_yaw_predicted), torch.sin(
+                    ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
+
                 # action_mse = F.mse_loss(ego_future_action[..., :2], ego_future_action[..., :2], reduction="sum") / (
                 # world_previous_bev.shape[0] * world_previous_bev.shape[1])
 
@@ -515,7 +542,8 @@ class Trainer(object):
                     action_mse * self.cost_weight["action_mse_weight"] + \
                     action_jerk * self.cost_weight["action_jerk_weight"] + \
                     target_mse * self.cost_weight["target_mse_weight"] + \
-                    target_l1 * self.cost_weight["target_l1_weight"]
+                    target_l1 * self.cost_weight["target_l1_weight"] + \
+                    ego_state_mse * self.cost_weight["ego_state_mse_weight"]
 
                 lane_cost_list.append(lane_cost.item())
                 vehicle_cost_list.append(vehicle_cost.item())
@@ -528,11 +556,13 @@ class Trainer(object):
                 action_jerk_list.append(action_jerk.item())
                 target_mse_list.append(target_mse.item())
                 target_l1_list.append(target_l1.item())
+                ego_state_mse_list.append(ego_state_mse.item())
                 loss_list.append(loss.item())
 
                 self.val_step += world_previous_bev.shape[0]
 
-                self.render(i, world_future_bev_predicted, cost, ego_future_action_predicted, ego_future_action[..., :2])
+                self.render(i, world_future_bev_predicted, cost,
+                            ego_future_action_predicted, ego_future_action[..., :2])
                 # self.render(i, world_future_bev.detach(), cost)
 
             lane_cost_mean = np.mean(lane_cost_list)
@@ -546,6 +576,7 @@ class Trainer(object):
             action_jerk_mean = np.mean(action_jerk_list)
             target_mse_mean = np.mean(target_mse_list)
             target_l1_mean = np.mean(target_l1_list)
+            ego_state_mse_mean = np.mean(ego_state_mse_list)
             loss_mean = np.mean(loss_list)
 
             loss_dict = {"val/step": self.val_step,
@@ -560,6 +591,7 @@ class Trainer(object):
                          "val/action_jerk": action_jerk_mean,
                          "val/target_mse": target_mse_mean,
                          "val/target_l1": target_l1_mean,
+                         "val/ego_state_mse": ego_state_mse_mean,
                          "val/loss": loss_mean}
 
             if run is not None:
@@ -671,17 +703,17 @@ class Trainer(object):
                     action = action.astype(np.int32)
                     cv2.arrowedLine(
                         self.canvas_car,
-                        (x1+ 50,
-                        y1+ 50),
+                        (x1 + 50,
+                         y1 + 50),
                         (x1 + 50 +
-                        action[1],
-                        y1 + 50 - action[0]),
+                         action[1],
+                         y1 + 50 - action[0]),
                         (255,
-                        255,
-                        255),
+                         255,
+                         255),
                         1,
                         tipLength=0.5)
-                    
+
                     # Draw predicted action to the left corner of each bev
                     # as vector
                     action = action_pred[k, m]
@@ -690,14 +722,14 @@ class Trainer(object):
                     action = action.astype(np.int32)
                     cv2.arrowedLine(
                         self.canvas_car,
-                        (x1+ 50,
-                        y1+ 50),
+                        (x1 + 50,
+                         y1 + 50),
                         (x1 + 50 +
-                        action[1],
-                        y1 + 50 - action[0]),
+                         action[1],
+                         y1 + 50 - action[0]),
                         (0,
-                        255,
-                        255),
+                         255,
+                         255),
                         1,
                         tipLength=0.5)
 
