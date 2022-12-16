@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.INFO)
 
 def main(config):
 
-    config.seed = int(np.random.rand(1) * 1000)
+    # config.seed = int(np.random.rand(1) * 1000)
     seed_everything(config.seed)
     device = get_device()
 
@@ -140,8 +140,8 @@ def main(config):
                 dtype=torch.float32).unsqueeze(0).to(
                 device=device)
 
-            # occupancy[occupancy <= 5] = 1
-            # occupancy[occupancy > 5] = 0
+            occupancy[occupancy <= 5] = 1
+            occupancy[occupancy > 5] = 0
 
             logging.debug(f"Ego State: {ego_state}")
             logging.debug(f"Target Location: {target_location}")
@@ -465,7 +465,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Collect data from the CARLA simulator")
 
-    parser.add_argument("--seed", type=int, default=999)
+    parser.add_argument("--seed", type=int, default=333)
 
     parser.add_argument(
         "--ego_forward_model_path",
@@ -488,12 +488,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/llbbhfn1")
+        default="vaydingul/mbl/1s7dqlpz")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=29)
+        default=9)
 
     config = parser.parse_args()
 
