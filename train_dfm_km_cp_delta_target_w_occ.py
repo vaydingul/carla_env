@@ -97,7 +97,7 @@ def main(config):
     dataloader_train = DataLoader(
         dataset_train,
         batch_size=config.batch_size,
-        shuffle=False,
+        shuffle=True,
         num_workers=config.num_workers,
         drop_last=True)
     dataloader_val = DataLoader(
