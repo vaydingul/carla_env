@@ -254,6 +254,8 @@ class Trainer(object):
                 ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
             ego_state_mse += F.mse_loss(torch.sin(ego_future_yaw_predicted), torch.sin(
                 ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
+            ego_state_mse += F.mse_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum") / (
+                world_previous_bev.shape[0] * self.num_time_step_future)
 
             # action_mse = F.mse_loss(ego_future_action[..., :2], ego_future_action[..., :2], reduction="sum") / (
             #     world_previous_bev.shape[0] * world_previous_bev.shape[1])
@@ -511,7 +513,8 @@ class Trainer(object):
                     ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
                 ego_state_mse += F.mse_loss(torch.sin(ego_future_yaw_predicted), torch.sin(
                     ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
-
+                ego_state_mse += F.mse_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum") / (
+                    world_previous_bev.shape[0] * self.num_time_step_future)
                 # action_mse = F.mse_loss(ego_future_action[..., :2], ego_future_action[..., :2], reduction="sum") / (
                 # world_previous_bev.shape[0] * world_previous_bev.shape[1])
 
