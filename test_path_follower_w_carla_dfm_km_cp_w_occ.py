@@ -102,6 +102,13 @@ def main(config):
             convert_standard_bev_to_model_bev(
                 bev, device=device))
 
+    occupancy = torch.tensor(
+        occupancy,
+        dtype=torch.float32).unsqueeze(0).to(
+        device=device)
+    occupancy[occupancy <= 5] = 1
+    occupancy[occupancy > 5] = 0
+
     counter = 0
 
     with torch.no_grad():
@@ -126,22 +133,14 @@ def main(config):
             speed.requires_grad_(True).to(device=device)
 
             ego_state = {"location": location,
-                        "yaw": yaw,
-                        "speed": speed}
+                         "yaw": yaw,
+                         "speed": speed}
 
             target_location = torch.zeros(
                 size=(1, 2), device=device)
             target_location[..., 0] = target_waypoint.transform.location.x
             target_location[..., 1] = target_waypoint.transform.location.y
             target_location = target_location.to(device=device)
-
-            occupancy = torch.tensor(
-                occupancy,
-                dtype=torch.float32).unsqueeze(0).to(
-                device=device)
-
-            occupancy[occupancy <= 5] = 1
-            occupancy[occupancy > 5] = 0
 
             logging.debug(f"Ego State: {ego_state}")
             logging.debug(f"Target Location: {target_location}")
@@ -223,13 +222,17 @@ def main(config):
                 ego_future_action_predicted_list, dim=1)
 
             cost_dict = cost(ego_future_location_predicted,
-                            ego_future_yaw_predicted,
-                            ego_future_speed_predicted,
-                            world_future_bev_predicted)
+                             ego_future_yaw_predicted,
+                             ego_future_speed_predicted,
+                             world_future_bev_predicted)
 
             control = ego_future_action_predicted_list[0][0]
 
-            cost_canvas = render(config.rollout_length, world_future_bev_predicted, cost_dict, ego_future_action_predicted)
+            cost_canvas = render(
+                config.rollout_length,
+                world_future_bev_predicted,
+                cost_dict,
+                ego_future_action_predicted)
 
             # control = output["action"][0]
             throttle, brake = acceleration_to_throttle_brake(
@@ -238,7 +241,7 @@ def main(config):
             control = [throttle, control[1], brake]
 
             (current_transform, current_velocity, target_waypoint,
-            navigational_command) = c.step(action=control)
+             navigational_command) = c.step(action=control)
 
             data = c.get_data()
             bev = data["bev"]
@@ -246,6 +249,12 @@ def main(config):
                 convert_standard_bev_to_model_bev(
                     bev, device=device))
             occupancy = data["occ"]["occupancy"]
+            occupancy = torch.tensor(
+                occupancy,
+                dtype=torch.float32).unsqueeze(0).to(
+                device=device)
+            occupancy[occupancy <= 5] = 1
+            occupancy[occupancy > 5] = 0
 
             t1 = time.time()
 
@@ -255,11 +264,12 @@ def main(config):
             c.render(
                 predicted_location=ego_state["location"].detach().cpu().numpy(),
                 bev=bev,
-                cost_canvas = cost_canvas, 
+                cost_canvas=cost_canvas,
                 control=control,
                 current_state=ego_state,
                 target_state=target_location,
                 target_wrt_ego=target_wrt_ego,
+                occupancy = occupancy,
                 counter=counter,
                 sim_fps=1 / (t1 - t0),
                 seed=config.seed,
@@ -329,7 +339,7 @@ def render(
                 bev, 0.5, mask_car, 0.5, 0)
             # self.canvas_side[y1:y2, x1:x2] = cv2.addWeighted(
             #     bev, 0.5, mask_side, 0.5, 0)
-            y1  = y2 + 20
+            y1 = y2 + 20
             y2 = y1 + bev.shape[0]
             canvas[y1:y2, x1:x2] = cv2.addWeighted(
                 bev, 0.5, mask_light, 0.5, 0)
@@ -448,9 +458,6 @@ def render(
 
     return canvas
 
-    
-
-    
 
 def _init_canvas(num_time_step_future, bev_width, bev_height):
 
@@ -488,12 +495,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/1zrjlx7w")
+        default="vaydingul/mbl/2o6kxyl8")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=4)
+        default=24)
 
     config = parser.parse_args()
 

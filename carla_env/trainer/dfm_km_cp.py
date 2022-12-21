@@ -247,15 +247,17 @@ class Trainer(object):
                 reduction="sum") / (world_previous_bev.shape[0] *
                                     self.num_time_step_future)
 
-            ego_state_mse = F.mse_loss(
+            ego_state_mse = F.l1_loss(
                 ego_future_location_predicted, ego_future_location, reduction="sum") / (
                 world_previous_bev.shape[0] * self.num_time_step_future)
-            ego_state_mse += F.mse_loss(torch.cos(ego_future_yaw_predicted), torch.cos(
+            ego_state_mse += F.l1_loss(torch.cos(ego_future_yaw_predicted), torch.cos(
                 ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
-            ego_state_mse += F.mse_loss(torch.sin(ego_future_yaw_predicted), torch.sin(
+            ego_state_mse += F.l1_loss(torch.sin(ego_future_yaw_predicted), torch.sin(
                 ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
-            ego_state_mse += F.mse_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum") / (
+            ego_state_mse += F.l1_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum") / (
                 world_previous_bev.shape[0] * self.num_time_step_future)
+
+            
 
             # action_mse = F.mse_loss(ego_future_action[..., :2], ego_future_action[..., :2], reduction="sum") / (
             #     world_previous_bev.shape[0] * world_previous_bev.shape[1])
@@ -361,10 +363,10 @@ class Trainer(object):
                 ego_future_location_predicted_list = []
 
                 ego_previous_yaw = torch.deg2rad(
-                    data["ego"]["rotation_array"][:, self.num_time_step_previous - 1, 1:2].to(self.device))
+                    data["ego"]["rotation_array"][:, self.num_time_step_previous - 1, 2:].to(self.device))
                 ego_future_yaw = torch.deg2rad(data["ego"]["rotation_array"][:,
                                                                              self.num_time_step_previous: self.num_time_step_previous + self.num_time_step_future,
-                                                                             1:2].to(self.device))
+                                                                             2:].to(self.device))
                 ego_future_yaw_predicted_list = []
 
                 ego_previous_speed = data["ego"]["velocity_array"][:,
@@ -506,14 +508,14 @@ class Trainer(object):
                     reduction="sum") / (world_previous_bev.shape[0] *
                                         self.num_time_step_future)
 
-                ego_state_mse = F.mse_loss(
+                ego_state_mse = F.l1_loss(
                     ego_future_location_predicted, ego_future_location, reduction="sum") / (
                     world_previous_bev.shape[0] * self.num_time_step_future)
-                ego_state_mse += F.mse_loss(torch.cos(ego_future_yaw_predicted), torch.cos(
+                ego_state_mse += F.l1_loss(torch.cos(ego_future_yaw_predicted), torch.cos(
                     ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
-                ego_state_mse += F.mse_loss(torch.sin(ego_future_yaw_predicted), torch.sin(
+                ego_state_mse += F.l1_loss(torch.sin(ego_future_yaw_predicted), torch.sin(
                     ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
-                ego_state_mse += F.mse_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum") / (
+                ego_state_mse += F.l1_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum") / (
                     world_previous_bev.shape[0] * self.num_time_step_future)
                 # action_mse = F.mse_loss(ego_future_action[..., :2], ego_future_action[..., :2], reduction="sum") / (
                 # world_previous_bev.shape[0] * world_previous_bev.shape[1])

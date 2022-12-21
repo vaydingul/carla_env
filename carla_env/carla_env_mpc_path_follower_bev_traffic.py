@@ -146,7 +146,7 @@ class CarlaEnvironment(Environment):
         end = start_end_spawn_point[1]
         self.route = route.RouteModule(config={"start": start,
                                                "end": end,
-                                               "sampling_resolution": 30,
+                                               "sampling_resolution": 10,
                                                "debug": True},
                                        client=self.client)
 
@@ -163,7 +163,7 @@ class CarlaEnvironment(Environment):
             client=self.client)
 
         actor_list = create_multiple_actors_for_traffic_manager(
-            self.client, 90)
+            self.client, 0)
         self.traffic_manager_module = traffic_manager.TrafficManagerModule(
             config={"vehicle_list": actor_list}, client=self.client)
         # Sensor suite
@@ -422,7 +422,7 @@ class CarlaEnvironment(Environment):
         for k in range(
             self.render_dict["route"]["route_index"],
             np.minimum(
-                self.render_dict["route"]["route_index"] + 1,
+                self.render_dict["route"]["route_index"] + 10,
                 self.render_dict["route"]["route_length"])):
             loc_ = self.route.route[k][0].transform.location
             loc_ = np.array([loc_.x, loc_.y, loc_.z])

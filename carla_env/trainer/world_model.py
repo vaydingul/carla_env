@@ -57,9 +57,9 @@ class Trainer(object):
 
         for i, (data) in enumerate(self.dataloader_train):
 
-            world_previous_bev = data["bev"]["bev"][:,
+            world_previous_bev = data["bev"]["bev_world"][:,
                                              :self.num_time_step_previous].to(self.device)
-            world_future_bev = data["bev"]["bev"][:, self.num_time_step_previous:
+            world_future_bev = data["bev"]["bev_world"][:, self.num_time_step_previous:
                                            self.num_time_step_previous + self.num_time_step_future].to(self.device)
 
             world_future_bev_predicted_list = []
@@ -149,9 +149,9 @@ class Trainer(object):
 
             for i, (data) in enumerate(self.dataloader_val):
 
-                world_previous_bev = data["bev"]["bev"][:,
+                world_previous_bev = data["bev"]["bev_world"][:,
                                                  :self.num_time_step_previous].to(self.device)
-                world_future_bev = data["bev"]["bev"][:, self.num_time_step_previous:
+                world_future_bev = data["bev"]["bev_world"][:, self.num_time_step_previous:
                                                self.num_time_step_previous + self.num_time_step_future].to(self.device)
 
                 world_future_bev_predicted_list = []
