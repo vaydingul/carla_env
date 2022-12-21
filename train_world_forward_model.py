@@ -86,6 +86,9 @@ def main(config):
         world_bev_model, _ = WorldBEVModel.load_model_from_wandb_run(
             run=run, checkpoint=checkpoint, device=world_model_device)
 
+    if config.multi_gpu:
+        world_bev_model = torch.nn.DataParallel(world_bev_model)
+
     world_bev_model.to(world_model_device)
 
     logger.info(
@@ -183,6 +186,11 @@ if __name__ == "__main__":
                         type=str, default=checkpoint_path)
     parser.add_argument(
         "--resume",
+        type=lambda x: (
+            str(x).lower() == 'true'),
+        default=False)
+    parser.add_argument(
+        "--multi_gpu",
         type=lambda x: (
             str(x).lower() == 'true'),
         default=False)
