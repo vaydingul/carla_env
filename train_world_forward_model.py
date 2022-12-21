@@ -13,7 +13,7 @@ from utils.model_utils import (
     fetch_checkpoint_from_wandb_run,
     load_world_model_from_wandb_run)
 from utils.wandb_utils import (create_initial_run, create_resumed_run)
-from utils.train_utils import seed_everything
+from utils.train_utils import (seed_everything, get_device)
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
@@ -24,7 +24,7 @@ logging.basicConfig(
 def main(config):
 
     seed_everything(seed=config.seed)
-
+    world_model_device = get_device()
     # Load the dataset its loader
     world_model_dataset_train = InstanceDataset(
         data_path=config.data_path_train,
@@ -50,9 +50,6 @@ def main(config):
         shuffle=False,
         num_workers=config.num_workers,
         drop_last=True)
-
-    world_model_device = torch.device(
-        "cuda:0" if torch.cuda.is_available() else "cpu")
 
     # Setup the wandb
     if config.wandb:
