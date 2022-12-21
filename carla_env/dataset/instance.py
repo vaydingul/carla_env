@@ -19,7 +19,7 @@ class InstanceDataset(Dataset):
             self,
             data_path: Union[str, Path],
             sequence_length: int = 2,
-            read_keys: List[str] = ["bev"]):
+            read_keys: List[str] = ["bev_world"]):
 
         self.data_path = Path(data_path)
         self.sequence_length = sequence_length

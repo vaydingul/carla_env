@@ -495,7 +495,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/2rmrt1ax")
+        default="vaydingul/mbl/me1eucnf")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
