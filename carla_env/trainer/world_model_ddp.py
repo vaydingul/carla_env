@@ -2,6 +2,8 @@ import logging
 import numpy as np
 import torch
 from torch.nn import functional as F
+from torch.nn.parallel import DistributedDataParallel as DDP
+
 from pathlib import Path
 logger = logging.getLogger(__name__)
 
@@ -14,7 +16,7 @@ class Trainer(object):
             dataloader_train,
             dataloader_val,
             optimizer,
-            device,
+            gpu_id,
             save_every=5,
             num_time_step_previous=10,
             num_time_step_future=10,
@@ -34,7 +36,7 @@ class Trainer(object):
         self.dataloader_train = dataloader_train
         self.dataloader_val = dataloader_val
         self.optimizer = optimizer
-        self.device = device
+        self.gpu_id = gpu_id
         self.save_every = save_every
         self.num_time_step_previous = num_time_step_previous
         self.num_time_step_future = num_time_step_future
@@ -51,7 +53,8 @@ class Trainer(object):
         self.train_step = train_step
         self.val_step = val_step
 
-        self.model.to(self.device)
+        self.model = DDP(self.model, device_ids=[self.gpu_id])
+
 
     def train(self, run):
 
@@ -60,9 +63,9 @@ class Trainer(object):
         for i, (data) in enumerate(self.dataloader_train):
 
             world_previous_bev = data["bev_world"]["bev"][:,
-                                                          :self.num_time_step_previous].to(self.device)
+                                                          :self.num_time_step_previous].to(self.gpu_id)
             world_future_bev = data["bev_world"]["bev"][:, self.num_time_step_previous:
-                                                        self.num_time_step_previous + self.num_time_step_future].to(self.device)
+                                                        self.num_time_step_previous + self.num_time_step_future].to(self.gpu_id)
 
             world_future_bev_predicted_list = []
             mu_list = []
@@ -152,9 +155,9 @@ class Trainer(object):
             for i, (data) in enumerate(self.dataloader_val):
 
                 world_previous_bev = data["bev_world"]["bev"][:,
-                                                              :self.num_time_step_previous].to(self.device)
+                                                              :self.num_time_step_previous].to(self.gpu_id)
                 world_future_bev = data["bev_world"]["bev"][:, self.num_time_step_previous:
-                                                            self.num_time_step_previous + self.num_time_step_future].to(self.device)
+                                                            self.num_time_step_previous + self.num_time_step_future].to(self.gpu_id)
 
                 world_future_bev_predicted_list = []
                 mu_list = []
@@ -244,7 +247,7 @@ class Trainer(object):
                     0) and self.save_path is not None:
 
                 torch.save({
-                    "model_state_dict": self.model.state_dict(),
+                    "model_state_dict": self.model.module.state_dict(),
                     "optimizer_state_dict": self.optimizer.state_dict(),
                     "scheduler_state_dict": self.lr_scheduler.state_dict() if self.lr_scheduler else None,
                     "epoch": epoch,
