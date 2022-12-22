@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "World Model Training!"
+echo "World Model Training with multiple GPU!"
 
 # Conda activation
 module load anaconda/2022.05
