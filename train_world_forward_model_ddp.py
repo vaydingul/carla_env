@@ -73,7 +73,7 @@ def main(rank, world_size, run, config):
     world_model_dataloader_train = DataLoader(
         world_model_dataset_train,
         batch_size=config.batch_size,
-        shuffle=True,
+        shuffle=False,
         num_workers=config.num_workers,
         drop_last=False,
         sampler=DistributedSampler(world_model_dataset_train, shuffle=True))
