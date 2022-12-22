@@ -75,8 +75,8 @@ def main(rank, world_size, run, config):
         batch_size=config.batch_size,
         shuffle=True,
         num_workers=config.num_workers,
-        drop_last=True,
-        sampler=DistributedSampler(world_model_dataset_train))
+        drop_last=False,
+        sampler=DistributedSampler(world_model_dataset_train, shuffle=True))
 
     world_model_dataloader_val = DataLoader(
         world_model_dataset_val,
@@ -84,7 +84,7 @@ def main(rank, world_size, run, config):
         shuffle=False,
         num_workers=config.num_workers,
         drop_last=True,
-        sampler=DistributedSampler(world_model_dataset_val))
+        sampler=DistributedSampler(world_model_dataset_val, shuffle=False))
 
     if not config.resume:
         world_bev_model = WorldBEVModel(
