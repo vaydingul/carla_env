@@ -142,7 +142,7 @@ def main(rank, world_size, run, config):
                 world_model_lr_scheduler.load_state_dict(
                     checkpoint["lr_scheduler_state_dict"])
 
-    if rank == config.gpu_ids[0]:
+    if rank == 0:
         run.watch(world_bev_model)
 
     world_model_trainer = Trainer(
@@ -151,7 +151,7 @@ def main(rank, world_size, run, config):
         world_model_dataloader_val,
         world_model_optimizer,
         rank,
-        save_every=config.save_every if rank == config.gpu_ids[0] else -1,
+        save_every=config.save_every if rank == 0 else -1,
         num_time_step_previous=config.num_time_step_previous,
         num_time_step_future=config.num_time_step_future,
         num_epochs=config.num_epochs,
