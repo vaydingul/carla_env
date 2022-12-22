@@ -168,9 +168,8 @@ def main(rank, world_size, run, config):
         val_step=checkpoint["val_step"] if config.resume else 0)
 
     logger.info("Training started!")
-    world_model_trainer.learn(run)
-
-    run.finish()
+    world_model_trainer.learn(run if rank == 0 else None)
+    destroy_process_group()
 
 
 if __name__ == "__main__":
@@ -248,3 +247,5 @@ if __name__ == "__main__":
     run = create_wandb_run(config)
 
     mp.spawn(main, args=(config.num_gpu, run, config), nprocs=config.num_gpu)
+
+    run.finish()

@@ -53,6 +53,7 @@ class Trainer(object):
         self.train_step = train_step
         self.val_step = val_step
 
+        self.model.to(self.gpu_id)
         self.model = DDP(self.model, device_ids=[self.gpu_id])
 
 
@@ -255,6 +256,7 @@ class Trainer(object):
                     "val_step": self.val_step},
                     self.save_path /
                     Path(f"checkpoint_{epoch}.pt"))
-
-                run.save(str(self.save_path /
-                             Path(f"checkpoint_{epoch}.pt")))
+                
+                if run is not None:
+                    run.save(str(self.save_path /
+                                Path(f"checkpoint_{epoch}.pt")))
