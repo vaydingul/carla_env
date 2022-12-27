@@ -27,7 +27,7 @@ def main(config):
             "max_steps": 1000})
 
 
-    for k in [4, 5, 6]:#tqdm.tqdm(range(config.num_episodes)):
+    for k in [0, 5]:#tqdm.tqdm(range(config.num_episodes)):
 
         # Create the data writer
         data_save_path_ = Path(config.data_save_path) / f"episode_{k}"
@@ -85,12 +85,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_save_path",
         type=str,
-        default="./data/ground_truth_bev_model_val_data_4_town_02",
+        default="./data/ground_truth_bev_model_test_data_4_town_02",
         help="Path to save the data")
     parser.add_argument(
         "--num_episodes",
         type=int,
-        default=18,
+        default=20,
         help="Number of episodes to collect data from")
     config = parser.parse_args()
 

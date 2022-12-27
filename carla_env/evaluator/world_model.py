@@ -47,9 +47,9 @@ class Evaluator(object):
 
             world_future_bev_predicted_list = []
 
-            world_previous_bev = data["bev"]["bev"][:, :self.num_time_step_previous].to(
+            world_previous_bev = data["bev_world"]["bev"][:, :self.num_time_step_previous].to(
                 self.device).clone()
-            world_future_bev = data["bev"]["bev"][:, self.num_time_step_previous:].to(
+            world_future_bev = data["bev_world"]["bev"][:, self.num_time_step_previous:].to(
                 self.device).clone()
 
             for _ in range(self.num_time_step_predict):
@@ -140,8 +140,8 @@ class Evaluator(object):
 
     def _init_canvas(self, num_canvas):
 
-        canvas = np.zeros((self.dataloader.dataset[0]["bev"]["bev"].shape[-2] * 2 + 200, self.dataloader.dataset[0][
-            "bev"]["bev"].shape[-1] * (self.num_time_step_previous + self.num_time_step_predict), 3), dtype=np.uint8)
+        canvas = np.zeros((self.dataloader.dataset[0]["bev_world"]["bev"].shape[-2] * 2 + 200, self.dataloader.dataset[0][
+            "bev_world"]["bev"].shape[-1] * (self.num_time_step_previous + self.num_time_step_predict), 3), dtype=np.uint8)
         self.canvas_list = [np.copy(canvas) for _ in range(num_canvas)]
 
     def _draw(self, data, world_future_bev_predicted_list, iou_dict=None):
@@ -151,12 +151,12 @@ class Evaluator(object):
             self.canvas = canvas
             # Draw the previous bev
             for j in range(self.num_time_step_previous):
-                self.canvas[:data["bev"]["bev"].shape[-2], j * data["bev"]["bev"].shape[-1]:(j + 1) * data["bev"]["bev"].shape[-1]] = cv2.cvtColor(
-                    self._bev_to_rgb(data["bev"]["bev"][canvas_num, j].clone().detach().cpu().numpy()), cv2.COLOR_RGB2BGR)
+                self.canvas[:data["bev_world"]["bev"].shape[-2], j * data["bev_world"]["bev"].shape[-1]:(j + 1) * data["bev_world"]["bev"].shape[-1]] = cv2.cvtColor(
+                    self._bev_to_rgb(data["bev_world"]["bev"][canvas_num, j].clone().detach().cpu().numpy()), cv2.COLOR_RGB2BGR)
                 # Put text on the top-middle of the image
                 cv2.putText(self.canvas,
                             f"GT t - {self.num_time_step_previous - j -1}",
-                            (data["bev"]["bev"].shape[-1] * j + 10,
+                            (data["bev_world"]["bev"].shape[-1] * j + 10,
                              20),
                             cv2.FONT_HERSHEY_SIMPLEX,
                             0.5,
@@ -167,12 +167,12 @@ class Evaluator(object):
                             cv2.LINE_AA)
             # Draw the predicted future bev
             for j in range(self.num_time_step_predict):
-                self.canvas[:data["bev"]["bev"].shape[-2], (j + self.num_time_step_previous) * data["bev"]["bev"].shape[-1]:(j + self.num_time_step_previous + 1)
-                            * data["bev"]["bev"].shape[-1]] = cv2.cvtColor(self._bev_to_rgb(world_future_bev_predicted_list[j][canvas_num].clone().detach().cpu().numpy()), cv2.COLOR_RGB2BGR)
+                self.canvas[:data["bev_world"]["bev"].shape[-2], (j + self.num_time_step_previous) * data["bev_world"]["bev"].shape[-1]:(j + self.num_time_step_previous + 1)
+                            * data["bev_world"]["bev"].shape[-1]] = cv2.cvtColor(self._bev_to_rgb(world_future_bev_predicted_list[j][canvas_num].clone().detach().cpu().numpy()), cv2.COLOR_RGB2BGR)
                 # Put text on the top middle of the image
                 cv2.putText(self.canvas,
                             f"P t + {j + 1}",
-                            (data["bev"]["bev"].shape[-1] * (j + self.num_time_step_previous) + 10,
+                            (data["bev_world"]["bev"].shape[-1] * (j + self.num_time_step_previous) + 10,
                              20),
                             cv2.FONT_HERSHEY_SIMPLEX,
                             0.5,
@@ -187,13 +187,13 @@ class Evaluator(object):
                     self.num_time_step_previous,
                     self.num_time_step_previous +
                     self.num_time_step_predict):
-                self.canvas[data["bev"]["bev"].shape[-2] + 200:, (j) * data["bev"]["bev"].shape[-1]:(j + 1) * data["bev"]["bev"].shape[-1]] = cv2.cvtColor(
-                    self._bev_to_rgb(data["bev"]["bev"][canvas_num, j].clone().detach().cpu().numpy()), cv2.COLOR_RGB2BGR)
+                self.canvas[data["bev_world"]["bev"].shape[-2] + 200:, (j) * data["bev_world"]["bev"].shape[-1]:(j + 1) * data["bev_world"]["bev"].shape[-1]] = cv2.cvtColor(
+                    self._bev_to_rgb(data["bev_world"]["bev"][canvas_num, j].clone().detach().cpu().numpy()), cv2.COLOR_RGB2BGR)
                 # Put text on the top middle of the image
                 cv2.putText(self.canvas,
                             f"GT t + {j + 1 - self.num_time_step_previous}",
-                            (data["bev"]["bev"].shape[-1] * (j) + 10,
-                             data["bev"]["bev"].shape[-2] + 200 + 20),
+                            (data["bev_world"]["bev"].shape[-1] * (j) + 10,
+                             data["bev_world"]["bev"].shape[-2] + 200 + 20),
                             cv2.FONT_HERSHEY_SIMPLEX,
                             0.5,
                             (255,
@@ -206,7 +206,7 @@ class Evaluator(object):
                 for j, (k, v) in enumerate(iou_dict.items()):
                     cv2.putText(self.canvas,
                                 f"{k}: {v:.3f}",
-                                (10, data["bev"]["bev"].shape[-2] + 100 + 20 + (j + 1) * 60),
+                                (10, data["bev_world"]["bev"].shape[-2] + 100 + 20 + (j + 1) * 60),
                                 cv2.FONT_HERSHEY_SIMPLEX,
                                 1.5,
                                 (255,

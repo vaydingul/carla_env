@@ -30,7 +30,7 @@ def evaluate(fname, data, model, config):
 
     for k in range(0, elapsed_time.shape[0] - 1):
 
-        if k % 10 == 0:
+        if k % 2 == 0:
 
             location = vehicle_location[k, :2]
             yaw = vehicle_rotation[k, 1:2]
@@ -48,9 +48,16 @@ def evaluate(fname, data, model, config):
             acceleration = throttle_brake_to_acceleration(
                 action[..., 0], action[..., 2])
             action = torch.stack([acceleration, action[..., 1]], dim=-1)
-            location, yaw, speed = model(location, yaw, speed, action)
-        else:
-            location, yaw, speed = model(location, yaw, speed, action)
+
+        ego_state = {"location": location, 
+                     "yaw": yaw,
+                     "speed": speed}
+
+        ego_state_next = model(ego_state, action)
+
+        location = ego_state_next["location"]
+        yaw = ego_state_next["yaw"]
+        speed = ego_state_next["speed"]
 
         location_predicted.append(location)
         yaw_predicted.append(yaw)
