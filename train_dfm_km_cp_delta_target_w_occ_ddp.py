@@ -43,7 +43,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d ==> %(message)s")
 
 
-def ddp_setup(rank, world_size):
+def ddp_setup(rank, world_size, master_port):
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = '12355'
     init_process_group(backend="nccl", rank=rank, world_size=world_size)
@@ -70,7 +70,7 @@ def create_wandb_run(config):
 
 def main(rank, world_size, run, config):
 
-    ddp_setup(rank, world_size)
+    ddp_setup(rank, world_size, config.master_port)
 
     seed_everything(seed=config.seed)
 

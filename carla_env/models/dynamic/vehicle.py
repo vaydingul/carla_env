@@ -129,7 +129,7 @@ class KinematicBicycleModelV2(nn.Module):
 
         checkpoint = torch.load(
             checkpoint.name,
-            map_location=device)
+            map_location=f"cuda:{device}" if isinstance(device, int) else device)
         model = cls(
             dt=run.config["dt"]
         )

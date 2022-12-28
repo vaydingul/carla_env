@@ -163,7 +163,7 @@ class Policy(nn.Module):
 
         checkpoint = torch.load(
             checkpoint.name,
-            map_location=device)
+            map_location=f"cuda:{device}" if isinstance(device, int) else device)
         model = cls(
             input_shape_world_state=run.config["input_shape_world_state"],
             input_ego_location=run.config["input_ego_location"],

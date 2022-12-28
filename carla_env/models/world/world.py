@@ -134,7 +134,7 @@ class WorldBEVModel(nn.Module):
 
         checkpoint = torch.load(
             checkpoint.name,
-            map_location=device)
+            map_location=f"cuda:{device}" if isinstance(device, int) else device)
         model = cls(
             input_shape=run.config["input_shape"],
             hidden_channel=run.config["hidden_channel"],
