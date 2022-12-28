@@ -12,7 +12,7 @@ echo "Conda environment is activated"
 python3 train_dfm_km_cp_delta_target_w_occ_ddp.py \
 	--lr=1e-4 \
 	--num_epochs=50 \
-	--batch_size=48 \
+	--batch_size=32 \
 	--num_workers=5 \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_4_town_02/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_4_town_02/" \
