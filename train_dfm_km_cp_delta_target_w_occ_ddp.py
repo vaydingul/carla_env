@@ -301,6 +301,7 @@ if __name__ == "__main__":
             str(x).lower() == 'true'),
         default=False)
     parser.add_argument("--num_gpu", type=int, default=1)
+    parser.add_argument("--master_port", type=str, default="12355")
     parser.add_argument("--lr_schedule", type=lambda x: (
         str(x).lower() == 'true'), default=False)
     parser.add_argument("--lr_schedule_step_size", default=5)

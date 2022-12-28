@@ -203,7 +203,6 @@ if __name__ == "__main__":
             str(x).lower() == 'true'),
         default=False)
     parser.add_argument("--num_gpu", type=int, default=1)
-    parser.add_argument("--master_port", type=str, default="12355")
     parser.add_argument("--save_every", type=int, default=5)
     # MODEL PARAMETERS
     parser.add_argument("--input_shape", type=list, default=[8, 192, 192])
