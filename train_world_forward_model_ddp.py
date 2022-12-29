@@ -100,9 +100,8 @@ def main(rank, world_size, run, config):
         checkpoint = fetch_checkpoint_from_wandb_run(
             run=run)
 
-        barrier()
         world_bev_model = WorldBEVModel.load_model_from_wandb_run(
-            run=run, checkpoint=checkpoint, device=rank)
+            run=run, checkpoint=checkpoint, device= {f"cuda:0":f"cuda:{rank}"} if config.num_gpu > 1 else rank)
 
     logger.info(
         f"Number of parameters: {sum(p.numel() for p in world_bev_model.parameters() if p.requires_grad)}")
