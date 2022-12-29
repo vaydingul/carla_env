@@ -28,7 +28,7 @@ python3 train_world_forward_model_ddp.py \
 	--logvar_clip=false \
 	--lr_schedule=false \
 	--wandb=true \
-	--wandb_id="vaydingul/mbl/bylewhod" \
+	--wandb_id="bylewhod" \
 	--wandb_project="mbl" \
 	--wandb_group="world-forward-model-multi-step" \
 	--wandb_name="20-30-mse_loss-gradient_clip_norm_0.3_new_dataset_multi_gpu" \
