@@ -231,7 +231,7 @@ def main(rank, world_size, run, config):
     logger.info(
         f"Number of parameters that are being optimized: {sum(p.numel() for p in policy_model.parameters() if p.requires_grad)}")
 
-    if rank==0:
+    if rank==0 and run is not None:
         run.watch(policy_model)
     # ---------------------------------------------------------------------------- #
 
@@ -288,11 +288,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_path_train",
         type=str,
-        default="data/ground_truth_bev_model_val_data_4_town_02")
+        default="data/ground_truth_bev_model_test_data_4_town_02")
     parser.add_argument(
         "--data_path_val",
         type=str,
-        default="data/ground_truth_bev_model_val_data_4_town_02")
+        default="data/ground_truth_bev_model_test_data_4_town_02")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
     parser.add_argument(

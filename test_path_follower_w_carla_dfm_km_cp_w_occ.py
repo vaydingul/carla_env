@@ -472,7 +472,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Collect data from the CARLA simulator")
 
-    parser.add_argument("--seed", type=int, default=555)
+    parser.add_argument("--seed", type=int, default=999)
 
     parser.add_argument(
         "--ego_forward_model_path",
@@ -485,7 +485,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--world_forward_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/1gftiw9w")
+        default="vaydingul/mbl/2b2rklg9")
 
     parser.add_argument(
         "--world_forward_model_checkpoint_number",
@@ -495,12 +495,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/me1eucnf")
+        default="vaydingul/mbl/br8nb7dd")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=24)
+        default=9)
 
     config = parser.parse_args()
 

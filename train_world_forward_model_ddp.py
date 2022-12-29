@@ -26,9 +26,9 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d ==> %(message)s")
 
 
-def ddp_setup(rank, world_size):
+def ddp_setup(rank, world_size, master_port):
     os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '12355'
+    os.environ['MASTER_PORT'] = master_port
     init_process_group(backend="nccl", rank=rank, world_size=world_size)
 
 
@@ -53,7 +53,7 @@ def create_wandb_run(config):
 
 def main(rank, world_size, run, config):
 
-    ddp_setup(rank, world_size)
+    ddp_setup(rank, world_size, config.master_port)
 
     seed_everything(seed=config.seed)
 
@@ -203,6 +203,7 @@ if __name__ == "__main__":
             str(x).lower() == 'true'),
         default=False)
     parser.add_argument("--num_gpu", type=int, default=1)
+    parser.add_argument("--master_port", type=str, default="12355")
     parser.add_argument("--save_every", type=int, default=5)
     # MODEL PARAMETERS
     parser.add_argument("--input_shape", type=list, default=[8, 192, 192])

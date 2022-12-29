@@ -161,6 +161,9 @@ class Trainer(object):
                 # Update the previous bev
                 world_previous_bev = torch.cat(
                     (world_previous_bev[:, 1:], world_future_bev_predicted.unsqueeze(1)), dim=1)
+                # world_previous_bev = world_previous_bev.clone()
+                # world_previous_bev[:, :-1] = world_previous_bev[:, 1:]
+                # world_previous_bev[:, -1] = world_future_bev_predicted
 
                 ego_state_previous = ego_state_next
 
@@ -256,8 +259,6 @@ class Trainer(object):
                 ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
             ego_state_mse += F.l1_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum") / (
                 world_previous_bev.shape[0] * self.num_time_step_future)
-
-            
 
             # action_mse = F.mse_loss(ego_future_action[..., :2], ego_future_action[..., :2], reduction="sum") / (
             #     world_previous_bev.shape[0] * world_previous_bev.shape[1])
