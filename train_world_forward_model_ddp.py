@@ -121,6 +121,12 @@ def main(rank, world_size, run, config):
                     milestones=[int(s) for s in run.config["lr_schedule_step_size"].split("-")],
                     gamma=config.lr_schedule_gamma)
     else:
+        checkpoint = torch.load(
+            checkpoint.name,
+            map_location=f"cuda:{rank}" if isinstance(
+                rank,
+                int) else rank)
+
         world_model_optimizer = torch.optim.Adam(
             world_bev_model.parameters(), lr=run.config["lr"])
         world_model_optimizer.load_state_dict(
