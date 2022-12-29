@@ -53,8 +53,10 @@ class Trainer(object):
         self.train_step = train_step
         self.val_step = val_step
 
+        print("Here")
         self.model.to(self.gpu_id)
         self.model = DDP(self.model, device_ids=[self.gpu_id])
+        print("Here2")
 
 
     def train(self, run):
