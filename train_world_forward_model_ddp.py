@@ -100,7 +100,7 @@ def main(rank, world_size, run, config):
         checkpoint = fetch_checkpoint_from_wandb_run(
             run=run)
 
-        world_bev_model, _ = WorldBEVModel.load_model_from_wandb_run(
+        world_bev_model = WorldBEVModel.load_model_from_wandb_run(
             run=run, checkpoint=checkpoint, device=rank)
 
     logger.info(
