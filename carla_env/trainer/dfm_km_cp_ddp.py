@@ -79,7 +79,7 @@ class Trainer(object):
                 self.cost_weight[k] = v
 
         self.model.to(self.gpu_id)
-        self.model = DDP(self.model, device_ids=[self.gpu_id])
+        self.model = DDP(self.model, device_ids=[self.gpu_id], find_unused_parameters=True)
 
     def train(self, run):
 
