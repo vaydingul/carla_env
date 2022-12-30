@@ -3,6 +3,7 @@ import torch
 from carla_env.models.layers.encoder import Encoder, Encoder2D
 from utils.cost_utils import create_2x2_rotation_tensor_from_angle_tensor
 
+
 class Policy(nn.Module):
 
     def __init__(
@@ -126,8 +127,10 @@ class Policy(nn.Module):
 
         if self.delta_target:
             target_location = target_location - ego_state["location"]
-            rot = create_2x2_rotation_tensor_from_angle_tensor(ego_state["yaw"])
-            target_location = torch.matmul(rot, target_location.unsqueeze(-1)).squeeze(-1)
+            rot = create_2x2_rotation_tensor_from_angle_tensor(
+                ego_state["yaw"])
+            target_location = torch.matmul(
+                rot, target_location.unsqueeze(-1)).squeeze(-1)
 
         target_encoded = self.target_encoder(target_location)
 
@@ -163,7 +166,10 @@ class Policy(nn.Module):
 
         checkpoint = torch.load(
             checkpoint.name,
-            map_location=f"cuda:{device}" if isinstance(device, int) else device)
+            map_location=f"cuda:{device}" if isinstance(
+                device,
+                int) else device)
+                
         model = cls(
             input_shape_world_state=run.config["input_shape_world_state"],
             input_ego_location=run.config["input_ego_location"],

@@ -7,7 +7,10 @@ import torch
 from torch.utils.data import DataLoader
 import torch.multiprocessing as mp
 from torch.utils.data.distributed import DistributedSampler
-from torch.distributed import (init_process_group, destroy_process_group, barrier)
+from torch.distributed import (
+    init_process_group,
+    destroy_process_group,
+    barrier)
 import os
 
 from carla_env.dataset.instance import InstanceDataset
@@ -101,7 +104,10 @@ def main(rank, world_size, run, config):
             run=run)
 
         world_bev_model = WorldBEVModel.load_model_from_wandb_run(
-            run=run, checkpoint=checkpoint, device= {f"cuda:0":f"cuda:{rank}"} if config.num_gpu > 1 else rank)
+            run=run, checkpoint=checkpoint, device={
+                f"cuda:0": f"cuda:{rank}"} if config.num_gpu > 1 else rank)
+
+    world_bev_model.to(rank)
 
     logger.info(
         f"Number of parameters: {sum(p.numel() for p in world_bev_model.parameters() if p.requires_grad)}")
