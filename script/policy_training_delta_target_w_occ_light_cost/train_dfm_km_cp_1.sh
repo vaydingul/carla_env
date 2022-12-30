@@ -46,6 +46,7 @@ python3 train_dfm_km_cp_delta_target_w_occ_ddp.py \
 	--target_l1_weight=0.0 \
 	--ego_state_mse_weight=0.0 \
 	--wandb=true \
+	--wandb_id= "br8nb7dd" \
 	--wandb_project="mbl" \
 	--wandb_group="dfm-km-cp" \
 	--wandb_name="vanilla+bc(binary_radar)(new_world_model)" \

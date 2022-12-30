@@ -5,7 +5,7 @@ from carla_env.models.world.world import WorldBEVModel
 from carla_env.models.policy.policy import Policy
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
 from carla_env.cost.masked_cost_batched import Cost
-from carla_env.trainer.dfm_km_cp import Trainer
+from carla_env.trainer.dfm_km_cp_ddp import Trainer
 from carla_env.dataset.instance import InstanceDataset
 import torch
 from torch.utils.data import DataLoader
@@ -99,7 +99,7 @@ def main(rank, world_size, run, config):
     world_forward_model = WorldBEVModel.load_model_from_wandb_run(
         run=world_model_run,
         checkpoint=checkpoint,
-        device=rank)
+        device={f"cuda:0": f"cuda:{rank}"} if config.num_gpu > 1 else rank)
     world_forward_model.to(device=rank)
 
     config.num_time_step_previous = world_model_run.config[
@@ -131,18 +131,17 @@ def main(rank, world_size, run, config):
         shuffle=False,
         num_workers=config.num_workers,
         drop_last=True,
-        sampler = DistributedSampler(dataset_train, shuffle=True))
+        sampler=DistributedSampler(dataset_train, shuffle=True))
     dataloader_val = DataLoader(
         dataset_val,
         batch_size=config.batch_size,
         shuffle=False,
         num_workers=config.num_workers,
         drop_last=True,
-        sampler = DistributedSampler(dataset_val, shuffle=False))
+        sampler=DistributedSampler(dataset_val, shuffle=False))
 
     logger.info(f"Train dataset size: {len(dataset_train)}")
     logger.info(f"Val dataset size: {len(dataset_val)}")
-
 
     # ---------------------------------------------------------------------------- #
     #                                  Policy Model                                 #
@@ -173,8 +172,8 @@ def main(rank, world_size, run, config):
         policy_model = Policy.load_model_from_wandb_run(
             run=run,
             checkpoint=checkpoint,
-            device=rank)
-
+            device={f"cuda:0": f"cuda:{rank}"} if config.num_gpu > 1 else rank)
+    policy_model.to(device=rank)
     # ---------------------------------------------------------------------------- #
     #                              DFM_KM with Policy                              #
     # ---------------------------------------------------------------------------- #
@@ -182,7 +181,7 @@ def main(rank, world_size, run, config):
         ego_model=ego_forward_model,
         world_model=world_forward_model,
         policy_model=policy_model)
-
+    model.to(device=rank)
     # ---------------------------------------------------------------------------- #
 
     # ---------------------------------------------------------------------------- #
@@ -231,7 +230,7 @@ def main(rank, world_size, run, config):
     logger.info(
         f"Number of parameters that are being optimized: {sum(p.numel() for p in policy_model.parameters() if p.requires_grad)}")
 
-    if rank==0 and run is not None:
+    if rank == 0 and run is not None:
         run.watch(policy_model)
     # ---------------------------------------------------------------------------- #
 
