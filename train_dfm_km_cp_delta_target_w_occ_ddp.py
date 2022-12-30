@@ -203,6 +203,13 @@ def main(rank, world_size, run, config):
                         int(s) for s in run.config["lr_schedule_step_size"].split("-")],
                     gamma=config.lr_schedule_gamma)
     else:
+
+        checkpoint = torch.load(
+            checkpoint.name,
+            map_location=f"cuda:{rank}" if isinstance(
+                rank,
+                int) else rank)
+
         optimizer = torch.optim.Adam(
             policy_model.parameters(), lr=run.config["lr"])
         optimizer.load_state_dict(
