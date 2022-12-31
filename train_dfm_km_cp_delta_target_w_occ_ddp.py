@@ -167,7 +167,7 @@ def main(rank, world_size, run, config):
     else:
 
         checkpoint = fetch_checkpoint_from_wandb_run(
-            run=run)
+            run=run, checkpoint_number=config.resume_checkpoint_number)
 
         policy_model = Policy.load_model_from_wandb_run(
             run=run,
@@ -306,6 +306,7 @@ if __name__ == "__main__":
         type=lambda x: (
             str(x).lower() == 'true'),
         default=False)
+    parser.add_argument("--resume_checkpoint_number", type=int, default=14)
     parser.add_argument("--num_gpu", type=int, default=1)
     parser.add_argument("--master_port", type=str, default="12355")
     parser.add_argument("--lr_schedule", type=lambda x: (

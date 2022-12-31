@@ -226,7 +226,7 @@ def main(config):
                              ego_future_speed_predicted,
                              world_future_bev_predicted)
 
-            control = ego_future_action_predicted_list[0][0]
+            control = torch.mean(ego_future_action_predicted, dim=1)[0]#ego_future_action_predicted_list[0][0]
 
             cost_canvas = render(
                 config.rollout_length,
@@ -472,7 +472,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Collect data from the CARLA simulator")
 
-    parser.add_argument("--seed", type=int, default=999)
+    parser.add_argument("--seed", type=int, default=333)
 
     parser.add_argument(
         "--ego_forward_model_path",
@@ -495,7 +495,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/uc0y92ww")
+        default="vaydingul/mbl/br8nb7dd")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",

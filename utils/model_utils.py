@@ -1,6 +1,9 @@
 import wandb
 import os
 import torch
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def fetch_checkpoint_from_wandb_link(wandb_link, checkpoint_number=-1):
@@ -11,9 +14,13 @@ def fetch_checkpoint_from_wandb_link(wandb_link, checkpoint_number=-1):
 
     torch_files_ = [f for f in run.files() if f.name.endswith('.pt')]
     torch_files_.sort(key=lambda x: abs(int(x.name.split(
-        "/")[-1].split(".")[0].split("_")[-1]) - checkpoint_number if checkpoint_number >= 0 else 0))
+        "/")[-1].split(".")[0].split("_")[-1]) - (checkpoint_number if checkpoint_number >= 0 else 0)))
 
     checkpoint = torch_files_[0 if checkpoint_number >= 0 else -1]
+
+    logger.info(
+        f"Fetching checkpoint {checkpoint.name} from wandb run {wandb_link}")
+
     # Check if it exists, if not, download it
     if not os.path.exists(checkpoint.name):
         checkpoint.download(replace=True)
@@ -64,7 +71,7 @@ def load_policy_model_from_wandb_run(
         action_size=run.config["action_size"],
         hidden_size=run.config["hidden_size"],
         layers=run.config["num_layer"],
-        delta_target = run.config["delta_target"])
+        delta_target=run.config["delta_target"])
     policy_model.load_state_dict(checkpoint["model_state_dict"])
 
     return policy_model, checkpoint
