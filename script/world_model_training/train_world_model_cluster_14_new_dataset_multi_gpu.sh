@@ -21,7 +21,7 @@ python3 train_world_forward_model_ddp.py \
 	--resume=true \
 	--resume_checkpoint_number=49 \
 	--num_gpu=2 \
-	--master_port="12357" \
+	--master_port="12555" \
 	--save_every=5 \
 	--num_time_step_previous=20 \
 	--num_time_step_future=30 \
