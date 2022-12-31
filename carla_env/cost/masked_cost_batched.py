@@ -131,7 +131,7 @@ class Cost(nn.Module):
         dx = (self.vehicle_width / 2) + 4
         dx_light = (self.vehicle_width) + 1
 
-        dy = 1.5 * (torch.maximum(torch.tensor(10), speed) + vehicle_length) + 1
+        dy = 1.5 * (torch.maximum(torch.tensor(10), speed) + self.vehicle_length) + 1
         dy_light = speed * 0.5 + self.vehicle_length * 3
         dy = dy.unsqueeze(-1).unsqueeze(-1)
         dy_light = dy_light.unsqueeze(-1).unsqueeze(-1)
