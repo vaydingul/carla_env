@@ -226,7 +226,7 @@ def main(config):
                              ego_future_speed_predicted,
                              world_future_bev_predicted)
 
-            control = torch.mean(ego_future_action_predicted, dim=1)[0]#ego_future_action_predicted_list[0][0]
+            control = ego_future_action_predicted_list[0][0]#torch.mean(ego_future_action_predicted, dim=1)[0]
 
             cost_canvas = render(
                 config.rollout_length,
@@ -495,12 +495,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/br8nb7dd")
+        default="vaydingul/mbl/uc0y92ww")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=14)
+        default=19)
 
     config = parser.parse_args()
 

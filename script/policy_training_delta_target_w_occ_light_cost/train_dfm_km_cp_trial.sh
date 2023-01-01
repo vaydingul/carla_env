@@ -35,7 +35,7 @@ python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--red_light_cost_weight=0.1 \
 	--pedestrian_cost_weight=0.000 \
 	--offroad_cost_weight=0.1 \
-	--action_mse_weight=0.0 \
+	--action_mse_weight=1.0 \
 	--action_jerk_weight=0.0 \
 	--target_mse_weight=0.0 \
 	--target_l1_weight=0.0 \
@@ -43,7 +43,7 @@ python3 train_dfm_km_cp_delta_target_w_occ.py \
 	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="POLICY_TESTS" \
-	--wandb_name="vanilla+ego_state_loss" \
+	--wandb_name="vanilla+bc+ego_state_loss" \
 	--ego_forward_model_path="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt" \
 	--world_forward_model_wandb_link="vaydingul/mbl/2b2rklg9" \
 	--world_forward_model_checkpoint_number=49

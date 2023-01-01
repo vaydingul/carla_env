@@ -24,13 +24,14 @@ def main(config):
                 {
                     "world": "Town02", "num_vehicles": [60, 100]},
             ],
-            "max_steps": 1000})
+            "max_steps": 2000,
+            "random": False,
+            "fixed_delta_seconds": 1 / 10})
 
-
-    for k in [0, 5]:#tqdm.tqdm(range(config.num_episodes)):
+    for k in tqdm.tqdm(range(config.num_episodes)):
 
         # Create the data writer
-        data_save_path_ = Path(config.data_save_path) / f"episode_{k}"
+        data_save_path_ = Path(config.data_save_path) / f"episode_{k+29}"
         os.makedirs(data_save_path_, exist_ok=True)
 
         writer = InstanceWriter(data_save_path_)
@@ -40,14 +41,14 @@ def main(config):
             key="rgb_front",
             value="rgb_front",
             type=InstanceWriterType.RGB_IMAGE)
-        writer.add_key(
-            key="rgb_left",
-            value="rgb_left",
-            type=InstanceWriterType.RGB_IMAGE)
-        writer.add_key(
-            key="rgb_right",
-            value="rgb_right",
-            type=InstanceWriterType.RGB_IMAGE)
+        # writer.add_key(
+        #     key="rgb_left",
+        #     value="rgb_left",
+        #     type=InstanceWriterType.RGB_IMAGE)
+        # writer.add_key(
+        #     key="rgb_right",
+        #     value="rgb_right",
+        #     type=InstanceWriterType.RGB_IMAGE)
         writer.add_key(
             key="bev_world",
             value="bev_world",
@@ -57,9 +58,12 @@ def main(config):
             value="bev_ego",
             type=InstanceWriterType.BEV_IMAGE)
         writer.add_key(key="ego", value="ego", type=InstanceWriterType.JSON)
-        writer.add_key(key="navigation", value="navigation", type=InstanceWriterType.JSON)
-        writer.add_key(key="occ", value = "occ", type = InstanceWriterType.JSON)
-    
+        writer.add_key(
+            key="navigation",
+            value="navigation",
+            type=InstanceWriterType.JSON)
+        writer.add_key(key="occ", value="occ", type=InstanceWriterType.JSON)
+
         while not c.is_done:
 
             c.step()
@@ -85,12 +89,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_save_path",
         type=str,
-        default="./data/ground_truth_bev_model_test_data_4_town_02",
+        default="./data/ground_truth_bev_model_train_data_10Hz",
         help="Path to save the data")
     parser.add_argument(
         "--num_episodes",
         type=int,
-        default=20,
+        default=10,
         help="Number of episodes to collect data from")
     config = parser.parse_args()
 

@@ -34,6 +34,8 @@ class TrafficManagerModule(module.Module):
 
         self.traffic_manager.set_synchronous_mode(
             self.config["synchronous_mode"])
+        # self.traffic_manager.set_hybrid_physics_mode(True)
+        # self.traffic_manager.set_hybrid_physics_radius(200)
 
         if self.config["vehicle_list"]:
             for vehicle in self.config["vehicle_list"]:

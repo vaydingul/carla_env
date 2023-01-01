@@ -32,6 +32,53 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class RandomActionDesigner(object):
+
+    def __init__(
+            self,
+            brake_probability=0.1,
+            max_throttle=1.0,
+            max_steering_angle=1.0,
+            action_repeat=1):
+        self.brake_probability = brake_probability
+        self.max_throttle = max_throttle
+        self.max_steering_angle = max_steering_angle
+
+        self.previous_action = None
+        self.previous_count = 0
+        self.action_repeat = action_repeat
+
+    def step(self):
+
+        if (self.previous_count < self.action_repeat) and self.previous_action:
+
+            self.previous_count += 1
+
+            return self.previous_action
+
+        # Randomize control
+        if np.random.random() < self.brake_probability:
+
+            acceleration = np.random.uniform(-self.max_throttle, 0)
+            steer = np.random.uniform(-self.max_steering_angle,
+                                      self.max_steering_angle)
+
+            action = [0, steer, -acceleration]
+
+        else:
+
+            acceleration = np.random.uniform(0, self.max_throttle)
+            steer = np.random.uniform(-self.max_steering_angle,
+                                      self.max_steering_angle)
+
+            action = [acceleration, steer, 0]
+
+        self.previous_action = action
+        self.previous_count = 0
+
+        return action
+
+
 def create_multiple_actors_for_traffic_manager(client, n=20):
     """Create multiple vehicles in the world"""
     vehicles = fetch_all_vehicles(client)
@@ -43,7 +90,7 @@ def create_multiple_actors_for_traffic_manager(client, n=20):
             "actor": vehicle.VehicleModule(
                 config=None,
                 client=client),
-            "hero": False},
+            "hero": True},
         client=client)]
 
     for k in range(n):
@@ -80,6 +127,8 @@ class CarlaEnvironment(Environment):
         self.is_done = False
         self.counter = 0
 
+        self.action_designer = RandomActionDesigner(action_repeat=2)
+
         self.data = Queue()
 
         self.reset()
@@ -90,12 +139,17 @@ class CarlaEnvironment(Environment):
         if self.is_first_reset:
             self.is_first_reset = False
         else:
-            self.traffic_manager_module.close()
+            if not self.config["random"]:
+                self.traffic_manager_module.close()
+            else:
+                self.hero_actor_module.close()
 
         # Select a random task
         selected_task = np.random.choice(self.config["tasks"])
         self.client_module = client.ClientModule(
-            config={"world": selected_task["world"], })
+            config={
+                "world": selected_task["world"],
+                "fixed_delta_seconds": self.config["fixed_delta_seconds"]})
 
         self.world = self.client_module.get_world()
         self.map = self.client_module.get_map()
@@ -112,11 +166,12 @@ class CarlaEnvironment(Environment):
         logger.info(f"Number of actors: {number_of_actors}")
         actor_list = create_multiple_actors_for_traffic_manager(
             self.client,
-            n=number_of_actors)
+            n=number_of_actors + 1)
         self.hero_actor_module = actor_list[0]
 
-        self.traffic_manager_module = traffic_manager.TrafficManagerModule(
-            config={"vehicle_list": actor_list}, client=self.client)
+        if not self.config["random"]:
+            self.traffic_manager_module = traffic_manager.TrafficManagerModule(
+                config={"vehicle_list": actor_list}, client=self.client)
 
         # Sensor suite
         self.vehicle_sensor = vehicle_sensor.VehicleSensorModule(
@@ -179,7 +234,10 @@ class CarlaEnvironment(Environment):
 
         snapshot = self.client_module.world.get_snapshot()
 
-        # self.hero_actor_module.step(action=action)
+        if self.config["random"]:
+            action = self.action_designer.step()
+            self.hero_actor_module.step(action=action)
+
         self.vehicle_sensor.step()
 
         data_dict = {}
@@ -212,6 +270,14 @@ class CarlaEnvironment(Environment):
                     transform = current_transform
                     transform.location.z += 2.0
 
+                if k == "col":
+
+                    impulse = data_dict[k]["impulse"]
+                    impulse_amplitude = np.linalg.norm(impulse)
+                    logger.debug(f"Collision impulse: {impulse_amplitude}")
+                    if impulse_amplitude > 100:
+                        self.is_done = True
+
         data_dict["snapshot"] = snapshot
 
         self.spectator.set_transform(transform)
@@ -224,25 +290,26 @@ class CarlaEnvironment(Environment):
         data_dict["bev_world"] = bev_world
         data_dict["bev_ego"] = bev_ego
 
-        self._next_agent_command = RoadOption.VOID.value
-        self._next_agent_waypoint = [-1, -1, -1]
-        try:
-            _next_agent_navigational_action = self.traffic_manager_module.get_next_action(
-                self.hero_actor_module.get_actor())
-            self._next_agent_command = RoadOption[_next_agent_navigational_action[0].upper(
-            )].value
-            self._next_agent_waypoint = [
-                _next_agent_navigational_action[1].transform.location.x,
-                _next_agent_navigational_action[1].transform.location.y,
-                _next_agent_navigational_action[1].transform.location.z]
+        if not self.config["random"]:
+            self._next_agent_command = RoadOption.VOID.value
+            self._next_agent_waypoint = [-1, -1, -1]
+            try:
+                _next_agent_navigational_action = self.traffic_manager_module.get_next_action(
+                    self.hero_actor_module.get_actor())
+                self._next_agent_command = RoadOption[_next_agent_navigational_action[0].upper(
+                )].value
+                self._next_agent_waypoint = [
+                    _next_agent_navigational_action[1].transform.location.x,
+                    _next_agent_navigational_action[1].transform.location.y,
+                    _next_agent_navigational_action[1].transform.location.z]
 
-            data_dict["navigation"] = {
-                "command": self._next_agent_command,
-                "waypoint": self._next_agent_waypoint}
-        except BaseException:
-            data_dict["navigation"] = {
-                "command": self._next_agent_command,
-                "waypoint": self._next_agent_waypoint}
+                data_dict["navigation"] = {
+                    "command": self._next_agent_command,
+                    "waypoint": self._next_agent_waypoint}
+            except BaseException:
+                data_dict["navigation"] = {
+                    "command": self._next_agent_command,
+                    "waypoint": self._next_agent_waypoint}
 
         self.data.put(data_dict)
 
@@ -251,7 +318,8 @@ class CarlaEnvironment(Environment):
 
         self.counter += 1
 
-        self.is_done = self.counter >= self.config["max_steps"]
+        self.is_done = self.is_done or (
+            self.counter >= self.config["max_steps"])
 
     def render(self, bev_list):
         """Render the environment"""
@@ -272,8 +340,7 @@ class CarlaEnvironment(Environment):
         rgb_image_2 = self.render_dict["rgb_sensor_2"]["image_data"]
         rgb_image_2 = cv2.cvtColor(rgb_image_2, cv2.COLOR_BGR2RGB)
         # Put image into canvas
-        self.canvas[:rgb_image_2.shape[0], rgb_image_1.shape[1]
-            :rgb_image_1.shape[1] + rgb_image_2.shape[1]] = rgb_image_2
+        self.canvas[:rgb_image_2.shape[0], rgb_image_1.shape[1]:rgb_image_1.shape[1] + rgb_image_2.shape[1]] = rgb_image_2
 
         rgb_image_3 = self.render_dict["rgb_sensor_3"]["image_data"]
         rgb_image_3 = cv2.cvtColor(rgb_image_3, cv2.COLOR_BGR2RGB)
@@ -353,8 +420,10 @@ class CarlaEnvironment(Environment):
 
     def close(self):
         """Close the environment"""
-        self.traffic_manager_module.close()
-        # self.hero_actor_module.close()
+        if not self.config["random"]:
+            self.traffic_manager_module.close()
+        else:
+            self.hero_actor_module.close()
         self.client_module.close()
         self.server_module.close()
         logger.info("Environment is closed")
