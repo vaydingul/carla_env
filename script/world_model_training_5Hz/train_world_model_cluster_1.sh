@@ -19,7 +19,7 @@ python3 train_world_forward_model_ddp.py \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_10Hz/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_10Hz/" \
 	--resume=false \
-	--num_gpu=3 \
+	--num_gpu=2 \
 	--master_port="12555" \
 	--save_every=5 \
 	--num_time_step_previous=20 \

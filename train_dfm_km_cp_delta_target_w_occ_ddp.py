@@ -118,12 +118,14 @@ def main(rank, world_size, run, config):
         data_path=data_path_train,
         sequence_length=config.num_time_step_previous +
         config.num_time_step_future,
-        read_keys=["bev_world", "ego", "navigation", "occ"])
+        read_keys=["bev_world", "ego", "navigation", "occ"],
+        dilation=config.dataset_dilation)
     dataset_val = InstanceDataset(
         data_path=data_path_val,
         sequence_length=config.num_time_step_previous +
         config.num_time_step_future,
-        read_keys=["bev_world", "ego", "navigation", "occ"])
+        read_keys=["bev_world", "ego", "navigation", "occ"],
+        dilation=config.dataset_dilation)
 
     dataloader_train = DataLoader(
         dataset_train,
@@ -317,6 +319,7 @@ if __name__ == "__main__":
     parser.add_argument("--gradient_clip_value", type=float, default=1)
     parser.add_argument("--num_time_step_previous", type=int, default=-1)
     parser.add_argument("--num_time_step_future", type=int, default=-1)
+    parser.add_argument("--dataset_dilation", type=int, default=1)
     parser.add_argument("--debug_render", type=lambda x: (
         str(x).lower() == 'true'), default=False)
     parser.add_argument("--save_interval", type=int, default=100)

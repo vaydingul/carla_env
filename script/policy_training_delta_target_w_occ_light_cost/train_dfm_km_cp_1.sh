@@ -22,6 +22,7 @@ python3 train_dfm_km_cp_delta_target_w_occ_ddp.py \
 	--lr_schedule=false \
 	--gradient_clip_type="norm" \
 	--gradient_clip_value=1.0 \
+	--dataset_dilation=1 \
 	--debug_render=false \
 	--save_interval=5 \
 	--input_ego_location=1 \
