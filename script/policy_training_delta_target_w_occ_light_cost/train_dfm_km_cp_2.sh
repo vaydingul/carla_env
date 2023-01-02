@@ -49,6 +49,7 @@ python3 train_dfm_km_cp_delta_target_w_occ_ddp.py \
 	--ego_state_mse_weight=1.0 \
 	--wandb=true \
 	--wandb_project="mbl" \
+	--wandb_id="3ohsztk8" \
 	--wandb_group="dfm-km-cp" \
 	--wandb_name="vanilla+bc+ego_state_loss(binary_radar)(new_world_model)(new_cost_parameters)" \
 	--ego_forward_model_path="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt" \
