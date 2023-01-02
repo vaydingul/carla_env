@@ -64,11 +64,13 @@ def main(rank, world_size, run, config):
     world_model_dataset_train = InstanceDataset(
         data_path=config.data_path_train,
         sequence_length=config.num_time_step_previous +
-        config.num_time_step_future)
+        config.num_time_step_future,
+        dilation=config.dataset_dilation)
     world_model_dataset_val = InstanceDataset(
         data_path=config.data_path_val,
         sequence_length=config.num_time_step_previous +
-        config.num_time_step_future)
+        config.num_time_step_future,
+        dilation=config.dataset_dilation)
 
     logger.info(f"Train dataset size: {len(world_model_dataset_train)}")
     logger.info(f"Val dataset size: {len(world_model_dataset_val)}")
@@ -230,6 +232,7 @@ if __name__ == "__main__":
     parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--num_time_step_previous", type=int, default=10)
     parser.add_argument("--num_time_step_future", type=int, default=10)
+    parser.add_argument("--dataset_dilation", type=int, default=1)
     parser.add_argument("--reconstruction_loss", type=str, default="mse_loss")
     parser.add_argument("--logvar_clip", type=lambda x: (
         str(x).lower() == 'true'), default=True)

@@ -66,10 +66,10 @@ class ActorModule(module.Module):
 
     def _stop(self):
         """Stop the actor manager"""
-        if self.spawned:
+        if self.spawned and self.actor.is_alive:
             
             self.actor.destroy()
-
+            self.spawned=False
             for sensor in self.sensor_dict.values():
                 sensor.close()
 

@@ -78,6 +78,11 @@ def main(config):
 
             episode_path = dataset_path / item
             episode_navigation_path = episode_path / Path("navigation")
+            episode_navigation_path_downsampled = episode_path / Path(
+                "navigation_downsampled")
+            # Create folder if it does not exist
+            episode_navigation_path_downsampled.mkdir(parents=True, exist_ok=True)
+            
             navigation_files = [file for file in os.listdir(
                 episode_navigation_path) if file.endswith(".json")]
             navigation_files_sorted = sorted(
@@ -99,9 +104,11 @@ def main(config):
                 navigation_files_sorted)
 
             for k in range(len(navigation_files_sorted)):
-                with open(episode_navigation_path / navigation_files_sorted[k], "w") as f:
+                with open(episode_navigation_path_downsampled / navigation_files_sorted[k], "w") as f:
                     json.dump(
-                        obj={"command":navigation_data_downsampled_list[k][1], "waypoint":navigation_data_downsampled_list[k][0]},
+                        obj={
+                            "command": navigation_data_downsampled_list[k][1],
+                            "waypoint": navigation_data_downsampled_list[k][0]},
                         fp=f,
                         indent=10)
 

@@ -1,6 +1,6 @@
 import torch
 from pathlib import Path
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 import os
 import numpy as np
 from typing import List, Union
@@ -19,11 +19,13 @@ class InstanceDataset(Dataset):
             self,
             data_path: Union[str, Path],
             sequence_length: int = 2,
-            read_keys: List[str] = ["bev_world"]):
+            read_keys: List[str] = ["bev_world"],
+            dilation: int = 1):
 
         self.data_path = Path(data_path)
         self.sequence_length = sequence_length
         self.read_keys = read_keys
+        self.dilation = dilation
         self.count_array = []
         self.data = []
 
@@ -57,18 +59,23 @@ class InstanceDataset(Dataset):
                     counter +
                     (self.count_array[-1] if len(self.count_array) > 0 else 0))
 
+        self.count_array.pop(-1)
         self.count_array = np.array(self.count_array)
 
     def __len__(self):
-        return len(self.data) - self.sequence_length
+        return len(self.data) - self.sequence_length - \
+            (self.sequence_length - 1) * (self.dilation - 1) + 1
 
     def __getitem__(self, index):
 
         I, = np.nonzero(np.logical_and((((index +
-                                          self.sequence_length) -
+                                          self.sequence_length *
+                                          self.dilation) -
                                          self.count_array) >= 0), (((index +
-                                                                     self.sequence_length) -
-                                                                    self.count_array) < self.sequence_length)))
+                                                                     self.sequence_length *
+                                                                     self.dilation) -
+                                                                    self.count_array) <= self.sequence_length *
+                                                                   self.dilation)))
 
         if I.size != 0:
             index = self.count_array[I[-1]]
@@ -79,32 +86,58 @@ class InstanceDataset(Dataset):
 
             if read_key in ["bev", "bev_world", "bev_ego"]:
 
-                data_ = [self._load_bev(index + k, read_key)
-                         for k in range(self.sequence_length)]
+                data_ = [
+                    self._load_bev(
+                        index +
+                        k,
+                        read_key) for k in range(
+                        0,
+                        self.sequence_length *
+                        self.dilation,
+                        self.dilation)]
 
                 data_stacked = {}
 
                 for key in data_[0].keys():
                     data_stacked[key] = torch.stack(
-                        [data_[k][key] for k in range(self.sequence_length)], dim=0)
+                        [data_[k][key] for k in range(len(data_))], dim=0)
 
                 data_ = data_stacked
 
             if read_key in ["rgb_front", "rgb_left", "rgb_right"]:
 
-                data_ = torch.stack([self._load_rgb(index + k, read_key)
-                                     for k in range(self.sequence_length)],
-                                    dim=0)
+                data_ = torch.stack(
+                    [
+                        self._load_rgb(
+                            index +
+                            k,
+                            read_key) for k in range(
+                            0,
+                            self.sequence_length *
+                            self.dilation,
+                            self.dilation)],
+                    dim=0)
 
-            if read_key in ["ego", "navigation", "occ"]:
+            if read_key in [
+                "ego",
+                "navigation",
+                "occ",
+                    "navigation_downsampled"]:
 
-                data_ = [self._load_json(index + k, read_key)
-                         for k in range(self.sequence_length)]
+                data_ = [
+                    self._load_json(
+                        index +
+                        k,
+                        read_key) for k in range(
+                        0,
+                        self.sequence_length *
+                        self.dilation,
+                        self.dilation)]
                 data_stacked = {}
 
                 for key in data_[0].keys():
                     data_stacked[key] = torch.stack(
-                        [data_[k][key] for k in range(self.sequence_length)], dim=0)
+                        [data_[k][key] for k in range(len(data_))], dim=0)
                 data_ = data_stacked
 
             data[read_key] = data_
@@ -159,5 +192,17 @@ class InstanceDataset(Dataset):
 if __name__ == "__main__":
 
     dataset = InstanceDataset(
-        data_path="data/ground_truth_bev_model_train_data")
-    pass
+        data_path="/home/vaydingul/Documents/Codes/carla_env/data/ground_truth_bev_model_dummy_data",
+        sequence_length=20,
+        read_keys=["occ"],
+        dilation=3)
+    dataloader = DataLoader(
+        dataset,
+        batch_size=5,
+        shuffle=False,
+        num_workers=0)
+    k = 1
+    for data in dataloader:
+        print(k)
+        k += 1
+    print(len(dataloader))
