@@ -31,7 +31,7 @@ def main(config):
     for k in tqdm.tqdm(range(config.num_episodes)):
 
         # Create the data writer
-        data_save_path_ = Path(config.data_save_path) / f"episode_{k+4}"
+        data_save_path_ = Path(config.data_save_path) / f"episode_{k}"
         os.makedirs(data_save_path_, exist_ok=True)
 
         writer = InstanceWriter(data_save_path_)
@@ -89,12 +89,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_save_path",
         type=str,
-        default="./data/ground_truth_bev_model_val_data_10Hz",
+        default="./data/ground_truth_bev_model_test_data_10Hz",
         help="Path to save the data")
     parser.add_argument(
         "--num_episodes",
         type=int,
-        default=3,
+        default=20,
         help="Number of episodes to collect data from")
     config = parser.parse_args()
 

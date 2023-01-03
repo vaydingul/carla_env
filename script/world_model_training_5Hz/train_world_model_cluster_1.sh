@@ -18,8 +18,9 @@ python3 train_world_forward_model_ddp.py \
 	--num_workers=5 \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_10Hz/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_10Hz/" \
-	--resume=false \
-	--num_gpu=2 \
+	--resume=true \
+	--resume_checkpoint_number=9 \
+	--num_gpu=3 \
 	--master_port="12555" \
 	--save_every=5 \
 	--num_time_step_previous=20 \
@@ -29,6 +30,7 @@ python3 train_world_forward_model_ddp.py \
 	--logvar_clip=false \
 	--lr_schedule=false \
 	--wandb=true \
+	--wandb_id="2xpqn2jg" \
 	--wandb_project="mbl" \
 	--wandb_group="world-forward-model-multi-step-5Hz" \
 	--wandb_name="20-30-mse_loss-gradient_clip_norm_0.3_5Hz" \

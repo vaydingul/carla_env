@@ -20,7 +20,10 @@ from utils.model_utils import (
     fetch_checkpoint_from_wandb_link,
     fetch_checkpoint_from_wandb_run,
     load_world_model_from_wandb_run)
-from utils.wandb_utils import (create_initial_run, create_resumed_run)
+from utils.wandb_utils import (
+    create_initial_run,
+    create_resumed_run,
+    create_wandb_run)
 from utils.train_utils import (seed_everything, get_device)
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -33,25 +36,6 @@ def ddp_setup(rank, world_size, master_port):
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = master_port
     init_process_group(backend="nccl", rank=rank, world_size=world_size)
-
-
-def create_wandb_run(config):
-    # Setup the wandb
-    if config.wandb:
-
-        if not config.resume:
-
-            run = create_initial_run(config=config)
-
-        else:
-
-            run = create_resumed_run(config=config)
-
-    else:
-
-        run = None
-
-    return run
 
 
 def main(rank, world_size, run, config):
@@ -244,20 +228,6 @@ if __name__ == "__main__":
     parser.add_argument("--lr_schedule_gamma", type=float, default=0.5)
     parser.add_argument("--gradient_clip_type", type=str, default="norm")
     parser.add_argument("--gradient_clip_value", type=float, default=0.3)
-
-    # WANDB RELATED PARAMETERS
-    parser.add_argument(
-        "--wandb",
-        type=lambda x: (
-            str(x).lower() == 'true'),
-        default=True)
-    parser.add_argument("--wandb_project", type=str, default="mbl")
-    parser.add_argument(
-        "--wandb_group",
-        type=str,
-        default="world-forward-model-multi-step")
-    parser.add_argument("--wandb_name", type=str, default="model")
-    parser.add_argument("--wandb_id", type=str, default=None)
 
     config = parser.parse_args()
 

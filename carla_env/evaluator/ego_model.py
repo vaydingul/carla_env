@@ -92,26 +92,49 @@ class Evaluator(object):
 		ego_future_speed_predicted = ego_future_speed_predicted.detach().cpu().numpy().reshape(-1, 1)
 		ego_action = ego_action.detach().cpu().numpy().reshape(-1, 2)
 
-		fig, axs = plt.subplots(4, 1, figsize=(10, 10))
-		axs[0].plot(ego_future_location[:, 1], ego_future_location[:, 0], label="Ground Truth")
-		axs[0].plot(ego_future_location_predicted[:, 1], ego_future_location_predicted[:, 0], label="Predicted")
-		axs[0].set_title("Location")
-		axs[0].legend()
 
-		axs[1].plot(ego_future_yaw, label="Ground Truth")
-		axs[1].plot(ego_future_yaw_predicted, label="Predicted")
-		axs[1].set_title("Yaw")
-		axs[1].legend()
+		fig, axs = plt.subplots(3, 2, figsize=(15, 10))
+		axs[0][0].plot( ego_future_location[:, 0], label="Ground Truth")
+		axs[0][0].plot( ego_future_location_predicted[:, 0], label="Predicted")
+		#Calculate mean absolute error and add to title
+		mean_absolute_error = np.mean(np.abs(ego_future_location[:, 0] - ego_future_location_predicted[:, 0]))
+		axs[0][0].set_title(f"Location-X, MAE: {mean_absolute_error:.2f}")
+		axs[0][0].legend()
 
-		axs[2].plot(ego_future_speed, label="Ground Truth")
-		axs[2].plot(ego_future_speed_predicted, label="Predicted")
-		axs[2].set_title("Speed")
-		axs[2].legend()
+		axs[1][0].plot( ego_future_location[:, 1], label="Ground Truth")
+		axs[1][0].plot( ego_future_location_predicted[:, 1], label="Predicted")
+		#Calculate mean absolute error and add to title
+		mean_absolute_error = np.mean(np.abs(ego_future_location[:, 1] - ego_future_location_predicted[:, 1]))
+		axs[1][0].set_title(f"Location-Y, MAE: {mean_absolute_error:.2f}")
+		axs[1][0].legend()
 
-		axs[3].plot(ego_action[:, 0], label="Acceleration")
-		axs[3].plot(ego_action[:, 1], label="Steer")
-		axs[3].set_title("Action")
-		axs[3].legend()
+		axs[2][0].plot(ego_future_yaw, label="Ground Truth")
+		axs[2][0].plot(ego_future_yaw_predicted, label="Predicted")
+		#Calculate mean absolute error and add to title
+		mean_absolute_error = np.mean(np.abs(np.cos(ego_future_yaw) - np.cos(ego_future_yaw_predicted)))
+		mean_absolute_error += np.mean(np.abs(np.sin(ego_future_yaw) - np.sin(ego_future_yaw_predicted)))
+		axs[2][0].set_title(f"Yaw, MAE: {mean_absolute_error:.2f}")
+		axs[2][0].legend()
+
+
+		axs[0][1].plot(ego_future_location[:, 1], ego_future_location[:, 0], label="Ground Truth")
+		axs[0][1].plot(ego_future_location_predicted[:, 1], ego_future_location_predicted[:, 0], label="Predicted")
+		#Calculate mean absolute error and add to title
+		mean_absolute_error = np.mean(np.abs(ego_future_location - ego_future_location_predicted))
+		axs[0][1].set_title(f"Trajectory, MAE: {mean_absolute_error:.2f}")
+		axs[0][1].legend()
+
+		axs[1][1].plot(ego_future_speed, label="Ground Truth")
+		axs[1][1].plot(ego_future_speed_predicted, label="Predicted")
+		#Calculate mean absolute error and add to title
+		mean_absolute_error = np.mean(np.abs(ego_future_speed - ego_future_speed_predicted))
+		axs[1][1].set_title(f"Speed, MAE: {mean_absolute_error:.2f}")
+		axs[1][1].legend()
+
+		axs[2][1].plot(ego_action[:, 0], label="Acceleration")
+		axs[2][1].plot(ego_action[:, 1], label="Steer")
+		axs[2][1].set_title("Action")
+		axs[2][1].legend()
 
 
 		plt.tight_layout()

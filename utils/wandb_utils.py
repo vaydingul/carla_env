@@ -29,3 +29,21 @@ def create_resumed_run(config):
         id=config.wandb_id,
         resume="allow")
     return run
+
+def create_wandb_run(config):
+    # Setup the wandb
+    if config.wandb:
+
+        if not config.resume:
+
+            run = create_initial_run(config=config)
+
+        else:
+
+            run = create_resumed_run(config=config)
+
+    else:
+
+        run = None
+
+    return run

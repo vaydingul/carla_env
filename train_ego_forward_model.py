@@ -2,9 +2,12 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import os
 import numpy as np
-from carla_env.models.dynamic import vehicle as v
-from carla_env.dataset.ego_model import EgoModelDataset, EgoModelDatasetV2
+from carla_env.models.dynamic.vehicle import KinematicBicycleModel
+from carla_env.dataset.instance import InstanceDataset
 from carla_env.trainer.ego_model import Trainer
+from utils.train_utils import (seed_everything, get_device)
+from utils.wandb_utils import (create_wandb_run)
+from utils.model_utils import (fetch_checkpoint_from_wandb_run)
 import wandb
 import argparse
 import logging
@@ -16,62 +19,93 @@ logging.basicConfig(level=logging.DEBUG)
 
 def main(config):
 
-    data_path_train = config.data_path_train
-    data_path_val = config.data_path_val
-    ego_model_dataset_train = EgoModelDatasetV2(data_path_train)
-    ego_model_dataset_val = EgoModelDatasetV2(data_path_val)
-    logger.info(f"Train dataset size: {len(ego_model_dataset_train)}")
-    logger.info(f"Validation dataset size: {len(ego_model_dataset_val)}")
+    seed_everything(config.seed)
+    device = get_device()
+    run = create_wandb_run(config)
 
-    ego_model_dataloader_train = DataLoader(
-        ego_model_dataset_train,
+    dataset_train = InstanceDataset(
+        data_path=config.data_path_train,
+        sequence_length=config.num_time_step_previous +
+        config.num_time_step_future,
+        read_keys=["ego"],
+        dilation=config.dataset_dilation)
+    dataset_val = InstanceDataset(
+        data_path=config.data_path_val,
+        sequence_length=config.num_time_step_previous +
+        config.num_time_step_future,
+        read_keys=["ego"],
+        dilation=config.dataset_dilation)
+
+    logger.info(f"Train dataset size: {len(dataset_train)}")
+    logger.info(f"Validation dataset size: {len(dataset_val)}")
+
+    dataloader_train = DataLoader(
+        dataset_train,
         batch_size=config.batch_size,
         shuffle=True,
         num_workers=config.num_workers)
-    ego_model_dataloader_val = DataLoader(
-        ego_model_dataset_val,
+    dataloader_val = DataLoader(
+        dataset_val,
         batch_size=config.batch_size,
         shuffle=False,
         num_workers=config.num_workers)
 
-    ego_model = v.KinematicBicycleModelV2(dt=1 / 20)
-    ego_model_optimizer = torch.optim.Adam(
-        ego_model.parameters(), lr=config.lr)
-    ego_model_loss_criterion = torch.nn.L1Loss()
-    ego_model_device = torch.device(
-        "cuda:0" if torch.cuda.is_available() else "cpu")
-    print(ego_model_device)
-    ego_model.to(ego_model_device)
+    if not config.resume:
 
-    ego_model_trainer = Trainer(
-        ego_model,
-        ego_model_dataloader_train,
-        ego_model_dataloader_val,
-        ego_model_optimizer,
-        ego_model_loss_criterion,
-        ego_model_device,
-        num_epochs=config.num_epochs)
-
-    if config.wandb:
-        run = wandb.init(project="mbl", group="ego-forward-model",
-                         name="training_new_model", config=config)
-        run.define_metric("train/step")
-        run.define_metric("val/step")
-        run.define_metric("model/step")
-        run.define_metric(name="train/*", step_metric="train/step")
-        run.define_metric(name="val/*", step_metric="val/step")
-        run.define_metric(name="model/*", step_metric="model/step")
-        run.watch(ego_model)
+        model = KinematicBicycleModel(dt=config.dt)
 
     else:
-        run = None
 
-    ego_model_trainer.learn(run)
+        checkpoint = fetch_checkpoint_from_wandb_run(
+            run=run, checkpoint_number=config.resume_checkpoint_number)
 
-    ego_model.to("cpu")
+        model = KinematicBicycleModel.load_model_from_wandb_run(
+            run=run, checkpoint=checkpoint, device=device)
 
-    torch.save(ego_model.state_dict(),
-               config.pretrained_model_path / Path("ego_model_new.pt"))
+    model.to(device)
+
+    logger.info(
+        f"Number of parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}")
+
+    if not config.resume:
+        optimizer = torch.optim.Adam(
+            model.parameters(), lr=config.lr)
+
+    else:
+        checkpoint = torch.load(
+            checkpoint.name,
+            map_location=device)
+
+        optimizer = torch.optim.Adam(
+            model.parameters(), lr=run.config["lr"])
+        optimizer.load_state_dict(
+            checkpoint["optimizer_state_dict"])
+
+    loss_criterion = torch.nn.L1Loss()
+
+    if run is not None:
+        run.watch(model, log="all")
+
+    trainer = Trainer(
+        model=model,
+        dataloader_train=dataloader_train,
+        dataloader_val=dataloader_val,
+        optimizer=optimizer,
+        loss_criterion=loss_criterion,
+        device=device,
+        save_path=config.pretrained_model_path,
+        num_time_step_previous=config.num_time_step_previous,
+        num_time_step_future=config.num_time_step_future,
+        current_epoch=checkpoint["epoch"] + 1 if config.resume else 0,
+        num_epochs=config.num_epochs,
+        train_step=checkpoint["train_step"] if config.resume else 0,
+        val_step=checkpoint["val_step"] if config.resume else 0)
+
+    logger.info("Training started!")
+
+    trainer.learn(run)
+
+    logger.info("Training finished!")
 
 
 if __name__ == "__main__":
@@ -85,19 +119,44 @@ if __name__ == "__main__":
     checkpoint_path.mkdir(parents=True, exist_ok=True)
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--lr", type=float, default=0.01)
     parser.add_argument("--num_epochs", type=int, default=1000)
     parser.add_argument("--batch_size", type=int, default=5000)
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--data_path_train", type=str,
-                        default="./data/kinematic_model_data_train_3/")
+                        default="/home/vaydingul/Documents/Codes/carla_env/data/kinematic_model_train_data_10Hz")
     parser.add_argument("--data_path_val", type=str,
-                        default="./data/kinematic_model_data_val_3/")
+                        default="/home/vaydingul/Documents/Codes/carla_env/data/kinematic_model_val_data_10Hz")
+    parser.add_argument("--num_time_step_previous", type=int, default=1)
+    parser.add_argument("--num_time_step_future", type=int, default=10)
+    parser.add_argument("--dt", type=float, default=1 / 5)
+    parser.add_argument("--dataset_dilation", type=int, default=1)
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
-    parser.add_argument("--wandb", type=bool, default=True)
-    config = parser.parse_args()
 
-    # config.wandb = False
+    # WANDB RELATED PARAMETERS
+
+    parser.add_argument(
+        "--resume",
+        type=lambda x: (
+            str(x).lower() == 'true'),
+        default=False)
+    parser.add_argument("--resume_checkpoint_number", type=int, default=49)
+
+    parser.add_argument(
+        "--wandb",
+        type=lambda x: (
+            str(x).lower() == 'true'),
+        default=False)
+    parser.add_argument("--wandb_project", type=str, default="mbl")
+    parser.add_argument(
+        "--wandb_group",
+        type=str,
+        default="world-forward-model-multi-step")
+    parser.add_argument("--wandb_name", type=str, default="model")
+    parser.add_argument("--wandb_id", type=str, default=None)
+
+    config = parser.parse_args()
 
     main(config)

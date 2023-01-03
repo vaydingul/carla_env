@@ -63,7 +63,9 @@ def main(config):
     world_model_dataset_test = InstanceDataset(
         data_path=data_path_test,
         sequence_length=run.config["num_time_step_previous"] +
-        config.num_time_step_predict)
+        config.num_time_step_predict,
+        dilation=run.config["dataset_dilation"],
+        read_keys=["bev_world"])
 
     logger.info(f"Test dataset size: {len(world_model_dataset_test)}")
 

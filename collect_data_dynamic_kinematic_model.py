@@ -22,18 +22,33 @@ def main(config):
             "render": False, "save": False, "save_video": False,
             "tasks": [
                 {
+                    "world": "Town01", "num_vehicles": 0
+                },
+                {
+                    "world": "Town02", "num_vehicles": 0
+                },
+                {
+                    "world": "Town03", "num_vehicles": 0
+                },
+                {
+                    "world": "Town04", "num_vehicles": 0
+                },
+                {
+                    "world": "Town05", "num_vehicles": 0
+                },
+                {
                     "world": "Town06", "num_vehicles": 0
                 },
-                
+
             ],
             "max_steps": 1000,
             "random": True,
-            "fixed_delta_seconds": 1/10})
+            "fixed_delta_seconds": 1 / 10})
 
     for k in tqdm.tqdm(range(config.num_episodes)):
 
         # Create the data writer
-        data_save_path_ = Path(config.data_save_path) / f"episode_{k+75}"
+        data_save_path_ = Path(config.data_save_path) / f"episode_{k+14}"
         os.makedirs(data_save_path_, exist_ok=True)
 
         writer = InstanceWriter(data_save_path_)
@@ -70,12 +85,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_save_path",
         type=str,
-        default="./data/kinematic_model_data_10Hz/",
+        default="./data/kinematic_model_val_data_10Hz/",
         help="Path to save the data")
     parser.add_argument(
         "--num_episodes",
         type=int,
-        default=15,
+        default=1,
         help="Number of episodes to collect data from")
     config = parser.parse_args()
 
