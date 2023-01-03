@@ -229,6 +229,20 @@ if __name__ == "__main__":
     parser.add_argument("--gradient_clip_type", type=str, default="norm")
     parser.add_argument("--gradient_clip_value", type=float, default=0.3)
 
+    # WANDB RELATED PARAMETERS
+    parser.add_argument(
+        "--wandb",
+        type=lambda x: (
+            str(x).lower() == 'true'),
+        default=False)
+    parser.add_argument("--wandb_project", type=str, default="mbl")
+    parser.add_argument(
+        "--wandb_group",
+        type=str,
+        default="world-forward-model-multi-step")
+    parser.add_argument("--wandb_name", type=str, default="model")
+    parser.add_argument("--wandb_id", type=str, default=None)
+
     config = parser.parse_args()
 
     run = create_wandb_run(config)
