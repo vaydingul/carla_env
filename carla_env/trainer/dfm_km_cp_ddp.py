@@ -120,10 +120,10 @@ class Trainer(object):
                                                              self.num_time_step_previous + self.num_time_step_future].to(self.gpu_id)
             ego_future_action_predicted_list = []
 
-            command = data["navigation_downsampled"]["command"][:,
+            command = data["navigation"]["command"][:,
                                                     self.num_time_step_previous - 1].long().to(self.gpu_id)
             command = F.one_hot(command - 1, num_classes=6).float()
-            target_location = data["navigation_downsampled"]["waypoint"][:,
+            target_location = data["navigation"]["waypoint"][:,
                                                              self.num_time_step_previous - 1, 0:2].to(self.gpu_id)
 
             occupancy = data["occ"]["occupancy"][:,
@@ -384,10 +384,10 @@ class Trainer(object):
                                                                  self.num_time_step_previous + self.num_time_step_future].to(self.gpu_id)
                 ego_future_action_predicted_list = []
 
-                command = data["navigation_downsampled"]["command"][:,
+                command = data["navigation"]["command"][:,
                                                         self.num_time_step_previous - 1].long().to(self.gpu_id)
                 command = F.one_hot(command - 1, num_classes=6).float()
-                target_location = data["navigation_downsampled"]["waypoint"][:,
+                target_location = data["navigation"]["waypoint"][:,
                                                                  self.num_time_step_previous - 1, 0:2].to(self.gpu_id)
 
                 occupancy = data["occ"]["occupancy"][:,
