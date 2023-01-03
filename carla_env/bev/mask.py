@@ -67,9 +67,6 @@ class CroppingRect(NamedTuple):
             self.width and self.y <= p.y <= self.y + self.height
 
 
-
-
-
 def lateral_shift(transform, shift):
     """Makes a lateral shift of the forward vector of a transform"""
     transform.rotation.yaw += 90
@@ -244,6 +241,66 @@ class MapMaskGenerator:
                     color=COLOR_ON,
                     thickness=5)
                 cv.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
+        return canvas
+
+    def road_on_mask(self, next_waypoint) -> Mask:
+        canvas = self.make_empty_mask()
+        for road_waypoints in self._each_road_waypoints:
+            if road_waypoints[0].road_id == next_waypoint.road_id:
+
+                road_left_side = [
+                    lateral_shift(
+                        w.transform, -w.lane_width * 0.5) for w in road_waypoints if w.lane_id == next_waypoint.lane_id]
+                road_right_side = [
+                    lateral_shift(
+                        w.transform,
+                        w.lane_width *
+                        0.5) for w in road_waypoints if w.lane_id == next_waypoint.lane_id]
+
+                polygon = road_left_side + \
+                    [x for x in reversed(road_right_side)]
+                polygon = [self.location_to_pixel(x) for x in polygon]
+                if len(polygon) > 2:
+                    polygon = np.array([polygon], dtype=np.int32)
+
+                    cv.polylines(
+                        img=canvas,
+                        pts=polygon,
+                        isClosed=True,
+                        color=COLOR_ON,
+                        thickness=5)
+                    cv.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
+        return canvas
+
+    def road_off_mask(self, next_waypoint) -> Mask:
+        canvas = self.make_empty_mask()
+        for road_waypoints in self._each_road_waypoints:
+            if road_waypoints[0].road_id == next_waypoint.road_id:
+
+                road_left_side = [
+                    lateral_shift(
+                        w.transform, -w.lane_width * 0.5) for w in road_waypoints if w.lane_id != next_waypoint.lane_id]
+                road_right_side = [
+                    lateral_shift(
+                        w.transform,
+                        w.lane_width *
+                        0.5) for w in road_waypoints if w.lane_id != next_waypoint.lane_id]
+
+                polygon = road_left_side + \
+                    [x for x in reversed(road_right_side)]
+                polygon = [self.location_to_pixel(x) for x in polygon]
+                if len(polygon) > 2:
+                    polygon = np.array([polygon], dtype=np.int32)
+
+                    cv.polylines(
+                        img=canvas,
+                        pts=polygon,
+                        isClosed=True,
+                        color=COLOR_ON,
+                        thickness=5)
+                    cv.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
+
+            
         return canvas
 
     def lanes_mask(self) -> Mask:

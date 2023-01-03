@@ -156,7 +156,7 @@ class CarlaEnvironment(Environment):
                 512),
             render_lanes_on_junctions=False,
             pixels_per_meter=20,
-            crop_type=BirdViewCropType.DYNAMIC)
+            crop_type=BirdViewCropType.FRONT_AREA_ONLY)
 
         time.sleep(1.0)
         logger.info("Everything is set!")
@@ -228,8 +228,21 @@ class CarlaEnvironment(Environment):
 
         self.spectator.set_transform(transform)
 
+        self._next_agent_command = RoadOption.VOID.value
+        self._next_agent_waypoint = self.map.get_waypoint(transform.location)
+
+        # try:
+        #     _next_agent_navigational_action = self.traffic_manager_module.get_next_action(
+        #         self.hero_actor_module.get_actor())
+        #     self._next_agent_command = _next_agent_navigational_action[0]
+        #     self._next_agent_waypoint = _next_agent_navigational_action[1]
+
+        # except BaseException:
+        #     pass
+
         bev = self.bev_module.step(
-            agent_vehicle=self.hero_actor_module.get_actor())
+            agent_vehicle=self.hero_actor_module.get_actor(),
+            next_waypoint=self._next_agent_waypoint)
 
         data_dict["bev"] = bev
 
@@ -374,7 +387,8 @@ class CarlaEnvironment(Environment):
 
     def _create_render_window(self):
 
-        self.canvas = np.zeros((256 + 512 * (900 // 512) + 50, 900 * 1 + 1200, 3), np.uint8)
+        self.canvas = np.zeros(
+            (256 + 512 * (900 // 512) + 50, 900 * 1 + 1200, 3), np.uint8)
         cv2.imshow("Environment", self.canvas)
 
         if cv2.waitKey(1) == ord('q'):

@@ -51,13 +51,15 @@ DEFAULT_CROP_TYPE = BirdViewCropType.FRONT_AND_REAR_AREA
 #     LANES = 1
 #     ROAD = 0
 class BirdViewMasks(IntEnum):
-    PEDESTRIANS = 7
-    RED_LIGHTS = 6
-    YELLOW_LIGHTS = 5
-    GREEN_LIGHTS = 4
-    AGENT = 3
-    VEHICLES = 2
-    LANES = 1
+    PEDESTRIANS = 9
+    RED_LIGHTS = 8
+    YELLOW_LIGHTS = 7
+    GREEN_LIGHTS = 6
+    AGENT = 5
+    VEHICLES = 4
+    LANES = 3
+    ROAD_OFF = 2
+    ROAD_ON = 1
     ROAD = 0
 
     @staticmethod
@@ -94,10 +96,12 @@ RGB_BY_MASK = {
     BirdViewMasks.YELLOW_LIGHTS: RGB.YELLOW,
     BirdViewMasks.GREEN_LIGHTS: RGB.GREEN,
     BirdViewMasks.AGENT: RGB.CHAMELEON,
-    BirdViewMasks.VEHICLES: RGB.ORANGE,
+    BirdViewMasks.VEHICLES: RGB.SKY_BLUE,
     # BirdViewMasks.CENTERLINES: RGB.CHOCOLATE,
     BirdViewMasks.LANES: RGB.WHITE,
-    BirdViewMasks.ROAD: RGB.DIM_GRAY,
+    BirdViewMasks.ROAD_ON: RGB.DIM_GRAY,
+    BirdViewMasks.ROAD_OFF: RGB.DARK_GRAY,
+    BirdViewMasks.ROAD: RGB.CHOCOLATE
 }
 
 RGB_BY_MASK_MODEL = {
@@ -246,7 +250,7 @@ class BirdViewProducer:
         )
         return str(cache_dir / cache_filename)
 
-    def step(self, agent_vehicle: carla.Actor) -> BirdView:
+    def step(self, agent_vehicle: carla.Actor, next_waypoint: carla.Waypoint) -> BirdView:
         all_actors = actors.query_all(world=self._world)
         segregated_actors = actors.segregate_by_type(
             actors=all_actors, agent_vehicle=agent_vehicle)
@@ -265,12 +269,12 @@ class BirdViewProducer:
             height=self.rendering_area.height,
         )
 
-        conservative_rect = CroppingRect(
-            x=int(agent_global_px_pos.x - self.target_size.width / 2),
-            y=int(agent_global_px_pos.y - self.target_size.height / 2),
-            width=self.target_size.width,
-            height=self.target_size.height,
-        )
+        # conservative_rect = CroppingRect(
+        #     x=int(agent_global_px_pos.x - self.target_size.width / 2),
+        #     y=int(agent_global_px_pos.y - self.target_size.height / 2),
+        #     width=self.target_size.width,
+        #     height=self.target_size.height,
+        # )
 
         if self._crop_type is BirdViewCropType.DYNAMIC:
 
@@ -310,6 +314,11 @@ class BirdViewProducer:
 
         self.masks_generator.enable_local_rendering_mode(rendering_window)
 
+        road_on_mask = self.masks_generator.road_on_mask(next_waypoint)
+        road_off_mask = self.masks_generator.road_off_mask(next_waypoint)
+        masks[BirdViewMasks.ROAD_ON.value] = road_on_mask
+        masks[BirdViewMasks.ROAD_OFF.value] = road_off_mask
+        
         masks = self._render_actors_masks(
             agent_vehicle, segregated_actors, masks)
 
