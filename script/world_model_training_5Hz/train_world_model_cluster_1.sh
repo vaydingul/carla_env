@@ -20,7 +20,7 @@ python3 train_world_forward_model_ddp.py \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_10Hz/" \
 	--resume=true \
 	--resume_checkpoint_number=14 \
-	--num_gpu=6 \
+	--num_gpu=5 \
 	--master_port="12555" \
 	--save_every=5 \
 	--num_time_step_previous=20 \
