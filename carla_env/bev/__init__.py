@@ -51,13 +51,16 @@ DEFAULT_CROP_TYPE = BirdViewCropType.FRONT_AND_REAR_AREA
 #     LANES = 1
 #     ROAD = 0
 class BirdViewMasks(IntEnum):
-    PEDESTRIANS = 9
-    RED_LIGHTS = 8
-    YELLOW_LIGHTS = 7
-    GREEN_LIGHTS = 6
-    AGENT = 5
-    VEHICLES = 4
-    LANES = 3
+    PEDESTRIANS = 12
+    RED_LIGHTS = 11
+    YELLOW_LIGHTS = 10
+    GREEN_LIGHTS = 9
+    AGENT = 8
+    VEHICLES = 7
+    LANES = 6
+    ROAD_GREEN = 5
+    ROAD_YELLOW = 4
+    ROAD_RED = 3
     ROAD_OFF = 2
     ROAD_ON = 1
     ROAD = 0
@@ -99,6 +102,9 @@ RGB_BY_MASK = {
     BirdViewMasks.VEHICLES: RGB.SKY_BLUE,
     # BirdViewMasks.CENTERLINES: RGB.CHOCOLATE,
     BirdViewMasks.LANES: RGB.WHITE,
+    BirdViewMasks.ROAD_GREEN: RGB.DIM_GREEN,
+    BirdViewMasks.ROAD_YELLOW: RGB.DIM_YELLOW,
+    BirdViewMasks.ROAD_RED: RGB.DIM_RED,
     BirdViewMasks.ROAD_ON: RGB.DIM_GRAY,
     BirdViewMasks.ROAD_OFF: RGB.DARK_GRAY,
     BirdViewMasks.ROAD: RGB.CHOCOLATE
@@ -391,6 +397,13 @@ class BirdViewProducer:
         masks[BirdViewMasks.RED_LIGHTS.value] = red_lights_mask
         masks[BirdViewMasks.YELLOW_LIGHTS.value] = yellow_lights_mask
         masks[BirdViewMasks.GREEN_LIGHTS.value] = green_lights_mask
+
+        road_green_mask = self.masks_generator.road_light_mask([tl for tl in segregated_actors.traffic_lights if tl.state == carla.TrafficLightState.Green])
+        road_yellow_mask = self.masks_generator.road_light_mask([tl for tl in segregated_actors.traffic_lights if tl.state == carla.TrafficLightState.Yellow])
+        road_red_mask = self.masks_generator.road_light_mask([tl for tl in segregated_actors.traffic_lights if tl.state == carla.TrafficLightState.Red])
+        masks[BirdViewMasks.ROAD_GREEN.value] = road_green_mask
+        masks[BirdViewMasks.ROAD_YELLOW.value] = road_yellow_mask
+        masks[BirdViewMasks.ROAD_RED.value] = road_red_mask
         masks[BirdViewMasks.AGENT.value] = self.masks_generator.agent_vehicle_mask(
             agent_vehicle)
         masks[BirdViewMasks.VEHICLES.value] = self.masks_generator.vehicles_mask(

@@ -85,7 +85,7 @@ class CarlaEnvironment(Environment):
         else:
             self.traffic_manager_module.close()
 
-        self.client_module = client.ClientModule(config={"world": "Town02"})
+        self.client_module = client.ClientModule(config={"world": "Town02", "fixed_delta_seconds": 1/ 10})
 
         self.world = self.client_module.get_world()
         self.map = self.client_module.get_map()
@@ -131,7 +131,7 @@ class CarlaEnvironment(Environment):
         # Make this vehicle actor
 
         actor_list = create_multiple_actors_for_traffic_manager(
-            self.client, 100)
+            self.client, 1)
         self.hero_actor_module = actor_list[0]
 
         self.traffic_manager_module = traffic_manager.TrafficManagerModule(
@@ -152,10 +152,10 @@ class CarlaEnvironment(Environment):
         self.bev_module = BirdViewProducer(
             client=self.client,
             target_size=PixelDimensions(
-                512,
-                512),
+                192,
+                192),
             render_lanes_on_junctions=False,
-            pixels_per_meter=20,
+            pixels_per_meter=5,
             crop_type=BirdViewCropType.FRONT_AREA_ONLY)
 
         time.sleep(1.0)
@@ -388,7 +388,7 @@ class CarlaEnvironment(Environment):
     def _create_render_window(self):
 
         self.canvas = np.zeros(
-            (256 + 512 * (900 // 512) + 50, 900 * 1 + 1200, 3), np.uint8)
+            (256 + 192 * (900 // 192) + 50, 900 * 1 + 1200, 3), np.uint8)
         cv2.imshow("Environment", self.canvas)
 
         if cv2.waitKey(1) == ord('q'):

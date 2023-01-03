@@ -300,8 +300,45 @@ class MapMaskGenerator:
                         thickness=5)
                     cv.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
 
-            
         return canvas
+
+    def road_light_mask(self, traffic_lights:carla.TrafficLight) -> Mask:
+        canvas = self.make_empty_mask()
+        road_ids = []
+        lane_ids = []
+        for tl in traffic_lights:
+            for wp in tl.get_affected_lane_waypoints():
+                road_ids.append(wp.road_id)
+                lane_ids.append(wp.lane_id)
+        for road_waypoints in self._each_road_waypoints:
+            if road_waypoints[0].road_id in road_ids:
+
+                road_left_side = [
+                    lateral_shift(
+                        w.transform, -w.lane_width * 0.5) for w in road_waypoints if w.lane_id in lane_ids]
+                road_right_side = [
+                    lateral_shift(
+                        w.transform,
+                        w.lane_width *
+                        0.5) for w in road_waypoints if w.lane_id in lane_ids]
+
+                polygon = road_left_side + \
+                    [x for x in reversed(road_right_side)]
+                polygon = [self.location_to_pixel(x) for x in polygon]
+                if len(polygon) > 2:
+                    polygon = np.array([polygon], dtype=np.int32)
+
+                    cv.polylines(
+                        img=canvas,
+                        pts=polygon,
+                        isClosed=True,
+                        color=COLOR_ON,
+                        thickness=5)
+                    cv.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
+        return canvas
+
+
+
 
     def lanes_mask(self) -> Mask:
         canvas = self.make_empty_mask()
