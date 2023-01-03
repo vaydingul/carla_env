@@ -14,13 +14,13 @@ python3 train_world_forward_model_ddp.py \
 	--seed=42 \
 	--lr=1e-4 \
 	--num_epochs=100 \
-	--batch_size=35 \
+	--batch_size=20 \
 	--num_workers=5 \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_10Hz/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_10Hz/" \
 	--resume=true \
-	--resume_checkpoint_number=9 \
-	--num_gpu=3 \
+	--resume_checkpoint_number=14 \
+	--num_gpu=6 \
 	--master_port="12555" \
 	--save_every=5 \
 	--num_time_step_previous=20 \
