@@ -17,7 +17,7 @@ python3 train_dfm_km_cp_delta_target_w_occ_ddp_special.py \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_4_town_02/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_4_town_02/" \
 	--resume=false \
-	--num_gpu=2 \
+	--num_gpu=1 \
 	--master_port="12366" \
 	--lr_schedule=false \
 	--gradient_clip_type="norm" \
@@ -49,7 +49,7 @@ python3 train_dfm_km_cp_delta_target_w_occ_ddp_special.py \
 	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="dfm-km-cp" \
-	--wandb_name="vanilla+bc(binary_radar)(new_world_model)(new_cost_parameters)" \
+	--wandb_name="SPECIAL_vanilla+bc(binary_radar)(new_world_model)(new_cost_parameters)" \
 	--ego_forward_model_path="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt" \
 	--world_forward_model_wandb_link="vaydingul/mbl/bylewhod" \
 	--world_forward_model_checkpoint_number=79
