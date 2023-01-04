@@ -27,7 +27,7 @@ def main(config):
 
             data_ = c.get_data()
 
-            c.render(bev=data_["bev"])
+            c.render(bev_list=[data_[f"bev_{k}"] for k in range(3)])
 
             time.sleep(0.1)
 

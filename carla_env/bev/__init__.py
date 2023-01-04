@@ -183,12 +183,16 @@ class BirdViewProducer:
         pixels_per_meter: int = 4,
         crop_type: BirdViewCropType = BirdViewCropType.FRONT_AND_REAR_AREA,
         dynamic_crop_margin: float = 0.1,
+        road_on_off: bool = False,
+        road_light: bool = False,
     ) -> None:
         self.client = client
         self.target_size = target_size
         self.pixels_per_meter = pixels_per_meter
         self._crop_type = crop_type
         self.dynamic_crop_margin = dynamic_crop_margin
+        self.road_on_off = road_on_off
+        self.road_light = road_light
         self.is_first_frame = True
         if crop_type is BirdViewCropType.FRONT_AND_REAR_AREA:
             rendering_square_size = round(
@@ -256,7 +260,8 @@ class BirdViewProducer:
         )
         return str(cache_dir / cache_filename)
 
-    def step(self, agent_vehicle: carla.Actor, next_waypoint: carla.Waypoint) -> BirdView:
+    def step(self, agent_vehicle: carla.Actor,
+             next_waypoint: carla.Waypoint) -> BirdView:
         all_actors = actors.query_all(world=self._world)
         segregated_actors = actors.segregate_by_type(
             actors=all_actors, agent_vehicle=agent_vehicle)
@@ -320,11 +325,12 @@ class BirdViewProducer:
 
         self.masks_generator.enable_local_rendering_mode(rendering_window)
 
-        road_on_mask = self.masks_generator.road_on_mask(next_waypoint)
-        road_off_mask = self.masks_generator.road_off_mask(next_waypoint)
-        masks[BirdViewMasks.ROAD_ON.value] = road_on_mask
-        masks[BirdViewMasks.ROAD_OFF.value] = road_off_mask
-        
+        if self.road_on_off:
+            road_on_mask = self.masks_generator.road_on_mask(next_waypoint)
+            road_off_mask = self.masks_generator.road_off_mask(next_waypoint)
+            masks[BirdViewMasks.ROAD_ON.value] = road_on_mask
+            masks[BirdViewMasks.ROAD_OFF.value] = road_off_mask
+
         masks = self._render_actors_masks(
             agent_vehicle, segregated_actors, masks)
 
@@ -398,12 +404,17 @@ class BirdViewProducer:
         masks[BirdViewMasks.YELLOW_LIGHTS.value] = yellow_lights_mask
         masks[BirdViewMasks.GREEN_LIGHTS.value] = green_lights_mask
 
-        road_green_mask = self.masks_generator.road_light_mask([tl for tl in segregated_actors.traffic_lights if tl.state == carla.TrafficLightState.Green])
-        road_yellow_mask = self.masks_generator.road_light_mask([tl for tl in segregated_actors.traffic_lights if tl.state == carla.TrafficLightState.Yellow])
-        road_red_mask = self.masks_generator.road_light_mask([tl for tl in segregated_actors.traffic_lights if tl.state == carla.TrafficLightState.Red])
-        masks[BirdViewMasks.ROAD_GREEN.value] = road_green_mask
-        masks[BirdViewMasks.ROAD_YELLOW.value] = road_yellow_mask
-        masks[BirdViewMasks.ROAD_RED.value] = road_red_mask
+        if self.road_light:
+            road_green_mask = self.masks_generator.road_light_mask(
+                [tl for tl in segregated_actors.traffic_lights if tl.state == carla.TrafficLightState.Green])
+            road_yellow_mask = self.masks_generator.road_light_mask(
+                [tl for tl in segregated_actors.traffic_lights if tl.state == carla.TrafficLightState.Yellow])
+            road_red_mask = self.masks_generator.road_light_mask(
+                [tl for tl in segregated_actors.traffic_lights if tl.state == carla.TrafficLightState.Red])
+            masks[BirdViewMasks.ROAD_GREEN.value] = road_green_mask
+            masks[BirdViewMasks.ROAD_YELLOW.value] = road_yellow_mask
+            masks[BirdViewMasks.ROAD_RED.value] = road_red_mask
+
         masks[BirdViewMasks.AGENT.value] = self.masks_generator.agent_vehicle_mask(
             agent_vehicle)
         masks[BirdViewMasks.VEHICLES.value] = self.masks_generator.vehicles_mask(
