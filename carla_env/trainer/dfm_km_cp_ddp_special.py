@@ -339,7 +339,7 @@ class Trainer(object):
 
             for save_iteration in self.save_iterations:
 
-                if i == save_iteration - 1:
+                if i == int(save_iteration) - 1:
 
                     if self.save_path is not None:
 
@@ -351,7 +351,7 @@ class Trainer(object):
                             "train_step": self.train_step,
                             "val_step": self.val_step},
                             self.save_path /
-                            Path(f"checkpoint_{epoch}.pt"))
+                            Path(f"checkpoint_{epoch}_{i}.pt"))
 
                         if run is not None:
                             run.save(str(self.save_path /

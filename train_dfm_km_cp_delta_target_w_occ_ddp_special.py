@@ -298,11 +298,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_path_train",
         type=str,
-        default="data/ground_truth_bev_model_test_data_4_town_02")
+        default="data/ground_truth_bev_model_dummy_data")
     parser.add_argument(
         "--data_path_val",
         type=str,
-        default="data/ground_truth_bev_model_test_data_4_town_02")
+        default="data/ground_truth_bev_model_dummy_data")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
     parser.add_argument(
