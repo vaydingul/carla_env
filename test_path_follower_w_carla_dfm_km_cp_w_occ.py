@@ -1,6 +1,6 @@
 from carla_env import carla_env_mpc_path_follower_bev_traffic
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
-from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
+from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.models.policy.policy import Policy
 from carla_env.cost.masked_cost_batched import Cost
@@ -42,7 +42,7 @@ def main(config):
     # ---------------------------------------------------------------------------- #
     ego_forward_model = load_ego_model_from_checkpoint(
         checkpoint=config.ego_forward_model_path,
-        cls=KinematicBicycleModelV2,
+        cls=KinematicBicycleModel,
         dt=1 / 20)
     ego_forward_model = ego_forward_model.to(device=device).eval()
 
@@ -485,22 +485,22 @@ if __name__ == "__main__":
     parser.add_argument(
         "--world_forward_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/2b2rklg9")
+        default="vaydingul/mbl/bylewhod")
 
     parser.add_argument(
         "--world_forward_model_checkpoint_number",
         type=int,
-        default=49)
+        default=94)
 
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/uc0y92ww")
+        default="vaydingul/mbl/br8nb7dd")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=19)
+        default=24)
 
     config = parser.parse_args()
 

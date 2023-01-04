@@ -1,6 +1,6 @@
 from torch import nn
 import torch
-from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
+from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.models.policy.policy import Policy
 
@@ -56,7 +56,7 @@ class DecoupledForwardModelKinematicsCoupledPolicy(nn.Module):
 
 
 if __name__ == "__main__":
-    ego_model = KinematicBicycleModelV2(dt=1 / 20)
+    ego_model = KinematicBicycleModel(dt=1 / 20)
     world_model = WorldBEVModel()
     policy_model = Policy((8, 192, 192), 4, 2)
     inp1 = {"location": torch.randn(10, 2),

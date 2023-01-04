@@ -1,6 +1,6 @@
 import logging
 
-from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
+from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.models.policy.policy import Policy
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
@@ -84,7 +84,7 @@ def main(rank, world_size, run, config):
     # ---------------------------------------------------------------------------- #
     ego_forward_model = load_ego_model_from_checkpoint(
         checkpoint=config.ego_forward_model_path,
-        cls=KinematicBicycleModelV2,
+        cls=KinematicBicycleModel,
         dt=1 / 20)
     ego_forward_model.to(device=rank)
 
