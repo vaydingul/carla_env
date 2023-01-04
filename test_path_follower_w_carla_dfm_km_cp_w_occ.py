@@ -237,7 +237,7 @@ def main(config):
             # control = output["action"][0]
             throttle, brake = acceleration_to_throttle_brake(
                 acceleration=control[0])
-
+            
             control = [throttle, control[1], brake]
 
             (current_transform, current_velocity, target_waypoint,
@@ -495,12 +495,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/br8nb7dd")
+        default="vaydingul/mbl/3ohsztk8")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=24)
+        default=4)
 
     config = parser.parse_args()
 
