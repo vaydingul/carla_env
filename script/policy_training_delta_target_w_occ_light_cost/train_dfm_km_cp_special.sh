@@ -17,7 +17,7 @@ python3 train_dfm_km_cp_delta_target_w_occ_ddp_special.py \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_4_town_02/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_4_town_02/" \
 	--resume=false \
-	--num_gpu=1 \
+	--num_gpu=2 \
 	--master_port="12366" \
 	--lr_schedule=false \
 	--gradient_clip_type="norm" \
