@@ -63,15 +63,24 @@ def main(config):
     # ---------------------------------------------------------------------------- #
     #                           Pretrained policy model                                  #
     # ---------------------------------------------------------------------------- #
+
+    checkpoint = torch.load(config.policy_model_path,
+                            map_location=device)
     policy_model_run = wandb.Api().run(
         config.policy_model_wandb_link)
-    checkpoint = fetch_checkpoint_from_wandb_link(
-        config.policy_model_wandb_link,
-        config.policy_model_checkpoint_number)
-    policy_model = Policy.load_model_from_wandb_run(
-        run=policy_model_run,
-        checkpoint=checkpoint,
-        device=device)
+    policy_model = Policy(
+        input_shape_world_state=policy_model_run.config["input_shape_world_state"],
+        input_ego_location=policy_model_run.config["input_ego_location"],
+        input_ego_yaw=policy_model_run.config["input_ego_yaw"],
+        input_ego_speed=policy_model_run.config["input_ego_speed"],
+        action_size=policy_model_run.config["action_size"],
+        hidden_size=policy_model_run.config["hidden_size"],
+        occupancy_size=policy_model_run.config["occupancy_size"],
+        layers=policy_model_run.config["num_layer"],
+        delta_target=policy_model_run.config["delta_target"],
+        single_world_state_input=policy_model_run.config["single_world_state_input"],
+    )
+    policy_model.load_state_dict(checkpoint["model_state_dict"])
     policy_model = policy_model.to(device=device).eval()
     # ---------------------------------------------------------------------------- #
     #                              DFM_KM with Policy                              #
@@ -226,7 +235,8 @@ def main(config):
                              ego_future_speed_predicted,
                              world_future_bev_predicted)
 
-            control = ego_future_action_predicted_list[0][0]#torch.mean(ego_future_action_predicted, dim=1)[0]
+            # torch.mean(ego_future_action_predicted, dim=1)[0]
+            control = ego_future_action_predicted_list[0][0]
 
             cost_canvas = render(
                 config.rollout_length,
@@ -276,7 +286,7 @@ def main(config):
                 world_forward_model_wandb_link=config.world_forward_model_wandb_link,
                 world_forward_model_checkpoint_number=config.world_forward_model_checkpoint_number,
                 policy_model_wandb_link=config.policy_model_wandb_link,
-                policy_model_checkpoint_number=config.policy_model_checkpoint_number)
+                policy_model_path=config.policy_model_path)
 
             counter += 1
 
@@ -490,17 +500,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--world_forward_model_checkpoint_number",
         type=int,
-        default=94)
+        default=79)
 
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/uc0y92ww")
+        default="vaydingul/mbl/fa8ctaio")
 
     parser.add_argument(
-        "--policy_model_checkpoint_number",
-        type=int,
-        default=24)
+        "--policy_model_path",
+        type=str,
+        default="pretrained_models_special/checkpoint_1_1232.pt")
 
     config = parser.parse_args()
 

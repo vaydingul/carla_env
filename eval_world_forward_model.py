@@ -64,7 +64,7 @@ def main(config):
         data_path=data_path_test,
         sequence_length=run.config["num_time_step_previous"] +
         config.num_time_step_predict,
-        dilation=run.config["dataset_dilation"],
+        dilation=run.config["dataset_dilation"] if "dataset_dilation" in run.config.keys() else 1,
         read_keys=["bev_world"])
 
     logger.info(f"Test dataset size: {len(world_model_dataset_test)}")

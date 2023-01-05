@@ -78,6 +78,7 @@ def create_multiple_actors_for_traffic_manager(client, n=20):
 #                 "hero": False},
 #             client=client) for _ in range(n)]
 
+
 class CarlaEnvironment(Environment):
     """Concrete implementation of Environment abstract base class"""
 
@@ -163,7 +164,7 @@ class CarlaEnvironment(Environment):
             client=self.client)
 
         actor_list = create_multiple_actors_for_traffic_manager(
-            self.client, 0)
+            self.client, 80)
         self.traffic_manager_module = traffic_manager.TrafficManagerModule(
             config={"vehicle_list": actor_list}, client=self.client)
         # Sensor suite
@@ -259,6 +260,7 @@ class CarlaEnvironment(Environment):
                     logger.debug(f"Collision impulse: {impulse_amplitude}")
                     if impulse_amplitude > 1:
                         self.is_done = True
+                        self.video_writer.release()
 
         data_dict["snapshot"] = snapshot
 
@@ -318,6 +320,21 @@ class CarlaEnvironment(Environment):
         self.canvas[rgb_image.shape[0]:rgb_image.shape[0] +
                     bev.shape[0], :bev.shape[1]] = bev
 
+        # Draw control as arrowed line to left corner of bev
+        if "control" in kwargs.keys():
+            action = kwargs["control"]
+            action = action.detach().cpu().numpy()
+            action *= 100
+            action = action.astype(np.int32)
+            cv2.arrowedLine(
+                self.canvas,
+                (100, rgb_image.shape[0] + 100),
+                (100 + action[1], rgb_image.shape[0] + 100 - action[0]),
+                (0,
+                 255,
+                 0),
+                1,
+                tipLength=0.1)
         # Put text for other modules
         position_x = rgb_image.shape[1] + 10
         position_y = 20

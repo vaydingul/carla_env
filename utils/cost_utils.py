@@ -39,16 +39,16 @@ def align_coordinate_mask_with_ego_vehicle(x, y, yaw, coordinate_mask):
     # Translate the coordinate mask
     aligned_coordinate_mask[...,
                             0] -= y.unsqueeze(-1).repeat(1,
-                                                           1,
-                                                           aligned_coordinate_mask.shape[2],
-                                                           aligned_coordinate_mask.shape[3],
-                                                           )
+                                                         1,
+                                                         aligned_coordinate_mask.shape[2],
+                                                         aligned_coordinate_mask.shape[3],
+                                                         )
     aligned_coordinate_mask[...,
                             1] -= x.unsqueeze(-1).repeat(1,
-                                                           1,
-                                                           aligned_coordinate_mask.shape[2],
-                                                           aligned_coordinate_mask.shape[3],
-                                                           )
+                                                         1,
+                                                         aligned_coordinate_mask.shape[2],
+                                                         aligned_coordinate_mask.shape[3],
+                                                         )
 
     # Rotate the coordinate mask
     rotation_matrix.unsqueeze_(2).unsqueeze_(3)
@@ -123,7 +123,6 @@ def rotate_batched(location, yaw):
         rotated_coordinates[:, 0:1, 0:1]
     delta_y = rotated_coordinates[:, 1:, 1:2] - \
         rotated_coordinates[:, 0:1, 1:2]
-
     delta_theta = yaw[:, 1:, 0:1] - yaw[:, 0:1, 0:1]
     return (delta_x, delta_y, delta_theta)
 
@@ -154,10 +153,10 @@ if __name__ == "__main__":
 
     # Visualization for testing purposes
     coordinate_mask, X, Y = create_coordinate_mask(500, 500, 10, 'cpu')
-    coordinate_mask_ = coordinate_mask.repeat(1,1,1,1,1)
-    x = torch.tensor([-10.0]).repeat(1,1,1)
-    y = torch.tensor([10.0]).repeat(1,1,1)
-    yaw = torch.deg2rad(torch.tensor([-30.0]).repeat(1,1,1))
+    coordinate_mask_ = coordinate_mask.repeat(1, 1, 1, 1, 1)
+    x = torch.tensor([-10.0]).repeat(1, 1, 1)
+    y = torch.tensor([10.0]).repeat(1, 1, 1)
+    yaw = torch.deg2rad(torch.tensor([-30.0]).repeat(1, 1, 1))
     aligned_coordinate_mask = align_coordinate_mask_with_ego_vehicle(
         x, y, yaw, coordinate_mask_)
 

@@ -50,7 +50,7 @@ def main(config):
                 (run.config["num_time_step_previous"] +
                  run.config["num_time_step_future"]) *
                 run.config["dataset_dilation"])),
-        batch_size=3,
+        batch_size=20,
         shuffle=False,
         num_workers=0)
 
@@ -78,11 +78,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_path_test",
         type=str,
-        default="/home/vaydingul/Documents/Codes/carla_env/data/kinematic_model_val_data_10Hz/")
+        default="/home/vaydingul/Documents/Codes/carla_env/data/ground_truth_bev_model_test_data_10Hz/")
     parser.add_argument(
         "--save_path",
         type=str,
-        default="figures/ego_forward_model_evaluation_extensive/TRIAL3/")
+        default="figures/ego_forward_model_evaluation_extensive/TRIAL2/")
     parser.add_argument("--num_time_step_previous", type=int, default=1)
     parser.add_argument("--num_time_step_future", type=int, default=10)
     parser.add_argument("--ego_forward_model_wandb_link", type=str,
