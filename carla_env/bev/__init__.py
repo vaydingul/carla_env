@@ -40,27 +40,16 @@ DEFAULT_WIDTH = 150  # its 37.5m when density is 4px/m
 DEFAULT_CROP_TYPE = BirdViewCropType.FRONT_AND_REAR_AREA
 
 
-# class BirdViewMasks(IntEnum):
-#     PEDESTRIANS = 8
-#     RED_LIGHTS = 7
-#     YELLOW_LIGHTS = 6
-#     GREEN_LIGHTS = 5
-#     AGENT = 4
-#     VEHICLES = 3
-#     CENTERLINES = 2
-#     LANES = 1
-#     ROAD = 0
 class BirdViewMasks(IntEnum):
-    PEDESTRIANS = 12
-    RED_LIGHTS = 11
-    YELLOW_LIGHTS = 10
-    GREEN_LIGHTS = 9
-    AGENT = 8
-    VEHICLES = 7
-    LANES = 6
-    ROAD_GREEN = 5
-    ROAD_YELLOW = 4
-    ROAD_RED = 3
+    OFFROAD = 11
+    PEDESTRIANS = 10
+    RED_YELLOW_LIGHTS = 9
+    GREEN_LIGHTS = 8
+    AGENT = 7
+    VEHICLES = 6
+    LANES = 5
+    ROAD_GREEN = 4
+    ROAD_RED_YELLOW = 3
     ROAD_OFF = 2
     ROAD_ON = 1
     ROAD = 0
@@ -74,52 +63,21 @@ class BirdViewMasks(IntEnum):
         return list(reversed(BirdViewMasks.top_to_bottom()))
 
 
-class BirdViewMasksModel(IntEnum):
-    OFFROAD = 7
-    PEDESTRIANS = 6
-    RED_LIGHTS = 5
-    YELLOW_LIGHTS = 4
-    GREEN_LIGHTS = 3
-    VEHICLES = 2
-    LANES = 1
-    ROAD = 0
-
-    @staticmethod
-    def top_to_bottom() -> List[int]:
-        return list(BirdViewMasksModel)
-
-    @staticmethod
-    def bottom_to_top() -> List[int]:
-        return list(reversed(BirdViewMasksModel.top_to_bottom()))
-
-
 RGB_BY_MASK = {
     BirdViewMasks.PEDESTRIANS: RGB.VIOLET,
+    BirdViewMasks.LANES: RGB.WHITE,
     BirdViewMasks.RED_LIGHTS: RGB.RED,
     BirdViewMasks.YELLOW_LIGHTS: RGB.YELLOW,
     BirdViewMasks.GREEN_LIGHTS: RGB.GREEN,
     BirdViewMasks.AGENT: RGB.CHAMELEON,
     BirdViewMasks.VEHICLES: RGB.SKY_BLUE,
-    # BirdViewMasks.CENTERLINES: RGB.CHOCOLATE,
-    BirdViewMasks.LANES: RGB.WHITE,
     BirdViewMasks.ROAD_GREEN: RGB.DIM_GREEN,
     BirdViewMasks.ROAD_YELLOW: RGB.DIM_YELLOW,
     BirdViewMasks.ROAD_RED: RGB.DIM_RED,
     BirdViewMasks.ROAD_ON: RGB.DIM_GRAY,
     BirdViewMasks.ROAD_OFF: RGB.DARK_GRAY,
-    BirdViewMasks.ROAD: RGB.CHOCOLATE
-}
-
-RGB_BY_MASK_MODEL = {
-    BirdViewMasksModel.OFFROAD: RGB.BLACK,
-    BirdViewMasksModel.PEDESTRIANS: RGB.VIOLET,
-    BirdViewMasksModel.RED_LIGHTS: RGB.RED,
-    BirdViewMasksModel.YELLOW_LIGHTS: RGB.YELLOW,
-    BirdViewMasksModel.GREEN_LIGHTS: RGB.GREEN,
-    BirdViewMasksModel.VEHICLES: RGB.ORANGE,
-    # BirdViewMasks.CENTERLINES: RGB.CHOCOLATE,
-    BirdViewMasksModel.LANES: RGB.WHITE,
-    BirdViewMasksModel.ROAD: RGB.DIM_GRAY,
+    BirdViewMasks.ROAD: RGB.CHOCOLATE,
+    BirdViewMasks.OFFROAD: RGB.BLACK
 }
 
 
@@ -185,7 +143,9 @@ class BirdViewProducer:
         dynamic_crop_margin: float = 0.1,
         road_on_off: bool = False,
         road_light: bool = False,
+        light_circle: bool = False,
     ) -> None:
+
         self.client = client
         self.target_size = target_size
         self.pixels_per_meter = pixels_per_meter
@@ -193,6 +153,7 @@ class BirdViewProducer:
         self.dynamic_crop_margin = dynamic_crop_margin
         self.road_on_off = road_on_off
         self.road_light = road_light
+        self.light_circle = light_circle
         self.is_first_frame = True
         if crop_type is BirdViewCropType.FRONT_AND_REAR_AREA:
             rendering_square_size = round(
@@ -373,14 +334,14 @@ class BirdViewProducer:
         return rgb_canvas
 
     @staticmethod
-    def as_rgb_model(birdview: BirdView) -> RgbCanvas:
+    def as_rgb_with_indices(birdview: BirdView, indices: list):
         h, w, d = birdview.shape
-        assert d == len(BirdViewMasksModel)
+        assert d == len(indices)
         rgb_canvas = np.zeros(shape=(h, w, 3), dtype=np.uint8)
         def nonzero_indices(arr): return arr == COLOR_ON
 
-        for mask_type in BirdViewMasksModel.bottom_to_top():
-            rgb_color = RGB_BY_MASK_MODEL[mask_type]
+        for mask_type in indices:
+            rgb_color = RGB_BY_MASK[mask_type]
             mask = birdview[:, :, mask_type]
             # If mask above contains 0, don't overwrite content of canvas (0
             # indicates transparency)
@@ -399,10 +360,12 @@ class BirdViewProducer:
         lights_masks = self.masks_generator.traffic_lights_masks(
             segregated_actors.traffic_lights
         )
-        red_lights_mask, yellow_lights_mask, green_lights_mask = lights_masks
-        masks[BirdViewMasks.RED_LIGHTS.value] = red_lights_mask
-        masks[BirdViewMasks.YELLOW_LIGHTS.value] = yellow_lights_mask
-        masks[BirdViewMasks.GREEN_LIGHTS.value] = green_lights_mask
+
+        if self.light_circle:
+            red_lights_mask, yellow_lights_mask, green_lights_mask = lights_masks
+            masks[BirdViewMasks.RED_LIGHTS.value] = red_lights_mask
+            masks[BirdViewMasks.YELLOW_LIGHTS.value] = yellow_lights_mask
+            masks[BirdViewMasks.GREEN_LIGHTS.value] = green_lights_mask
 
         if self.road_light:
             road_green_mask = self.masks_generator.road_light_mask(
