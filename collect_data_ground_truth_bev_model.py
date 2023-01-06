@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 def main(config):
     c = carla_env_bev_data_collect.CarlaEnvironment(
         config={
-            "render": True, "save": False, "save_video": False,
+            "render": False, "save": False, "save_video": False,
             "tasks": [
                 {
                     "world": "Town02", "num_vehicles": [60, 80]},

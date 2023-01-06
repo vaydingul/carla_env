@@ -202,7 +202,8 @@ class CarlaEnvironment(Environment):
             crop_type=BirdViewCropType.FRONT_AREA_ONLY,
             road_on_off=True,
             road_light=True,
-            light_circle=True)
+            light_circle=True,
+            lane_marking_thickness=2)
 
         self.bev_module_ego = BirdViewProducer(
             client=self.client,
@@ -211,7 +212,11 @@ class CarlaEnvironment(Environment):
                 192),
             render_lanes_on_junctions=False,
             pixels_per_meter=20,
-            crop_type=BirdViewCropType.FRONT_AND_REAR_AREA)
+            crop_type=BirdViewCropType.FRONT_AND_REAR_AREA,
+            road_on_off=True,
+            road_light=True,
+            light_circle=True,
+            lane_marking_thickness=2)
 
         time.sleep(1.0)
         logger.info("Everything is set!")
