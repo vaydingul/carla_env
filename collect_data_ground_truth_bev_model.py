@@ -19,12 +19,12 @@ logging.basicConfig(level=logging.INFO)
 def main(config):
     c = carla_env_bev_data_collect.CarlaEnvironment(
         config={
-            "render": False, "save": False, "save_video": False,
+            "render": True, "save": False, "save_video": False,
             "tasks": [
                 {
-                    "world": "Town02", "num_vehicles": [60, 100]},
+                    "world": "Town02", "num_vehicles": [60, 80]},
             ],
-            "max_steps": 2000,
+            "max_steps": 1000,
             "random": False,
             "fixed_delta_seconds": 1 / 10})
 
@@ -89,12 +89,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_save_path",
         type=str,
-        default="./data/ground_truth_bev_model_test_data_10Hz",
+        default="./data/ground_truth_bev_model_train_data_10Hz_multichannel_bev",
         help="Path to save the data")
     parser.add_argument(
         "--num_episodes",
         type=int,
-        default=20,
+        default=120,
         help="Number of episodes to collect data from")
     config = parser.parse_args()
 

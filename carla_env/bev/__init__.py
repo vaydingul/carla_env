@@ -223,13 +223,13 @@ class BirdViewProducer:
         )
         return str(cache_dir / cache_filename)
 
-    def step(self, agent_vehicle: carla.Actor,
-             next_waypoint: carla.Waypoint) -> BirdView:
+    def step(self, agent_vehicle: carla.Actor) -> BirdView:
         all_actors = actors.query_all(world=self._world)
         segregated_actors = actors.segregate_by_type(
             actors=all_actors, agent_vehicle=agent_vehicle)
         agent_vehicle_loc = agent_vehicle.get_location()
-
+        agent_vehicle_loc_waypoint = self._map.get_waypoint(
+            agent_vehicle_loc, project_to_road=True, lane_type=carla.LaneType.Driving)
         # Reusing already generated static masks for whole map
         self.masks_generator.disable_local_rendering_mode()
 
@@ -289,8 +289,8 @@ class BirdViewProducer:
         self.masks_generator.enable_local_rendering_mode(rendering_window)
 
         if self.road_on_off:
-            road_on_mask = self.masks_generator.road_on_mask(next_waypoint)
-            road_off_mask = self.masks_generator.road_off_mask(next_waypoint)
+            road_on_mask = self.masks_generator.road_on_mask(agent_vehicle_loc_waypoint)
+            road_off_mask = self.masks_generator.road_off_mask(agent_vehicle_loc_waypoint)
             masks[BirdViewMasks.ROAD_ON.value] = road_on_mask
             masks[BirdViewMasks.ROAD_OFF.value] = road_off_mask
 

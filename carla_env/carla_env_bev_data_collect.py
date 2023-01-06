@@ -199,7 +199,10 @@ class CarlaEnvironment(Environment):
                 192),
             render_lanes_on_junctions=False,
             pixels_per_meter=5,
-            crop_type=BirdViewCropType.FRONT_AREA_ONLY)
+            crop_type=BirdViewCropType.FRONT_AREA_ONLY,
+            road_on_off=True,
+            road_light=True,
+            light_circle=True)
 
         self.bev_module_ego = BirdViewProducer(
             client=self.client,
