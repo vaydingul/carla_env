@@ -14,4 +14,6 @@ class RGB:
     DIM_YELLOW = (150, 150, 0)
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
+    ORANGE_RED = (255, 69, 0)
+    DIM_ORANGE = (150, 100, 0)
     

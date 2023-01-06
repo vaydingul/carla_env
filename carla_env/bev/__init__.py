@@ -66,14 +66,16 @@ class BirdViewMasks(IntEnum):
 RGB_BY_MASK = {
     BirdViewMasks.PEDESTRIANS: RGB.VIOLET,
     BirdViewMasks.LANES: RGB.WHITE,
-    BirdViewMasks.RED_LIGHTS: RGB.RED,
-    BirdViewMasks.YELLOW_LIGHTS: RGB.YELLOW,
+    # BirdViewMasks.RED_LIGHTS: RGB.RED,
+    # BirdViewMasks.YELLOW_LIGHTS: RGB.YELLOW,
+    BirdViewMasks.RED_YELLOW_LIGHTS: RGB.ORANGE,
     BirdViewMasks.GREEN_LIGHTS: RGB.GREEN,
     BirdViewMasks.AGENT: RGB.CHAMELEON,
     BirdViewMasks.VEHICLES: RGB.SKY_BLUE,
     BirdViewMasks.ROAD_GREEN: RGB.DIM_GREEN,
-    BirdViewMasks.ROAD_YELLOW: RGB.DIM_YELLOW,
-    BirdViewMasks.ROAD_RED: RGB.DIM_RED,
+    BirdViewMasks.ROAD_RED_YELLOW: RGB.DIM_ORANGE,
+    # BirdViewMasks.ROAD_YELLOW: RGB.DIM_YELLOW,
+    # BirdViewMasks.ROAD_RED: RGB.DIM_RED,
     BirdViewMasks.ROAD_ON: RGB.DIM_GRAY,
     BirdViewMasks.ROAD_OFF: RGB.DARK_GRAY,
     BirdViewMasks.ROAD: RGB.CHOCOLATE,
@@ -363,8 +365,9 @@ class BirdViewProducer:
 
         if self.light_circle:
             red_lights_mask, yellow_lights_mask, green_lights_mask = lights_masks
-            masks[BirdViewMasks.RED_LIGHTS.value] = red_lights_mask
-            masks[BirdViewMasks.YELLOW_LIGHTS.value] = yellow_lights_mask
+            masks[BirdViewMasks.RED_YELLOW_LIGHTS.value] = np.logical_or(
+                red_lights_mask, yellow_lights_mask)
+            # masks[BirdViewMasks.YELLOW_LIGHTS.value] = yellow_lights_mask
             masks[BirdViewMasks.GREEN_LIGHTS.value] = green_lights_mask
 
         if self.road_light:
@@ -375,8 +378,9 @@ class BirdViewProducer:
             road_red_mask = self.masks_generator.road_light_mask(
                 [tl for tl in segregated_actors.traffic_lights if tl.state == carla.TrafficLightState.Red])
             masks[BirdViewMasks.ROAD_GREEN.value] = road_green_mask
-            masks[BirdViewMasks.ROAD_YELLOW.value] = road_yellow_mask
-            masks[BirdViewMasks.ROAD_RED.value] = road_red_mask
+            # masks[BirdViewMasks.ROAD_YELLOW.value] = road_yellow_mask
+            masks[BirdViewMasks.ROAD_RED_YELLOW.value] = np.logical_or(
+                road_red_mask, road_yellow_mask)
 
         masks[BirdViewMasks.AGENT.value] = self.masks_generator.agent_vehicle_mask(
             agent_vehicle)
