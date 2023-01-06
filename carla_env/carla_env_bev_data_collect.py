@@ -213,10 +213,7 @@ class CarlaEnvironment(Environment):
             render_lanes_on_junctions=False,
             pixels_per_meter=20,
             crop_type=BirdViewCropType.FRONT_AND_REAR_AREA,
-            road_on_off=True,
-            road_light=True,
-            light_circle=True,
-            lane_marking_thickness=2)
+            light_circle=True)
 
         time.sleep(1.0)
         logger.info("Everything is set!")
