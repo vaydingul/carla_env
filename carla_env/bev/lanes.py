@@ -160,6 +160,6 @@ def draw_lane_marking_single_side(
     # draw them
     for markings in markings_list:
         if markings[0] == carla.LaneMarkingType.Solid:
-            draw_solid_line(surface, markings[1], False, markings[2], 1)
+            draw_solid_line(surface, markings[1], False, markings[2], 2)
         elif markings[0] == carla.LaneMarkingType.Broken:
-            draw_broken_line(surface, markings[1], False, markings[2], 1)
+            draw_broken_line(surface, markings[1], False, markings[2], 2)
