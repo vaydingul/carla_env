@@ -146,6 +146,7 @@ class BirdViewProducer:
         road_on_off: bool = False,
         road_light: bool = False,
         light_circle: bool = False,
+        lane_marking_thickness = 1,
     ) -> None:
 
         self.client = client
@@ -156,6 +157,7 @@ class BirdViewProducer:
         self.road_on_off = road_on_off
         self.road_light = road_light
         self.light_circle = light_circle
+        self.lane_marking_thickness = lane_marking_thickness
         self.is_first_frame = True
         if crop_type is BirdViewCropType.FRONT_AND_REAR_AREA:
             rendering_square_size = round(
@@ -198,7 +200,7 @@ class BirdViewProducer:
                     f"Cache file does not exist, generating cache at {cache_path}"
                 )
                 self.full_road_cache = self.masks_generator.road_mask()
-                self.full_lanes_cache = self.masks_generator.lanes_mask()
+                self.full_lanes_cache = self.masks_generator.lanes_mask(self.lane_marking_thickness)
                 self.full_centerlines_cache = self.masks_generator.centerlines_mask()
                 static_cache = np.stack(
                     [
@@ -218,6 +220,10 @@ class BirdViewProducer:
         cache_filename = (
             f"{self._map.name}__"
             f"px_per_meter={self.pixels_per_meter}__"
+            f"road_on_off={self.road_on_off}__"
+            f"road_light={self.road_light}__"
+            f"light_circle={self.light_circle}__"
+            f"lane_marking_thickness={self.lane_marking_thickness}__"
             f"opendrive_hash={opendrive_content_hash}__"
             f"margin={mask.MAP_BOUNDARY_MARGIN}.npy"
         )
@@ -317,6 +323,10 @@ class BirdViewProducer:
 
         ordered_indices = [
             mask.value for mask in BirdViewMasks.bottom_to_top()]
+
+        # Create offroad mask which is the where every channel is zero
+        offroad_mask = np.where(cropped_masks.sum(axis=-1) == 0, 1, 0)
+        cropped_masks[:, :, BirdViewMasks.OFFROAD.value] = offroad_mask
 
         return (cropped_masks[:, :, ordered_indices])
 

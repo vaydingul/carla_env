@@ -101,8 +101,12 @@ def get_lane_markings(
 
 
 def draw_lane_marking_single_side(
-    surface, waypoints, side: LaneSide, location_to_pixel_func, color
-):
+        surface,
+        waypoints,
+        side: LaneSide,
+        location_to_pixel_func,
+        color,
+        thickness=1):
     """Draws the lane marking given a set of waypoints and decides
     whether drawing the right or left side of the waypoint based on the sign parameter
     """
@@ -160,6 +164,16 @@ def draw_lane_marking_single_side(
     # draw them
     for markings in markings_list:
         if markings[0] == carla.LaneMarkingType.Solid:
-            draw_solid_line(surface, markings[1], False, markings[2], 2)
+            draw_solid_line(
+                surface,
+                markings[1],
+                False,
+                markings[2],
+                thickness)
         elif markings[0] == carla.LaneMarkingType.Broken:
-            draw_broken_line(surface, markings[1], False, markings[2], 2)
+            draw_broken_line(
+                surface,
+                markings[1],
+                False,
+                markings[2],
+                thickness)

@@ -340,7 +340,7 @@ class MapMaskGenerator:
 
 
 
-    def lanes_mask(self) -> Mask:
+    def lanes_mask(self, lane_thickness) -> Mask:
         canvas = self.make_empty_mask()
         for road_waypoints in self._each_road_waypoints:
             if self._render_lanes_on_junctions or not road_waypoints[0].is_junction:
@@ -351,6 +351,7 @@ class MapMaskGenerator:
                     side=LaneSide.LEFT,
                     location_to_pixel_func=self.location_to_pixel,
                     color=COLOR_ON,
+                    thickness = lane_thickness
                 )
 
                 # Right Side
@@ -360,6 +361,7 @@ class MapMaskGenerator:
                     side=LaneSide.RIGHT,
                     location_to_pixel_func=self.location_to_pixel,
                     color=COLOR_ON,
+                    thickness = lane_thickness
                 )
         return canvas
 

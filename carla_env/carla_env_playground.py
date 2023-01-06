@@ -296,8 +296,7 @@ class CarlaEnvironment(Environment):
 
         for (i, bev_module) in enumerate(self.bev_module_list):
             bev = bev_module.step(
-                agent_vehicle=self.hero_actor_module.get_actor(),
-                next_waypoint=self._next_agent_waypoint)
+                agent_vehicle=self.hero_actor_module.get_actor())
             data_dict[f"bev_{i}"] = bev
 
         self.data.put(data_dict)
