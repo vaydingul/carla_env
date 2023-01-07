@@ -84,19 +84,26 @@ def load_ego_model_from_checkpoint(checkpoint, cls, dt):
     return ego_forward_model
 
 
-def convert_standard_bev_to_model_bev(bev, device="cpu"):
+def convert_standard_bev_to_model_bev(
+        bev,
+        indices,
+        agent_channel=3,
+        vehicle_channel=2,
+        calculate_offroad=False,
+        device="cpu"):
     bev = torch.from_numpy(bev).float().to(device)
     # Permute the dimensions such that the channel dim is the first one
-    agent_mask = bev[..., 3]
-    bev[..., 2] -= agent_mask
-    bev = bev[..., [k for k in range(bev.shape[-1]) if k != 3]]
+    agent_mask = bev[..., agent_channel]
+    bev[..., vehicle_channel] -= agent_mask
+    bev = bev[..., indices]
     bev = bev.permute(2, 0, 1)
     # Add offroad mask to BEV representation
-    offroad_mask = torch.where(
-        torch.all(
-            bev == 0, dim=0), torch.ones_like(
-            bev[0]), torch.zeros_like(
-            bev[0]))
-    bev = torch.cat([bev, offroad_mask.unsqueeze(0)], dim=0)
+    if calculate_offroad:
+        offroad_mask = torch.where(
+            torch.all(
+                bev == 0, dim=0), torch.ones_like(
+                bev[0]), torch.zeros_like(
+                bev[0]))
+        bev = torch.cat([bev, offroad_mask.unsqueeze(0)], dim=0)
     bev = bev.unsqueeze(0)
     return bev

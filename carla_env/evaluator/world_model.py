@@ -1,7 +1,7 @@
 import torch
 import cv2
 import numpy as np
-from carla_env.bev import BirdViewProducer
+from carla_env.bev import BirdViewProducer, BirdViewMasks
 import os
 from torchmetrics.classification import BinaryJaccardIndex
 import pandas as pd
@@ -220,7 +220,7 @@ class Evaluator(object):
         # Transpose the bev representation
         bev = bev.transpose(1, 2, 0)
 
-        rgb_image = BirdViewProducer.as_rgb_model(bev)
+        rgb_image = BirdViewProducer.as_rgb_with_indices(bev, [0, 5, 6, 8, 9, 9, 10, 11])
 
         return rgb_image
 

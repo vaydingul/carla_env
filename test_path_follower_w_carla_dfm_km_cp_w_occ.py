@@ -100,7 +100,7 @@ def main(config):
 
         bev_tensor_deque.append(
             convert_standard_bev_to_model_bev(
-                bev, device=device))
+                bev, indices=[0, 5, 6, 8, 9, 9, 10, 11], device=device))
 
     occupancy = torch.tensor(
         occupancy,
@@ -226,7 +226,8 @@ def main(config):
                              ego_future_speed_predicted,
                              world_future_bev_predicted)
 
-            control = ego_future_action_predicted_list[0][0]#torch.mean(ego_future_action_predicted, dim=1)[0]
+            # torch.mean(ego_future_action_predicted, dim=1)[0]
+            control = ego_future_action_predicted_list[0][0]
 
             cost_canvas = render(
                 config.rollout_length,
@@ -245,9 +246,10 @@ def main(config):
 
             data = c.get_data()
             bev = data["bev"]
+            bev = bev[..., [0, 5, 6, 8, 9, 9, 10, 11]]
             bev_tensor_deque.append(
                 convert_standard_bev_to_model_bev(
-                    bev, device=device))
+                    bev, indices=[0, 5, 6, 8, 9, 9, 10, 11], device=device))
             occupancy = data["occ"]["occupancy"]
             occupancy = torch.tensor(
                 occupancy,
@@ -329,9 +331,10 @@ def render(
                 mask_light, cv2.COLORMAP_JET)
 
             bev = cv2.cvtColor(
-                BirdViewProducer.as_rgb_model(
+                BirdViewProducer.as_rgb_with_indices(
                     np.transpose(
-                        bev, (1, 2, 0))), cv2.COLOR_BGR2RGB)
+                        bev, (1, 2, 0)), indices=[
+                        0, 5, 6, 8, 9, 9, 10, 11]), cv2.COLOR_BGR2RGB)
 
             x2 = x1 + bev.shape[1]
             y2 = y1 + bev.shape[0]
@@ -490,12 +493,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--world_forward_model_checkpoint_number",
         type=int,
-        default=94)
+        default=79)
 
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/uc0y92ww")
+        default="vaydingul/mbl/1aucmjy6")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",

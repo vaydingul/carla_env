@@ -65,7 +65,11 @@ def main(config):
         sequence_length=run.config["num_time_step_previous"] +
         config.num_time_step_predict,
         dilation=run.config["dataset_dilation"] if "dataset_dilation" in run.config.keys() else 1,
-        read_keys=["bev_world"])
+        read_keys=["bev_world"],
+        bev_agent_channel=3,
+        bev_vehicle_channel=2,
+        bev_selected_channels=[0, 1, 2, 4, 5, 6, 7],
+        bev_calculate_offroad=True)
 
     logger.info(f"Test dataset size: {len(world_model_dataset_test)}")
 

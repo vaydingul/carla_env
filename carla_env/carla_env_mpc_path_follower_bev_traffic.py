@@ -186,7 +186,11 @@ class CarlaEnvironment(Environment):
                 192),
             render_lanes_on_junctions=False,
             pixels_per_meter=5,
-            crop_type=BirdViewCropType.FRONT_AREA_ONLY)
+            crop_type=BirdViewCropType.FRONT_AREA_ONLY,
+            road_on_off=False,
+            road_light=False,
+            light_circle=True,
+            lane_marking_thickness=1)
 
         time.sleep(1.0)
         logger.info("Everything is set!")
@@ -314,7 +318,19 @@ class CarlaEnvironment(Environment):
         # self.canvas[rgb_image.shape[0]:rgb_image.shape[0] +
         # semantic_image.shape[0], :semantic_image.shape[1]] = semantic_image
 
-        bev = cv2.cvtColor(self.bev_module.as_rgb(bev), cv2.COLOR_BGR2RGB)
+        bev = cv2.cvtColor(
+            self.bev_module.as_rgb_with_indices(
+                bev,
+                indices=[
+                    0,
+                    5,
+                    6,
+                    8,
+                    9,
+                    9,
+                    10,
+                    11]),
+            cv2.COLOR_BGR2RGB)
         # Put image into canvas
         bev = cv2.resize(bev, (0, 0), fx=4, fy=4)
         self.canvas[rgb_image.shape[0]:rgb_image.shape[0] +

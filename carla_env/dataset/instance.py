@@ -20,12 +20,20 @@ class InstanceDataset(Dataset):
             data_path: Union[str, Path],
             sequence_length: int = 2,
             read_keys: List[str] = ["bev_world"],
-            dilation: int = 1):
+            dilation: int = 1,
+            bev_agent_channel: int = 3,
+            bev_vehicle_channel: int = 4,
+            bev_selected_channels: list = [0, 5, 6, 8, 9, 9, 10, 11],
+            bev_calculate_offroad: bool = True):
 
         self.data_path = Path(data_path)
         self.sequence_length = sequence_length
         self.read_keys = read_keys
         self.dilation = dilation
+        self.bev_agent_channel = bev_agent_channel
+        self.bev_vehicle_channel = bev_vehicle_channel
+        self.bev_selected_channels = bev_selected_channels
+        self.bev_calculate_offroad = bev_calculate_offroad
         self.count_array = []
         self.data = []
 
@@ -152,18 +160,19 @@ class InstanceDataset(Dataset):
         bev_ = data["bev"]
         bev_ = torch.from_numpy(bev_).float()
         # Permute the dimensions such that the channel dim is the first one
-        agent_mask = bev_[..., 3]
-        bev_[..., 2] -= agent_mask
-        bev = bev_[..., [k for k in range(bev_.shape[-1]) if k != 3]]
+        agent_mask = bev_[..., self.bev_agent_channel]
+        bev_[..., self.bev_vehicle_channel] -= agent_mask
+        bev = bev_[..., [k for k in self.bev_selected_channels]]
 
         bev = bev.permute(2, 0, 1)
         # Add offroad mask to BEV representation
-        offroad_mask = torch.where(
-            torch.all(
-                bev == 0, dim=0), torch.ones_like(
-                bev[0]), torch.zeros_like(
-                bev[0]))
-        bev = torch.cat([bev, offroad_mask.unsqueeze(0)], dim=0)
+        if self.bev_calculate_offroad:
+            offroad_mask = torch.where(
+                torch.all(
+                    bev == 0, dim=0), torch.ones_like(
+                    bev[0]), torch.zeros_like(
+                    bev[0]))
+            bev = torch.cat([bev, offroad_mask.unsqueeze(0)], dim=0)
 
         return {"bev": bev,
                 "agent_mask": agent_mask}

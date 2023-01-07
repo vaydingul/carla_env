@@ -352,9 +352,10 @@ class BirdViewProducer:
         rgb_canvas = np.zeros(shape=(h, w, 3), dtype=np.uint8)
         def nonzero_indices(arr): return arr == COLOR_ON
 
-        for mask_type in indices:
-            rgb_color = RGB_BY_MASK[mask_type]
-            mask = birdview[:, :, mask_type]
+        for (k, mask_type) in enumerate(indices):
+            # print(BirdViewMasks.bottom_to_top()[mask_type])
+            rgb_color = RGB_BY_MASK[BirdViewMasks.bottom_to_top()[mask_type]]
+            mask = birdview[:, :, k]
             # If mask above contains 0, don't overwrite content of canvas (0
             # indicates transparency)
             rgb_canvas[nonzero_indices(mask)] = rgb_color
