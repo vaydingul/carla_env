@@ -76,7 +76,7 @@ def main(config):
     world_model_dataloader_test = DataLoader(
         dataset=world_model_dataset_test if config.test_set_step == 1 else Subset(
             world_model_dataset_test, range(
-                0, len(world_model_dataset_test), config.test_set_step)), batch_size=3)
+                0, len(world_model_dataset_test), config.test_set_step)), batch_size=20)
 
     world_model_device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")

@@ -49,12 +49,20 @@ def main(rank, world_size, run, config):
         data_path=config.data_path_train,
         sequence_length=config.num_time_step_previous +
         config.num_time_step_future,
-        dilation=config.dataset_dilation)
+        dilation=config.dataset_dilation,
+        bev_agent_channel=3,
+        bev_vehicle_channel=2,
+        bev_selected_channels=range(12),
+        bev_calculate_offroad=False)
     world_model_dataset_val = InstanceDataset(
         data_path=config.data_path_val,
         sequence_length=config.num_time_step_previous +
         config.num_time_step_future,
-        dilation=config.dataset_dilation)
+        dilation=config.dataset_dilation,
+        bev_agent_channel=3,
+        bev_vehicle_channel=2,
+        bev_selected_channels=range(12),
+        bev_calculate_offroad=False)
 
     logger.info(f"Train dataset size: {len(world_model_dataset_train)}")
     logger.info(f"Val dataset size: {len(world_model_dataset_val)}")

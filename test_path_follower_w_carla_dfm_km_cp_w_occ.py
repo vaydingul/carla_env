@@ -104,8 +104,8 @@ def main(config):
 
     occupancy = torch.tensor(
         occupancy,
-        dtype=torch.float32).unsqueeze(0).to(
-        device=device)
+        dtype=torch.float32,
+        device=device).unsqueeze(0)
     occupancy[occupancy <= 5] = 1
     occupancy[occupancy > 5] = 0
 
@@ -246,15 +246,15 @@ def main(config):
 
             data = c.get_data()
             bev = data["bev"]
-            bev = bev[..., [0, 5, 6, 8, 9, 9, 10, 11]]
+            bev_ = bev[..., [0, 5, 6, 8, 9, 9, 10, 11]]
             bev_tensor_deque.append(
                 convert_standard_bev_to_model_bev(
                     bev, indices=[0, 5, 6, 8, 9, 9, 10, 11], device=device))
             occupancy = data["occ"]["occupancy"]
             occupancy = torch.tensor(
                 occupancy,
-                dtype=torch.float32).unsqueeze(0).to(
-                device=device)
+                dtype=torch.float32,
+                device=device).unsqueeze(0)
             occupancy[occupancy <= 5] = 1
             occupancy[occupancy > 5] = 0
 
@@ -265,7 +265,7 @@ def main(config):
 
             c.render(
                 predicted_location=ego_state["location"].detach().cpu().numpy(),
-                bev=bev,
+                bev=bev_,
                 cost_canvas=cost_canvas,
                 control=ego_future_action_predicted_list[0][0],
                 current_state=ego_state,
@@ -483,7 +483,7 @@ if __name__ == "__main__":
         default="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt",
         help="Path to the forward model of the ego vehicle")
 
-    parser.add_argument("--rollout_length", type=int, default=4)
+    parser.add_argument("--rollout_length", type=int, default=20)
 
     parser.add_argument(
         "--world_forward_model_wandb_link",
@@ -498,12 +498,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/1aucmjy6")
+        default="vaydingul/mbl/3ohsztk8")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=24)
+        default=19)
 
     config = parser.parse_args()
 
