@@ -213,7 +213,7 @@ if __name__ == "__main__":
     parser.add_argument("--master_port", type=str, default="12355")
     parser.add_argument("--save_every", type=int, default=5)
     # MODEL PARAMETERS
-    parser.add_argument("--input_shape", type=list, default=[8, 192, 192])
+    parser.add_argument("--input_shape", type=str, default="8-192-192")
     parser.add_argument("--hidden_channel", type=int, default=256)
     parser.add_argument("--output_channel", type=int, default=512)
     parser.add_argument("--num_encoder_layer", type=int, default=4)
@@ -252,6 +252,7 @@ if __name__ == "__main__":
     parser.add_argument("--wandb_id", type=str, default=None)
 
     config = parser.parse_args()
+    config.input_shape = [int(x) for x in config.input_shape.split("-")]
 
     run = create_wandb_run(config)
 
