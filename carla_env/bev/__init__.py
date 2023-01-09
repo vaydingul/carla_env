@@ -41,18 +41,18 @@ DEFAULT_CROP_TYPE = BirdViewCropType.FRONT_AND_REAR_AREA
 
 
 class BirdViewMasks(IntEnum):
-    OFFROAD = 11
-    PEDESTRIANS = 10
-    RED_YELLOW_LIGHTS = 9
-    GREEN_LIGHTS = 8
-    AGENT = 7
-    VEHICLES = 6
-    LANES = 5
-    ROAD_GREEN = 4
-    ROAD_RED_YELLOW = 3
-    ROAD_OFF = 2
-    ROAD_ON = 1
-    ROAD = 0
+    PEDESTRIANS = 11
+    RED_YELLOW_LIGHTS = 10
+    GREEN_LIGHTS = 9
+    AGENT = 8
+    VEHICLES = 7
+    LANES = 6
+    ROAD_GREEN = 5
+    ROAD_RED_YELLOW = 4
+    ROAD_OFF = 3
+    ROAD_ON = 2
+    ROAD = 1
+    OFFROAD = 0
 
     @staticmethod
     def top_to_bottom() -> List[int]:

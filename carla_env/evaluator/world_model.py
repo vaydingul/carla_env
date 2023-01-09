@@ -49,7 +49,7 @@ class Evaluator(object):
 
             world_previous_bev = data["bev_world"]["bev"][:, :self.num_time_step_previous].to(
                 self.device).clone()
-            world_future_bev = data["bev_world"]["bev"][:, self.num_time_step_previous:].to(
+            world_future_bev = data["bev_world"]["bev"][:, self.num_time_step_previous:self.num_time_step_previous + self.num_time_step_predict].to(
                 self.device).clone()
 
             for _ in range(self.num_time_step_predict):
@@ -224,7 +224,7 @@ class Evaluator(object):
         # rgb_image = BirdViewProducer.as_rgb_with_indices(bev, [0, 5, 6, 8, 9, 9, 10, 11])
         
         # New BEV
-        rgb_image = BirdViewProducer.as_rgb(bev)
+        rgb_image = BirdViewProducer.as_rgb_with_indices(bev, [0, 1, 2, 3, 4, 5, 6, 7])
 
         return rgb_image
 

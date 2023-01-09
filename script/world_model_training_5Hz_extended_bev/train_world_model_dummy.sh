@@ -16,8 +16,8 @@ python3 train_world_forward_model_ddp.py \
 	--resume=false \
 	--num_gpu=1 \
 	--master_port="12555" \
-	--save_every=5 \
-	--input_shape="12-192-192"\
+	--save_every=10 \
+	--input_shape="8-192-192"\
 	--dropout=0.0 \
 	--num_time_step_previous=5 \
 	--num_time_step_future=10 \
@@ -28,5 +28,5 @@ python3 train_world_forward_model_ddp.py \
 	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="world-forward-model-multi-step-5Hz-extended-bev" \
-	--wandb_name="5-10-mse_loss-gradient_clip_norm_0.3" \
+	--wandb_name="dummy" \
 	

@@ -80,9 +80,9 @@ def main(config):
         config.num_time_step_predict if config.num_time_step_predict > 0 else run.config["num_time_step_future"],
         dilation=run.config["dataset_dilation"] if "dataset_dilation" in run.config.keys() else 1,
         read_keys=["bev_world"],
-        bev_agent_channel=7,
-        bev_vehicle_channel=6,
-        bev_selected_channels=range(12),
+        bev_agent_channel=8,
+        bev_vehicle_channel=7,
+        bev_selected_channels=[0, 1, 2, 3, 4, 5, 6, 7],
         bev_calculate_offroad=False)
 
     logger.info(f"Test dataset size: {len(world_model_dataset_test)}")
