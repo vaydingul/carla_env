@@ -224,7 +224,7 @@ class Evaluator(object):
         # rgb_image = BirdViewProducer.as_rgb_with_indices(bev, [0, 5, 6, 8, 9, 9, 10, 11])
         
         # New BEV
-        rgb_image = BirdViewProducer.as_rgb_with_indices(bev, [0, 1, 2, 3, 4, 5, 6, 7])
+        rgb_image = BirdViewProducer.as_rgb_with_indices(bev, [0, 1, 2, 3, 4, 5, 6, 11])
 
         return rgb_image
 

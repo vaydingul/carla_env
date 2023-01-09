@@ -59,9 +59,9 @@ def main(rank, world_size, run, config):
         sequence_length=config.num_time_step_previous +
         config.num_time_step_future,
         dilation=config.dataset_dilation,
-        bev_agent_channel=8,
-        bev_vehicle_channel=7,
-        bev_selected_channels=[0, 1, 2, 3, 4, 5, 6, 7],
+        bev_agent_channel=7,
+        bev_vehicle_channel=6,
+        bev_selected_channels=[0, 1, 2, 3, 4, 5, 6, 11],
         bev_calculate_offroad=False)
 
     logger.info(f"Train dataset size: {len(world_model_dataset_train)}")
