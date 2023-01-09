@@ -79,7 +79,7 @@ RGB_BY_MASK = {
     BirdViewMasks.ROAD_ON: RGB.DIM_GRAY,
     BirdViewMasks.ROAD_OFF: RGB.DARK_GRAY,
     BirdViewMasks.ROAD: RGB.CHOCOLATE,
-    BirdViewMasks.OFFROAD: RGB.BLACK
+    BirdViewMasks.OFFROAD: RGB.DARK_VIOLET
 }
 
 
@@ -355,6 +355,7 @@ class BirdViewProducer:
         for (k, mask_type) in enumerate(indices):
             # print(BirdViewMasks.bottom_to_top()[mask_type])
             rgb_color = RGB_BY_MASK[BirdViewMasks.bottom_to_top()[mask_type]]
+            # print(BirdViewMasks.bottom_to_top()[mask_type])
             mask = birdview[:, :, k]
             # If mask above contains 0, don't overwrite content of canvas (0
             # indicates transparency)

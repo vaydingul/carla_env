@@ -16,4 +16,5 @@ class RGB:
     BLACK = (0, 0, 0)
     ORANGE_RED = (255, 69, 0)
     DIM_ORANGE = (150, 100, 0)
+    DARK_VIOLET = (148, 0, 211)
     

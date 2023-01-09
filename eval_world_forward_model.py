@@ -82,7 +82,7 @@ def main(config):
         read_keys=["bev_world"],
         bev_agent_channel=7,
         bev_vehicle_channel=6,
-        bev_selected_channels=[0, 1, 2, 3, 4, 5, 6, 11],
+        bev_selected_channels=config.bev_selected_channels,
         bev_calculate_offroad=False)
 
     logger.info(f"Test dataset size: {len(world_model_dataset_test)}")
@@ -90,7 +90,7 @@ def main(config):
     world_model_dataloader_test = DataLoader(
         dataset=world_model_dataset_test if config.test_set_step == 1 else Subset(
             world_model_dataset_test, range(
-                0, len(world_model_dataset_test), config.test_set_step)), batch_size=30)
+                0, len(world_model_dataset_test), config.test_set_step)), batch_size=100)
 
     world_model_device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")
@@ -105,6 +105,7 @@ def main(config):
         num_time_step_previous=run.config["num_time_step_previous"],
         num_time_step_predict=config.num_time_step_predict if config.num_time_step_predict > 0 else run.config["num_time_step_future"],
         threshold=config.threshold,
+        bev_selected_channels=config.bev_selected_channels,
         save_path=f"{config.save_path}/{run.config['num_time_step_previous']}-{run.config['num_time_step_future']}-{config.num_time_step_predict if config.num_time_step_predict > 0 else run.config['num_time_step_future']}-{run.config['reconstruction_loss']}-{config.threshold}-{config.checkpoint_number}")
 
     evaluator.evaluate(render=False, save=True)
@@ -138,7 +139,13 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint_number", type=int, default=4)
     parser.add_argument("--num_time_step_predict", type=int, default=-1)
     parser.add_argument("--threshold", type=float, default=0.25)
+    parser.add_argument(
+        "--bev_selected_channels",
+        type=str,
+        default="0,1,2,3,4,5,6,11")
 
     config = parser.parse_args()
+    config.bev_selected_channels = [
+        int(x) for x in config.bev_selected_channels.split(",")]
 
     main(config)

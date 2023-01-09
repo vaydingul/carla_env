@@ -18,6 +18,7 @@ class Evaluator(object):
             num_time_step_previous=10,
             num_time_step_predict=10,
             threshold=0.25,
+            bev_selected_channels=None,
             save_path=None):
         self.model = model
         self.dataloader = dataloader
@@ -27,7 +28,7 @@ class Evaluator(object):
         self.num_time_step_predict = num_time_step_predict
         self.threshold = threshold
         self.save_path = save_path
-
+        self.bev_selected_channels = bev_selected_channels
         # Create folder at save_path
         if self.save_path is not None:
             if not os.path.exists(self.save_path):
@@ -40,7 +41,10 @@ class Evaluator(object):
         self.model.eval()
 
         if self.report_iou:
-            bji = BinaryJaccardIndex(compute_on_cpu=True, ignore_index=255).to(self.device)
+            bji = BinaryJaccardIndex(
+                compute_on_cpu=True,
+                ignore_index=255).to(
+                self.device)
             iou_dict_list = []
 
         for i, (data) in enumerate(self.dataloader):
@@ -49,8 +53,8 @@ class Evaluator(object):
 
             world_previous_bev = data["bev_world"]["bev"][:, :self.num_time_step_previous].to(
                 self.device).clone()
-            world_future_bev = data["bev_world"]["bev"][:, self.num_time_step_previous:self.num_time_step_previous + self.num_time_step_predict].to(
-                self.device).clone()
+            world_future_bev = data["bev_world"]["bev"][:, self.num_time_step_previous:
+                                                        self.num_time_step_previous + self.num_time_step_predict].to(self.device).clone()
 
             for _ in range(self.num_time_step_predict):
 
@@ -76,43 +80,23 @@ class Evaluator(object):
             world_future_bev_predicted = torch.stack(
                 world_future_bev_predicted_list, dim=1)
 
+            iou_dict = {}
             if self.report_iou:
-                world_future_bev_predicted_vehicle = world_future_bev_predicted[:, :, 2].clone(
-                ).view(-1, *world_future_bev_predicted.shape[-2:]).to(torch.uint8)
-                world_future_bev_vehicle = world_future_bev[:, :, 2].clone(
-                ).view(-1, *world_future_bev.shape[-2:]).to(torch.uint8)
-                world_future_bev_predicted_offroad = world_future_bev_predicted[:, :, 7].clone(
-                ).view(-1, *world_future_bev_predicted.shape[-2:]).to(torch.uint8)
-                world_future_bev_offroad = world_future_bev[:, :, 7].clone(
-                ).view(-1, *world_future_bev.shape[-2:]).to(torch.uint8)
-                world_future_bev_predicted_lane = world_future_bev_predicted[:, :, 1].clone(
-                ).view(-1, *world_future_bev_predicted.shape[-2:]).to(torch.uint8)
-                world_future_bev_lane = world_future_bev[:, :, 1].clone(
-                ).view(-1, *world_future_bev.shape[-2:]).to(torch.uint8)
-                world_future_bev_predicted_road = world_future_bev_predicted[:, :, 0].clone(
-                ).view(-1, *world_future_bev_predicted.shape[-2:]).to(torch.uint8)
-                world_future_bev_road = world_future_bev[:, :, 0].clone(
-                ).view(-1, *world_future_bev.shape[-2:]).to(torch.uint8)
-                vehicle_iou = bji(
-                    world_future_bev_predicted_vehicle,
-                    world_future_bev_vehicle)
-                offroad_iou = bji(
-                    world_future_bev_predicted_offroad,
-                    world_future_bev_offroad)
-                lane_iou = bji(
-                    world_future_bev_predicted_lane,
-                    world_future_bev_lane)
-                road_iou = bji(
-                    world_future_bev_predicted_road,
-                    world_future_bev_road)
 
-                iou_dict = {
-                    "vehicle_iou": vehicle_iou.cpu().numpy(),
-                    "offroad_iou": offroad_iou.cpu().numpy(),
-                    "lane_iou": lane_iou.cpu().numpy(),
-                    "road_iou": road_iou.cpu().numpy()
-                }
+                for (ix, channel) in enumerate(self.bev_selected_channels):
+                    
+                    
+                    world_future_bev_predicted_ = world_future_bev_predicted[:, :, ix].clone(
+                    ).view(-1, *world_future_bev_predicted.shape[-2:]).to(torch.uint8)
+                    world_future_bev_ = world_future_bev[:, :, ix].clone(
+                    ).view(-1, *world_future_bev.shape[-2:]).to(torch.uint8)
 
+                    iou = bji(
+                        world_future_bev_predicted_,
+                        world_future_bev_)
+
+                    iou_dict[f"{BirdViewMasks.bottom_to_top()[channel]}"] = iou.cpu().numpy()
+                
                 iou_dict_list.append(iou_dict)
 
             self._init_canvas(world_previous_bev.shape[0])
@@ -206,9 +190,9 @@ class Evaluator(object):
                 for j, (k, v) in enumerate(iou_dict.items()):
                     cv2.putText(self.canvas,
                                 f"{k}: {v:.3f}",
-                                (10, data["bev_world"]["bev"].shape[-2] + 100 + 20 + (j + 1) * 60),
+                                (10, data["bev_world"]["bev"].shape[-2] + 20 + 20 + (j + 1) * 20),
                                 cv2.FONT_HERSHEY_SIMPLEX,
-                                1.5,
+                                0.5,
                                 (255,
                                  255,
                                  255),
@@ -222,9 +206,13 @@ class Evaluator(object):
 
         # Old BEV
         # rgb_image = BirdViewProducer.as_rgb_with_indices(bev, [0, 5, 6, 8, 9, 9, 10, 11])
-        
+
         # New BEV
-        rgb_image = BirdViewProducer.as_rgb_with_indices(bev, [0, 1, 2, 3, 4, 5, 6, 11])
+        if self.bev_selected_channels is None:
+            rgb_image = BirdViewProducer.as_rgb(bev)
+        else:
+            rgb_image = BirdViewProducer.as_rgb_with_indices(
+                bev, self.bev_selected_channels)
 
         return rgb_image
 
