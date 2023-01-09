@@ -220,7 +220,11 @@ class Evaluator(object):
         # Transpose the bev representation
         bev = bev.transpose(1, 2, 0)
 
-        rgb_image = BirdViewProducer.as_rgb_with_indices(bev, [0, 5, 6, 8, 9, 9, 10, 11])
+        # Old BEV
+        # rgb_image = BirdViewProducer.as_rgb_with_indices(bev, [0, 5, 6, 8, 9, 9, 10, 11])
+        
+        # New BEV
+        rgb_image = BirdViewProducer.as_rgb(bev)
 
         return rgb_image
 

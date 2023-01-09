@@ -22,7 +22,7 @@ python3 train_world_forward_model_ddp.py \
 	--num_gpu=2 \
 	--master_port="12555" \
 	--save_every=5 \
-	--input_shape="12-192-192"\
+	--input_shape="8-192-192"\
 	--num_time_step_previous=5 \
 	--num_time_step_future=10 \
 	--dataset_dilation=2 \

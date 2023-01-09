@@ -60,23 +60,37 @@ def main(config):
 
     # Create dataset and its loader
     data_path_test = config.data_path_test
+
+    # Old BEV
+    # world_model_dataset_test = InstanceDataset(
+    #     data_path=data_path_test,
+    #     sequence_length=run.config["num_time_step_previous"] +
+    #     config.num_time_step_predict,
+    #     dilation=run.config["dataset_dilation"] if "dataset_dilation" in run.config.keys() else 1,
+    #     read_keys=["bev_world"],
+    #     bev_agent_channel=3,
+    #     bev_vehicle_channel=2,
+    #     bev_selected_channels=[0, 1, 2, 4, 5, 6, 7],
+    #     bev_calculate_offroad=True)
+
+    # New BEV
     world_model_dataset_test = InstanceDataset(
         data_path=data_path_test,
         sequence_length=run.config["num_time_step_previous"] +
-        config.num_time_step_predict,
+        config.num_time_step_predict if config.num_time_step_predict > 0 else run.config["num_time_step_future"],
         dilation=run.config["dataset_dilation"] if "dataset_dilation" in run.config.keys() else 1,
         read_keys=["bev_world"],
-        bev_agent_channel=3,
-        bev_vehicle_channel=2,
-        bev_selected_channels=[0, 1, 2, 4, 5, 6, 7],
-        bev_calculate_offroad=True)
+        bev_agent_channel=7,
+        bev_vehicle_channel=6,
+        bev_selected_channels=range(12),
+        bev_calculate_offroad=False)
 
     logger.info(f"Test dataset size: {len(world_model_dataset_test)}")
 
     world_model_dataloader_test = DataLoader(
         dataset=world_model_dataset_test if config.test_set_step == 1 else Subset(
             world_model_dataset_test, range(
-                0, len(world_model_dataset_test), config.test_set_step)), batch_size=15)
+                0, len(world_model_dataset_test), config.test_set_step)), batch_size=30)
 
     world_model_device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")
@@ -89,9 +103,9 @@ def main(config):
         device=world_model_device,
         report_iou=config.report_iou,
         num_time_step_previous=run.config["num_time_step_previous"],
-        num_time_step_predict=config.num_time_step_predict,
+        num_time_step_predict=config.num_time_step_predict if config.num_time_step_predict > 0 else run.config["num_time_step_future"],
         threshold=config.threshold,
-        save_path=f"{config.save_path}/{run.config['num_time_step_previous']}-{run.config['num_time_step_future']}-{run.config['reconstruction_loss']}-{config.threshold}-{config.checkpoint_number}")
+        save_path=f"{config.save_path}/{run.config['num_time_step_previous']}-{run.config['num_time_step_future']}-{config.num_time_step_predict if config.num_time_step_predict > 0 else run.config['num_time_step_future']}-{run.config['reconstruction_loss']}-{config.threshold}-{config.checkpoint_number}")
 
     evaluator.evaluate(render=False, save=True)
 
@@ -122,7 +136,7 @@ if __name__ == "__main__":
                         type=str,
                         default="3aqhglkb")
     parser.add_argument("--checkpoint_number", type=int, default=4)
-    parser.add_argument("--num_time_step_predict", type=int, default=10)
+    parser.add_argument("--num_time_step_predict", type=int, default=-1)
     parser.add_argument("--threshold", type=float, default=0.25)
 
     config = parser.parse_args()
