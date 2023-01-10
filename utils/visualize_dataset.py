@@ -21,7 +21,8 @@ def bev_to_rgb(bev):
     # Transpose the bev representation
     bev = bev.transpose(1, 2, 0)
 
-    rgb_image = BirdViewProducer.as_rgb_model(bev)
+    rgb_image = BirdViewProducer.as_rgb_with_indices(
+        bev, [0, 1, 2, 3, 4, 5, 6, 11])
 
     return rgb_image
 
@@ -33,7 +34,7 @@ def main(config):
     world_model_dataset_test = InstanceDataset(
         data_path=data_path_test,
         sequence_length=1,
-        read_keys=["bev", "rgb_front", "rgb_left", "rgb_right", "ego"])
+        read_keys=["bev_world", "rgb_front", "ego"])
 
     logger.info(f"Test dataset size: {len(world_model_dataset_test)}")
 
@@ -46,10 +47,9 @@ def main(config):
     # Create video writer
     canvas = np.zeros(
         (rgb_size[0] +
-         bev_size[0] +
+         bev_size[0] * 3 +
          100,
-         rgb_size[1] *
-         3,
+         bev_size[0] * 3,
          3),
         dtype=np.uint8)
 
@@ -65,43 +65,22 @@ def main(config):
     for i in range(len(world_model_dataset_test)):
         # Get data
         data = world_model_dataset_test[i]
-        bev = data["bev"][0].numpy()
+        bev = data["bev_world"]["bev"][0].numpy()
         rgb_front = data["rgb_front"][0].numpy().transpose(1, 2, 0)
-        rgb_left = data["rgb_left"][0].numpy().transpose(1, 2, 0)
-        rgb_right = data["rgb_right"][0].numpy().transpose(1, 2, 0)
         ego = data["ego"]
 
         # Create canvas
         canvas = np.zeros_like(canvas)
         canvas[:rgb_size[0], :rgb_size[1], :] = cv2.cvtColor(
             rgb_front, cv2.COLOR_RGB2BGR)
-        canvas[:rgb_size[0], rgb_size[1]:rgb_size[1] *
-               2, :] = cv2.cvtColor(rgb_left, cv2.COLOR_RGB2BGR)
-        canvas[:rgb_size[0], rgb_size[1] * 2:,
-               :] = cv2.cvtColor(rgb_right, cv2.COLOR_RGB2BGR)
         canvas[rgb_size[0] + 100:rgb_size[0] + 100 + bev_size[0],
                :bev_size[1], :] = cv2.cvtColor(bev_to_rgb(bev), cv2.COLOR_RGB2BGR)
 
         # Put text on the top-middle of the images and bev
         cv2.putText(canvas, "Front", (rgb_size[1] // 2 - 50, 20),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
-        cv2.putText(canvas, "Left", (rgb_size[1] + rgb_size[1] // 2 - 50, 20),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
-        cv2.putText(
-            canvas,
-            "Right",
-            (rgb_size[1] *
-             2 +
-             rgb_size[1] //
-             2 -
-             50,
-             20),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.5,
-            (0,
-             255,
-             255),
-            2)
+        
+        
         cv2.putText(
             canvas,
             "Bird's Eye View",
