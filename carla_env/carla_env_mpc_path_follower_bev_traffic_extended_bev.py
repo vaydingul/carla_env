@@ -59,7 +59,7 @@ def create_multiple_actors_for_traffic_manager(client, n=20):
         actors.append(actor.ActorModule(
             config={
                 "vehicle": vehicle.VehicleModule(
-                    config=None,  # {"vehicle_model": vehicles[k], },
+                    config={"vehicle_model": vehicles[k], },
                     client=client),
                 "hero": False},
             client=client))
@@ -190,10 +190,10 @@ class CarlaEnvironment(Environment):
             render_lanes_on_junctions=False,
             pixels_per_meter=5,
             crop_type=BirdViewCropType.FRONT_AREA_ONLY,
-            road_on_off=False,
-            road_light=False,
-            light_circle=True,
-            lane_marking_thickness=1)
+            road_on_off=True,
+            road_light=True,
+            light_circle=False,
+            lane_marking_thickness=2)
 
         time.sleep(1.0)
         logger.info("Everything is set!")
@@ -326,12 +326,13 @@ class CarlaEnvironment(Environment):
                 bev,
                 indices=[
                     0,
+                    1,
+                    2,
+                    3,
+                    4,
                     5,
                     6,
-                    8,
-                    9,
-                    9,
-                    10,
+                    7,
                     11]),
             cv2.COLOR_BGR2RGB)
         # Put image into canvas
@@ -591,7 +592,7 @@ class CarlaEnvironment(Environment):
 
     def _create_save_folder(self):
 
-        debug_path = Path("figures/env_debug")
+        debug_path = Path("figures/env_debug/test_policy")
 
         date_ = Path(datetime.today().strftime('%Y-%m-%d'))
         time_ = Path(datetime.today().strftime('%H-%M-%S'))

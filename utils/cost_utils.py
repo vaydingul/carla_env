@@ -58,7 +58,7 @@ def align_coordinate_mask_with_ego_vehicle(x, y, yaw, coordinate_mask):
     return aligned_coordinate_mask
 
 
-def calculate_mask(aligned_coordinate_mask, dx, dy, width, length, alpha=0.1):
+def calculate_mask(aligned_coordinate_mask, dx, dy, width, length, alpha=0.1, side_mask=True):
     """Calculate the mask for the ego vehicle"""
 
     term_1 = (
@@ -69,12 +69,15 @@ def calculate_mask(aligned_coordinate_mask, dx, dy, width, length, alpha=0.1):
     mask_car = torch.maximum(term_1, torch.tensor(
         0)) * torch.minimum(torch.maximum(term_2, torch.tensor(0)), torch.tensor(1))
     mask_car = torch.pow(mask_car, alpha)
+    mask_car = mask_car.flip(-2).permute((0, 1, 3, 2, -1)).squeeze(-1)
 
+    if not side_mask:
+        return mask_car
+        
     mask_side = torch.maximum(term_1, torch.tensor(
         0)) * torch.maximum(term_2, torch.tensor(0))
     mask_side = torch.pow(mask_side, alpha)
 
-    mask_car = mask_car.flip(-2).permute((0, 1, 3, 2, -1)).squeeze(-1)
     mask_side = mask_side.flip(-2).permute((0, 1, 3, 2, -1)).squeeze(-1)
 
     return (mask_car, mask_side)
