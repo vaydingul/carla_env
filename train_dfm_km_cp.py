@@ -1,11 +1,11 @@
 import logging
 
-from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
+from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.models.policy.policy import Policy
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
 from carla_env.cost.masked_cost_batched import Cost
-from carla_env.trainer.dfm_km_cp import Trainer
+from carla_env.trainer.dfm_km_cp_ddp import Trainer
 from carla_env.dataset.instance import InstanceDataset
 import torch
 from torch.utils.data import DataLoader
@@ -16,6 +16,11 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 from collections import deque
+
+import torch.multiprocessing as mp
+from torch.utils.data.distributed import DistributedSampler
+from torch.distributed import (init_process_group, destroy_process_group)
+import os
 
 from utils.model_utils import (
     load_world_model_from_wandb_run,
@@ -38,74 +43,13 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d ==> %(message)s")
 
 
-def main(config):
+def ddp_setup(rank, world_size, master_port):
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = master_port
+    init_process_group(backend="nccl", rank=rank, world_size=world_size)
 
-    seed_everything(seed=config.seed)
-    device = get_device()
 
-    # ---------------------------------------------------------------------------- #
-    #                                 Cost Function                                #
-    # ---------------------------------------------------------------------------- #
-    cost = Cost(image_width=192, image_height=192, device=device)
-
-    # ---------------------------------------------------------------------------- #
-    #                         Pretrained ego forward model                         #
-    # ---------------------------------------------------------------------------- #
-    ego_forward_model = load_ego_model_from_checkpoint(
-        checkpoint=config.ego_forward_model_path,
-        cls=KinematicBicycleModelV2,
-        dt=1 / 20)
-    ego_forward_model.to(device=device)
-
-    # ---------------------------------------------------------------------------- #
-    #                        Pretrained world forward model                        #
-    # ---------------------------------------------------------------------------- #
-    world_model_run = wandb.Api().run(
-        config.world_forward_model_wandb_link)
-    checkpoint = fetch_checkpoint_from_wandb_link(
-        config.world_forward_model_wandb_link,
-        config.world_forward_model_checkpoint_number)
-    world_forward_model, _ = WorldBEVModel.load_model_from_wandb_run(
-        run=run, checkpoint=checkpoint, device=device)
-    world_forward_model.to(device=device)
-
-    # ---------------------------------------------------------------------------- #
-    #                                    Dataset                                   #
-    # ---------------------------------------------------------------------------- #
-    # Load the dataset
-    # Create dataset and its loader
-    data_path_train = config.data_path_train
-    data_path_val = config.data_path_val
-    dataset_train = InstanceDataset(
-        data_path=data_path_train,
-        sequence_length=world_model_run.config["num_time_step_previous"] +
-        world_model_run.config["num_time_step_future"],
-        read_keys=["bev", "ego", "navigation"])
-    dataset_val = InstanceDataset(
-        data_path=data_path_val,
-        sequence_length=world_model_run.config["num_time_step_previous"] +
-        world_model_run.config["num_time_step_future"],
-        read_keys=["bev", "ego", "navigation"])
-
-    dataloader_train = DataLoader(
-        dataset_train,
-        batch_size=config.batch_size,
-        shuffle=True,
-        num_workers=config.num_workers,
-        drop_last=True)
-    dataloader_val = DataLoader(
-        dataset_val,
-        batch_size=config.batch_size,
-        shuffle=False,
-        num_workers=config.num_workers,
-        drop_last=True)
-
-    logger.info(f"Train dataset size: {len(dataset_train)}")
-    logger.info(f"Val dataset size: {len(dataset_val)}")
-
-    # ---------------------------------------------------------------------------- #
-    #                                     WANDB                                    #
-    # ---------------------------------------------------------------------------- #
+def create_wandb_run(config):
     # Setup the wandb
     if config.wandb:
 
@@ -121,31 +65,117 @@ def main(config):
 
         run = None
 
+    return run
+
+
+def main(rank, world_size, run, config):
+
+    ddp_setup(rank, world_size, config.master_port)
+
+    seed_everything(seed=config.seed)
+
+    # ---------------------------------------------------------------------------- #
+    #                                 Cost Function                                #
+    # ---------------------------------------------------------------------------- #
+    cost = Cost(image_width=192, image_height=192, device=rank)
+
+    # ---------------------------------------------------------------------------- #
+    #                         Pretrained ego forward model                         #
+    # ---------------------------------------------------------------------------- #
+    ego_forward_model = load_ego_model_from_checkpoint(
+        checkpoint=config.ego_forward_model_path,
+        cls=KinematicBicycleModel,
+        dt=1 / 20)
+    ego_forward_model.to(device=rank)
+
+    # ---------------------------------------------------------------------------- #
+    #                        Pretrained world forward model                        #
+    # ---------------------------------------------------------------------------- #
+    world_model_run = wandb.Api().run(
+        config.world_forward_model_wandb_link)
+    checkpoint = fetch_checkpoint_from_wandb_link(
+        config.world_forward_model_wandb_link,
+        config.world_forward_model_checkpoint_number)
+    world_forward_model = WorldBEVModel.load_model_from_wandb_run(
+        run=world_model_run,
+        checkpoint=checkpoint,
+        device={f"cuda:0": f"cuda:{rank}"} if config.num_gpu > 1 else rank)
+    world_forward_model.to(device=rank)
+
+    config.num_time_step_previous = world_model_run.config[
+        "num_time_step_previous"] if config.num_time_step_previous < 0 else config.num_time_step_previous
+    config.num_time_step_future = world_model_run.config[
+        "num_time_step_future"] if config.num_time_step_future < 0 else config.num_time_step_future
+
+    # ---------------------------------------------------------------------------- #
+    #                                    Dataset                                   #
+    # ---------------------------------------------------------------------------- #
+    # Load the dataset
+    # Create dataset and its loader
+    data_path_train = config.data_path_train
+    data_path_val = config.data_path_val
+    dataset_train = InstanceDataset(
+        data_path=data_path_train,
+        sequence_length=config.num_time_step_previous +
+        config.num_time_step_future,
+        read_keys=["bev_world", "ego", "navigation", "occ"],
+        dilation=config.dataset_dilation)
+    dataset_val = InstanceDataset(
+        data_path=data_path_val,
+        sequence_length=config.num_time_step_previous +
+        config.num_time_step_future,
+        read_keys=["bev_world", "ego", "navigation", "occ"],
+        dilation=config.dataset_dilation)
+
+    dataloader_train = DataLoader(
+        dataset_train,
+        batch_size=config.batch_size,
+        shuffle=False,
+        num_workers=config.num_workers,
+        drop_last=True,
+        sampler=DistributedSampler(dataset_train, shuffle=True))
+    dataloader_val = DataLoader(
+        dataset_val,
+        batch_size=config.batch_size,
+        shuffle=False,
+        num_workers=config.num_workers,
+        drop_last=True,
+        sampler=DistributedSampler(dataset_val, shuffle=False))
+
+    logger.info(f"Train dataset size: {len(dataset_train)}")
+    logger.info(f"Val dataset size: {len(dataset_val)}")
+
     # ---------------------------------------------------------------------------- #
     #                                  Policy Model                                 #
     # ---------------------------------------------------------------------------- #
     if not config.resume:
+
         _input_shape_world_state = world_model_run.config["input_shape"]
-        _input_shape_world_state[0] *= world_model_run.config["num_time_step_previous"]
+        _input_shape_world_state[0] *= config.num_time_step_previous if not config.single_world_state_input else 1
         if config.wandb:
             run.config.update(
                 {"input_shape_world_state": _input_shape_world_state})
         policy_model = Policy(
             input_shape_world_state=_input_shape_world_state,
-            input_shape_ego_state=config.input_shape_ego_state,
+            input_ego_location=config.input_ego_location,
+            input_ego_yaw=config.input_ego_yaw,
+            input_ego_speed=config.input_ego_speed,
             action_size=config.action_size,
             hidden_size=config.hidden_size,
-            layers=config.num_layer)
+            occupancy_size=config.occupancy_size,
+            layers=config.num_layer,
+            delta_target=config.delta_target,
+            single_world_state_input=config.single_world_state_input)
     else:
 
         checkpoint = fetch_checkpoint_from_wandb_run(
-            run=run)
+            run=run, checkpoint_number=config.resume_checkpoint_number)
 
-        policy_model, _ = Policy.load_model_from_wandb_run(
+        policy_model = Policy.load_model_from_wandb_run(
             run=run,
             checkpoint=checkpoint,
-            policy_model_device=device)
-
+            device={f"cuda:0": f"cuda:{rank}"} if config.num_gpu > 1 else rank)
+    policy_model.to(device=rank)
     # ---------------------------------------------------------------------------- #
     #                              DFM_KM with Policy                              #
     # ---------------------------------------------------------------------------- #
@@ -153,7 +183,7 @@ def main(config):
         ego_model=ego_forward_model,
         world_model=world_forward_model,
         policy_model=policy_model)
-
+    model.to(device=rank)
     # ---------------------------------------------------------------------------- #
 
     # ---------------------------------------------------------------------------- #
@@ -175,6 +205,13 @@ def main(config):
                         int(s) for s in run.config["lr_schedule_step_size"].split("-")],
                     gamma=config.lr_schedule_gamma)
     else:
+
+        checkpoint = torch.load(
+            checkpoint.name,
+            map_location=f"cuda:{rank}" if isinstance(
+                rank,
+                int) else rank)
+
         optimizer = torch.optim.Adam(
             policy_model.parameters(), lr=run.config["lr"])
         optimizer.load_state_dict(
@@ -197,7 +234,12 @@ def main(config):
                 lr_scheduler.load_state_dict(
                     checkpoint["lr_scheduler_state_dict"])
 
-    if config.wandb:
+    logger.info(
+        f"Number of parameters that requires gradient: {sum(p.numel() for p in model.parameters() if p.requires_grad)}")
+    logger.info(
+        f"Number of parameters that are being optimized: {sum(p.numel() for p in policy_model.parameters() if p.requires_grad)}")
+
+    if rank == 0 and run is not None:
         run.watch(policy_model)
     # ---------------------------------------------------------------------------- #
 
@@ -209,11 +251,11 @@ def main(config):
         dataloader_train,
         dataloader_val,
         optimizer,
-        device,
+        rank,
         cost,
         cost_weight=config.cost_weight,
-        num_time_step_previous=world_model_run.config["num_time_step_previous"],
-        num_time_step_future=world_model_run.config["num_time_step_future"],
+        num_time_step_previous=config.num_time_step_previous,
+        num_time_step_future=config.num_time_step_future,
         num_epochs=config.num_epochs,
         current_epoch=checkpoint["epoch"] +
         1 if config.resume else 0,
@@ -224,13 +266,11 @@ def main(config):
         train_step=checkpoint["train_step"] if config.resume else 0,
         val_step=checkpoint["val_step"] if config.resume else 0,
         debug_render=config.debug_render,
-        save_interval=config.save_interval)
+        save_interval=config.save_interval if rank == 0 else -1)
 
     logger.info("Training started!")
-    trainer.learn(run)
-
-    if run is not None:
-        run.finish()
+    trainer.learn(run if rank == 0 else None)
+    destroy_process_group()
 
 
 if __name__ == "__main__":
@@ -253,10 +293,14 @@ if __name__ == "__main__":
     parser.add_argument("--num_epochs", type=int, default=100)
     parser.add_argument("--batch_size", type=int, default=5)
     parser.add_argument("--num_workers", type=int, default=4)
-    parser.add_argument("--data_path_train", type=str,
-                        default="data/ground_truth_bev_model_data_dummy_2")
-    parser.add_argument("--data_path_val", type=str,
-                        default="data/ground_truth_bev_model_data_dummy_2")
+    parser.add_argument(
+        "--data_path_train",
+        type=str,
+        default="data/ground_truth_bev_model_test_data_4_town_02")
+    parser.add_argument(
+        "--data_path_val",
+        type=str,
+        default="data/ground_truth_bev_model_test_data_4_town_02")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
     parser.add_argument(
@@ -264,18 +308,31 @@ if __name__ == "__main__":
         type=lambda x: (
             str(x).lower() == 'true'),
         default=False)
-
+    parser.add_argument("--resume_checkpoint_number", type=int, default=14)
+    parser.add_argument("--num_gpu", type=int, default=1)
+    parser.add_argument("--master_port", type=str, default="12355")
     parser.add_argument("--lr_schedule", type=lambda x: (
         str(x).lower() == 'true'), default=False)
     parser.add_argument("--lr_schedule_step_size", default=5)
     parser.add_argument("--lr_schedule_gamma", type=float, default=0.5)
     parser.add_argument("--gradient_clip_type", type=str, default="norm")
     parser.add_argument("--gradient_clip_value", type=float, default=1)
+    parser.add_argument("--num_time_step_previous", type=int, default=-1)
+    parser.add_argument("--num_time_step_future", type=int, default=-1)
+    parser.add_argument("--dataset_dilation", type=int, default=1)
     parser.add_argument("--debug_render", type=lambda x: (
-        str(x).lower() == 'true'), default=True)
+        str(x).lower() == 'true'), default=False)
     parser.add_argument("--save_interval", type=int, default=100)
+
     # POLICY MODEL PARAMETERS
-    parser.add_argument("--input_shape_ego_state", type=int, default=4)
+    parser.add_argument("--input_ego_location", type=int, default=1)
+    parser.add_argument("--input_ego_yaw", type=int, default=1)
+    parser.add_argument("--input_ego_speed", type=int, default=1)
+    parser.add_argument("--delta_target", type=lambda x: (
+        str(x).lower() == 'true'), default=True)
+    parser.add_argument("--single_world_state_input", type=lambda x: (
+        str(x).lower() == 'true'), default=False)
+    parser.add_argument("--occupancy_size", type=int, default=8)
     parser.add_argument("--action_size", type=int, default=2)
     parser.add_argument("--hidden_size", type=int, default=256)
     parser.add_argument("--num_layer", type=int, default=6)
@@ -284,17 +341,16 @@ if __name__ == "__main__":
     parser.add_argument("--lane_cost_weight", type=float, default=0.0)
     parser.add_argument("--vehicle_cost_weight", type=float, default=0.0)
     parser.add_argument("--green_light_cost_weight", type=float, default=0.0)
-    parser.add_argument(
-        "--yellow_light_cost_weight",
-        type=float,
-        default=0.000)
+    parser.add_argument("--yellow_light_cost_weight", type=float, default=0.0)
     parser.add_argument("--red_light_cost_weight", type=float, default=0.0)
     parser.add_argument("--pedestrian_cost_weight", type=float, default=0.0)
     parser.add_argument("--offroad_cost_weight", type=float, default=0.0)
-    parser.add_argument("--action_mse_weight", type=float, default=0.0)
-    parser.add_argument("--action_jerk_weight", type=float, default=0)
+    parser.add_argument("--action_mse_weight", type=float, default=1.0)
+    parser.add_argument("--action_jerk_weight", type=float, default=0.0)
     parser.add_argument("--target_mse_weight", type=float, default=0.0)
     parser.add_argument("--target_l1_weight", type=float, default=0.0)
+    parser.add_argument("--ego_state_mse_weight", type=float, default=0.0)
+    parser.add_argument("--world_state_mse_weight", type=float, default=0.0)
     # WANDB RELATED PARAMETERS
     parser.add_argument(
         "--wandb",
@@ -318,16 +374,20 @@ if __name__ == "__main__":
     parser.add_argument(
         "--world_forward_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/1gftiw9w")
+        default="vaydingul/mbl/r4la61x3")
 
     parser.add_argument(
         "--world_forward_model_checkpoint_number",
         type=int,
-        default=39)
+        default=49)
 
     config = parser.parse_args()
 
     config.cost_weight = {k: v for (k, v) in vars(
         config).items() if "weight" in k}
 
-    main(config)
+    run = create_wandb_run(config)
+
+    mp.spawn(main, args=(config.num_gpu, run, config), nprocs=config.num_gpu)
+
+    run.finish()

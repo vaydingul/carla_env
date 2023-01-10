@@ -164,10 +164,29 @@ class CarlaEnvironment(Environment):
             selected_task["num_vehicles"],
             list) else selected_task["num_vehicles"]
         logger.info(f"Number of actors: {number_of_actors}")
+
+        # Fetch all spawn points
+        spawn_points = self.map.get_spawn_points()
+        # Select two random spawn points
+        start_end_spawn_point = np.random.choice(spawn_points, 2)
+        start = start_end_spawn_point[0]
+        # Let's initialize a vehicle
+        self.vehicle_module = vehicle.VehicleModule(
+            config={
+                "vehicle_model": "lincoln.mkz_2017"},
+            client=self.client)
+        # Make this vehicle actor
+        self.hero_actor_module = actor.ActorModule(config={
+            "actor": self.vehicle_module,
+            "hero": True,
+            "selected_spawn_point": start},
+            client=self.client)
+
         actor_list = create_multiple_actors_for_traffic_manager(
             self.client,
             n=number_of_actors + 1)
-        self.hero_actor_module = actor_list[0]
+
+        actor_list.append(self.hero_actor_module)
 
         if not self.config["random"]:
             self.traffic_manager_module = traffic_manager.TrafficManagerModule(

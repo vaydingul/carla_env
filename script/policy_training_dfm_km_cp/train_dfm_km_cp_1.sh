@@ -9,7 +9,7 @@ source activate carla
 echo "Conda environment is activated"
 
 # Run the world model
-python3 train_dfm_km_cp_delta_target_w_occ_ddp.py \
+python3 train_dfm_km_cp.py \
 	--lr=1e-4 \
 	--num_epochs=50 \
 	--batch_size=20 \

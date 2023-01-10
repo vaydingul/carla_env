@@ -10,6 +10,7 @@ import numpy as np
 
 from carla_env import carla_env_bev_data_collect
 from carla_env.writer.writer import InstanceWriter, InstanceWriterType
+from utils.train_utils import seed_everything
 # Save the log to a file name with the current date
 # logging.basicConfig(filename=f"logs/sim_log_debug",level=logging.DEBUG)
 
@@ -17,6 +18,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 def main(config):
+    seed_everything(333)
     c = carla_env_bev_data_collect.CarlaEnvironment(
         config={
             "render": False, "save": False, "save_video": False,
@@ -29,7 +31,7 @@ def main(config):
             "fixed_delta_seconds": 1 / 10})
 
     for k in tqdm.tqdm(range(config.num_episodes)):
-
+        
         # Create the data writer
         data_save_path_ = Path(config.data_save_path) / f"episode_{k}"
         os.makedirs(data_save_path_, exist_ok=True)
@@ -89,12 +91,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_save_path",
         type=str,
-        default="./data/ground_truth_bev_model_train_data_10Hz_multichannel_bev",
+        default="./data/ground_truth_bev_model_train_data_10Hz_multichannel_bev_special_seed_33",
         help="Path to save the data")
     parser.add_argument(
         "--num_episodes",
         type=int,
-        default=120,
+        default=1,
         help="Number of episodes to collect data from")
     config = parser.parse_args()
 
