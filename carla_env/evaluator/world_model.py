@@ -17,7 +17,8 @@ class Evaluator(object):
             report_iou=True,
             num_time_step_previous=10,
             num_time_step_predict=10,
-            threshold=0.25,
+            threshold=0.5,
+            vehicle_threshold=0.3,
             bev_selected_channels=None,
             save_path=None):
         self.model = model
@@ -27,6 +28,7 @@ class Evaluator(object):
         self.num_time_step_previous = num_time_step_previous
         self.num_time_step_predict = num_time_step_predict
         self.threshold = threshold
+        self.vehicle_threshold = vehicle_threshold
         self.save_path = save_path
         self.bev_selected_channels = bev_selected_channels
         # Create folder at save_path
@@ -64,10 +66,14 @@ class Evaluator(object):
 
                 world_future_bev_predicted = torch.sigmoid(
                     world_future_bev_predicted)
-                world_future_bev_predicted[world_future_bev_predicted >
-                                           self.threshold] = 1
-                world_future_bev_predicted[world_future_bev_predicted <=
-                                           self.threshold] = 0
+
+                world_future_bev_predicted_vehicle = world_future_bev_predicted[:, :, -2]
+                world_future_bev_predicted_vehicle = (
+                    world_future_bev_predicted_vehicle > self.vehicle_threshold).float()
+                world_future_bev_predicted = (
+                    world_future_bev_predicted > self.threshold).float()
+                world_future_bev_predicted[:, :, -
+                                           2] = world_future_bev_predicted_vehicle
 
                 #  Append the predicted future bev to the list
                 world_future_bev_predicted_list.append(
@@ -84,8 +90,7 @@ class Evaluator(object):
             if self.report_iou:
 
                 for (ix, channel) in enumerate(self.bev_selected_channels):
-                    
-                    
+
                     world_future_bev_predicted_ = world_future_bev_predicted[:, :, ix].clone(
                     ).view(-1, *world_future_bev_predicted.shape[-2:]).to(torch.uint8)
                     world_future_bev_ = world_future_bev[:, :, ix].clone(
@@ -95,8 +100,9 @@ class Evaluator(object):
                         world_future_bev_predicted_,
                         world_future_bev_)
 
-                    iou_dict[f"{BirdViewMasks.bottom_to_top()[channel]}"] = iou.cpu().numpy()
-                
+                    iou_dict[f"{BirdViewMasks.bottom_to_top()[channel]}"] = iou.cpu(
+                    ).numpy()
+
                 iou_dict_list.append(iou_dict)
 
             self._init_canvas(world_previous_bev.shape[0])

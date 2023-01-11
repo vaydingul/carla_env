@@ -1,7 +1,7 @@
 
 from carla_env.dataset.instance import InstanceDataset
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 import logging
 import argparse
 import numpy as np
@@ -21,8 +21,7 @@ def bev_to_rgb(bev):
     # Transpose the bev representation
     bev = bev.transpose(1, 2, 0)
 
-    rgb_image = BirdViewProducer.as_rgb_with_indices(
-        bev, [0, 1, 2, 3, 4, 5, 6, 11])
+    rgb_image = BirdViewProducer.as_rgb(bev)
 
     return rgb_image
 
@@ -34,7 +33,13 @@ def main(config):
     world_model_dataset_test = InstanceDataset(
         data_path=data_path_test,
         sequence_length=1,
-        read_keys=["bev_world", "rgb_front", "ego"])
+        read_keys=["bev_world", "rgb_front", "ego"],
+        bev_agent_channel=7,
+        bev_vehicle_channel=6,
+        bev_selected_channels=range(12),
+        bev_calculate_offroad=False)
+    
+    world_model_dataset_test = Subset(world_model_dataset_test, range(1000))
 
     logger.info(f"Test dataset size: {len(world_model_dataset_test)}")
 
@@ -42,14 +47,14 @@ def main(config):
         world_model_dataset_test[0]["rgb_front"].shape[2],
         world_model_dataset_test[0]["rgb_front"].shape[3])
     bev_size = (
-        world_model_dataset_test[0]["bev"].shape[2],
-        world_model_dataset_test[0]["bev"].shape[3])
+        world_model_dataset_test[0]["bev_world"]["bev"].shape[2],
+        world_model_dataset_test[0]["bev_world"]["bev"].shape[3])
     # Create video writer
     canvas = np.zeros(
         (rgb_size[0] +
          bev_size[0] * 3 +
          100,
-         bev_size[0] * 3,
+         rgb_size[1],
          3),
         dtype=np.uint8)
 
@@ -60,7 +65,7 @@ def main(config):
 
     fourcc = VideoWriter_fourcc(*'mp4v')
     video = VideoWriter(f"{config.save_path}/video.mp4",
-                        fourcc, 20.0, (canvas.shape[1], canvas.shape[0]))
+                        fourcc, 10.0, (canvas.shape[1], canvas.shape[0]))
 
     for i in range(len(world_model_dataset_test)):
         # Get data
@@ -73,8 +78,8 @@ def main(config):
         canvas = np.zeros_like(canvas)
         canvas[:rgb_size[0], :rgb_size[1], :] = cv2.cvtColor(
             rgb_front, cv2.COLOR_RGB2BGR)
-        canvas[rgb_size[0] + 100:rgb_size[0] + 100 + bev_size[0],
-               :bev_size[1], :] = cv2.cvtColor(bev_to_rgb(bev), cv2.COLOR_RGB2BGR)
+        canvas[rgb_size[0] + 100:rgb_size[0] + 100 +  3 *bev_size[0],
+               :bev_size[1] * 3] = cv2.resize(cv2.cvtColor(bev_to_rgb(bev), cv2.COLOR_RGB2BGR), (0,0), fx=3, fy=3)
 
         # Put text on the top-middle of the images and bev
         cv2.putText(canvas, "Front", (rgb_size[1] // 2 - 50, 20),
@@ -96,20 +101,20 @@ def main(config):
         offset_x = bev_size[1] + 100
         offset_y = rgb_size[0] + 100
 
-        for key, value in ego.items():
+        # for key, value in ego.items():
 
-            cv2.putText(
-                canvas,
-                f"{key}: {value[0].numpy()}",
-                (offset_x,
-                 offset_y),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1.0,
-                (255,
-                 255,
-                 0),
-                1)
-            offset_y += 40
+        #     cv2.putText(
+        #         canvas,
+        #         f"{key}: {value[0].numpy()}",
+        #         (offset_x,
+        #          offset_y),
+        #         cv2.FONT_HERSHEY_SIMPLEX,
+        #         1.0,
+        #         (255,
+        #          255,
+        #          0),
+        #         1)
+        #     offset_y += 40
 
         # Write to video
         video.write(canvas)

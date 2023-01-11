@@ -328,106 +328,107 @@ def render(
     canvas = _init_canvas(num_time_step_future, 192, 192)
     x1 = 0
     y1 = 0
-    for k in range(1):
-        for m in range(num_time_step_future - 1):
-            bev = world_future_bev_predicted[0, m]
-            bev[bev > 0.5] = 1
-            bev[bev <= 0.5] = 0
-            bev = bev.detach().cpu().numpy()
+    if num_time_step_future > 1:
+        for k in range(1):
+            for m in range(num_time_step_future - 1):
+                bev = world_future_bev_predicted[0, m + 1]
+                bev[bev > 0.5] = 1
+                bev[bev <= 0.5] = 0
+                bev = bev.detach().cpu().numpy()
 
-            mask_car = cost["mask_car"][0, m]
-            mask_car = mask_car.detach().cpu().numpy()
-            mask_car = (((mask_car -
-                          mask_car.min()) /
-                         (mask_car.max() -
-                          mask_car.min())) *
-                        255).astype(np.uint8)
+                mask_car = cost["mask_car"][0, m]
+                mask_car = mask_car.detach().cpu().numpy()
+                mask_car = (((mask_car -
+                            mask_car.min()) /
+                            (mask_car.max() -
+                            mask_car.min())) *
+                            255).astype(np.uint8)
 
-            # mask_side = cost["mask_side"][k, m]
-            # mask_side = mask_side.detach().cpu().numpy()
-            # mask_side = (((mask_side -
-            #                mask_side.min()) /
-            #               (mask_side.max() -
-            #                mask_side.min())) *
-            #              255).astype(np.uint8)
+                # mask_side = cost["mask_side"][k, m]
+                # mask_side = mask_side.detach().cpu().numpy()
+                # mask_side = (((mask_side -
+                #                mask_side.min()) /
+                #               (mask_side.max() -
+                #                mask_side.min())) *
+                #              255).astype(np.uint8)
 
-          
-            mask_car = cv2.applyColorMap(mask_car, cv2.COLORMAP_JET)
-            # mask_side = cv2.applyColorMap(mask_side, cv2.COLORMAP_JET)
             
-            bev = cv2.cvtColor(
-                BirdViewProducer.as_rgb_with_indices(
-                    np.transpose(
-                        bev, (1, 2, 0)), indices=[
-                        0, 1, 2, 3, 4, 5, 6, 11]), cv2.COLOR_BGR2RGB)
+                mask_car = cv2.applyColorMap(mask_car, cv2.COLORMAP_JET)
+                # mask_side = cv2.applyColorMap(mask_side, cv2.COLORMAP_JET)
+                
+                bev = cv2.cvtColor(
+                    BirdViewProducer.as_rgb_with_indices(
+                        np.transpose(
+                            bev, (1, 2, 0)), indices=[
+                            0, 1, 2, 3, 4, 5, 6, 11]), cv2.COLOR_BGR2RGB)
 
-            x2 = x1 + bev.shape[1]
-            y2 = y1 + bev.shape[0]
-            canvas[y1:y2, x1:x2] = cv2.addWeighted(
-                bev, 0.5, mask_car, 0.5, 0)
-            # self.canvas_side[y1:y2, x1:x2] = cv2.addWeighted(
-            #     bev, 0.5, mask_side, 0.5, 0)
-            
-            # # Draw ground truth action to the left corner of each bev
-            # # as vector
-            # action = action_gt[0, m]
-            # action = action.detach().cpu().numpy()
-            # action = action * 50
-            # action = action.astype(np.int32)
-            # cv2.arrowedLine(
-            #     self.canvas_car,
-            #     (x1 + 50,
-            #      y1 + 50),
-            #     (x1 + 50 +
-            #      action[1],
-            #      y1 + 50 - action[0]),
-            #     (255,
-            #      255,
-            #      255),
-            #     1,
-            #     tipLength=0.5)
+                x2 = x1 + bev.shape[1]
+                y2 = y1 + bev.shape[0]
+                canvas[y1:y2, x1:x2] = cv2.addWeighted(
+                    bev, 0.5, mask_car, 0.5, 0)
+                # self.canvas_side[y1:y2, x1:x2] = cv2.addWeighted(
+                #     bev, 0.5, mask_side, 0.5, 0)
+                
+                # # Draw ground truth action to the left corner of each bev
+                # # as vector
+                # action = action_gt[0, m]
+                # action = action.detach().cpu().numpy()
+                # action = action * 50
+                # action = action.astype(np.int32)
+                # cv2.arrowedLine(
+                #     self.canvas_car,
+                #     (x1 + 50,
+                #      y1 + 50),
+                #     (x1 + 50 +
+                #      action[1],
+                #      y1 + 50 - action[0]),
+                #     (255,
+                #      255,
+                #      255),
+                #     1,
+                #     tipLength=0.5)
 
-            # Draw predicted action to the left corner of each bev
-            # as vector
-            action = action_pred[0, m]
-            action = action.detach().cpu().numpy()
-            action = action * 50
-            action = action.astype(np.int32)
-            cv2.arrowedLine(
+                # Draw predicted action to the left corner of each bev
+                # as vector
+                action = action_pred[0, m + 1]
+                action = action.detach().cpu().numpy()
+                action = action * 50
+                action = action.astype(np.int32)
+                cv2.arrowedLine(
+                    canvas,
+                    (x1 + 50,
+                        y1 + 50),
+                    (x1 + 50 +
+                        action[1],
+                        y1 + 50 - action[0]),
+                    (0,
+                        255,
+                        255),
+                    1,
+                    tipLength=0.5)
+                y1 = 0
+                x1 = x2 + 20
+
+            x1 = 0
+            y1 = y2 + 20
+
+        x1 = 10
+        yy = y1
+
+        for (k, cost_) in enumerate(cost["cost"]):
+            cv2.putText(
                 canvas,
-                (x1 + 50,
-                    y1 + 50),
-                (x1 + 50 +
-                    action[1],
-                    y1 + 50 - action[0]),
-                (0,
+                f"{k}: {cost_}",
+                (x1,
+                    yy),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (255,
                     255,
                     255),
                 1,
-                tipLength=0.5)
-            y1 = 0
-            x1 = x2 + 20
-
-        x1 = 0
-        y1 = y2 + 20
-
-    x1 = 10
-    yy = y1
-
-    for (k, cost_) in enumerate(cost["cost"]):
-        cv2.putText(
-            canvas,
-            f"{k}: {cost_}",
-            (x1,
-                yy),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.5,
-            (255,
-                255,
-                255),
-            1,
-            cv2.LINE_AA)
-        yy += 15
+                cv2.LINE_AA)
+            yy += 15
     
 
     return canvas
@@ -435,8 +436,8 @@ def render(
 
 def _init_canvas(num_time_step_future, bev_width, bev_height):
 
-    width = (num_time_step_future - 1) * (bev_width + 20)
-    height = 2 * (bev_height + 20) + 200
+    width = (num_time_step_future) * (bev_width + 20)
+    height = (bev_height + 20) + 200
     canvas = np.zeros((height, width, 3), dtype=np.uint8)
     return canvas
 
@@ -448,8 +449,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--seed", type=int, default=333)
 
-    parser.add_argument("--rollout_length", type=int, default=20)
-    parser.add_argument("--dt", type=float, default=0.2)
+    parser.add_argument("--rollout_length", type=int, default=1)
+    parser.add_argument("--dt", type=float, default=0.1)
 
     parser.add_argument("--ego_forward_model_wandb_link", type=str,
                         default="vaydingul/mbl/ssifa1go")
@@ -471,12 +472,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/3nwtfd5e")
+        default="vaydingul/mbl/3oneqwe5")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=49)
+        default=9)
 
     config = parser.parse_args()
 

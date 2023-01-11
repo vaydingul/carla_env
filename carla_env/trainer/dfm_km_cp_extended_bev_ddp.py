@@ -674,13 +674,13 @@ class Trainer(object):
             action_pred,
             action_gt):
 
-        if self.debug_render:
+        if self.debug_render and self.num_time_step_future > 1:
             self._init_canvas()
             x1 = 0
             y1 = 0
             for k in range(self.dataloader_train.batch_size):
-                for m in range(self.num_time_step_future - 1):
-                    bev = world_future_bev_predicted[k, m]
+                for m in range(self.num_time_step_future-1):
+                    bev = world_future_bev_predicted[k, m+1]
                     bev[bev > 0.5] = 1
                     bev[bev <= 0.5] = 0
                     bev = bev.detach().cpu().numpy()
@@ -708,7 +708,7 @@ class Trainer(object):
 
                     # Draw ground truth action to the left corner of each bev
                     # as vector
-                    action = action_gt[k, m]
+                    action = action_gt[k, m+1]
                     action = action.detach().cpu().numpy()
                     action = action * 50
                     action = action.astype(np.int32)
@@ -727,7 +727,7 @@ class Trainer(object):
 
                     # Draw predicted action to the left corner of each bev
                     # as vector
-                    action = action_pred[k, m]
+                    action = action_pred[k, m+1]
                     action = action.detach().cpu().numpy()
                     action = action * 50
                     action = action.astype(np.int32)

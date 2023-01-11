@@ -90,7 +90,7 @@ def main(config):
     world_model_dataloader_test = DataLoader(
         dataset=world_model_dataset_test if config.test_set_step == 1 else Subset(
             world_model_dataset_test, range(
-                0, len(world_model_dataset_test), config.test_set_step)), batch_size=50)
+                0, len(world_model_dataset_test), config.test_set_step)), batch_size=config.batch_size)
 
     world_model_device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")
@@ -105,6 +105,7 @@ def main(config):
         num_time_step_previous=run.config["num_time_step_previous"],
         num_time_step_predict=(config.num_time_step_predict if config.num_time_step_predict > 0 else run.config["num_time_step_future"]),
         threshold=config.threshold,
+        vehicle_threshold=config.vehicle_threshold,
         bev_selected_channels=config.bev_selected_channels,
         save_path=f"{config.save_path}/{run.config['num_time_step_previous']}-{run.config['num_time_step_future']}-{(config.num_time_step_predict if config.num_time_step_predict > 0 else run.config['num_time_step_future'])}-{run.config['reconstruction_loss']}-{config.threshold}-{config.checkpoint_number}")
 
@@ -117,6 +118,7 @@ if __name__ == "__main__":
     parser.add_argument("--data_path_test", type=str,
                         default="data/ground_truth_bev_model_test_data/")
     parser.add_argument("--test_set_step", type=int, default=10)
+    parser.add_argument("--batch_size", type=int, default=20)
     parser.add_argument(
         "--save_path",
         type=str,
@@ -139,6 +141,7 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint_number", type=int, default=4)
     parser.add_argument("--num_time_step_predict", type=int, default=-1)
     parser.add_argument("--threshold", type=float, default=0.25)
+    parser.add_argument("--vehicle_threshold", type=float, default=0.25)
     parser.add_argument(
         "--bev_selected_channels",
         type=str,
