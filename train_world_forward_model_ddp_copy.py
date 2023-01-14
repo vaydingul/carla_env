@@ -142,7 +142,7 @@ def main(rank, world_size, run, config):
                 world_model_lr_scheduler.load_state_dict(
                     checkpoint["lr_scheduler_state_dict"])
 
-    if rank == 0:
+    if rank == 0 and config.wandb:
         run.watch(world_bev_model)
 
     world_model_trainer = Trainer(
@@ -188,13 +188,13 @@ if __name__ == "__main__":
 
     # TRAINING PARAMETERS
     parser.add_argument("--lr", type=float, default=1e-4)
-    parser.add_argument("--num_epochs", type=int, default=50)
-    parser.add_argument("--batch_size", type=int, default=10)
-    parser.add_argument("--num_workers", type=int, default=4)
+    parser.add_argument("--num_epochs", type=int, default=5)
+    parser.add_argument("--batch_size", type=int, default=80)
+    parser.add_argument("--num_workers", type=int, default=5)
     parser.add_argument("--data_path_train", type=str,
-                        default="data/ground_truth_bev_model_dummy_data")
+                        default="data/ground_truth_bev_model_train_data_10Hz_multichannel_bev")
     parser.add_argument("--data_path_val", type=str,
-                        default="data/ground_truth_bev_model_dummy_data")
+                        default="data/ground_truth_bev_model_val_data_10Hz_multichannel_bev")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
     parser.add_argument(
@@ -205,7 +205,7 @@ if __name__ == "__main__":
     parser.add_argument("--resume_checkpoint_number", type=int, default=49)
     parser.add_argument("--num_gpu", type=int, default=1)
     parser.add_argument("--master_port", type=str, default="12355")
-    parser.add_argument("--save_every", type=int, default=5)
+    parser.add_argument("--save_every", type=int, default=10)
     # MODEL PARAMETERS
     parser.add_argument("--input_shape", type=str, default="8-192-192")
     parser.add_argument("--hidden_channel", type=int, default=256)

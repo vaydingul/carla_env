@@ -78,15 +78,11 @@ class Trainer(object):
                 world_future_bev_predicted, mu, logvar = self.model(
                     world_previous_bev, world_future_bev[:, k])
 
-                # if self.reconstruction_loss == F.mse_loss:
-                #     world_future_bev_predicted = F.sigmoid(
-                #         world_future_bev_predicted)
-                # else:
-                #     world_future_bev_predicted = F.log_softmax(
-                #         world_future_bev_predicted, dim=1)
+                # Sigmoid the predicted bev
                 world_future_bev_predicted = F.sigmoid(
                     world_future_bev_predicted)
 
+                # Append the predicted bev
                 world_future_bev_predicted_list.append(
                     world_future_bev_predicted)
                 mu_list.append(mu)
@@ -96,16 +92,20 @@ class Trainer(object):
                 world_previous_bev = torch.cat(
                     (world_previous_bev[:, 1:], world_future_bev_predicted.unsqueeze(1)), dim=1)
 
+            # Stack the predicted bev
             world_future_bev_predicted = torch.stack(
                 world_future_bev_predicted_list, dim=1)
+            
+            # Stack the mu and logvar
             mu = torch.stack(mu_list, dim=1)
             logvar = torch.stack(logvar_list, dim=1)
 
+            # Clip the logvar
             if self.logvar_clip:
                 logvar = torch.clamp(logvar, self.logvar_clip_min,
                                      self.logvar_clip_max)
 
-            # Compute the loss
+            # Compute the reconstruction loss
             if self.reconstruction_loss == F.mse_loss:
                 loss_reconstruction = self.reconstruction_loss(
                     world_future_bev_predicted, world_future_bev)
