@@ -57,7 +57,7 @@ class Trainer(object):
         self.val_step = val_step
 
         self.b, _, self.c, self.h, self.w = next(
-            dataloader_train)["bev_world"]["bev"].shape
+            iter(dataloader_train))["bev_world"]["bev"].shape
         self.weight = self.bev_channel_weights.repeat(
             self.b, self.t, 1, self.h, self.w).to(self.gpu_id)
 
