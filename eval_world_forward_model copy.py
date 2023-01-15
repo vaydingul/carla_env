@@ -115,9 +115,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_path_test", type=str,
-                        default="data/ground_truth_bev_model_test_data/")
+                        default="data/ground_truth_bev_model_test_data_10Hz_multichannel_bev/")
     parser.add_argument("--test_set_step", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=20)
+    parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument(
         "--save_path",
         type=str,
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--wandb_link",
         type=str,
-        default="vaydingul/mbl/203kw46a")
+        default="vaydingul/mbl/1jnw0xjn")
     parser.add_argument("--wandb_project",
                         type=str,
                         default="mbl")
@@ -137,10 +137,10 @@ if __name__ == "__main__":
     parser.add_argument("--wandb_id",
                         type=str,
                         default="3aqhglkb")
-    parser.add_argument("--checkpoint_number", type=int, default=4)
+    parser.add_argument("--checkpoint_number", type=int, default=99)
     parser.add_argument("--num_time_step_predict", type=int, default=-1)
-    parser.add_argument("--threshold", type=float, default=0.25)
-    parser.add_argument("--vehicle_threshold", type=float, default=0.25)
+    parser.add_argument("--threshold", type=float, default=0.5)
+    parser.add_argument("--vehicle_threshold", type=float, default=0.5)
     parser.add_argument(
         "--bev_selected_channels",
         type=str,

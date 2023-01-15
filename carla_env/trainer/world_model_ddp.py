@@ -23,6 +23,7 @@ class Trainer(object):
             num_epochs=1000,
             current_epoch=0,
             reconstruction_loss="mse_loss",
+            bev_channel_weights=None,
             logvar_clip=True,
             logvar_clip_min=-5,
             logvar_clip_max=5,
@@ -43,6 +44,8 @@ class Trainer(object):
         self.num_epochs = num_epochs
         self.current_epoch = current_epoch
         self.reconstruction_loss = F.mse_loss if reconstruction_loss == "mse_loss" else F.binary_cross_entropy
+        self.bev_channel_weights = torch.tensor(
+            bev_channel_weights).to(self.gpu_id)
         self.logvar_clip = logvar_clip
         self.logvar_clip_min = logvar_clip_min
         self.logvar_clip_max = logvar_clip_max
@@ -53,9 +56,13 @@ class Trainer(object):
         self.train_step = train_step
         self.val_step = val_step
 
+        self.b, _, self.c, self.h, self.w = next(
+            dataloader_train)["bev_world"]["bev"].shape
+        self.weight = self.bev_channel_weights.repeat(
+            self.b, self.t, 1, self.h, self.w).to(self.gpu_id)
+
         self.model.to(self.gpu_id)
         self.model = DDP(self.model, device_ids=[self.gpu_id])
-
 
     def train(self, run):
 
@@ -95,7 +102,7 @@ class Trainer(object):
             # Stack the predicted bev
             world_future_bev_predicted = torch.stack(
                 world_future_bev_predicted_list, dim=1)
-            
+
             # Stack the mu and logvar
             mu = torch.stack(mu_list, dim=1)
             logvar = torch.stack(logvar_list, dim=1)
@@ -110,12 +117,12 @@ class Trainer(object):
                 loss_reconstruction = self.reconstruction_loss(
                     world_future_bev_predicted, world_future_bev)
             else:
-                # Flatten the predicted and actual values
-                loss_reconstruction = self.reconstruction_loss(
-                    world_future_bev_predicted.view(
-                        world_future_bev_predicted.shape[0], -1), world_future_bev.view(
-                        world_future_bev.shape[0], -1))
-
+                if self.bev_channel_weights is not None:
+                    loss_reconstruction = self.reconstruction_loss(
+                        world_future_bev_predicted, world_future_bev, self.weight)
+                else:
+                    loss_reconstruction = self.reconstruction_loss(
+                        world_future_bev_predicted, world_future_bev)
             # Compute the KL divergence
             loss_kl_div = -0.5 * \
                 torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
@@ -199,15 +206,17 @@ class Trainer(object):
                     torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
                 # Calculate the reconstruction loss
+                # Compute the reconstruction loss
                 if self.reconstruction_loss == F.mse_loss:
                     loss_reconstruction = self.reconstruction_loss(
                         world_future_bev_predicted, world_future_bev)
                 else:
-                    # Flatten the predicted and actual values
-                    loss_reconstruction = self.reconstruction_loss(
-                        world_future_bev_predicted.view(
-                            world_future_bev_predicted.shape[0], -1), world_future_bev.view(
-                            world_future_bev.shape[0], -1))
+                    if self.bev_channel_weights is not None:
+                        loss_reconstruction = self.reconstruction_loss(
+                            world_future_bev_predicted, world_future_bev, self.weight)
+                    else:
+                        loss_reconstruction = self.reconstruction_loss(
+                            world_future_bev_predicted, world_future_bev)
 
                 loss = loss_kl_div + loss_reconstruction
 
@@ -256,7 +265,7 @@ class Trainer(object):
                     "val_step": self.val_step},
                     self.save_path /
                     Path(f"checkpoint_{epoch}.pt"))
-                
+
                 if run is not None:
                     run.save(str(self.save_path /
-                                Path(f"checkpoint_{epoch}.pt")))
+                                 Path(f"checkpoint_{epoch}.pt")))

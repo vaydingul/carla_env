@@ -58,7 +58,7 @@ class Evaluator(object):
             world_future_bev = data["bev_world"]["bev"][:, self.num_time_step_previous:
                                                         self.num_time_step_previous + self.num_time_step_predict].to(self.device).clone()
 
-            for _ in range(self.num_time_step_predict):
+            for k in range(self.num_time_step_predict):
 
                 # Predict the future bev
                 world_future_bev_predicted = self.model(
@@ -219,7 +219,8 @@ class Evaluator(object):
         else:
             rgb_image = BirdViewProducer.as_rgb_with_indices(
                 bev, self.bev_selected_channels)
-
+            # rgb_image = BirdViewProducer.as_rgb_with_indices(
+            #     bev[...,6:7], [6])
         return rgb_image
 
     def _save(self, step):

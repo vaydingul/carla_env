@@ -157,6 +157,7 @@ def main(rank, world_size, run, config):
         num_epochs=config.num_epochs,
         current_epoch=checkpoint["epoch"] + 1 if config.resume else 0,
         reconstruction_loss=config.reconstruction_loss,
+        bev_channel_weights=config.bev_channel_weights,
         logvar_clip=config.logvar_clip,
         logvar_clip_min=config.logvar_clip_min,
         logvar_clip_max=config.logvar_clip_max,
@@ -230,6 +231,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr_schedule_gamma", type=float, default=0.5)
     parser.add_argument("--gradient_clip_type", type=str, default="norm")
     parser.add_argument("--gradient_clip_value", type=float, default=0.3)
+    parser.add_argument("--bev_channel_weights", type=str, default="1,1,1,1,1,2,5,1")
 
     # WANDB RELATED PARAMETERS
     parser.add_argument(
@@ -247,7 +249,10 @@ if __name__ == "__main__":
 
     config = parser.parse_args()
     config.input_shape = [int(x) for x in config.input_shape.split("-")]
+    config.bev_channel_weights = [float(x) for x in config.bev_channel_weights.split(",")]
 
+    assert config.input_shape[0] == len(config.bev_channel_weights), "Number of channels in input shape and number of weights in channel weights should be same!"
+    
     run = create_wandb_run(config)
 
     mp.spawn(main, args=(config.num_gpu, run, config), nprocs=config.num_gpu)
