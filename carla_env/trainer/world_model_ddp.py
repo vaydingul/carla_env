@@ -44,8 +44,7 @@ class Trainer(object):
         self.num_epochs = num_epochs
         self.current_epoch = current_epoch
         self.reconstruction_loss = F.mse_loss if reconstruction_loss == "mse_loss" else F.binary_cross_entropy
-        self.bev_channel_weights = torch.tensor(
-            bev_channel_weights).to(self.gpu_id)
+        self.bev_channel_weights = bev_channel_weights
         self.logvar_clip = logvar_clip
         self.logvar_clip_min = logvar_clip_min
         self.logvar_clip_max = logvar_clip_max
@@ -58,10 +57,12 @@ class Trainer(object):
 
         self.b, _, self.c, self.h, self.w = next(
             iter(dataloader_train))["bev_world"]["bev"].shape
-        self.weight = self.ones(self.b, self.num_time_step_future, self.c,
-                                self.h, self.w).to(self.gpu_id)
-        for k in range(self.c):
-            self.weight[:, :, k, :, :] = self.bev_channel_weights[k]
+
+        if self.bev_channel_weights is not None:
+            self.weight = torch.ones(self.b, self.num_time_step_future, self.c,
+                                     self.h, self.w).to(self.gpu_id)
+            for k in range(self.c):
+                self.weight[:, :, k, :, :] = self.bev_channel_weights[k]
 
         self.model.to(self.gpu_id)
         self.model = DDP(self.model, device_ids=[self.gpu_id])
