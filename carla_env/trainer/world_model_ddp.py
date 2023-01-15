@@ -58,8 +58,10 @@ class Trainer(object):
 
         self.b, _, self.c, self.h, self.w = next(
             iter(dataloader_train))["bev_world"]["bev"].shape
-        self.weight = self.bev_channel_weights.repeat(
-            self.b, self.num_time_step_future, 1, self.h, self.w).to(self.gpu_id)
+        self.weight = self.ones(self.b, self.num_time_step_future, self.c,
+                                self.h, self.w).to(self.gpu_id)
+        for k in range(self.c):
+            self.weight[:, :, k, :, :] = self.bev_channel_weights[k]
 
         self.model.to(self.gpu_id)
         self.model = DDP(self.model, device_ids=[self.gpu_id])
