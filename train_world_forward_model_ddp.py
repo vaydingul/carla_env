@@ -14,6 +14,7 @@ import os
 from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.trainer.world_model_ddp import Trainer
+from carla_env.sampler.distributed_weighted_sampler import DistributedWeightedSampler
 from utils.model_utils import (
     fetch_checkpoint_from_wandb_run)
 from utils.wandb_utils import (
@@ -61,21 +62,32 @@ def main(rank, world_size, run, config):
     logger.info(f"Train dataset size: {len(world_model_dataset_train)}")
     logger.info(f"Val dataset size: {len(world_model_dataset_val)}")
 
+
+    logger.info(f"Weighted sampling is {config.weighted_sampling}")
+
     world_model_dataloader_train = DataLoader(
         world_model_dataset_train,
         batch_size=config.batch_size,
         shuffle=False,
         num_workers=config.num_workers,
         drop_last=True,
-        sampler=DistributedSampler(world_model_dataset_train, shuffle=True))
-
+        sampler=DistributedWeightedSampler(
+            world_model_dataset_train,
+            weights=torch.Tensor(
+                [
+                    world_model_dataset_train.__getweight__(k) for k in range(
+                        len(world_model_dataset_train))]) if config.weighted_sampling else None,
+            shuffle=True))
+    
     world_model_dataloader_val = DataLoader(
         world_model_dataset_val,
         batch_size=config.batch_size,
         shuffle=False,
         num_workers=config.num_workers,
         drop_last=True,
-        sampler=DistributedSampler(world_model_dataset_val, shuffle=False))
+        sampler=DistributedWeightedSampler(
+            world_model_dataset_val,
+            shuffle=False))
 
     if not config.resume:
         world_bev_model = WorldBEVModel(
@@ -231,7 +243,12 @@ if __name__ == "__main__":
     parser.add_argument("--lr_schedule_gamma", type=float, default=0.5)
     parser.add_argument("--gradient_clip_type", type=str, default="norm")
     parser.add_argument("--gradient_clip_value", type=float, default=0.3)
-    parser.add_argument("--bev_channel_weights", type=str, default="1,1,1,1,1,2,5,1")
+    parser.add_argument(
+        "--bev_channel_weights",
+        type=str,
+        default="1,1,1,1,1,2,5,1")
+    parser.add_argument("--weighted_sampling", type=lambda x: (
+        str(x).lower() == 'true'), default=True)
 
     # WANDB RELATED PARAMETERS
     parser.add_argument(
@@ -249,10 +266,12 @@ if __name__ == "__main__":
 
     config = parser.parse_args()
     config.input_shape = [int(x) for x in config.input_shape.split("-")]
-    config.bev_channel_weights = [float(x) for x in config.bev_channel_weights.split(",")]
+    config.bev_channel_weights = [
+        float(x) for x in config.bev_channel_weights.split(",")]
 
-    assert config.input_shape[0] == len(config.bev_channel_weights), "Number of channels in input shape and number of weights in channel weights should be same!"
-    
+    assert config.input_shape[0] == len(
+        config.bev_channel_weights), "Number of channels in input shape and number of weights in channel weights should be same!"
+
     run = create_wandb_run(config)
 
     mp.spawn(main, args=(config.num_gpu, run, config), nprocs=config.num_gpu)

@@ -10,6 +10,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+BEV_SCORE_LIMIT = []
+
 
 class InstanceDataset(Dataset):
     """This dataset is very similar to InstanceWriter. It reads the data
@@ -151,6 +153,33 @@ class InstanceDataset(Dataset):
             data[read_key] = data_
 
         return data
+
+    import scipy.stats
+
+    def __getweight__(self, index):
+
+        assert "bev_world" in self.read_keys, "bev_world should be in read_keys"
+        assert "ego" in self.read_keys, "ego should be in read_keys"
+
+        bev = self._load_bev(index, "bev_world")["bev"]
+        bev_vehicle = bev[-2]
+        bev_vehicle_sum = bev_vehicle.sum()
+        bev_vehicle_sum = (bev_vehicle_sum - 2600) / 2600
+
+        bev_road_red_yellow = bev[3]
+        bev_road_red_yellow_sum = bev_road_red_yellow.sum()
+        bev_road_red_yellow_sum = (bev_road_red_yellow_sum - 3000) / 3000
+
+        bev_road_green = bev[4]
+        bev_road_green_sum = bev_road_green.sum()
+        bev_road_green_sum = (bev_road_green_sum - 2300) / 2300
+
+        weight_vehicle = scipy.stats.norm(0, 1).pdf(bev_vehicle_sum)
+        weight_road_red_yellow = scipy.stats.norm(
+            0, 1).pdf(bev_road_red_yellow_sum)
+        weight_road_green = scipy.stats.norm(0, 1).pdf(bev_road_green_sum)
+
+        return (weight_vehicle * weight_road_red_yellow * weight_road_green)
 
     def _load_bev(self, index, read_key):
 

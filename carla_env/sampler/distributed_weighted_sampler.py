@@ -8,10 +8,11 @@ class DistributedWeightedSampler(Sampler):
     def __init__(
             self,
             dataset,
-            weights,
+            weights=None,
             num_replicas=None,
             rank=None,
-            replacement=True):
+            replacement=True,
+            shuffle=True):
 
         if num_replicas is None:
             if not dist.is_available():
@@ -32,7 +33,9 @@ class DistributedWeightedSampler(Sampler):
             math.ceil(len(self.dataset) * 1.0 / self.num_replicas))
         self.total_size = self.num_samples * self.num_replicas
         self.replacement = replacement
-        self.weights = weights
+        self.shuffle = shuffle
+        self.weights = weights if weights is not None else torch.ones(
+            len(self.dataset))
 
     def __iter__(self):
         # deterministically shuffle based on epoch
@@ -50,12 +53,6 @@ class DistributedWeightedSampler(Sampler):
         # subsample
         indices = indices[self.rank:self.total_size:self.num_replicas]
         assert len(indices) == self.num_samples
-
-        # get targets (you can alternatively pass them in __init__, if this op
-        # is expensive)
-        targets = self.dataset.targets
-        targets = targets[self.rank:self.total_size:self.num_replicas]
-        assert len(targets) == self.num_samples
 
         return iter(
             torch.multinomial(
