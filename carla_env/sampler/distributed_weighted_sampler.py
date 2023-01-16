@@ -34,17 +34,28 @@ class DistributedWeightedSampler(Sampler):
         self.total_size = self.num_samples * self.num_replicas
         self.replacement = replacement
         self.shuffle = shuffle
-        self.weights = weights if weights is not None else torch.ones(
-            len(self.dataset))
+        
 
     def __iter__(self):
-        # deterministically shuffle based on epoch
+
         g = torch.Generator()
         g.manual_seed(self.epoch)
-        if self.shuffle:
-            indices = torch.randperm(len(self.dataset), generator=g).tolist()
+
+        if self.weights is not None:
+            
+            indices = torch.multinomial(
+                self.weights,
+                self.total_size,
+                replacement=True,
+                generator=g).tolist()
+            
         else:
-            indices = list(range(len(self.dataset)))
+            
+            if self.shuffle:
+                indices = torch.randperm(
+                    len(self.dataset), generator=g).tolist()
+            else:
+                indices = list(range(len(self.dataset)))
 
         # add extra samples to make it evenly divisible
         indices += indices[:(self.total_size - len(indices))]
@@ -54,11 +65,7 @@ class DistributedWeightedSampler(Sampler):
         indices = indices[self.rank:self.total_size:self.num_replicas]
         assert len(indices) == self.num_samples
 
-        return iter(
-            torch.multinomial(
-                self.weights,
-                self.num_samples,
-                self.replacement).tolist())
+        return iter(indices)
 
     def __len__(self):
         return self.num_samples
