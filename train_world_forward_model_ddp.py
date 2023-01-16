@@ -85,7 +85,9 @@ def main(rank, world_size, run, config):
         sampler=DistributedWeightedSampler(
             world_model_dataset_train,
             weights=weights,
-            shuffle=True))
+            shuffle=True,
+            num_replicas=config.num_gpu,
+            rank=rank))
 
     world_model_dataloader_val = DataLoader(
         world_model_dataset_val,
@@ -95,7 +97,9 @@ def main(rank, world_size, run, config):
         drop_last=True,
         sampler=DistributedWeightedSampler(
             world_model_dataset_val,
-            shuffle=False))
+            shuffle=False,
+            num_replicas=config.num_gpu,
+            rank=rank))
 
     if not config.resume:
         world_bev_model = WorldBEVModel(
