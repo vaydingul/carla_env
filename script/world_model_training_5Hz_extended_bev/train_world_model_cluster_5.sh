@@ -13,12 +13,13 @@ echo "Conda environment is activated"
 python3 train_world_forward_model_ddp.py \
 	--seed=42 \
 	--lr=1e-4 \
-	--num_epochs=100 \
+	--num_epochs=200 \
 	--batch_size=140 \
 	--num_workers=4 \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_10Hz_multichannel_bev/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_10Hz_multichannel_bev/" \
-	--resume=false \
+	--resume=true \
+	--resume_checkpoint_number=99 \
 	--num_gpu=8 \
 	--master_port="12885" \
 	--save_every=5 \
@@ -31,6 +32,7 @@ python3 train_world_forward_model_ddp.py \
 	--logvar_clip=false \
 	--lr_schedule=false \
 	--wandb=true \
+	--wandb_id="178mirqe"
 	--wandb_project="mbl" \
 	--wandb_group="world-forward-model-multi-step-5Hz-extended-bev" \
 	--wandb_name="5-10-binary_cross_entropy-weighted-gradient_clip_norm_0.3" \
