@@ -248,7 +248,7 @@ if __name__ == "__main__":
         type=str,
         default="1,1,1,1,1,2,5,1")
     parser.add_argument("--weighted_sampling", type=lambda x: (
-        str(x).lower() == 'true'), default=True)
+        str(x).lower() == 'true'), default=False)
 
     # WANDB RELATED PARAMETERS
     parser.add_argument(
