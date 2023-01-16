@@ -216,11 +216,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_path_train",
         type=str,
-        default="data/ground_truth_bev_model_train_data_10Hz_multichannel_bev")
+        default="data/ground_truth_bev_model_train_data_10Hz_multichannel_bev_special_seed_33")
     parser.add_argument(
         "--data_path_val",
         type=str,
-        default="data/ground_truth_bev_model_val_data_10Hz_multichannel_bev")
+        default="data/ground_truth_bev_model_train_data_10Hz_multichannel_bev_special_seed_33")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
     parser.add_argument(

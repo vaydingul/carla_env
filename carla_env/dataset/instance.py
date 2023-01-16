@@ -229,7 +229,7 @@ class InstanceDataset(Dataset):
 if __name__ == "__main__":
 
     dataset = InstanceDataset(
-        data_path="/home/vaydingul/Documents/Codes/carla_env/data/ground_truth_bev_model_dummy_data",
+        data_path="/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_train_data_10Hz_multichannel_bev_special_seed_33",
         sequence_length=20,
         read_keys=["occ"],
         dilation=3)
@@ -238,8 +238,8 @@ if __name__ == "__main__":
         batch_size=5,
         shuffle=False,
         num_workers=0)
-    k = 1
-    for data in dataloader:
+
+    for k in range(len(dataset)):
         print(k)
-        k += 1
-    print(len(dataloader))
+
+    print(len(dataset))
