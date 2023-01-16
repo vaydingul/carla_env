@@ -34,7 +34,7 @@ class DistributedWeightedSampler(Sampler):
         self.total_size = self.num_samples * self.num_replicas
         self.replacement = replacement
         self.shuffle = shuffle
-        
+        self.weights = weights
 
     def __iter__(self):
 
@@ -50,7 +50,7 @@ class DistributedWeightedSampler(Sampler):
                 generator=g).tolist()
             
         else:
-            
+
             if self.shuffle:
                 indices = torch.randperm(
                     len(self.dataset), generator=g).tolist()
