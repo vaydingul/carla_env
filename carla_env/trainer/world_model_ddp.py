@@ -43,7 +43,7 @@ class Trainer(object):
         self.num_time_step_future = num_time_step_future
         self.num_epochs = num_epochs
         self.current_epoch = current_epoch
-        self.reconstruction_loss = F.mse_loss if reconstruction_loss == "mse_loss" else F.binary_cross_entropy
+        self.reconstruction_loss = F.mse_loss if reconstruction_loss == "mse_loss" else F.binary_cross_entropy_with_logits
         self.bev_channel_weights = bev_channel_weights
         self.logvar_clip = logvar_clip
         self.logvar_clip_min = logvar_clip_min
@@ -88,10 +88,6 @@ class Trainer(object):
                 world_future_bev_predicted, mu, logvar = self.model(
                     world_previous_bev, world_future_bev[:, k])
 
-                # Sigmoid the predicted bev
-                world_future_bev_predicted = F.sigmoid(
-                    world_future_bev_predicted)
-
                 # Append the predicted bev
                 world_future_bev_predicted_list.append(
                     world_future_bev_predicted)
@@ -99,8 +95,8 @@ class Trainer(object):
                 logvar_list.append(logvar)
 
                 # Update the previous bev
-                world_previous_bev = torch.cat(
-                    (world_previous_bev[:, 1:], world_future_bev_predicted.unsqueeze(1)), dim=1)
+                world_previous_bev = torch.cat((world_previous_bev[:, 1:], torch.sigmoid(
+                    world_future_bev_predicted).unsqueeze(1)), dim=1)
 
             # Stack the predicted bev
             world_future_bev_predicted = torch.stack(
@@ -117,15 +113,18 @@ class Trainer(object):
 
             # Compute the reconstruction loss
             if self.reconstruction_loss == F.mse_loss:
+                world_future_bev_predicted = torch.sigmoid(
+                    world_future_bev_predicted)
                 loss_reconstruction = self.reconstruction_loss(
-                    world_future_bev_predicted, world_future_bev)
+                    input=world_future_bev_predicted, target=world_future_bev)
             else:
                 if self.bev_channel_weights is not None:
                     loss_reconstruction = self.reconstruction_loss(
-                        world_future_bev_predicted, world_future_bev, self.weight)
+                        input=world_future_bev_predicted, target=world_future_bev, pos_weight=self.weight)
                 else:
                     loss_reconstruction = self.reconstruction_loss(
-                        world_future_bev_predicted, world_future_bev)
+                        input=world_future_bev_predicted, target=world_future_bev)
+
             # Compute the KL divergence
             loss_kl_div = -0.5 * \
                 torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
@@ -180,20 +179,14 @@ class Trainer(object):
                     world_future_bev_predicted, mu, logvar = self.model(
                         world_previous_bev, world_future_bev[:, k])
 
-                    # if self.reconstruction_loss == F.mse_loss:
-                    #     world_future_bev_predicted = F.sigmoid(
-                    #         world_future_bev_predicted)
-                    world_future_bev_predicted = F.sigmoid(
-                        world_future_bev_predicted)
-
                     world_future_bev_predicted_list.append(
                         world_future_bev_predicted)
                     mu_list.append(mu)
                     logvar_list.append(logvar)
 
                     # Update the previous bev
-                    world_previous_bev = torch.cat(
-                        (world_previous_bev[:, 1:], world_future_bev_predicted.unsqueeze(1)), dim=1)
+                    world_previous_bev = torch.cat((world_previous_bev[:, 1:], torch.sigmoid(
+                        world_future_bev_predicted).unsqueeze(1)), dim=1)
 
                 world_future_bev_predicted = torch.stack(
                     world_future_bev_predicted_list, dim=1)
@@ -204,22 +197,23 @@ class Trainer(object):
                     logvar = torch.clamp(logvar, self.logvar_clip_min,
                                          self.logvar_clip_max)
 
-                # Calculate the KL divergence loss
-                loss_kl_div = -0.5 * \
-                    torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-
-                # Calculate the reconstruction loss
                 # Compute the reconstruction loss
                 if self.reconstruction_loss == F.mse_loss:
+                    world_future_bev_predicted = torch.sigmoid(
+                        world_future_bev_predicted)
                     loss_reconstruction = self.reconstruction_loss(
-                        world_future_bev_predicted, world_future_bev)
+                        input=world_future_bev_predicted, target=world_future_bev)
                 else:
                     if self.bev_channel_weights is not None:
                         loss_reconstruction = self.reconstruction_loss(
-                            world_future_bev_predicted, world_future_bev, self.weight)
+                            input=world_future_bev_predicted, target=world_future_bev, pos_weight=self.weight)
                     else:
                         loss_reconstruction = self.reconstruction_loss(
-                            world_future_bev_predicted, world_future_bev)
+                            input=world_future_bev_predicted, target=world_future_bev)
+
+                # Calculate the KL divergence loss
+                loss_kl_div = -0.5 * \
+                    torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
                 loss = loss_kl_div + loss_reconstruction
 
