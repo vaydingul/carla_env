@@ -86,7 +86,7 @@ class InstanceDataset(Dataset):
                                          self.count_array) >= 0), (((index +
                                                                      self.sequence_length *
                                                                      self.dilation) -
-                                                                    self.count_array) <= self.sequence_length *
+                                                                    self.count_array) < self.sequence_length *
                                                                    self.dilation)))
 
         if I.size != 0:

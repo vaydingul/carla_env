@@ -30,7 +30,7 @@ class DistributedWeightedSampler(Sampler):
         self.rank = rank
         self.epoch = 0
         self.num_samples = int(
-            math.floor(len(self.dataset) * 1.0 / self.num_replicas))
+            math.ceil(len(self.dataset) * 1.0 / self.num_replicas))
         self.total_size = self.num_samples * self.num_replicas
         self.replacement = replacement
         self.shuffle = shuffle
@@ -58,7 +58,7 @@ class DistributedWeightedSampler(Sampler):
                 indices = list(range(len(self.dataset)))
 
         # add extra samples to make it evenly divisible
-        indices += indices[:(len(indices) - self.total_size)]
+        indices += indices[:(self.total_size - len(indices))]
         assert len(indices) == self.total_size
 
         # subsample
