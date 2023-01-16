@@ -62,9 +62,20 @@ def main(rank, world_size, run, config):
     logger.info(f"Train dataset size: {len(world_model_dataset_train)}")
     logger.info(f"Val dataset size: {len(world_model_dataset_val)}")
 
-
     logger.info(f"Weighted sampling is {config.weighted_sampling}")
 
+    if config.weighted_sampling:
+        if os.path.exists(f"{config.data_path_train}/weights.pt"):
+            logger.info("Loading weights from file!")
+            weights = torch.load(f"{config.data_path_train}/weights.pt")
+        else:
+            logger.info("Calculating weights")
+            weights = torch.Tensor(
+                [world_model_dataset_train.__getweight__(k) for k in range(
+                    len(world_model_dataset_train))])
+            torch.save(weights, f"{config.data_path_train}/weights.pt")
+    else:
+        weights = None
     world_model_dataloader_train = DataLoader(
         world_model_dataset_train,
         batch_size=config.batch_size,
@@ -73,12 +84,9 @@ def main(rank, world_size, run, config):
         drop_last=True,
         sampler=DistributedWeightedSampler(
             world_model_dataset_train,
-            weights=torch.Tensor(
-                [
-                    world_model_dataset_train.__getweight__(k) for k in range(
-                        len(world_model_dataset_train))]) if config.weighted_sampling else None,
+            weights=weights,
             shuffle=True))
-    
+
     world_model_dataloader_val = DataLoader(
         world_model_dataset_val,
         batch_size=config.batch_size,

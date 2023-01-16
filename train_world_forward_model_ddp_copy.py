@@ -14,6 +14,7 @@ import os
 from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.trainer.world_model_ddp import Trainer
+from carla_env.sampler.distributed_weighted_sampler import DistributedWeightedSampler
 from utils.model_utils import (
     fetch_checkpoint_from_wandb_run)
 from utils.wandb_utils import (
@@ -61,13 +62,31 @@ def main(rank, world_size, run, config):
     logger.info(f"Train dataset size: {len(world_model_dataset_train)}")
     logger.info(f"Val dataset size: {len(world_model_dataset_val)}")
 
+    logger.info(f"Weighted sampling is {config.weighted_sampling}")
+
+    if config.weighted_sampling:
+        if os.path.exists(f"{config.data_path_train}/weights.pt"):
+            logger.info("Loading weights from file")
+            weights = torch.load(f"{config.data_path_train}/weights.pt")
+        else:
+            logger.info("Calculating weights")
+            weights = torch.Tensor(
+                [world_model_dataset_train.__getweight__(k) for k in range(
+                    len(world_model_dataset_train))])
+            torch.save(weights, f"{config.data_path_train}/weights.pt")
+    else:
+        weights = None
+
     world_model_dataloader_train = DataLoader(
         world_model_dataset_train,
         batch_size=config.batch_size,
         shuffle=False,
         num_workers=config.num_workers,
         drop_last=True,
-        sampler=DistributedSampler(world_model_dataset_train, shuffle=True))
+        sampler=DistributedWeightedSampler(
+            world_model_dataset_train,
+            weights=weights,
+            shuffle=True))
 
     world_model_dataloader_val = DataLoader(
         world_model_dataset_val,
@@ -75,7 +94,9 @@ def main(rank, world_size, run, config):
         shuffle=False,
         num_workers=config.num_workers,
         drop_last=True,
-        sampler=DistributedSampler(world_model_dataset_val, shuffle=False))
+        sampler=DistributedWeightedSampler(
+            world_model_dataset_val,
+            shuffle=False))
 
     if not config.resume:
         world_bev_model = WorldBEVModel(
@@ -190,12 +211,16 @@ if __name__ == "__main__":
     # TRAINING PARAMETERS
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--num_epochs", type=int, default=5)
-    parser.add_argument("--batch_size", type=int, default=80)
+    parser.add_argument("--batch_size", type=int, default=50)
     parser.add_argument("--num_workers", type=int, default=5)
-    parser.add_argument("--data_path_train", type=str,
-                        default="data/ground_truth_bev_model_train_data_10Hz_multichannel_bev")
-    parser.add_argument("--data_path_val", type=str,
-                        default="data/ground_truth_bev_model_val_data_10Hz_multichannel_bev")
+    parser.add_argument(
+        "--data_path_train",
+        type=str,
+        default="data/ground_truth_bev_model_train_data_10Hz_multichannel_bev")
+    parser.add_argument(
+        "--data_path_val",
+        type=str,
+        default="data/ground_truth_bev_model_val_data_10Hz_multichannel_bev")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
     parser.add_argument(
@@ -220,7 +245,10 @@ if __name__ == "__main__":
     parser.add_argument("--num_time_step_previous", type=int, default=10)
     parser.add_argument("--num_time_step_future", type=int, default=10)
     parser.add_argument("--dataset_dilation", type=int, default=1)
-    parser.add_argument("--reconstruction_loss", type=str, default="binary_cross_entropy")
+    parser.add_argument(
+        "--reconstruction_loss",
+        type=str,
+        default="binary_cross_entropy")
     parser.add_argument("--logvar_clip", type=lambda x: (
         str(x).lower() == 'true'), default=True)
     parser.add_argument("--logvar_clip_min", type=float, default=-5)
@@ -231,7 +259,12 @@ if __name__ == "__main__":
     parser.add_argument("--lr_schedule_gamma", type=float, default=0.5)
     parser.add_argument("--gradient_clip_type", type=str, default="norm")
     parser.add_argument("--gradient_clip_value", type=float, default=0.3)
-    parser.add_argument("--bev_channel_weights", type=str, default="1,1,1,1,1,2,5,1")
+    parser.add_argument(
+        "--bev_channel_weights",
+        type=str,
+        default="1,1,1,1,1,2,5,1")
+    parser.add_argument("--weighted_sampling", type=lambda x: (
+        str(x).lower() == 'true'), default=True)
     # WANDB RELATED PARAMETERS
     parser.add_argument(
         "--wandb",
@@ -248,8 +281,10 @@ if __name__ == "__main__":
 
     config = parser.parse_args()
     config.input_shape = [int(x) for x in config.input_shape.split("-")]
-    config.bev_channel_weights = [float(x) for x in config.bev_channel_weights.split(",")]
-    assert len(config.bev_channel_weights) == config.input_shape[0], "Number of channel weights should be equal to number of channels"
+    config.bev_channel_weights = [
+        float(x) for x in config.bev_channel_weights.split(",")]
+    assert len(
+        config.bev_channel_weights) == config.input_shape[0], "Number of channel weights should be equal to number of channels"
     run = create_wandb_run(config)
 
     mp.spawn(main, args=(config.num_gpu, run, config), nprocs=config.num_gpu)

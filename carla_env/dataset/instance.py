@@ -7,6 +7,8 @@ from typing import List, Union
 import cv2
 import json
 import logging
+import scipy.stats
+
 
 logger = logging.getLogger(__name__)
 
@@ -154,12 +156,9 @@ class InstanceDataset(Dataset):
 
         return data
 
-    import scipy.stats
-
     def __getweight__(self, index):
 
         assert "bev_world" in self.read_keys, "bev_world should be in read_keys"
-        assert "ego" in self.read_keys, "ego should be in read_keys"
 
         bev = self._load_bev(index, "bev_world")["bev"]
         bev_vehicle = bev[-2]
