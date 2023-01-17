@@ -23,6 +23,12 @@ python3 train_world_forward_model_ddp.py \
 	--master_port="12979" \
 	--save_every=5 \
 	--input_shape="8-192-192"\
+	--latent_size=128 \
+	--hidden_channel=256 \
+	--output_channel=256 \
+	--num_encoder_layer=6\
+	--num_probabilistic_encoder_layer=1 \
+	--dropout=0.1 \
 	--num_time_step_previous=5 \
 	--num_time_step_future=10 \
 	--dataset_dilation=2 \

@@ -170,7 +170,7 @@ def main(rank, world_size, run, config):
                 world_model_lr_scheduler.load_state_dict(
                     checkpoint["lr_scheduler_state_dict"])
 
-    if rank == 0:
+    if rank == 0 and config.wandb:
         run.watch(world_bev_model)
 
     world_model_trainer = Trainer(
@@ -237,6 +237,7 @@ if __name__ == "__main__":
     parser.add_argument("--save_every", type=int, default=5)
     # MODEL PARAMETERS
     parser.add_argument("--input_shape", type=str, default="8-192-192")
+    parser.add_argument("--latent_size", type=str, default=128)
     parser.add_argument("--hidden_channel", type=int, default=256)
     parser.add_argument("--output_channel", type=int, default=512)
     parser.add_argument("--num_encoder_layer", type=int, default=4)
@@ -244,6 +245,7 @@ if __name__ == "__main__":
         "--num_probabilistic_encoder_layer",
         type=int,
         default=2)
+    
     parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--num_time_step_previous", type=int, default=10)
     parser.add_argument("--num_time_step_future", type=int, default=10)
