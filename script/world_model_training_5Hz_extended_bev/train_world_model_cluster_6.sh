@@ -28,7 +28,7 @@ python3 train_world_forward_model_ddp.py \
 	--dataset_dilation=2 \
 	--reconstruction_loss="binary_cross_entropy" \
 	--bev_channel_weights="1,1,1,1,1,5,5,1" \
-	--weighted_sampling=false \
+	--weighted_sampling=true \
 	--logvar_clip=false \
 	--lr_schedule=false \
 	--wandb=true \
