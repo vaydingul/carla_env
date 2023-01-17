@@ -3,7 +3,6 @@ from typing import List, TypeVar
 import torch
 from torch import nn
 from torch.nn import functional as F
-
 from carla_env.models.layers.encoder import Encoder2D, ProbabilisticEncoder2D
 from carla_env.models.layers.decoder import Decoder2D
 
