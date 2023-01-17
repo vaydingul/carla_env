@@ -76,8 +76,6 @@ def main(rank, world_size, run, config):
                     len(world_model_dataset_train))])
             torch.save(weights, f"{config.data_path_train}/weights.pt")
 
-        weighted_sampler = WeightedRandomSampler(weights, len(weights), replacement=True)
-        
     else:
 
         weights = None
@@ -88,8 +86,10 @@ def main(rank, world_size, run, config):
         shuffle=False,
         num_workers=config.num_workers,
         drop_last=True,
-        sampler=DistributedProxySampler(
-            weighted_sampler,
+        sampler=DistributedWeightedSampler(
+            world_model_dataset_train,
+            weights=weights,
+            shuffle=True,
             num_replicas=config.num_gpu,
             rank=rank))
 
