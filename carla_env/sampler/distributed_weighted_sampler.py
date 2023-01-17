@@ -30,8 +30,9 @@ class DistributedWeightedSampler(Sampler):
         self.rank = rank
         self.epoch = 0
         self.num_samples = int(
-            math.ceil(len(self.dataset) * 1.0 / self.num_replicas))
+            math.floor(len(self.dataset) * 1.0 / self.num_replicas))
         self.total_size = self.num_samples * self.num_replicas
+        print(f"Rank {self.rank} has {self.num_samples} samples. Total size is {self.total_size}")
         self.replacement = replacement
         self.shuffle = shuffle
         self.weights = weights
@@ -42,7 +43,10 @@ class DistributedWeightedSampler(Sampler):
         g.manual_seed(self.epoch)
 
         if self.weights is not None:
-            
+            print(f"Rank {self.rank} has {len(self.weights)} weights. Length of weight is {len(self.weights)}")
+            print(f"Rank {self.rank} has {len(self.dataset)} dataset. Length of dataset is {len(self.dataset)}")
+            assert len(self.weights) == len(self.dataset), f"Weights ({len(self.weights)}) must be the same length as the dataset ({len(self.dataset)})"
+
             indices = torch.multinomial(
                 self.weights,
                 self.total_size,
