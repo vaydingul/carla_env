@@ -82,16 +82,17 @@ class InstanceDataset(Dataset):
 
         I, = np.nonzero(np.logical_and((((index +
                                           self.sequence_length *
-                                          self.dilation) -
+                                          self.dilation - 1) -
                                          self.count_array) >= 0), (((index +
                                                                      self.sequence_length *
-                                                                     self.dilation) -
+                                                                     self.dilation - 1) -
                                                                     self.count_array) <= self.sequence_length *
-                                                                   self.dilation)))
+                                                                   self.dilation - 1)))
 
         if I.size != 0:
             index = self.count_array[I[-1]]
 
+        
         data = {}
 
         for read_key in self.read_keys:
@@ -181,9 +182,6 @@ class InstanceDataset(Dataset):
         return (weight_vehicle * weight_road_red_yellow * weight_road_green)
 
     def _load_bev(self, index, read_key):
-        print(index)
-        print(len(self))
-        
         load_path = self.data[index][0] / \
             read_key / f"{self.data[index][1]}.npz"
         data = np.load(load_path)
