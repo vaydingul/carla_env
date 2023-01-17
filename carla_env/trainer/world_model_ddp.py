@@ -208,8 +208,11 @@ class Trainer(object):
                 else:
                     if self.bev_channel_weights is not None:
                         loss_reconstruction = self.reconstruction_loss(
-                            input=world_future_bev_predicted, target=world_future_bev, pos_weight=self.weight)
+                            input=world_future_bev_predicted.permute(
+                                0, 1, 3, 4, 2), target=world_future_bev.permute(
+                                0, 1, 3, 4, 2), pos_weight=self.weight)
                     else:
+
                         loss_reconstruction = self.reconstruction_loss(
                             input=world_future_bev_predicted, target=world_future_bev)
 
