@@ -56,15 +56,15 @@ class DistributedWeightedSampler(Sampler):
                     len(self.dataset), generator=g).tolist()
             else:
                 indices = list(range(len(self.dataset)))
-
+        print(f"Rank {self.rank} has {len(indices)} indices. Max index is {max(indices)}")
         # add extra samples to make it evenly divisible
         indices += indices[:(self.total_size - len(indices))]
         assert len(indices) == self.total_size
-
+        print(f"Rank {self.rank} has {len(indices)} indices. Max index is {max(indices)}")
         # subsample
         indices = indices[self.rank:self.total_size:self.num_replicas]
         assert len(indices) == self.num_samples
-
+        print(f"Rank {self.rank} has {len(indices)} indices. Max index is {max(indices)}")
         return iter(indices)
 
     def __len__(self):
