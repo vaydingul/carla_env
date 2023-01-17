@@ -181,7 +181,9 @@ class InstanceDataset(Dataset):
         return (weight_vehicle * weight_road_red_yellow * weight_road_green)
 
     def _load_bev(self, index, read_key):
-
+        print(index)
+        print(len(self))
+        
         load_path = self.data[index][0] / \
             read_key / f"{self.data[index][1]}.npz"
         data = np.load(load_path)
