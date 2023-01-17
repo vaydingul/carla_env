@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 import logging
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
 import torch.multiprocessing as mp
 from torch.utils.data.distributed import DistributedSampler
 from torch.distributed import (
@@ -15,6 +15,7 @@ from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.trainer.world_model_ddp import Trainer
 from carla_env.sampler.distributed_weighted_sampler import DistributedWeightedSampler
+from carla_env.sampler.distributed_proxy_sampler import DistributedProxySampler
 from utils.model_utils import (
     fetch_checkpoint_from_wandb_run)
 from utils.wandb_utils import (
@@ -74,18 +75,21 @@ def main(rank, world_size, run, config):
                 [world_model_dataset_train.__getweight__(k) for k in range(
                     len(world_model_dataset_train))])
             torch.save(weights, f"{config.data_path_train}/weights.pt")
+
+        weighted_sampler = WeightedRandomSampler(weights, len(weights), replacement=True)
+        
     else:
+
         weights = None
+
     world_model_dataloader_train = DataLoader(
         world_model_dataset_train,
         batch_size=config.batch_size,
         shuffle=False,
         num_workers=config.num_workers,
         drop_last=True,
-        sampler=DistributedWeightedSampler(
-            world_model_dataset_train,
-            weights=weights,
-            shuffle=True,
+        sampler=DistributedProxySampler(
+            weighted_sampler,
             num_replicas=config.num_gpu,
             rank=rank))
 
