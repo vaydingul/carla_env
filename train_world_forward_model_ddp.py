@@ -245,7 +245,7 @@ if __name__ == "__main__":
         "--num_probabilistic_encoder_layer",
         type=int,
         default=2)
-    
+
     parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--num_time_step_previous", type=int, default=10)
     parser.add_argument("--num_time_step_future", type=int, default=10)
@@ -284,8 +284,12 @@ if __name__ == "__main__":
 
     config = parser.parse_args()
     config.input_shape = [int(x) for x in config.input_shape.split("-")]
-    config.bev_channel_weights = [
-        float(x) for x in config.bev_channel_weights.split(",")]
+
+    if config.bev_channel_weights is "":
+        config.bev_channel_weights = None
+    else:
+        config.bev_channel_weights = [
+            float(x) for x in config.bev_channel_weights.split(",")]
 
     assert config.input_shape[0] == len(
         config.bev_channel_weights), "Number of channels in input shape and number of weights in channel weights should be same!"
