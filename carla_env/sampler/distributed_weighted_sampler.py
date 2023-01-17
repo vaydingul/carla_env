@@ -32,7 +32,7 @@ class DistributedWeightedSampler(Sampler):
         self.num_samples = int(
             math.ceil(len(self.dataset) * 1.0 / self.num_replicas))
         self.total_size = self.num_samples * self.num_replicas
-        print(f"Rank {self.rank} has {self.num_samples} samples. Total size is {self.total_size}")
+        # print(f"Rank {self.rank} has {self.num_samples} samples. Total size is {self.total_size}")
         self.replacement = replacement
         self.shuffle = shuffle
         self.weights = weights
@@ -43,8 +43,8 @@ class DistributedWeightedSampler(Sampler):
         g.manual_seed(self.epoch)
 
         if self.weights is not None:
-            print(f"Rank {self.rank} has {len(self.weights)} weights. Length of weight is {len(self.weights)}")
-            print(f"Rank {self.rank} has {len(self.dataset)} dataset. Length of dataset is {len(self.dataset)}")
+            # print(f"Rank {self.rank} has {len(self.weights)} weights. Length of weight is {len(self.weights)}")
+            # print(f"Rank {self.rank} has {len(self.dataset)} dataset. Length of dataset is {len(self.dataset)}")
             assert len(self.weights) == len(self.dataset), f"Weights ({len(self.weights)}) must be the same length as the dataset ({len(self.dataset)})"
 
             indices = torch.multinomial(
@@ -60,15 +60,15 @@ class DistributedWeightedSampler(Sampler):
                     len(self.dataset), generator=g).tolist()
             else:
                 indices = list(range(len(self.dataset)))
-        print(f"Rank {self.rank} has {len(indices)} indices. Max index is {max(indices)}")
+        # print(f"Rank {self.rank} has {len(indices)} indices. Max index is {max(indices)}")
         # add extra samples to make it evenly divisible
         indices += indices[:(self.total_size - len(indices))]
         assert len(indices) == self.total_size
-        print(f"Rank {self.rank} has {len(indices)} indices. Max index is {max(indices)}")
+        # print(f"Rank {self.rank} has {len(indices)} indices. Max index is {max(indices)}")
         # subsample
         indices = indices[self.rank:self.total_size:self.num_replicas]
         assert len(indices) == self.num_samples
-        print(f"Rank {self.rank} has {len(indices)} indices. Max index is {max(indices)}")
+        # print(f"Rank {self.rank} has {len(indices)} indices. Max index is {max(indices)}")
         return iter(indices)
 
     def __len__(self):
