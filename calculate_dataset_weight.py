@@ -42,7 +42,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset_path",
         type=str,
-        default="",
+        default="data/ground_truth_bev_model_train_data_10Hz_multichannel_bev/",
         help="Path to the dataset")
     parser.add_argument(
         "--num_time_step_previous",

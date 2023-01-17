@@ -30,7 +30,7 @@ class DistributedWeightedSampler(Sampler):
         self.rank = rank
         self.epoch = 0
         self.num_samples = int(
-            math.floor(len(self.dataset) * 1.0 / self.num_replicas))
+            math.ceil(len(self.dataset) * 1.0 / self.num_replicas))
         self.total_size = self.num_samples * self.num_replicas
         print(f"Rank {self.rank} has {self.num_samples} samples. Total size is {self.total_size}")
         self.replacement = replacement
