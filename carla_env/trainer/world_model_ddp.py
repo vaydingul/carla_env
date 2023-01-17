@@ -59,10 +59,9 @@ class Trainer(object):
             iter(dataloader_train))["bev_world"]["bev"].shape
 
         if self.bev_channel_weights is not None:
-            self.weight = torch.ones(self.b, self.num_time_step_future, self.c,
-                                     self.h, self.w).to(self.gpu_id)
-            for k in range(self.c):
-                self.weight[:, :, k, :, :] = self.bev_channel_weights[k]
+            self.weight = torch.Tensor(
+                self.bev_channel_weights).to(
+                self.gpu_id)
 
         self.model.to(self.gpu_id)
         self.model = DDP(self.model, device_ids=[self.gpu_id])
@@ -120,8 +119,11 @@ class Trainer(object):
             else:
                 if self.bev_channel_weights is not None:
                     loss_reconstruction = self.reconstruction_loss(
-                        input=world_future_bev_predicted, target=world_future_bev, pos_weight=self.weight)
+                        input=world_future_bev_predicted.permute(
+                            0, 1, 3, 4, 2), target=world_future_bev.permute(
+                            0, 1, 3, 4, 2), pos_weight=self.weight)
                 else:
+
                     loss_reconstruction = self.reconstruction_loss(
                         input=world_future_bev_predicted, target=world_future_bev)
 
