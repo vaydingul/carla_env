@@ -290,9 +290,8 @@ if __name__ == "__main__":
     else:
         config.bev_channel_weights = [
             float(x) for x in config.bev_channel_weights.split(",")]
-
-    assert config.input_shape[0] == len(
-        config.bev_channel_weights), "Number of channels in input shape and number of weights in channel weights should be same!"
+        assert config.input_shape[0] == len(
+            config.bev_channel_weights), "Number of channels in input shape and number of weights in channel weights should be same!"
 
     run = create_wandb_run(config)
 
