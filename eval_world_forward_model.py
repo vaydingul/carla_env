@@ -101,6 +101,7 @@ def main(config):
         dataloader=world_model_dataloader_test,
         device=world_model_device,
         report_metrics=config.report_metrics,
+        metrics=config.metrics,
         num_time_step_previous=run.config["num_time_step_previous"],
         num_time_step_predict=(config.num_time_step_predict if config.num_time_step_predict > 0 else run.config["num_time_step_future"]),
         threshold=config.threshold,
@@ -148,7 +149,9 @@ if __name__ == "__main__":
         default="0,1,2,3,4,5,6,11")
 
     config = parser.parse_args()
+
     config.bev_selected_channels = [
         int(x) for x in config.bev_selected_channels.split(",")]
+    config.metrics = config.metrics.split(",")
 
     main(config)

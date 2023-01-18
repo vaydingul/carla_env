@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-
+import os
+import seaborn as sns
 
 def plot_result_eval(
         vehicle_location,
@@ -154,7 +155,8 @@ def plot_result_mpc_path_follow(
     plt.savefig(savedir / "action.png")
 
     plt.figure()
-    plt.plot(np.linspace(0, 1, state.shape[0]), state[:, 0, 3], label='ModelPredictiveControl')
+    plt.plot(np.linspace(
+        0, 1, state.shape[0]), state[:, 0, 3], label='ModelPredictiveControl')
     plt.plot(np.linspace(0, 1, vehicle_velocity[offset:end_ix].shape[0]), np.linalg.norm(
         vehicle_velocity[offset:end_ix], axis=-1), label='Ground Truth')
     plt.legend()
@@ -171,3 +173,45 @@ def plot_result_mpc_path_follow(
     plt.savefig(savedir / "yaw.png")
 
     plt.close("all")
+
+
+def plot_roc(fpr, tpr, auroc, savedir, multi=False):
+    plt.figure(figsize = (5,5))
+    lw = 2
+    if multi:
+        for i in range(fpr.shape[0]):
+            plt.plot(
+                fpr[i],
+                tpr[i],
+                lw=lw,
+                label=f"ROC curve {i} (AUC = {auroc[i]:.2f})")
+    else:
+        plt.plot(fpr, tpr, color='darkorange',
+                 lw=lw, label=f"ROC curve (area = {auroc:.2f})")
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw,
+             linestyle='--', label="Random")
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic')
+    plt.legend(loc="lower right")
+    plt.savefig(os.path.join(savedir, "roc.png"))
+    plt.close("all")
+
+
+def plot_confusion_matrix(tp, fp, tn, fn, savedir, multi=False):
+    plt.figure(figsize = (5,5))
+    label = ["True", "False"]
+    if multi:
+        # Draw a heatmap with the numeric values in each cell
+        for i in range(tp.shape[0]):
+            cm = np.array([[tp[i], fp[i]], [fn[i], tn[i]]])
+            sns.heatmap(cm, annot=True, fmt="d", xticklabels=label, yticklabels=label)
+            plt.title(f"Confusion Matrix {i}")
+            plt.xlabel("Predicted")
+            plt.ylabel("Actual")
+            plt.ylabel("Actual")
+            plt.savefig(os.path.join(savedir, f"confusion_matrix_{i}.png"))
+            plt.close("all")
+

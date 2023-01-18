@@ -82,17 +82,19 @@ class InstanceDataset(Dataset):
 
         I, = np.nonzero(np.logical_and((((index +
                                           self.sequence_length *
-                                          self.dilation - 1) -
+                                          self.dilation -
+                                          1) -
                                          self.count_array) >= 0), (((index +
                                                                      self.sequence_length *
-                                                                     self.dilation - 1) -
+                                                                     self.dilation -
+                                                                     1) -
                                                                     self.count_array) <= self.sequence_length *
-                                                                   self.dilation - 1)))
+                                                                   self.dilation -
+                                                                   1)))
 
         if I.size != 0:
             index = self.count_array[I[-1]]
 
-        
         data = {}
 
         for read_key in self.read_keys:
@@ -160,6 +162,7 @@ class InstanceDataset(Dataset):
     def __getweight__(self, index):
 
         assert "bev_world" in self.read_keys, "bev_world should be in read_keys"
+        assert "ego" in self.read_keys, "ego should be in read_keys"
 
         bev = self._load_bev(index, "bev_world")["bev"]
         bev_vehicle = bev[-2]
@@ -174,12 +177,22 @@ class InstanceDataset(Dataset):
         bev_road_green_sum = bev_road_green.sum()
         bev_road_green_sum = (bev_road_green_sum - 2300) / 2300
 
-        weight_vehicle = scipy.stats.norm(0, 1).pdf(bev_vehicle_sum)
+        yaw = self._load_json(index, "ego")["rotation_array"][2]
+        # Normalize to 0-360
+        yaw = yaw % 90 - 45
+        yaw = np.abs(yaw) / 22.5
+
+        weight_vehicle = scipy.stats.norm(0, 1).pdf(bev_vehicle_sum) * 5
         weight_road_red_yellow = scipy.stats.norm(
             0, 1).pdf(bev_road_red_yellow_sum)
         weight_road_green = scipy.stats.norm(0, 1).pdf(bev_road_green_sum)
+        weight_yaw = scipy.stats.norm(0, 1).pdf(yaw) * 2
 
-        return (weight_vehicle * weight_road_red_yellow * weight_road_green)
+        return (
+            weight_vehicle *
+            weight_road_red_yellow *
+            weight_road_green *
+            weight_yaw)
 
     def _load_bev(self, index, read_key):
         load_path = self.data[index][0] / \
@@ -189,7 +202,9 @@ class InstanceDataset(Dataset):
         bev_ = torch.from_numpy(bev_).float()
         # Permute the dimensions such that the channel dim is the first one
         agent_mask = bev_[..., self.bev_agent_channel]
-        bev_[..., self.bev_vehicle_channel] -= agent_mask
+        bev_[..., self.bev_vehicle_channel] = torch.logical_and(
+            bev_[..., self.bev_vehicle_channel], torch.logical_not(bev_[..., self.bev_agent_channel]))
+
         bev = bev_[..., [k for k in self.bev_selected_channels]]
 
         bev = bev.permute(2, 0, 1)

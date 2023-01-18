@@ -90,17 +90,23 @@ def main(config):
     world_model_dataloader_test = DataLoader(
         dataset=world_model_dataset_test if config.test_set_step == 1 else Subset(
             world_model_dataset_test, range(
-                0, len(world_model_dataset_test), config.test_set_step)), batch_size=config.batch_size)
+    0, len(world_model_dataset_test), config.test_set_step)),
+    batch_size=config.batch_size)
+
+    # world_model_dataloader_test = DataLoader(
+    #     dataset=world_model_dataset_test if config.test_set_step == 1 else Subset(
+    #         world_model_dataset_test, range(
+    #             0, 50)), batch_size=config.batch_size, drop_last=True)
 
     world_model_device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")
 
-    
     evaluator = Evaluator(
         model=world_bev_model,
         dataloader=world_model_dataloader_test,
         device=world_model_device,
-        report_iou=config.report_iou,
+        report_metrics=config.report_metrics,
+        metrics=config.metrics,
         num_time_step_previous=run.config["num_time_step_previous"],
         num_time_step_predict=(config.num_time_step_predict if config.num_time_step_predict > 0 else run.config["num_time_step_future"]),
         threshold=config.threshold,
@@ -114,20 +120,26 @@ def main(config):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_path_test", type=str,
-                        default="data/ground_truth_bev_model_test_data_10Hz_multichannel_bev/")
-    parser.add_argument("--test_set_step", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=1)
+    parser.add_argument(
+        "--data_path_test",
+        type=str,
+        default="data/ground_truth_bev_model_test_data_10Hz_multichannel_bev/")
+    parser.add_argument("--test_set_step", type=int, default=45)
+    parser.add_argument("--batch_size", type=int, default=15)
     parser.add_argument(
         "--save_path",
         type=str,
         default="figures/world_forward_model_evaluation/")
-    parser.add_argument("--report_iou", type=lambda x: (
+    parser.add_argument("--report_metrics", type=lambda x: (
         str(x).lower() == 'true'), default=True)
+    parser.add_argument(
+        "--metrics",
+        type=str,
+        default="iou,accuracy,precision,recall,f1,roc,auroc,stat")
     parser.add_argument(
         "--wandb_link",
         type=str,
-        default="vaydingul/mbl/1jnw0xjn")
+        default="vaydingul/mbl/mrkvx95o")
     parser.add_argument("--wandb_project",
                         type=str,
                         default="mbl")
@@ -149,5 +161,6 @@ if __name__ == "__main__":
     config = parser.parse_args()
     config.bev_selected_channels = [
         int(x) for x in config.bev_selected_channels.split(",")]
+    config.metrics = config.metrics.split(",")
 
     main(config)

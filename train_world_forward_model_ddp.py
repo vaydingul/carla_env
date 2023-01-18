@@ -45,6 +45,7 @@ def main(rank, world_size, run, config):
         data_path=config.data_path_train,
         sequence_length=config.num_time_step_previous +
         config.num_time_step_future,
+        read_keys=["bev_world", "ego"],
         dilation=config.dataset_dilation,
         bev_agent_channel=7,
         bev_vehicle_channel=6,
@@ -54,6 +55,7 @@ def main(rank, world_size, run, config):
         data_path=config.data_path_val,
         sequence_length=config.num_time_step_previous +
         config.num_time_step_future,
+        read_keys=["bev_world", "ego"],
         dilation=config.dataset_dilation,
         bev_agent_channel=7,
         bev_vehicle_channel=6,
