@@ -40,5 +40,5 @@ python3 train_world_forward_model_ddp.py \
 	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="world-forward-model-multi-step-5Hz-extended-bev" \
-	--wandb_name="5-10-binary_cross_entropy-weighted_sampling" \
+	--wandb_name="5-10-binary_cross_entropy-weighted_loss-weighted_sampling" \
 	
