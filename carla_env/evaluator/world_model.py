@@ -3,9 +3,10 @@ import cv2
 import numpy as np
 from carla_env.bev import BirdViewProducer, BirdViewMasks
 import os
-from torchmetrics.classification import BinaryJaccardIndex
+from torchmetrics.classification import BinaryJaccardIndex, Accuracy
 import pandas as pd
 
+METRIC_DICT = {"iou": BinaryJaccardIndex, "accuracy": Accuracy}
 
 class Evaluator(object):
 
@@ -14,7 +15,8 @@ class Evaluator(object):
             model,
             dataloader,
             device,
-            report_iou=True,
+            report_metrics=True,
+            metrics=["iou"],
             num_time_step_previous=10,
             num_time_step_predict=10,
             threshold=0.5,
@@ -24,7 +26,8 @@ class Evaluator(object):
         self.model = model
         self.dataloader = dataloader
         self.device = device
-        self.report_iou = report_iou
+        self.report_metrics = report_metrics
+        self.metrics = metrics
         self.num_time_step_previous = num_time_step_previous
         self.num_time_step_predict = num_time_step_predict
         self.threshold = threshold

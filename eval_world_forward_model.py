@@ -100,7 +100,7 @@ def main(config):
         model=world_bev_model,
         dataloader=world_model_dataloader_test,
         device=world_model_device,
-        report_iou=config.report_iou,
+        report_metrics=config.report_metrics,
         num_time_step_previous=run.config["num_time_step_previous"],
         num_time_step_predict=(config.num_time_step_predict if config.num_time_step_predict > 0 else run.config["num_time_step_future"]),
         threshold=config.threshold,
@@ -122,8 +122,9 @@ if __name__ == "__main__":
         "--save_path",
         type=str,
         default="figures/world_forward_model_evaluation/")
-    parser.add_argument("--report_iou", type=lambda x: (
+    parser.add_argument("--report_metrics", type=lambda x: (
         str(x).lower() == 'true'), default=True)
+    parser.add_argument("--metrics", type=str, default="iou,accuracy,precision,recall,f1,auroc")
     parser.add_argument(
         "--wandb_link",
         type=str,
