@@ -2,9 +2,9 @@
 
 #wandb_links=("vaydingul/mbl/203kw46a" "vaydingul/mbl/q4xzu1de" "vaydingul/mbl/phys7134" "vaydingul/mbl/3vbs6lik" "vaydingul/mbl/3qkyatvq" "vaydingul/mbl/1q48qjcg" "vaydingul/mbl/wvdt0p1k")
 #wandb_links=("vaydingul/mbl/1gftiw9w" "vaydingul/mbl/n28cn1kw" "vaydingul/mbl/9atz96u8" "vaydingul/mbl/qeg93zho" "vaydingul/mbl/2wdavsik" "vaydingul/mbl/3frb4lzq" "vaydingul/mbl/254636mi" "vaydingul/mbl/369uz935" "vaydingul/mbl/2v1kvf81" "vaydingul/mbl/wvdt0p1k" "vaydingul/mbl/1q48qjcg" "vaydingul/mbl/3qkyatvq" "vaydingul/mbl/3vbs6lik" "vaydingul/mbl/phys7134" "vaydingul/mbl/q4xzu1de" "vaydingul/mbl/203kw46a")
-wandb_links=("vaydingul/mbl/wix7cprt") 
+wandb_links=("vaydingul/mbl/mrkvx95o" "vaydingul/mbl/2807bkg4" "vaydingul/mbl/1u0jgopm" "vaydingul/mbl/1jnw0xjn" "vaydingul/mlb/178mirqe") 
 batch_sizes=(10 10 10 10 10)
-checkpoint_numbers=(89 94 99)
+checkpoint_numbers=(99 94 89 84 79 74 69 64 59 54)
 # checkpoint_numbers=(4 9 14 19 24 29 34)
 # thresholds=(0.1 0.25 0.5)
 
@@ -20,9 +20,6 @@ length_thresholds=${#thresholds[@]}
 for ((j = 0; j < $length_checkpoint_numbers; j++)); do
 	for ((i = 0; i < $length_wandb_links; i++)); do
 		for ((k = 0; k < $length_thresholds; k++)); do
-
-			# echo bold red line 
-			echo -e "\033[1;31m====================================================================================================\033[0m"
 			echo "${wandb_links[i]} | ${checkpoint_numbers[j]} | ${thresholds[k]}"
 
 			python3 eval_world_forward_model.py \
@@ -38,8 +35,6 @@ for ((j = 0; j < $length_checkpoint_numbers; j++)); do
 				--threshold="${thresholds[k]}" \
 				--vehicle_threshold="${vehicle_thresholds[k]}" \
 				--bev_selected_channels="0,1,2,3,4,5,6,11"
-
-			echo -e "\033[1;31m====================================================================================================\033[0m"
 		done
 	done
 done

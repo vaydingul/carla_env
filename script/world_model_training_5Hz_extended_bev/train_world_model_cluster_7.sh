@@ -18,7 +18,8 @@ python3 train_world_forward_model_ddp.py \
 	--num_workers=4 \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_10Hz_multichannel_bev/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_10Hz_multichannel_bev/" \
-	--resume=false \
+	--resume=true \
+	--resume_checkpoint_number=99 \
 	--num_gpu=8 \
 	--master_port="12979" \
 	--save_every=5 \
@@ -38,6 +39,7 @@ python3 train_world_forward_model_ddp.py \
 	--logvar_clip=false \
 	--lr_schedule=false \
 	--wandb=true \
+	--wandb_id="wix7cprt" \
 	--wandb_project="mbl" \
 	--wandb_group="world-forward-model-multi-step-5Hz-extended-bev" \
 	--wandb_name="5-10-binary_cross_entropy-weighted_loss-weighted_sampling" \
