@@ -115,7 +115,8 @@ def main(rank, world_size, run, config):
             num_encoder_layer=config.num_encoder_layer,
             num_probabilistic_encoder_layer=config.num_probabilistic_encoder_layer,
             num_time_step=config.num_time_step_previous + 1,
-            dropout=config.dropout)
+            dropout=config.dropout,
+            latent_size=config.latent_size,)
     else:
 
         checkpoint = fetch_checkpoint_from_wandb_run(

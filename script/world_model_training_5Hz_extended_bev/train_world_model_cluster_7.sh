@@ -24,7 +24,7 @@ python3 train_world_forward_model_ddp.py \
 	--master_port="12979" \
 	--save_every=5 \
 	--input_shape="8-192-192"\
-	--latent_size=128 \
+	--latent_size=256 \
 	--hidden_channel=256 \
 	--output_channel=512 \
 	--num_encoder_layer=4\
