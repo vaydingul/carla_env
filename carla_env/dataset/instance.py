@@ -167,15 +167,15 @@ class InstanceDataset(Dataset):
         bev = self._load_bev(index, "bev_world")["bev"]
         bev_vehicle = bev[-2]
         bev_vehicle_sum = bev_vehicle.sum()
-        bev_vehicle_sum = (bev_vehicle_sum - 2600) / 2600
+        bev_vehicle_sum = (bev_vehicle_sum - 1500) / 1500 # 2600
 
         bev_road_red_yellow = bev[3]
         bev_road_red_yellow_sum = bev_road_red_yellow.sum()
-        bev_road_red_yellow_sum = (bev_road_red_yellow_sum - 3000) / 3000
+        bev_road_red_yellow_sum = (bev_road_red_yellow_sum - 4000) / 4000 # 3000
 
         bev_road_green = bev[4]
         bev_road_green_sum = bev_road_green.sum()
-        bev_road_green_sum = (bev_road_green_sum - 2300) / 2300
+        bev_road_green_sum = (bev_road_green_sum - 3000) / 3000 # 2300
 
         yaw = self._load_json(index, "ego")["rotation_array"][2]
         # Normalize to 0-360
