@@ -297,13 +297,16 @@ class Trainer(object):
         for epoch in range(self.current_epoch, self.num_epochs):
 
             self.train(run)
-            loss, loss_kl_div, loss_reconstruction = self.validate(run)
-            logger.info(
-                "Epoch: {}, Val Loss: {}, Val Loss KL Div: {}, Val Loss Reconstruction: {}".format(
-                    epoch, loss, loss_kl_div, loss_reconstruction))
 
-            if self.lr_scheduler is not None:
-                self.lr_scheduler.step()
+            if (epoch + 1) % self.val_every == 0:
+
+                loss, loss_kl_div, loss_reconstruction = self.validate(run)
+                logger.info(
+                    "Epoch: {}, Val Loss: {}, Val Loss KL Div: {}, Val Loss Reconstruction: {}".format(
+                        epoch, loss, loss_kl_div, loss_reconstruction))
+
+                if self.lr_scheduler is not None:
+                    self.lr_scheduler.step()
 
             if ((epoch + 1) % self.save_every ==
                     0) and self.save_path is not None:
