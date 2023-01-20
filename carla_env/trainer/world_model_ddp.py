@@ -46,7 +46,7 @@ class Trainer(object):
             num_time_step_future=10,
             num_epochs=1000,
             report_metrics=True,
-            metrics=["iou, precision, recall"],
+            metrics=["iou", "precision", "recall"],
             current_epoch=0,
             reconstruction_loss="mse_loss",
             bev_channel_weights=None,
@@ -101,7 +101,7 @@ class Trainer(object):
     def train(self, run):
 
         self.model.train()
-
+        logger.info("Training routine started!")
         for i, (data) in enumerate(self.dataloader_train):
 
             world_previous_bev = data["bev_world"]["bev"][:,
@@ -188,11 +188,12 @@ class Trainer(object):
                          "train/loss": loss,
                          "train/loss_kl_divergence": loss_kl_div,
                          "train/loss_reconstruction": loss_reconstruction})
+        logger.info("Training routine finished!")
 
     def validate(self, run=None):
 
         self.model.eval()
-
+        logger.info("Validation routine started!")
         losses_total = []
         losses_kl_div = []
         losses_reconstruction = []
@@ -290,14 +291,21 @@ class Trainer(object):
                 for (metric, metric_) in zip(self.metrics, self.metrics_):
                     result = float(metric_.compute().cpu().numpy())
                     run.log({"eval/{}".format(metric): result})
-
+                    metric_.reset()
+        logger.info("Validation routine finished!")
         return loss, loss_kl_div, loss_reconstruction
 
     def learn(self, run=None):
 
-        for epoch in range(self.current_epoch, self.num_epochs):
+        loss, loss_kl_div, loss_reconstruction = self.validate(run)
+        logger.info(
+            "Epoch: {}, Val Loss: {}, Val Loss KL Div: {}, Val Loss Reconstruction: {}".format(
+                epoch,
+                loss,
+                loss_kl_div,
+                loss_reconstruction))
 
-            loss, loss_kl_div, loss_reconstruction = self.validate(run)
+        for epoch in range(self.current_epoch, self.num_epochs):
 
             self.train(run)
 

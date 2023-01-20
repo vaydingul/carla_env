@@ -17,7 +17,7 @@ def create_initial_run(config):
     run.define_metric("val/step")
     run.define_metric(name="train/*", step_metric="train/step")
     run.define_metric(name="val/*", step_metric="val/step")
-
+    run.define_metric(name="eval/*", step_metric="val/step")
 
     return run
 
@@ -30,6 +30,7 @@ def create_resumed_run(config):
         id=config.wandb_id,
         resume="allow")
     return run
+
 
 def create_wandb_run(config):
     # Setup the wandb
