@@ -299,11 +299,8 @@ class Trainer(object):
 
         loss, loss_kl_div, loss_reconstruction = self.validate(run)
         logger.info(
-            "Epoch: {}, Val Loss: {}, Val Loss KL Div: {}, Val Loss Reconstruction: {}".format(
-                epoch,
-                loss,
-                loss_kl_div,
-                loss_reconstruction))
+            "Epoch: Start, Val Loss: {}, Val Loss KL Div: {}, Val Loss Reconstruction: {}".format(
+                loss, loss_kl_div, loss_reconstruction))
 
         for epoch in range(self.current_epoch, self.num_epochs):
 
