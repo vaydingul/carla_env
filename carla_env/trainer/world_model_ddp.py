@@ -287,7 +287,7 @@ class Trainer(object):
             if self.lr_scheduler is not None:
                 run.log({"val/lr": self.lr_scheduler.get_last_lr()[0]})
             if self.report_metrics:
-                for (metric, metric_) in zip(self.metric, self.metrics_):
+                for (metric, metric_) in zip(self.metrics, self.metrics_):
                     result = float(metric_.compute().cpu().numpy())
                     run.log({"eval/{}".format(metric): result})
 
