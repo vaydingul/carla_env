@@ -89,13 +89,16 @@ def main(config):
 
     world_model_dataloader_test = DataLoader(
         dataset=world_model_dataset_test if config.test_set_step == 1 else Subset(
-            world_model_dataset_test, range(
-                0, len(world_model_dataset_test), config.test_set_step)), batch_size=config.batch_size)
+            world_model_dataset_test,
+            range(
+                0,
+                len(world_model_dataset_test),
+                config.test_set_step)),
+        batch_size=config.batch_size)
 
     world_model_device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")
 
-    
     evaluator = Evaluator(
         model=world_bev_model,
         dataloader=world_model_dataloader_test,
@@ -109,7 +112,7 @@ def main(config):
         bev_selected_channels=config.bev_selected_channels,
         save_path=f"{config.save_path}/{run.config['num_time_step_previous']}-{run.config['num_time_step_future']}-{(config.num_time_step_predict if config.num_time_step_predict > 0 else run.config['num_time_step_future'])}-{run.config['reconstruction_loss']}-{config.threshold}-{config.checkpoint_number}")
 
-    evaluator.evaluate(render=False, save=True)
+    evaluator.evaluate(render=False, save=config.plot_prediction)
 
 
 if __name__ == "__main__":
@@ -123,9 +126,14 @@ if __name__ == "__main__":
         "--save_path",
         type=str,
         default="figures/world_forward_model_evaluation/")
+    parser.add_argument("--plot_prediction", type=lambda x: (
+        str(x).lower() == 'true'), default=True)
     parser.add_argument("--report_metrics", type=lambda x: (
         str(x).lower() == 'true'), default=True)
-    parser.add_argument("--metrics", type=str, default="iou,accuracy,precision,recall,f1,auroc")
+    parser.add_argument(
+        "--metrics",
+        type=str,
+        default="iou,accuracy,precision,recall,f1,auroc")
     parser.add_argument(
         "--wandb_link",
         type=str,

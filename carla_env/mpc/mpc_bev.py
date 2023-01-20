@@ -201,7 +201,7 @@ class ModelPredictiveControl(nn.Module):
         #cost += self.yellow_light_cost
         #cost += self.red_light_cost
         #cost += self.pedestrian_cost
-        cost += self.offroad_cost / 50
+        cost += self.offroad_cost / 10
 
         cost += torch.nn.functional.l1_loss(predicted_location[..., :1], target_state[..., :1].expand(
             *(predicted_location[..., :1].shape))) * 10
@@ -237,9 +237,9 @@ class ModelPredictiveControl(nn.Module):
         for k in range(self.mask_car.shape[0]):
 
             bev_ = cv2.cvtColor(
-                BirdViewProducer.as_rgb_model(
+                BirdViewProducer.as_rgb_with_indices(
                     np.transpose(
-                        self.predicted_bev[k], (1, 2, 0))), cv2.COLOR_BGR2RGB)
+                        self.predicted_bev[k], (1, 2, 0)), indices = [0, 5, 6, 8, 9, 9, 10, 11]), cv2.COLOR_BGR2RGB)
 
             # Draw mask_car side by side
             mask_car_ = self.mask_car[k].detach().cpu().numpy()
@@ -263,9 +263,9 @@ class ModelPredictiveControl(nn.Module):
 
         for k in range(self.mask_side.shape[0]):
             bev_ = cv2.cvtColor(
-                BirdViewProducer.as_rgb_model(
+                BirdViewProducer.as_rgb_with_indices(
                     np.transpose(
-                        self.predicted_bev[k], (1, 2, 0))), cv2.COLOR_BGR2RGB)
+                        self.predicted_bev[k], (1, 2, 0)), indices = [0, 5, 6, 8, 9, 9, 10, 11]), cv2.COLOR_BGR2RGB)
             # Draw mask_car side by side
             mask_side_ = self.mask_side[k].detach().cpu().numpy()
             # Normalize to 0-255 int

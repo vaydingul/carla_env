@@ -1,8 +1,8 @@
 from carla_env import carla_env_mpc_path_follower_bev_traffic
 from carla_env.mpc.mpc_bev import ModelPredictiveControl
-from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
+from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
-from carla_env.cost.masked_cost_batched import Cost
+from carla_env.cost.masked_cost_batched_mpc import Cost
 import torch
 import time
 import logging
@@ -16,17 +16,20 @@ from utils.model_utils import (
     load_ego_model_from_checkpoint,
     fetch_checkpoint_from_wandb_link,
     convert_standard_bev_to_model_bev)
+from utils.train_utils import (seed_everything)
 
 logging.basicConfig(level=logging.INFO)
 
 
 def main(config):
 
+    # seed_everything(seed=config.seed)
+
     cost = Cost(image_width=192, image_height=192, device=config.world_device)
 
     ego_forward_model = load_ego_model_from_checkpoint(
         checkpoint=config.ego_forward_model_path,
-        cls=KinematicBicycleModelV2,
+        cls=KinematicBicycleModel,
         dt=1 / 20)
     ego_forward_model.to(device=config.ego_device)
 
@@ -34,17 +37,17 @@ def main(config):
     checkpoint = fetch_checkpoint_from_wandb_link(
         config.wandb_link, config.checkpoint_number)
 
-    world_forward_model= WorldBEVModel.load_model_from_wandb_run(
+    world_forward_model = WorldBEVModel.load_model_from_wandb_run(
         run=run,
         checkpoint=checkpoint,
-        world_model_device=config.world_device)
+        device=config.world_device)
     world_forward_model.to(device=config.world_device)
 
     mpc_module = ModelPredictiveControl(
         device=config.mpc_device,
         action_size=2,
         rollout_length=config.rollout_length,
-        number_of_optimization_iterations=20,
+        number_of_optimization_iterations=30,
         cost=cost,
         ego_model=ego_forward_model,
         world_model=world_forward_model,
@@ -68,7 +71,10 @@ def main(config):
 
         bev_tensor_deque.append(
             convert_standard_bev_to_model_bev(
-                bev, device=config.world_device))
+                bev, device=config.world_device, agent_channel=7,
+                vehicle_channel=6,
+                selected_channels=[0, 5, 6, 8, 9, 9, 10, 11],
+                calculate_offroad=False))
 
     counter = 0
 
@@ -116,16 +122,19 @@ def main(config):
         throttle, brake = acceleration_to_throttle_brake(
             acceleration=control[0])
 
-        control = [throttle, control[1], brake]
+        control_ = [throttle, control[1], brake]
 
         (current_transform, current_velocity, target_waypoint,
-         navigational_command) = c.step(action=control)
+         navigational_command) = c.step(action=control_)
 
         data = c.get_data()
         bev = data["bev"]
         bev_tensor_deque.append(
             convert_standard_bev_to_model_bev(
-                bev, device=config.world_device))
+                bev, device=config.world_device, agent_channel=7,
+                vehicle_channel=6,
+                selected_channels=[0, 5, 6, 8, 9, 9, 10, 11],
+                calculate_offroad=False))
 
         t1 = time.time()
 
@@ -138,7 +147,9 @@ def main(config):
             current_state=current_state,
             target_state=target_state,
             counter=counter,
-            sim_fps=1 / (t1 - t0))
+            sim_fps=1 / (t1 - t0),
+            wandb_link=config.wandb_link,
+            checkpoint_number=config.checkpoint_number,)
 
         mpc_module.reset()
 
@@ -151,6 +162,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         description="Collect data from the CARLA simulator")
+    parser.add_argument("--seed", type=int, default=333)
     parser.add_argument(
         "--ego_forward_model_path",
         type=str,
@@ -162,17 +174,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--wandb_link",
         type=str,
-        default="vaydingul/mbl/phys7134")
+        default="vaydingul/mbl/1gftiw9w")
 
-    parser.add_argument("--checkpoint_number", type=int, default=24)
+    parser.add_argument("--checkpoint_number", type=int, default=49)
 
-    parser.add_argument("--ego_device", type=str, default="cpu",
+    parser.add_argument("--ego_device", type=str, default="cuda:0",
                         help="Device to use for the forward model")
 
-    parser.add_argument("--world_device", type=str, default="cpu",
+    parser.add_argument("--world_device", type=str, default="cuda:0",
                         help="Device to use for the world model")
 
-    parser.add_argument("--mpc_device", type=str, default="cpu",
+    parser.add_argument("--mpc_device", type=str, default="cuda:0",
                         help="Device to use for the MPC module")
 
     config = parser.parse_args()

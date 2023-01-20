@@ -124,35 +124,35 @@ class CarlaEnvironment(Environment):
 
         self.spectator = self.world.get_spectator()
 
-        while True:
-            # Fetch all spawn points
-            spawn_points = self.map.get_spawn_points()
-            # Select two random spawn points
-            start_end_spawn_point = np.random.choice(spawn_points, 2)
-            start = start_end_spawn_point[0]
-            end = start_end_spawn_point[1]
-            self.route = route.RouteModule(config={"start": start,
-                                                   "end": end,
-                                                   "sampling_resolution": 10,
-                                                   "debug": False},
-                                           client=self.client)
+        # while True:
+        #     # Fetch all spawn points
+        #     spawn_points = self.map.get_spawn_points()
+        #     # Select two random spawn points
+        #     start_end_spawn_point = np.random.choice(spawn_points, 2)
+        #     start = start_end_spawn_point[0]
+        #     end = start_end_spawn_point[1]
+        #     self.route = route.RouteModule(config={"start": start,
+        #                                            "end": end,
+        #                                            "sampling_resolution": 10,
+        #                                            "debug": False},
+        #                                    client=self.client)
 
-            if ((RoadOption.LEFT not in [x[1] for x in self.route.get_route()]) and (RoadOption.RIGHT in [
-                    x[1] for x in self.route.get_route()[:2]]) and (len(self.route.get_route()) < 80) and
-                    (len(self.route.get_route()) > 60)):
-                break
+        #     if ((RoadOption.LEFT not in [x[1] for x in self.route.get_route()]) and (RoadOption.RIGHT in [
+        #             x[1] for x in self.route.get_route()[:2]]) and (len(self.route.get_route()) < 50) and
+        #             (len(self.route.get_route()) > 40)):
+        #         break
 
-        # # Fetch all spawn points
-        # spawn_points = self.map.get_spawn_points()
-        # # Select two random spawn points
-        # start_end_spawn_point = np.random.choice(spawn_points, 2)
-        # start = start_end_spawn_point[0]
-        # end = start_end_spawn_point[1]
-        # self.route = route.RouteModule(config={"start": start,
-        #                                        "end": end,
-        #                                        "sampling_resolution": 10,
-        #                                        "debug": True},
-        #                                client=self.client)
+        # Fetch all spawn points
+        spawn_points = self.map.get_spawn_points()
+        # Select two random spawn points
+        start_end_spawn_point = np.random.choice(spawn_points, 2)
+        start = start_end_spawn_point[0]
+        end = start_end_spawn_point[1]
+        self.route = route.RouteModule(config={"start": start,
+                                               "end": end,
+                                               "sampling_resolution": 10,
+                                               "debug": True},
+                                       client=self.client)
 
         # Let's initialize a vehicle
         self.vehicle_module = vehicle.VehicleModule(

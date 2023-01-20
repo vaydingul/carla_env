@@ -59,7 +59,6 @@ class Cost(nn.Module):
         #road_channel = bev[:, :, 0]
         lane_channel = bev[:, :, 1]
         vehicle_channel = bev[:, :, 2]
-        #agent_channel = bev[..., 3]
         green_light_channel = bev[:, :, 3]
         yellow_light_channel = bev[:, :, 4]
         red_light_channel = bev[:, :, 5]
@@ -128,10 +127,12 @@ class Cost(nn.Module):
         aligned_coordinate_mask_light = align_coordinate_mask_with_ego_vehicle(
             x + self.light_offset_x, y + self.light_offset_y, yaw, coordinate_mask)
 
-        dx = (self.vehicle_width / 2) + 4
+        # dx = (self.vehicle_width / 2) + 4
+        dx = (self.vehicle_width / 2) + 1
         dx_light = (self.vehicle_width) + 1
 
-        dy = 1.5 * (torch.maximum(torch.tensor(10), speed) + self.vehicle_length) + 1
+        # dy = 1.5 * (torch.maximum(torch.tensor(10), speed) + self.vehicle_length) + 1
+        dy = (speed + self.vehicle_length) + 0.25
         dy_light = speed * 0.5 + self.vehicle_length * 3
         dy = dy.unsqueeze(-1).unsqueeze(-1)
         dy_light = dy_light.unsqueeze(-1).unsqueeze(-1)

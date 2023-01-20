@@ -189,9 +189,9 @@ class Evaluator(object):
 
             # Plot the roc curve
             if "roc" in self.metrics and "auroc" in self.metrics:
-                fpr, tpr, _ = metric_plot["roc"]
+                fpr, tpr, thresholds = metric_plot["roc"]
                 auroc = metric_plot["auroc"]
-                plot_roc(fpr, tpr, auroc, self.save_path, multi=True)
+                plot_roc(fpr, tpr, thresholds, auroc, self.save_path, multi=True)
 
             if "stat" in self.metrics:
                 tp = metric_plot["stat"][..., 0]
