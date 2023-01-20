@@ -92,7 +92,8 @@ class Trainer(object):
                 self.bev_channel_weights).to(
                 self.gpu_id)
 
-        self.metrics_ = [METRIC_DICT[metric] for metric in self.metrics]
+        self.metrics_ = [METRIC_DICT[metric] for metric in self.metrics].to(
+            self.gpu_id)
 
         self.model.to(self.gpu_id)
         self.model = DDP(self.model, device_ids=[self.gpu_id])
@@ -295,9 +296,9 @@ class Trainer(object):
     def learn(self, run=None):
 
         for epoch in range(self.current_epoch, self.num_epochs):
-        
+
             loss, loss_kl_div, loss_reconstruction = self.validate(run)
-            
+
             self.train(run)
 
             if (epoch + 1) % self.val_every == 0:
