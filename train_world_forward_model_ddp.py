@@ -244,7 +244,7 @@ if __name__ == "__main__":
     parser.add_argument("--val_every", type=int, default=3)
     # MODEL PARAMETERS
     parser.add_argument("--input_shape", type=str, default="8-192-192")
-    parser.add_argument("--latent_size", type=str, default=128)
+    parser.add_argument("--latent_size", type=int, default=128)
     parser.add_argument("--hidden_channel", type=int, default=256)
     parser.add_argument("--output_channel", type=int, default=512)
     parser.add_argument("--num_encoder_layer", type=int, default=4)
