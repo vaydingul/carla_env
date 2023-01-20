@@ -183,9 +183,12 @@ def main(rank, world_size, run, config):
         world_model_optimizer,
         rank,
         save_every=config.save_every if rank == 0 else -1,
+        val_every = config.val_every,
         num_time_step_previous=config.num_time_step_previous,
         num_time_step_future=config.num_time_step_future,
         num_epochs=config.num_epochs,
+        report_metrics=config.report_metrics,
+        metrics=config.metrics,
         current_epoch=checkpoint["epoch"] + 1 if config.resume else 0,
         reconstruction_loss=config.reconstruction_loss,
         bev_channel_weights=config.bev_channel_weights,
@@ -238,6 +241,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_gpu", type=int, default=1)
     parser.add_argument("--master_port", type=str, default="12355")
     parser.add_argument("--save_every", type=int, default=5)
+    parser.add_argument("--val_every", type=int, default=3)
     # MODEL PARAMETERS
     parser.add_argument("--input_shape", type=str, default="8-192-192")
     parser.add_argument("--latent_size", type=str, default=128)
@@ -270,7 +274,12 @@ if __name__ == "__main__":
         default="1,1,1,1,1,2,5,1")
     parser.add_argument("--weighted_sampling", type=lambda x: (
         str(x).lower() == 'true'), default=False)
-
+    parser.add_argument("--report_metrics", type=lambda x: (
+        str(x).lower() == 'true'), default=True)
+    parser.add_argument(
+        "--metrics",
+        type=str,
+        default="iou,precision,recall")
     # WANDB RELATED PARAMETERS
     parser.add_argument(
         "--wandb",
@@ -287,6 +296,7 @@ if __name__ == "__main__":
 
     config = parser.parse_args()
     config.input_shape = [int(x) for x in config.input_shape.split("-")]
+    config.metrics = config.metrics.split(",")
 
     if config.bev_channel_weights is "":
         config.bev_channel_weights = None

@@ -140,8 +140,11 @@ class ModelPredictiveControl(nn.Module):
 
             self.optimizer.step()
 
-        return (list(self.action[0, 0, :].detach().cpu().numpy(
-        )), location_predicted[0].detach().cpu().numpy(), cost.item(), self.canvas)
+        return (
+            self.action[0].detach().cpu().numpy(),
+            location_predicted[0].detach().cpu().numpy(),
+            cost.item(),
+            self.canvas)
 
     def reset(self, initial_guess=None):
         """Reset the controller."""
@@ -215,8 +218,8 @@ class ModelPredictiveControl(nn.Module):
         #                                     target_state[...,
         #                                                  3:4].expand(*(predicted_speed.shape)))
 
-        cost += torch.diff(self.action[..., 0], dim=1).square().sum() * 0.5
-        cost += torch.diff(self.action[..., 1], dim=1).square().sum() * 5
+        cost += torch.diff(self.action[..., 0], dim=1).square().sum()
+        cost += torch.diff(self.action[..., 1], dim=1).square().sum()
 
         if self.render_cost and last_step:
 
@@ -239,7 +242,8 @@ class ModelPredictiveControl(nn.Module):
             bev_ = cv2.cvtColor(
                 BirdViewProducer.as_rgb_with_indices(
                     np.transpose(
-                        self.predicted_bev[k], (1, 2, 0)), indices = [0, 5, 6, 8, 9, 9, 10, 11]), cv2.COLOR_BGR2RGB)
+                        self.predicted_bev[k], (1, 2, 0)), indices=[
+                        0, 5, 6, 8, 9, 9, 10, 11]), cv2.COLOR_BGR2RGB)
 
             # Draw mask_car side by side
             mask_car_ = self.mask_car[k].detach().cpu().numpy()
@@ -265,7 +269,8 @@ class ModelPredictiveControl(nn.Module):
             bev_ = cv2.cvtColor(
                 BirdViewProducer.as_rgb_with_indices(
                     np.transpose(
-                        self.predicted_bev[k], (1, 2, 0)), indices = [0, 5, 6, 8, 9, 9, 10, 11]), cv2.COLOR_BGR2RGB)
+                        self.predicted_bev[k], (1, 2, 0)), indices=[
+                        0, 5, 6, 8, 9, 9, 10, 11]), cv2.COLOR_BGR2RGB)
             # Draw mask_car side by side
             mask_side_ = self.mask_side[k].detach().cpu().numpy()
             # Normalize to 0-255 int

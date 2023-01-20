@@ -76,7 +76,8 @@ def main(config):
                 selected_channels=[0, 5, 6, 8, 9, 9, 10, 11],
                 calculate_offroad=False))
 
-    counter = 0
+    frame_counter = 0
+    skip_counter = 0
 
     while not c.is_done:
 
@@ -111,18 +112,21 @@ def main(config):
         # Convert bev tensor deque to torch tensor
         bev_tensor = torch.cat(list(bev_tensor_deque), dim=0).unsqueeze(0)
 
-        (control,
-         location_predicted,
-         cost,
-         cost_canvas) = mpc_module.step(initial_state=current_state,
-                                        target_state=target_state,
-                                        bev=bev_tensor.detach(),
-                                        )
+        if (skip_counter % config.skip_frames) == 0:
+            (control,
+             location_predicted,
+             cost,
+             cost_canvas) = mpc_module.step(initial_state=current_state,
+                                            target_state=target_state,
+                                            bev=bev_tensor.detach(),
+                                            )
+
+        control_selected = control[skip_counter % config.skip_frames]
 
         throttle, brake = acceleration_to_throttle_brake(
-            acceleration=control[0])
+            acceleration=control_selected[0])
 
-        control_ = [throttle, control[1], brake]
+        control_ = [throttle, control_selected[1], brake]
 
         (current_transform, current_velocity, target_waypoint,
          navigational_command) = c.step(action=control_)
@@ -143,17 +147,18 @@ def main(config):
             bev=bev,
             cost_canvas=cost_canvas,
             cost=cost,
-            control=control,
+            control=control_selected,
             current_state=current_state,
             target_state=target_state,
-            counter=counter,
+            frame_counter=frame_counter,
             sim_fps=1 / (t1 - t0),
             wandb_link=config.wandb_link,
             checkpoint_number=config.checkpoint_number,)
 
         mpc_module.reset()
 
-        counter += 1
+        frame_counter += 1
+        skip_counter += 1
 
     c.close()
 
@@ -170,7 +175,7 @@ if __name__ == "__main__":
         help="Path to the forward model of the ego vehicle")
 
     parser.add_argument("--rollout_length", type=int, default=10)
-
+    parser.add_argument("--skip_frames", type=int, default=5)
     parser.add_argument(
         "--wandb_link",
         type=str,
