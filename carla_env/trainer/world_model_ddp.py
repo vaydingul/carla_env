@@ -92,8 +92,8 @@ class Trainer(object):
                 self.bev_channel_weights).to(
                 self.gpu_id)
 
-        self.metrics_ = [METRIC_DICT[metric] for metric in self.metrics].to(
-            self.gpu_id)
+        self.metrics_ = [METRIC_DICT[metric].to(
+            self.gpu_id) for metric in self.metrics]
 
         self.model.to(self.gpu_id)
         self.model = DDP(self.model, device_ids=[self.gpu_id])
