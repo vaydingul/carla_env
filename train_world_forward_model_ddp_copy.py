@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 import logging
 import torch
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader, WeightedRandomSampler
 import torch.multiprocessing as mp
 from torch.utils.data.distributed import DistributedSampler
 from torch.distributed import (
@@ -15,6 +15,7 @@ from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.trainer.world_model_ddp import Trainer
 from carla_env.sampler.distributed_weighted_sampler import DistributedWeightedSampler
+from carla_env.sampler.distributed_proxy_sampler import DistributedProxySampler
 from utils.model_utils import (
     fetch_checkpoint_from_wandb_run)
 from utils.wandb_utils import (
@@ -44,6 +45,7 @@ def main(rank, world_size, run, config):
         data_path=config.data_path_train,
         sequence_length=config.num_time_step_previous +
         config.num_time_step_future,
+        read_keys=["bev_world", "ego"],
         dilation=config.dataset_dilation,
         bev_agent_channel=7,
         bev_vehicle_channel=6,
@@ -53,6 +55,7 @@ def main(rank, world_size, run, config):
         data_path=config.data_path_val,
         sequence_length=config.num_time_step_previous +
         config.num_time_step_future,
+        read_keys=["bev_world", "ego"],
         dilation=config.dataset_dilation,
         bev_agent_channel=7,
         bev_vehicle_channel=6,
@@ -66,7 +69,7 @@ def main(rank, world_size, run, config):
 
     if config.weighted_sampling:
         if os.path.exists(f"{config.data_path_train}/weights.pt"):
-            logger.info("Loading weights from file")
+            logger.info("Loading weights from file!")
             weights = torch.load(f"{config.data_path_train}/weights.pt")
         else:
             logger.info("Calculating weights")
@@ -74,7 +77,9 @@ def main(rank, world_size, run, config):
                 [world_model_dataset_train.__getweight__(k) for k in range(
                     len(world_model_dataset_train))])
             torch.save(weights, f"{config.data_path_train}/weights.pt")
+
     else:
+
         weights = None
 
     world_model_dataloader_train = DataLoader(
@@ -86,7 +91,9 @@ def main(rank, world_size, run, config):
         sampler=DistributedWeightedSampler(
             world_model_dataset_train,
             weights=weights,
-            shuffle=True))
+            shuffle=True,
+            num_replicas=config.num_gpu,
+            rank=rank))
 
     world_model_dataloader_val = DataLoader(
         world_model_dataset_val,
@@ -96,7 +103,9 @@ def main(rank, world_size, run, config):
         drop_last=True,
         sampler=DistributedWeightedSampler(
             world_model_dataset_val,
-            shuffle=False))
+            shuffle=False,
+            num_replicas=config.num_gpu,
+            rank=rank))
 
     if not config.resume:
         world_bev_model = WorldBEVModel(
@@ -106,7 +115,8 @@ def main(rank, world_size, run, config):
             num_encoder_layer=config.num_encoder_layer,
             num_probabilistic_encoder_layer=config.num_probabilistic_encoder_layer,
             num_time_step=config.num_time_step_previous + 1,
-            dropout=config.dropout)
+            dropout=config.dropout,
+            latent_size=config.latent_size,)
     else:
 
         checkpoint = fetch_checkpoint_from_wandb_run(
@@ -173,9 +183,12 @@ def main(rank, world_size, run, config):
         world_model_optimizer,
         rank,
         save_every=config.save_every if rank == 0 else -1,
+        val_every = config.val_every,
         num_time_step_previous=config.num_time_step_previous,
         num_time_step_future=config.num_time_step_future,
         num_epochs=config.num_epochs,
+        report_metrics=config.report_metrics,
+        metrics=config.metrics,
         current_epoch=checkpoint["epoch"] + 1 if config.resume else 0,
         reconstruction_loss=config.reconstruction_loss,
         bev_channel_weights=config.bev_channel_weights,
@@ -210,17 +223,13 @@ if __name__ == "__main__":
 
     # TRAINING PARAMETERS
     parser.add_argument("--lr", type=float, default=1e-4)
-    parser.add_argument("--num_epochs", type=int, default=5)
-    parser.add_argument("--batch_size", type=int, default=50)
-    parser.add_argument("--num_workers", type=int, default=5)
-    parser.add_argument(
-        "--data_path_train",
-        type=str,
-        default="data/ground_truth_bev_model_train_data_10Hz_multichannel_bev")
-    parser.add_argument(
-        "--data_path_val",
-        type=str,
-        default="data/ground_truth_bev_model_train_data_10Hz_multichannel_bev")
+    parser.add_argument("--num_epochs", type=int, default=10)
+    parser.add_argument("--batch_size", type=int, default=1)
+    parser.add_argument("--num_workers", type=int, default=4)
+    parser.add_argument("--data_path_train", type=str,
+                        default="data/ground_truth_bev_model_dummy_data_10Hz_multichannel_bev/")
+    parser.add_argument("--data_path_val", type=str,
+                        default="data/ground_truth_bev_model_dummy_data_10Hz_multichannel_bev/")
     parser.add_argument("--pretrained_model_path",
                         type=str, default=checkpoint_path)
     parser.add_argument(
@@ -231,9 +240,11 @@ if __name__ == "__main__":
     parser.add_argument("--resume_checkpoint_number", type=int, default=49)
     parser.add_argument("--num_gpu", type=int, default=1)
     parser.add_argument("--master_port", type=str, default="12355")
-    parser.add_argument("--save_every", type=int, default=10)
+    parser.add_argument("--save_every", type=int, default=6)
+    parser.add_argument("--val_every", type=int, default=3)
     # MODEL PARAMETERS
     parser.add_argument("--input_shape", type=str, default="8-192-192")
+    parser.add_argument("--latent_size", type=int, default=128)
     parser.add_argument("--hidden_channel", type=int, default=256)
     parser.add_argument("--output_channel", type=int, default=512)
     parser.add_argument("--num_encoder_layer", type=int, default=4)
@@ -241,50 +252,60 @@ if __name__ == "__main__":
         "--num_probabilistic_encoder_layer",
         type=int,
         default=2)
+
     parser.add_argument("--dropout", type=float, default=0.1)
-    parser.add_argument("--num_time_step_previous", type=int, default=10)
+    parser.add_argument("--num_time_step_previous", type=int, default=5)
     parser.add_argument("--num_time_step_future", type=int, default=10)
-    parser.add_argument("--dataset_dilation", type=int, default=1)
-    parser.add_argument(
-        "--reconstruction_loss",
-        type=str,
-        default="binary_cross_entropy")
+    parser.add_argument("--dataset_dilation", type=int, default=2)
+    parser.add_argument("--reconstruction_loss", type=str, default="binary_cross_entropy")
     parser.add_argument("--logvar_clip", type=lambda x: (
-        str(x).lower() == 'true'), default=True)
+        str(x).lower() == 'true'), default=False)
     parser.add_argument("--logvar_clip_min", type=float, default=-5)
     parser.add_argument("--logvar_clip_max", type=float, default=5)
     parser.add_argument("--lr_schedule", type=lambda x: (
-        str(x).lower() == 'true'), default=True)
+        str(x).lower() == 'true'), default=False)
     parser.add_argument("--lr_schedule_step_size", default=5)
     parser.add_argument("--lr_schedule_gamma", type=float, default=0.5)
     parser.add_argument("--gradient_clip_type", type=str, default="norm")
-    parser.add_argument("--gradient_clip_value", type=float, default=0.3)
+    parser.add_argument("--gradient_clip_value", type=float, default=1.0)
     parser.add_argument(
         "--bev_channel_weights",
         type=str,
-        default="1,1,1,1,1,2,5,1")
+        default="1,1,1,1,1,5,5,1")
     parser.add_argument("--weighted_sampling", type=lambda x: (
         str(x).lower() == 'true'), default=True)
+    parser.add_argument("--report_metrics", type=lambda x: (
+        str(x).lower() == 'true'), default=True)
+    parser.add_argument(
+        "--metrics",
+        type=str,
+        default="iou,precision,recall")
     # WANDB RELATED PARAMETERS
     parser.add_argument(
         "--wandb",
         type=lambda x: (
             str(x).lower() == 'true'),
-        default=False)
+        default=True)
     parser.add_argument("--wandb_project", type=str, default="mbl")
     parser.add_argument(
         "--wandb_group",
         type=str,
-        default="world-forward-model-multi-step")
+        default="world-forward-model-multi-step-5Hz-extended-bev")
     parser.add_argument("--wandb_name", type=str, default="model")
     parser.add_argument("--wandb_id", type=str, default=None)
 
     config = parser.parse_args()
     config.input_shape = [int(x) for x in config.input_shape.split("-")]
-    config.bev_channel_weights = [
-        float(x) for x in config.bev_channel_weights.split(",")]
-    assert len(
-        config.bev_channel_weights) == config.input_shape[0], "Number of channel weights should be equal to number of channels"
+    config.metrics = config.metrics.split(",")
+
+    if config.bev_channel_weights is "":
+        config.bev_channel_weights = None
+    else:
+        config.bev_channel_weights = [
+            float(x) for x in config.bev_channel_weights.split(",")]
+        assert config.input_shape[0] == len(
+            config.bev_channel_weights), "Number of channels in input shape and number of weights in channel weights should be same!"
+
     run = create_wandb_run(config)
 
     mp.spawn(main, args=(config.num_gpu, run, config), nprocs=config.num_gpu)

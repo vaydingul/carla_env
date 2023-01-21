@@ -286,11 +286,13 @@ class Trainer(object):
             if self.report_metrics:
                 run.log({"eval/step": self.val_step}, commit=False)
                 for (metric, metric_) in zip(self.metrics, self.metrics_):
-                    result = float(metric_.compute().cpu().numpy())
-                    logger.info(f"Validation {metric}: {result}")
-                    logger.info(f"Validation {type(metric)}: {type(result)}")
-                    
-                    run.log({"eval/{}".format(metric): result}, commit=False)
+                    result = metric_.compute().cpu().numpy()
+                    for k in range(result.shape[0]):
+                        # logger.info(f"Validation {metric}: {result[k]}")
+                        # logger.info(f"Validation {type(metric)}: {type(result[k])}")
+                        run.log({"eval/{}_{}".format(metric, k)
+                                : result[k]}, commit=False)
+
                     metric_.reset()
             if self.lr_scheduler is not None:
                 run.log(
