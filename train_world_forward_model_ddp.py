@@ -183,7 +183,7 @@ def main(rank, world_size, run, config):
         world_model_dataloader_val,
         world_model_optimizer,
         rank,
-        save_every=config.save_every if rank == 0 else -1,
+        save_every=config.save_every if rank == 0 else 1000,
         val_every = config.val_every,
         num_time_step_previous=config.num_time_step_previous,
         num_time_step_future=config.num_time_step_future,

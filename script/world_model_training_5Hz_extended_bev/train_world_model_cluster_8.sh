@@ -14,7 +14,7 @@ python3 train_world_forward_model_ddp.py \
 	--seed=42 \
 	--lr=1e-4 \
 	--num_epochs=100 \
-	--batch_size=100 \
+	--batch_size=110 \
 	--num_workers=4 \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_10Hz_multichannel_bev/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_10Hz_multichannel_bev/" \

@@ -349,6 +349,8 @@ class Trainer(object):
                     "val_step": self.val_step},
                     self.save_path /
                     Path(f"checkpoint_{epoch}.pt"))
+                
+                logger.info(f"Saving model to {self.save_path / Path(f'checkpoint_{epoch}.pt')}")
 
                 if run is not None:
                     run.save(str(self.save_path /
