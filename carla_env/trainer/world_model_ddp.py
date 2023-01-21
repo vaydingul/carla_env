@@ -286,18 +286,21 @@ class Trainer(object):
         logger.info(f"Run is {run} for GPU {self.gpu_id}")
         if self.metrics_ is not None:
             logger.info(f"Length metrics_ is {len(self.metrics_)}")
-        
+
         if run is not None:
 
             if (self.report_metrics):
                 run.log({"eval/step": self.val_step}, commit=False)
                 for (metric, metric_) in zip(self.metrics, self.metrics_):
+                    logger.info(f"Metric: {metric}")
+                    logger.info(f"Metric_: {metric_}")
                     result = metric_.compute().cpu().numpy()
+                    logger.info(f"Metric {metric} is calculated")
                     for k in range(result.shape[0]):
                         logger.info(f"Validation {metric}: {result[k]}")
-                        logger.info(f"Validation {type(metric)}: {type(result[k])}")
-                        run.log({"eval/{}_{}".format(metric, k)
-                                : result[k]}, commit=False)
+                        logger.info(
+                            f"Validation {type(metric)}: {type(result[k])}")
+                        run.log({"eval/{}_{}".format(metric, k)                                : result[k]}, commit=False)
 
                     metric_.reset()
             if self.lr_scheduler is not None:
