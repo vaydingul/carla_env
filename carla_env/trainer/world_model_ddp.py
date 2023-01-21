@@ -287,7 +287,8 @@ class Trainer(object):
                 run.log({"eval/step": self.val_step}, commit=False)
                 for (metric, metric_) in zip(self.metrics, self.metrics_):
                     result = float(metric_.compute().cpu().numpy())
-                    
+                    logger.info(f"Validation {metric}: {result}")
+                    logger.info(f"Validation {type(metric)}: {type(result)}")
                     
                     run.log({"eval/{}".format(metric): result}, commit=False)
                     metric_.reset()
