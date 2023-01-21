@@ -22,6 +22,7 @@ from utils.wandb_utils import (
     create_wandb_run)
 from utils.train_utils import (seed_everything)
 logger = logging.getLogger(__name__)
+
 logging.basicConfig(
     level=logging.INFO,
     datefmt='%Y-%m-%d %H:%M:%S',

@@ -92,8 +92,11 @@ class Trainer(object):
                 self.bev_channel_weights).to(
                 self.gpu_id)
 
-        self.metrics_ = [METRIC_DICT[metric].to(
-            self.gpu_id) for metric in self.metrics]
+        if gpu_id == 0:
+            self.metrics_ = [METRIC_DICT[metric].to(
+                self.gpu_id) for metric in self.metrics]
+        else:
+            self.metrics_ = None
 
         self.model.to(self.gpu_id)
         self.model = DDP(self.model, device_ids=[self.gpu_id])
@@ -255,7 +258,7 @@ class Trainer(object):
 
                         loss_reconstruction = self.reconstruction_loss(
                             input=world_future_bev_predicted, target=world_future_bev)
-                if self.report_metrics:
+                if self.report_metrics and self.metrics is not None:
                     for metric_ in self.metrics_:
                         world_future_bev_predicted_ = world_future_bev_predicted.permute(
                             0, 2, 1, 3, 4).clone()
@@ -283,7 +286,7 @@ class Trainer(object):
 
         if run is not None:
 
-            if self.report_metrics:
+            if self.report_metrics and self.metrics is not None:
                 run.log({"eval/step": self.val_step}, commit=False)
                 for (metric, metric_) in zip(self.metrics, self.metrics_):
                     result = metric_.compute().cpu().numpy()
