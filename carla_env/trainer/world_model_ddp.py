@@ -283,7 +283,9 @@ class Trainer(object):
         loss = np.mean(losses_total)
         loss_kl_div = np.mean(losses_kl_div)
         loss_reconstruction = np.mean(losses_reconstruction)
-
+        logger.info(f"Run is {run} for GPU {self.gpu_id}")
+        logger.info(f"Length metrics_ is {len(self.metrics_)}")
+        
         if run is not None:
 
             if (self.report_metrics):
@@ -291,8 +293,8 @@ class Trainer(object):
                 for (metric, metric_) in zip(self.metrics, self.metrics_):
                     result = metric_.compute().cpu().numpy()
                     for k in range(result.shape[0]):
-                        # logger.info(f"Validation {metric}: {result[k]}")
-                        # logger.info(f"Validation {type(metric)}: {type(result[k])}")
+                        logger.info(f"Validation {metric}: {result[k]}")
+                        logger.info(f"Validation {type(metric)}: {type(result[k])}")
                         run.log({"eval/{}_{}".format(metric, k)
                                 : result[k]}, commit=False)
 
