@@ -258,7 +258,7 @@ class Trainer(object):
 
                         loss_reconstruction = self.reconstruction_loss(
                             input=world_future_bev_predicted, target=world_future_bev)
-                if self.report_metrics and self.metrics_ is not None:
+                if (self.report_metrics) and (self.metrics_ is not None):
                     for metric_ in self.metrics_:
                         world_future_bev_predicted_ = world_future_bev_predicted.permute(
                             0, 2, 1, 3, 4).clone()
@@ -286,7 +286,7 @@ class Trainer(object):
 
         if run is not None:
 
-            if self.report_metrics and self.metrics_ is not None:
+            if (self.report_metrics):
                 run.log({"eval/step": self.val_step}, commit=False)
                 for (metric, metric_) in zip(self.metrics, self.metrics_):
                     result = metric_.compute().cpu().numpy()
