@@ -338,7 +338,7 @@ class Trainer(object):
                     self.lr_scheduler.step()
 
             if ((epoch + 1) % self.save_every ==
-                    0) and self.save_path is not None:
+                    0) and (self.save_path is not None) and (self.gpu_id == 0):
 
                 torch.save({
                     "model_state_dict": self.model.module.state_dict(),
