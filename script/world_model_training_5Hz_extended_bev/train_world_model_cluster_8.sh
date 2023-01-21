@@ -36,7 +36,7 @@ python3 train_world_forward_model_ddp.py \
 	--reconstruction_loss="binary_cross_entropy" \
 	--bev_channel_weights="1,1,1,1,1,5,5,1" \
 	--weighted_sampling=true \
-	--report_metrics=true \
+	--report_metrics=false \
 	--metrics="iou,precision,recall" \
 	--logvar_clip=false \
 	--lr_schedule=false \
