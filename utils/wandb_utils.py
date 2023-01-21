@@ -15,9 +15,10 @@ def create_initial_run(config):
 
     run.define_metric("train/step")
     run.define_metric("val/step")
+    run.define_metric("eval/step")
     run.define_metric(name="train/*", step_metric="train/step")
     run.define_metric(name="val/*", step_metric="val/step")
-    run.define_metric(name="eval/*", step_metric="val/step")
+    run.define_metric(name="eval/*", step_metric="eval/step")
 
     return run
 
