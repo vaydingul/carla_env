@@ -20,7 +20,7 @@ class TrafficManagerModule(module.Module):
         self.world = self.get_world()
         self.traffic_manager = self.client.get_trafficmanager(
             self.config["port"])
-
+    
         self.render_dict = {}
 
         self.reset()

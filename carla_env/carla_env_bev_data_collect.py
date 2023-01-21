@@ -119,7 +119,8 @@ class CarlaEnvironment(Environment):
                 self.config[k] = config[k]
 
         # We have our server and client up and running
-        self.server_module = server.ServerModule(None)
+        self.server_module = server.ServerModule(
+            config={"port": self.config["port"]})
 
         self.render_dict = {}
 
@@ -149,7 +150,8 @@ class CarlaEnvironment(Environment):
         self.client_module = client.ClientModule(
             config={
                 "world": selected_task["world"],
-                "fixed_delta_seconds": self.config["fixed_delta_seconds"]})
+                "fixed_delta_seconds": self.config["fixed_delta_seconds"],
+                "port": self.config["port"], })
 
         self.world = self.client_module.get_world()
         self.map = self.client_module.get_map()
@@ -190,7 +192,8 @@ class CarlaEnvironment(Environment):
 
         if not self.config["random"]:
             self.traffic_manager_module = traffic_manager.TrafficManagerModule(
-                config={"vehicle_list": actor_list}, client=self.client)
+                config={"vehicle_list": actor_list,
+                        "port": self.config["tm_port"]}, client=self.client)
 
         # Sensor suite
         self.vehicle_sensor = vehicle_sensor.VehicleSensorModule(
@@ -364,7 +367,7 @@ class CarlaEnvironment(Environment):
         rgb_image_2 = self.render_dict["rgb_sensor_2"]["image_data"]
         rgb_image_2 = cv2.cvtColor(rgb_image_2, cv2.COLOR_BGR2RGB)
         # Put image into canvas
-        self.canvas[:rgb_image_2.shape[0], rgb_image_1.shape[1]:rgb_image_1.shape[1] + rgb_image_2.shape[1]] = rgb_image_2
+        self.canvas[:rgb_image_2.shape[0], rgb_image_1.shape[1]                    :rgb_image_1.shape[1] + rgb_image_2.shape[1]] = rgb_image_2
 
         rgb_image_3 = self.render_dict["rgb_sensor_3"]["image_data"]
         rgb_image_3 = cv2.cvtColor(rgb_image_3, cv2.COLOR_BGR2RGB)

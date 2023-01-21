@@ -34,22 +34,23 @@ class ServerModule(module.Module):
     def _generate_command(self):
         """Generate the command to start the server based on the config file"""
 
-        self.command = [CARLA_EXECUTABLE, "-carla-server"]
+        self.command = [CARLA_EXECUTABLE]#, "-carla-server"]
 
         if self.config["quality"] is not None:
-            self.command += ["-quality-level", config["quality"]]
+            self.command += [f"quality-level={self.config['quality']}"]
         else:
-            self.command += ["-quality-level", "epic"]
+            self.command += ["quality-level=Epic"]
 
         if self.config["port"] is not None:
-            self.command += ["-carla-rpc-port", config["port"]]
+            
+            self.command += [f"-carla-rpc-port={self.config['port']}"]
         else:
-            self.command += ["-carla-rpc-port", "2000"]
+            self.command += [f"-carla-rpc-port=2000"]
 
-        self.command += ["-opengl"]
+        # self.command += ["-vulkan"]
 
-        if self.config["no_screen"]:
-            self.command = "".join(self.command)
+        
+        self.command = " ".join(self.command)
 
     @property
     def is_running(self):
@@ -66,6 +67,8 @@ class ServerModule(module.Module):
         """Start the server"""
 
         self._generate_command()
+        logger.info("Starting server with command: {}".format(self.command))
+
         self.process = subprocess.Popen(
             self.command,
             stdout=subprocess.PIPE,
