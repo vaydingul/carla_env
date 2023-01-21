@@ -284,7 +284,8 @@ class Trainer(object):
         loss_kl_div = np.mean(losses_kl_div)
         loss_reconstruction = np.mean(losses_reconstruction)
         logger.info(f"Run is {run} for GPU {self.gpu_id}")
-        logger.info(f"Length metrics_ is {len(self.metrics_)}")
+        if self.metrics_ is not None:
+            logger.info(f"Length metrics_ is {len(self.metrics_)}")
         
         if run is not None:
 
