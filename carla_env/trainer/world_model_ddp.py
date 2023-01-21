@@ -179,6 +179,7 @@ class Trainer(object):
             else:
                 torch.nn.utils.clip_grad_value_(
                     self.model.parameters(), self.gradient_clip_value)
+            # Update the weights
             self.optimizer.step()
 
             self.train_step += world_previous_bev.shape[0]
@@ -281,17 +282,22 @@ class Trainer(object):
         loss_reconstruction = np.mean(losses_reconstruction)
 
         if run is not None:
-            run.log({"val/step": self.val_step,
-                     "val/loss": loss,
-                     "val/loss_kl_divergence": loss_kl_div,
-                     "val/loss_reconstruction": loss_reconstruction})
-            if self.lr_scheduler is not None:
-                run.log({"val/lr": self.lr_scheduler.get_last_lr()[0]})
+
             if self.report_metrics:
                 for (metric, metric_) in zip(self.metrics, self.metrics_):
                     result = float(metric_.compute().cpu().numpy())
-                    run.log({"eval/{}".format(metric): result})
+                    run.log({"eval/{}".format(metric): result}, commit=False)
                     metric_.reset()
+            if self.lr_scheduler is not None:
+                run.log(
+                    {"val/lr": self.lr_scheduler.get_last_lr()[0]}, commit=False)
+
+            run.log({"val/step": self.val_step,
+                     "val/loss": loss,
+                     "val/loss_kl_divergence": loss_kl_div,
+                     "val/loss_reconstruction": loss_reconstruction},
+                    commit=True)
+
         logger.info("Validation routine finished!")
         return loss, loss_kl_div, loss_reconstruction
 
