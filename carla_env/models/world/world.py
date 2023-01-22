@@ -143,6 +143,7 @@ class WorldBEVModel(nn.Module):
                 "num_probabilistic_encoder_layer"],
             num_time_step=run.config["num_time_step_previous"] + 1,
             dropout=run.config["dropout"],
+            latent_size=run.config["latent_size"]
             )
 
         model.load_state_dict(checkpoint["model_state_dict"])

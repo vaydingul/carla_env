@@ -44,18 +44,11 @@ def main(config):
         "cuda:0" if torch.cuda.is_available() else "cpu")
 
     logger.info(f"Checkpoint downloaded: {checkpoint.name}")
-    checkpoint = torch.load(
-        checkpoint.name,
-        map_location=world_model_device)
-    world_bev_model = WorldBEVModel(
-        input_shape=run.config["input_shape"],
-        hidden_channel=run.config["hidden_channel"],
-        output_channel=run.config["output_channel"],
-        num_encoder_layer=run.config["num_encoder_layer"],
-        num_probabilistic_encoder_layer=run.config["num_probabilistic_encoder_layer"],
-        num_time_step=run.config["num_time_step_previous"] + 1,
-        dropout=run.config["dropout"])
-    world_bev_model.load_state_dict(checkpoint["model_state_dict"])
+    # checkpoint = torch.load(
+    #     checkpoint.name,
+    #     map_location=world_model_device)
+    world_bev_model = WorldBEVModel.load_model_from_wandb_run(run, checkpoint= checkpoint, device=world_model_device)
+
     world_bev_model.eval()
 
     # Create dataset and its loader
