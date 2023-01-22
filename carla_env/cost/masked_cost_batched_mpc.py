@@ -11,6 +11,7 @@ class Cost(nn.Module):
             image_width,
             image_height,
             device,
+            reduction="mean",
             decay_factor=0.97,
             vehicle_width=2.1,
             vehicle_length=4.9,
@@ -22,7 +23,7 @@ class Cost(nn.Module):
         self.image_width = image_width
         self.image_height = image_height
         self.device = device
-
+        self.reduction = reduction
         self.decay_factor = decay_factor
         self.vehicle_width = vehicle_width
         self.vehicle_length = vehicle_length
@@ -83,19 +84,55 @@ class Cost(nn.Module):
                 3,
                 1,
             2)
-        #road_cost = torch.sum(road_channel * mask_car * decay_weight)
-        lane_cost = torch.sum(lane_channel * mask_side * decay_weight)
-        vehicle_cost = torch.sum(vehicle_channel * mask_car * decay_weight)
-        #agent_cost = torch.sum(agent_channel * mask_car * decay_weight)
-        green_light_cost = torch.sum(
-            green_light_channel * mask_light * decay_weight)
-        yellow_light_cost = torch.sum(
-            yellow_light_channel * mask_light * decay_weight)
-        red_light_cost = torch.sum(
-            red_light_channel * mask_light * decay_weight)
-        pedestrian_cost = torch.sum(
-            pedestrian_channel * mask_car * decay_weight)
-        offroad_cost = torch.sum(offroad_channel * mask_side * decay_weight)
+
+        #road_cost_tensor = road_channel * mask_car * decay_weight
+        lane_cost_tensor = lane_channel * mask_side * decay_weight
+        vehicle_cost_tensor = vehicle_channel * mask_car * decay_weight
+        #agent_cost_tensor = agent_channel * mask_car * decay_weight
+        green_light_cost_tensor = green_light_channel * mask_light * decay_weight
+        yellow_light_cost_tensor = yellow_light_channel * mask_light * decay_weight
+        red_light_cost_tensor = red_light_channel * mask_light * decay_weight
+        pedestrian_cost_tensor = pedestrian_channel * mask_car * decay_weight
+        offroad_cost_tensor = offroad_channel * mask_side * decay_weight
+
+        if self.reduction == "sum":
+            lane_cost = torch.sum(lane_cost_tensor)
+            vehicle_cost = torch.sum(vehicle_cost_tensor)
+            green_light_cost = torch.sum(green_light_cost_tensor)
+            yellow_light_cost = torch.sum(yellow_light_cost_tensor)
+            red_light_cost = torch.sum(red_light_cost_tensor)
+            pedestrian_cost = torch.sum(pedestrian_cost_tensor)
+            offroad_cost = torch.sum(offroad_cost_tensor)
+
+        elif self.reduction == "mean":
+            lane_cost = torch.mean(lane_cost_tensor)
+            vehicle_cost = torch.mean(vehicle_cost_tensor)
+            green_light_cost = torch.mean(green_light_cost_tensor)
+            yellow_light_cost = torch.mean(yellow_light_cost_tensor)
+            red_light_cost = torch.mean(red_light_cost_tensor)
+            pedestrian_cost = torch.mean(pedestrian_cost_tensor)
+            offroad_cost = torch.mean(offroad_cost_tensor)
+
+        elif self.reduction == "batch-sum":
+            lane_cost = torch.sum(lane_cost_tensor, dim=[2, 3, 4])
+            vehicle_cost = torch.sum(vehicle_cost_tensor, dim=[2, 3, 4])
+            green_light_cost = torch.sum(
+                green_light_cost_tensor, dim=[2, 3, 4])
+            yellow_light_cost = torch.sum(
+                yellow_light_cost_tensor, dim=[2, 3, 4])
+            red_light_cost = torch.sum(red_light_cost_tensor, dim=[2, 3, 4])
+            pedestrian_cost = torch.sum(pedestrian_cost_tensor, dim=[2, 3, 4])
+            offroad_cost = torch.sum(offroad_cost_tensor, dim=[2, 3, 4])
+        elif self.reduction == "batch-mean":
+            lane_cost = torch.mean(lane_cost_tensor, dim=[2, 3, 4])
+            vehicle_cost = torch.mean(vehicle_cost_tensor, dim=[2, 3, 4])
+            green_light_cost = torch.mean(
+                green_light_cost_tensor, dim=[2, 3, 4])
+            yellow_light_cost = torch.mean(
+                yellow_light_cost_tensor, dim=[2, 3, 4])
+            red_light_cost = torch.mean(red_light_cost_tensor, dim=[2, 3, 4])
+            pedestrian_cost = torch.mean(pedestrian_cost_tensor, dim=[2, 3, 4])
+            offroad_cost = torch.mean(offroad_cost_tensor, dim=[2, 3, 4])
 
         return {
             "lane_cost": lane_cost,

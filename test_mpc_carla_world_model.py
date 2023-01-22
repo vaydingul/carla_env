@@ -23,9 +23,13 @@ logging.basicConfig(level=logging.INFO)
 
 def main(config):
 
-    # seed_everything(seed=config.seed)
+    seed_everything(seed=config.seed)
 
-    cost = Cost(image_width=192, image_height=192, device=config.world_device)
+    cost = Cost(
+        image_width=192,
+        image_height=192,
+        device=config.world_device,
+        reduction="sum")
 
     ego_forward_model = load_ego_model_from_checkpoint(
         checkpoint=config.ego_forward_model_path,
@@ -45,11 +49,13 @@ def main(config):
 
     mpc_module = ModelPredictiveControl(
         device=config.mpc_device,
-        action_size=2,
+        batch_size=2,
         rollout_length=config.rollout_length,
+        action_size=2,
         number_of_optimization_iterations=30,
         cost=cost,
         ego_model=ego_forward_model,
+        init_action="zeros",
         world_model=world_forward_model,
         render_cost=True)
 
@@ -121,7 +127,7 @@ def main(config):
                                             bev=bev_tensor.detach(),
                                             )
 
-        control_selected = control[skip_counter % config.skip_frames]
+        control_selected = control[0][skip_counter % config.skip_frames]
 
         throttle, brake = acceleration_to_throttle_brake(
             acceleration=control_selected[0])
