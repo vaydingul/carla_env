@@ -101,9 +101,10 @@ class Trainer(object):
         self.model.to(self.gpu_id)
         self.model = DDP(self.model, device_ids=[self.gpu_id])
 
-    def train(self, run):
+    def train(self, epoch, run):
 
         self.model.train()
+        self.dataloader_train.sampler.set_epoch(epoch)
         logger.info("Training routine started!")
         for i, (data) in enumerate(self.dataloader_train):
 
@@ -300,7 +301,7 @@ class Trainer(object):
                         logger.info(f"Validation {metric}: {result[k]}")
                         logger.info(
                             f"Validation {type(metric)}: {type(result[k])}")
-                        run.log({"eval/{}_{}".format(metric, k)                                : result[k]}, commit=False)
+                        run.log({"eval/{}_{}".format(metric, k): result[k]}, commit=False)
 
                     metric_.reset()
             if self.lr_scheduler is not None:
@@ -325,7 +326,7 @@ class Trainer(object):
 
         for epoch in range(self.current_epoch, self.num_epochs):
 
-            self.train(run)
+            self.train(epoch, run)
 
             if (epoch + 1) % self.val_every == 0:
 
@@ -349,8 +350,9 @@ class Trainer(object):
                     "val_step": self.val_step},
                     self.save_path /
                     Path(f"checkpoint_{epoch}.pt"))
-                
-                logger.info(f"Saving model to {self.save_path / Path(f'checkpoint_{epoch}.pt')}")
+
+                logger.info(
+                    f"Saving model to {self.save_path / Path(f'checkpoint_{epoch}.pt')}")
 
                 if run is not None:
                     run.save(str(self.save_path /

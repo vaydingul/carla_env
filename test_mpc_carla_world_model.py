@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.INFO)
 
 def main(config):
 
-    seed_everything(seed=config.seed)
+    # seed_everything(seed=config.seed)
 
     cost = Cost(
         image_width=192,
@@ -49,9 +49,9 @@ def main(config):
 
     mpc_module = ModelPredictiveControl(
         device=config.mpc_device,
-        batch_size=2,
+        batch_size=config.batch_size,
         rollout_length=config.rollout_length,
-        action_size=2,
+        action_size=config.action_size,
         number_of_optimization_iterations=30,
         cost=cost,
         ego_model=ego_forward_model,
@@ -91,7 +91,7 @@ def main(config):
 
         # Set the current state of the ego vehicle for the kinematic model
         current_state = torch.zeros(
-            size=(1, 4), device=config.ego_device).unsqueeze(dim=0)
+            size=(config.batch_size, 1, 4), device=config.ego_device)
 
         current_state[..., 0] = current_transform.location.x
         current_state[..., 1] = current_transform.location.y
@@ -104,7 +104,7 @@ def main(config):
         logging.debug(f"Current state: {current_state}")
 
         target_state = torch.zeros(
-            size=(1, 4), device=config.ego_device).unsqueeze(0)
+            size=(config.batch_size, 1, 4), device=config.ego_device)
 
         target_state[..., 0] = target_waypoint.transform.location.x
         target_state[..., 1] = target_waypoint.transform.location.y
@@ -154,6 +154,7 @@ def main(config):
             cost_canvas=cost_canvas,
             cost=cost,
             control=control_selected,
+            control_full=control[:,0],
             current_state=current_state,
             target_state=target_state,
             frame_counter=frame_counter,
@@ -179,9 +180,10 @@ if __name__ == "__main__":
         type=str,
         default="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt",
         help="Path to the forward model of the ego vehicle")
-
+    parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--rollout_length", type=int, default=10)
-    parser.add_argument("--skip_frames", type=int, default=5)
+    parser.add_argument("--action_size", type=int, default=2)
+    parser.add_argument("--skip_frames", type=int, default=2)
     parser.add_argument(
         "--wandb_link",
         type=str,
