@@ -206,13 +206,13 @@ class Trainer(object):
                     world_future_bev_predicted,
                 )
 
-            # world_future_bev.requires_grad = True
-            # cost = self.cost(
-            #     ego_future_location,
-            #     ego_future_yaw,
-            #     ego_future_speed,
-            #     world_future_bev,
-            # )
+                # world_future_bev.requires_grad = True
+                # cost = self.cost(
+                #     ego_future_location,
+                #     ego_future_yaw,
+                #     ego_future_speed,
+                #     world_future_bev,
+                # )
 
                 road_cost = cost["cost"][0] / (world_previous_bev.shape[0]
                                                * self.num_time_step_future)
@@ -292,8 +292,8 @@ class Trainer(object):
                     ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
                 ego_state_mse += F.l1_loss(torch.sin(ego_future_yaw_predicted), torch.sin(
                     ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
-                ego_state_mse += F.l1_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum") / (
-                    world_previous_bev.shape[0] * self.num_time_step_future)
+                # ego_state_mse += F.l1_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum") / (
+                #     world_previous_bev.shape[0] * self.num_time_step_future)
 
             # action_mse = F.mse_loss(ego_future_action[..., :2], ego_future_action[..., :2], reduction="sum") / (
             #     world_previous_bev.shape[0] * world_previous_bev.shape[1])
@@ -573,8 +573,10 @@ class Trainer(object):
                         ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
                     ego_state_mse += F.l1_loss(torch.sin(ego_future_yaw_predicted), torch.sin(
                         ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
-                    ego_state_mse += F.l1_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum") / (
-                        world_previous_bev.shape[0] * self.num_time_step_future)
+                    # ego_state_mse += F.l1_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum") / (
+                    #     world_previous_bev.shape[0] * self.num_time_step_future)
+
+                    
                 # action_mse = F.mse_loss(ego_future_action[..., :2], ego_future_action[..., :2], reduction="sum") / (
                 # world_previous_bev.shape[0] * world_previous_bev.shape[1])
 

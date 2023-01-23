@@ -48,7 +48,7 @@ python3 train_dfm_km_cp_extended_bev.py \
 	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="dfm-km-cp-5Hz-extended-extended-bev-toy-experiments" \
-	--wandb_name="policy+bc+target" \
+	--wandb_name="policy+bc+target+ego" \
 	--ego_forward_model_wandb_link="vaydingul/mbl/ssifa1go" \
 	--ego_forward_model_checkpoint_number=449 \
 	--world_forward_model_wandb_link="vaydingul/mbl/23mnzxda" \
