@@ -4,6 +4,7 @@ from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.cost.masked_cost_batched_mpc import Cost
 import torch
+import torch.multiprocessing as mp
 import time
 import logging
 import wandb
@@ -24,6 +25,7 @@ logging.basicConfig(level=logging.INFO)
 def main(config):
 
     # seed_everything(seed=config.seed)
+    mp.set_start_method('spawn', force=True)
 
     cost = Cost(
         image_width=192,
@@ -36,6 +38,7 @@ def main(config):
         cls=KinematicBicycleModel,
         dt=1 / 20)
     ego_forward_model.to(device=config.ego_device)
+    ego_forward_model.share_memory()
 
     run = wandb.Api().run(config.wandb_link)
     checkpoint = fetch_checkpoint_from_wandb_link(
@@ -46,13 +49,14 @@ def main(config):
         checkpoint=checkpoint,
         device=config.world_device)
     world_forward_model.to(device=config.world_device)
+    world_forward_model.share_memory()
 
     mpc_module = ModelPredictiveControl(
         device=config.mpc_device,
-        batch_size=config.batch_size,
+        batch_size=1,
         rollout_length=config.rollout_length,
         action_size=config.action_size,
-        number_of_optimization_iterations=30,
+        number_of_optimization_iterations=5,
         cost=cost,
         ego_model=ego_forward_model,
         init_action="zeros",
@@ -119,13 +123,26 @@ def main(config):
         bev_tensor = torch.cat(list(bev_tensor_deque), dim=0).unsqueeze(0)
 
         if (skip_counter % config.skip_frames) == 0:
-            (control,
-             location_predicted,
-             cost,
-             cost_canvas) = mpc_module.step(initial_state=current_state,
-                                            target_state=target_state,
-                                            bev=bev_tensor.detach(),
-                                            )
+            mpc_module.share_memory()
+            processes = []
+
+            for i in range(config.batch_size):
+                p = mp.Process(target=mpc_module.step, args=(
+                    current_state[i:i + 1].detach(), target_state[i:i + 1].detach(), bev_tensor.detach()))
+                p.start()
+                processes.append(p)
+
+            for p in processes:
+                p.join()
+            
+            pass
+            # (control,
+            #  location_predicted,
+            #  cost,
+            #  cost_canvas) = mpc_module.step(initial_state=current_state,
+            #                                 target_state=target_state,
+            #                                 bev=bev_tensor.detach(),
+            #                                 )
 
         control_selected = control[0][skip_counter % config.skip_frames]
 
@@ -154,7 +171,7 @@ def main(config):
             cost_canvas=cost_canvas,
             cost=cost,
             control=control_selected,
-            control_full=control[:,0],
+            control_full=control[:, 0],
             current_state=current_state,
             target_state=target_state,
             frame_counter=frame_counter,
@@ -180,7 +197,7 @@ if __name__ == "__main__":
         type=str,
         default="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt",
         help="Path to the forward model of the ego vehicle")
-    parser.add_argument("--batch_size", type=int, default=1)
+    parser.add_argument("--batch_size", type=int, default=10)
     parser.add_argument("--rollout_length", type=int, default=10)
     parser.add_argument("--action_size", type=int, default=2)
     parser.add_argument("--skip_frames", type=int, default=5)

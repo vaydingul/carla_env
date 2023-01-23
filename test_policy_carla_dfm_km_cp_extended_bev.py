@@ -104,7 +104,9 @@ def main(config):
         bev_tensor_deque.append(
             convert_standard_bev_to_model_bev(
                 bev,
-                indices=[
+                agent_channel=7,
+                vehicle_channel=6,
+                selected_channels=[
                     0,
                     1,
                     2,
@@ -113,8 +115,7 @@ def main(config):
                     5,
                     6,
                     11],
-                agent_channel=7,
-                vehicle_channel=6,
+                calculate_offroad=False,
                 device=device))
 
     occupancy = torch.tensor(
@@ -262,28 +263,31 @@ def main(config):
             data = c.get_data()
             bev = data["bev"]
             bev_ = bev[..., [
-                    0,
-                    1,
-                    2,
-                    3,
-                    4,
-                    5,
-                    6,
-                    7,
-                    11]]
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                11]]
             bev_tensor_deque.append(
                 convert_standard_bev_to_model_bev(
-                    bev, indices=[
-                    0,
-                    1,
-                    2,
-                    3,
-                    4,
-                    5,
-                    6,
-                    11],
-                agent_channel=7,
-                vehicle_channel=6, device=device))
+                    bev,
+                    agent_channel=7,
+                    vehicle_channel=6,
+                    selected_channels=[
+                        0,
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        11],
+                    calculate_offroad=False,
+                    device=device))
             occupancy = data["occ"]["occupancy"]
             occupancy = torch.tensor(
                 occupancy,
@@ -352,10 +356,9 @@ def render(
                 #                mask_side.min())) *
                 #              255).astype(np.uint8)
 
-            
                 mask_car = cv2.applyColorMap(mask_car, cv2.COLORMAP_JET)
                 # mask_side = cv2.applyColorMap(mask_side, cv2.COLORMAP_JET)
-                
+
                 bev = cv2.cvtColor(
                     BirdViewProducer.as_rgb_with_indices(
                         np.transpose(
@@ -368,7 +371,7 @@ def render(
                     bev, 0.5, mask_car, 0.5, 0)
                 # self.canvas_side[y1:y2, x1:x2] = cv2.addWeighted(
                 #     bev, 0.5, mask_side, 0.5, 0)
-                
+
                 # # Draw ground truth action to the left corner of each bev
                 # # as vector
                 # action = action_gt[0, m]
@@ -429,7 +432,6 @@ def render(
                 1,
                 cv2.LINE_AA)
             yy += 15
-    
 
     return canvas
 
@@ -449,7 +451,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--seed", type=int, default=333)
 
-    parser.add_argument("--rollout_length", type=int, default=1)
+    parser.add_argument("--rollout_length", type=int, default=10)
     parser.add_argument("--dt", type=float, default=0.1)
 
     parser.add_argument("--ego_forward_model_wandb_link", type=str,
@@ -462,22 +464,22 @@ if __name__ == "__main__":
     parser.add_argument(
         "--world_forward_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/1jnw0xjn")
+        default="vaydingul/mbl/23mnzxda")
 
     parser.add_argument(
         "--world_forward_model_checkpoint_number",
         type=int,
-        default=49)
+        default=95)
 
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/3oneqwe5")
+        default="vaydingul/mbl/29qu22z5")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=9)
+        default=19)
 
     config = parser.parse_args()
 

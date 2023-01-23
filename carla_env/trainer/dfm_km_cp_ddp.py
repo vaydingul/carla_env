@@ -81,10 +81,10 @@ class Trainer(object):
         self.model.to(self.gpu_id)
         self.model = DDP(self.model, device_ids=[self.gpu_id], find_unused_parameters=True)
 
-    def train(self, run):
+    def train(self, epoch, run):
 
         self.model.train()
-
+        self.dataloader_train.sampler.set_epoch(epoch)
         for i, (data) in enumerate(self.dataloader_train):
 
             world_previous_bev = data["bev_world"]["bev"][:,
@@ -615,7 +615,7 @@ class Trainer(object):
 
         for epoch in range(self.current_epoch, self.num_epochs):
             self.epoch = epoch
-            self.train(run)
+            self.train(epoch, run)
             loss_dict = self.validate(run)
             logger.info(
                 f"Epoch: {epoch}")

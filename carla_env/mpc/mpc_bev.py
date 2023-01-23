@@ -191,7 +191,7 @@ class ModelPredictiveControl(nn.Module):
 
         self.action = nn.Parameter(action, requires_grad=True)
 
-        self.optimizer = torch.optim.Adam((self.action, ), lr=0.1)
+        self.optimizer = torch.optim.Adam((self.action, ), lr=0.05)
 
     def _calculate_cost(
             self,

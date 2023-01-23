@@ -69,8 +69,8 @@ class Trainer(object):
         self.cost_weight["offroad_cost_weight"] = 0.005
         self.cost_weight["action_mse_weight"] = 0.005
         self.cost_weight["action_jerk_weight"] = 0.005
-        self.cost_weight["target_mse_weight"] = 0.005
-        self.cost_weight["target_l1_weight"] = 0.005
+        self.cost_weight["target_progress_weight"] = 0.005
+        self.cost_weight["target_remainder_weight"] = 0.005
         self.cost_weight["ego_state_mse_weight"] = 0.005
         self.cost_weight["world_state_mse_weight"] = 0.005
 
@@ -244,39 +244,56 @@ class Trainer(object):
 
             ego_future_action[..., 0] -= ego_future_action[..., -1]
 
-            action_mse = F.mse_loss(ego_future_action_predicted, ego_future_action[..., :2], reduction="sum") / (
-                world_previous_bev.shape[0] * self.num_time_step_future)
+            action_mse = torch.tensor(0.0).to(self.gpu_id)
+            action_jerk = torch.tensor(0.0).to(self.gpu_id)
+            target_progress = torch.tensor(0.0).to(self.gpu_id)
+            target_remainder = torch.tensor(0.0).to(self.gpu_id)
+            ego_state_mse = torch.tensor(0.0).to(self.gpu_id)
 
-            action_jerk = torch.diff(ego_future_action_predicted, dim=1).square(
-            ).sum() / (world_previous_bev.shape[0] * self.num_time_step_future)
+            if abs(self.cost_weight["action_mse_weight"]) > 0:
 
-            target_mse = F.mse_loss(
-                ego_future_location_predicted,
-                target_location.unsqueeze(1).repeat(
-                    1,
-                    self.num_time_step_future,
-                    1),
-                reduction="sum") / (world_previous_bev.shape[0] *
-                                    self.num_time_step_future)
+                action_mse = F.mse_loss(ego_future_action_predicted, ego_future_action[..., :2], reduction="sum") / (
+                    world_previous_bev.shape[0] * self.num_time_step_future)
 
-            target_l1 = F.l1_loss(
-                ego_future_location_predicted,
-                target_location.unsqueeze(1).repeat(
-                    1,
-                    self.num_time_step_future,
-                    1),
-                reduction="sum") / (world_previous_bev.shape[0] *
-                                    self.num_time_step_future)
+            if abs(self.cost_weight["action_jerk_weight"]) > 0:
 
-            ego_state_mse = F.l1_loss(
-                ego_future_location_predicted, ego_future_location, reduction="sum") / (
-                world_previous_bev.shape[0] * self.num_time_step_future)
-            ego_state_mse += F.l1_loss(torch.cos(ego_future_yaw_predicted), torch.cos(
-                ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
-            ego_state_mse += F.l1_loss(torch.sin(ego_future_yaw_predicted), torch.sin(
-                ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
-            ego_state_mse += F.l1_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum") / (
-                world_previous_bev.shape[0] * self.num_time_step_future)
+                action_jerk = torch.diff(ego_future_action_predicted, dim=1).square(
+                ).sum() / (world_previous_bev.shape[0] * self.num_time_step_future)
+
+            d0 = F.l1_loss(target_location,
+                           ego_future_location_predicted[:,
+                                                         0],
+                           reduction="none").sum(1,
+                                                 keepdim=True).repeat(1,
+                                                                      self.num_time_step_future - 1)  # B x 1
+            di = F.l1_loss(ego_future_location_predicted[:, 1:], ego_future_location_predicted[:, 0:1].repeat(
+                1, self.num_time_step_future - 1, 1), reduction="none").sum(2)  # B x S
+            di_ = F.l1_loss(target_location.unsqueeze(1).repeat(1,
+                                                                self.num_time_step_future - 1,
+                                                                1),
+                            ego_future_location_predicted[:,
+                                                          1:],
+                            reduction="none").sum(2)  # B x S
+
+            if abs(self.cost_weight["target_progress_weight"]) > 0:
+
+                target_progress = (di / d0).mean()
+
+            if abs(self.cost_weight["target_remainder_weight"]) > 0:
+
+                target_remainder = (di_ / d0).mean()
+
+            if abs(self.cost_weight["ego_state_mse_weight"]) > 0:
+
+                ego_state_mse = F.l1_loss(
+                    ego_future_location_predicted, ego_future_location, reduction="sum") / (
+                    world_previous_bev.shape[0] * self.num_time_step_future)
+                ego_state_mse += F.l1_loss(torch.cos(ego_future_yaw_predicted), torch.cos(
+                    ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
+                ego_state_mse += F.l1_loss(torch.sin(ego_future_yaw_predicted), torch.sin(
+                    ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
+                ego_state_mse += F.l1_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum") / (
+                    world_previous_bev.shape[0] * self.num_time_step_future)
 
             # action_mse = F.mse_loss(ego_future_action[..., :2], ego_future_action[..., :2], reduction="sum") / (
             #     world_previous_bev.shape[0] * world_previous_bev.shape[1])
@@ -308,8 +325,8 @@ class Trainer(object):
                 offroad_cost * self.cost_weight["offroad_cost_weight"] + \
                 action_mse * self.cost_weight["action_mse_weight"] + \
                 action_jerk * self.cost_weight["action_jerk_weight"] + \
-                target_mse * self.cost_weight["target_mse_weight"] + \
-                target_l1 * self.cost_weight["target_l1_weight"] + \
+                target_progress * self.cost_weight["target_progress_weight"] + \
+                target_remainder * self.cost_weight["target_remainder_weight"] + \
                 ego_state_mse * self.cost_weight["ego_state_mse_weight"]
 
             # Backward pass
@@ -339,8 +356,8 @@ class Trainer(object):
                          "train/offroad_cost": offroad_cost,
                          "train/action_mse": action_mse,
                          "train/action_jerk": action_jerk,
-                         "train/target_mse": target_mse,
-                         "train/target_l1": target_l1,
+                         "train/target_progress": target_progress,
+                         "train/target_remainder": target_remainder,
                          "train/ego_state_mse": ego_state_mse,
                          "train/loss": loss})
 
@@ -362,8 +379,8 @@ class Trainer(object):
         offroad_cost_list = []
         action_mse_list = []
         action_jerk_list = []
-        target_mse_list = []
-        target_l1_list = []
+        target_progress_list = []
+        target_remainder_list = []
         ego_state_mse_list = []
         loss_list = []
 
@@ -512,35 +529,52 @@ class Trainer(object):
 
                 ego_future_action[..., 0] -= ego_future_action[..., -1]
 
-                action_mse = F.mse_loss(ego_future_action_predicted, ego_future_action[..., :2], reduction="sum") / (
-                    world_previous_bev.shape[0] * self.num_time_step_future)
+                action_mse = torch.tensor(0.0).to(self.gpu_id)
+                action_jerk = torch.tensor(0.0).to(self.gpu_id)
+                target_progress = torch.tensor(0.0).to(self.gpu_id)
+                target_remainder = torch.tensor(0.0).to(self.gpu_id)
+                ego_state_mse = torch.tensor(0.0).to(self.gpu_id)
 
-                action_jerk = torch.diff(ego_future_action_predicted, dim=1).square(
-                ).sum() / (world_previous_bev.shape[0] * self.num_time_step_future)
+                if abs(self.cost_weight["action_mse_weight"]) > 0:
 
-                target_mse = F.mse_loss(
-                    ego_future_location_predicted, target_location.unsqueeze(1).repeat(
-                        1, self.num_time_step_future, 1), reduction="sum") / (
-                    world_previous_bev.shape[0] * self.num_time_step_future)
+                    action_mse = F.mse_loss(ego_future_action_predicted, ego_future_action[..., :2], reduction="sum") / (
+                        world_previous_bev.shape[0] * self.num_time_step_future)
 
-                target_l1 = F.l1_loss(
-                    ego_future_location_predicted,
-                    target_location.unsqueeze(1).repeat(
-                        1,
-                        self.num_time_step_future,
-                        1),
-                    reduction="sum") / (world_previous_bev.shape[0] *
-                                        self.num_time_step_future)
+                if abs(self.cost_weight["action_jerk_weight"]) > 0:
 
-                ego_state_mse = F.l1_loss(
-                    ego_future_location_predicted, ego_future_location, reduction="sum") / (
-                    world_previous_bev.shape[0] * self.num_time_step_future)
-                ego_state_mse += F.l1_loss(torch.cos(ego_future_yaw_predicted), torch.cos(
-                    ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
-                ego_state_mse += F.l1_loss(torch.sin(ego_future_yaw_predicted), torch.sin(
-                    ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
-                ego_state_mse += F.l1_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum") / (
-                    world_previous_bev.shape[0] * self.num_time_step_future)
+                    action_jerk = torch.diff(ego_future_action_predicted, dim=1).square(
+                    ).sum() / (world_previous_bev.shape[0] * self.num_time_step_future)
+
+                d0 = F.l1_loss(target_location, ego_future_location_predicted[:, 0], reduction="none").sum(
+                    1, keepdim=True).repeat(1, self.num_time_step_future - 1)  # B x 1
+                di = F.l1_loss(ego_future_location_predicted[:, 1:], ego_future_location_predicted[:, 0:1].repeat(
+                    1, self.num_time_step_future - 1, 1), reduction="none").sum(2)  # B x S
+                di_ = F.l1_loss(target_location.unsqueeze(1).repeat(1,
+                                                                    self.num_time_step_future - 1,
+                                                                    1),
+                                ego_future_location_predicted[:,
+                                                              1:],
+                                reduction="none").sum(2)  # B x S
+
+                if abs(self.cost_weight["target_progress_weight"]) > 0:
+
+                    target_progress = (di / d0).mean()
+
+                if abs(self.cost_weight["target_remainder_weight"]) > 0:
+
+                    target_remainder = (di_ / d0).mean()
+
+                if abs(self.cost_weight["ego_state_mse_weight"]) > 0:
+
+                    ego_state_mse = F.l1_loss(
+                        ego_future_location_predicted, ego_future_location, reduction="sum") / (
+                        world_previous_bev.shape[0] * self.num_time_step_future)
+                    ego_state_mse += F.l1_loss(torch.cos(ego_future_yaw_predicted), torch.cos(
+                        ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
+                    ego_state_mse += F.l1_loss(torch.sin(ego_future_yaw_predicted), torch.sin(
+                        ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
+                    ego_state_mse += F.l1_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum") / (
+                        world_previous_bev.shape[0] * self.num_time_step_future)
                 # action_mse = F.mse_loss(ego_future_action[..., :2], ego_future_action[..., :2], reduction="sum") / (
                 # world_previous_bev.shape[0] * world_previous_bev.shape[1])
 
@@ -571,8 +605,8 @@ class Trainer(object):
                     offroad_cost * self.cost_weight["offroad_cost_weight"] + \
                     action_mse * self.cost_weight["action_mse_weight"] + \
                     action_jerk * self.cost_weight["action_jerk_weight"] + \
-                    target_mse * self.cost_weight["target_mse_weight"] + \
-                    target_l1 * self.cost_weight["target_l1_weight"] + \
+                    target_progress * self.cost_weight["target_progress_weight"] + \
+                    target_remainder * self.cost_weight["target_remainder_weight"] + \
                     ego_state_mse * self.cost_weight["ego_state_mse_weight"]
 
                 road_cost_list.append(road_cost.item())
@@ -585,8 +619,8 @@ class Trainer(object):
                 offroad_cost_list.append(offroad_cost.item())
                 action_mse_list.append(action_mse.item())
                 action_jerk_list.append(action_jerk.item())
-                target_mse_list.append(target_mse.item())
-                target_l1_list.append(target_l1.item())
+                target_progress_list.append(target_progress.item())
+                target_remainder_list.append(target_remainder.item())
                 ego_state_mse_list.append(ego_state_mse.item())
                 loss_list.append(loss.item())
 
@@ -606,8 +640,8 @@ class Trainer(object):
             offroad_cost_mean = np.mean(offroad_cost_list)
             action_mse_mean = np.mean(action_mse_list)
             action_jerk_mean = np.mean(action_jerk_list)
-            target_mse_mean = np.mean(target_mse_list)
-            target_l1_mean = np.mean(target_l1_list)
+            target_progress_mean = np.mean(target_progress_list)
+            target_remainder_mean = np.mean(target_remainder_list)
             ego_state_mse_mean = np.mean(ego_state_mse_list)
             loss_mean = np.mean(loss_list)
 
@@ -622,8 +656,8 @@ class Trainer(object):
                          "val/offroad_cost": offroad_cost_mean,
                          "val/action_mse": action_mse_mean,
                          "val/action_jerk": action_jerk_mean,
-                         "val/target_mse": target_mse_mean,
-                         "val/target_l1": target_l1_mean,
+                         "val/target_progress": target_progress_mean,
+                         "val/target_remainder": target_remainder_mean,
                          "val/ego_state_mse": ego_state_mse_mean,
                          "val/loss": loss_mean}
 
@@ -679,8 +713,8 @@ class Trainer(object):
             x1 = 0
             y1 = 0
             for k in range(self.dataloader_train.batch_size):
-                for m in range(self.num_time_step_future-1):
-                    bev = world_future_bev_predicted[k, m+1]
+                for m in range(self.num_time_step_future - 1):
+                    bev = world_future_bev_predicted[k, m + 1]
                     bev[bev > 0.5] = 1
                     bev[bev <= 0.5] = 0
                     bev = bev.detach().cpu().numpy()
@@ -708,7 +742,7 @@ class Trainer(object):
 
                     # Draw ground truth action to the left corner of each bev
                     # as vector
-                    action = action_gt[k, m+1]
+                    action = action_gt[k, m + 1]
                     action = action.detach().cpu().numpy()
                     action = action * 50
                     action = action.astype(np.int32)
@@ -727,7 +761,7 @@ class Trainer(object):
 
                     # Draw predicted action to the left corner of each bev
                     # as vector
-                    action = action_pred[k, m+1]
+                    action = action_pred[k, m + 1]
                     action = action.detach().cpu().numpy()
                     action = action * 50
                     action = action.astype(np.int32)
