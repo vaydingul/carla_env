@@ -4,7 +4,7 @@ from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.models.policy.policy import Policy
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
-from carla_env.cost.masked_cost_batched_policy import Cost
+from carla_env.cost.masked_cost_batched_policy_bev import Cost
 from carla_env.trainer.dfm_km_cp_ddp_special import Trainer
 from carla_env.dataset.instance import InstanceDataset
 import torch

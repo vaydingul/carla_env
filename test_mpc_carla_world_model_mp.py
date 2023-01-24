@@ -2,7 +2,7 @@ from carla_env import carla_env_mpc_path_follower_bev_traffic
 from carla_env.mpc.mpc_bev import ModelPredictiveControl
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
-from carla_env.cost.masked_cost_batched_mpc import Cost
+from carla_env.cost.masked_cost_batched_mpc_bev import Cost
 import torch
 import torch.multiprocessing as mp
 import time

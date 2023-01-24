@@ -58,7 +58,6 @@ class Trainer(object):
         self.debug_render = debug_render
         self.save_interval = save_interval
 
-
         self.cost_weight = {}
         self.cost_weight["lane_cost_weight"] = 0.005
         self.cost_weight["vehicle_cost_weight"] = 0.005
@@ -79,7 +78,11 @@ class Trainer(object):
                 self.cost_weight[k] = v
 
         self.model.to(self.gpu_id)
-        self.model = DDP(self.model, device_ids=[self.gpu_id], find_unused_parameters=True)
+        self.model = DDP(
+            self.model,
+            device_ids=[
+                self.gpu_id],
+            find_unused_parameters=True)
 
     def train(self, epoch, run):
 
@@ -144,7 +147,9 @@ class Trainer(object):
                     world_previous_bev,
                     command,
                     target_location,
-                    occupancy)
+                    occupancy,
+                    debug=True,
+                    action_gt=(ego_future_action[:, k, 0] - ego_future_action[:, k, -1]).clone(),)
 
                 ego_state_next = output["ego_state_next"]
                 world_state_next = output["world_state_next"]
@@ -408,7 +413,9 @@ class Trainer(object):
                         world_previous_bev,
                         command,
                         target_location,
-                        occupancy)
+                        occupancy,
+                        debug=True,
+                        action_gt=(ego_future_action[:, k, 0] - ego_future_action[:, k, -1]).clone(),)
 
                     ego_state_next = output["ego_state_next"]
                     world_state_next = output["world_state_next"]

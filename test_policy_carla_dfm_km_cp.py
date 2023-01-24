@@ -3,7 +3,7 @@ from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPol
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.models.policy.policy import Policy
-from carla_env.cost.masked_cost_batched_policy import Cost
+from carla_env.cost.masked_cost_batched_policy_bev import Cost
 from carla_env.bev import BirdViewProducer
 import torch
 import time

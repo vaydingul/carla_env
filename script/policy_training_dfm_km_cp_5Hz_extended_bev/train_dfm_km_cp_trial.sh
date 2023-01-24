@@ -8,7 +8,7 @@ echo "DFM with KM CP Training!"
 python3 train_dfm_km_cp_extended_bev.py \
 	--lr=1e-4 \
 	--num_epochs=50 \
-	--batch_size=80 \
+	--batch_size=70 \
 	--num_workers=10 \
 	--data_path_train="data/ground_truth_bev_model_train_data_10Hz_multichannel_bev_special_seed_33" \
 	--data_path_val="data/ground_truth_bev_model_train_data_10Hz_multichannel_bev_special_seed_33" \
@@ -29,7 +29,7 @@ python3 train_dfm_km_cp_extended_bev.py \
 	--occupancy_size=8 \
 	--action_size=2 \
 	--hidden_size=256 \
-	--num_layer=6 \
+	--num_layer=4 \
 	--dropout=0.0 \
 	--num_time_step_future=10 \
 	--road_cost_weight=0.0 \
@@ -40,15 +40,15 @@ python3 train_dfm_km_cp_extended_bev.py \
 	--lane_cost_weight=1.0 \
 	--vehicle_cost_weight=1.0 \
 	--offroad_cost_weight=1.0 \
-	--action_mse_weight=1.0 \
+	--action_mse_weight=0.0 \
 	--action_jerk_weight=0.0 \
-	--target_progress_weight=-1.0 \
-	--target_remainder_weight=1.0 \
+	--target_progress_weight=0.0 \
+	--target_remainder_weight=0.0 \
 	--ego_state_mse_weight=0.0 \
 	--wandb=true \
 	--wandb_project="mbl" \
 	--wandb_group="dfm-km-cp-5Hz-extended-extended-bev-toy-experiments" \
-	--wandb_name="policy+bc+target+ego" \
+	--wandb_name="policy(ground-truth)(large)" \
 	--ego_forward_model_wandb_link="vaydingul/mbl/ssifa1go" \
 	--ego_forward_model_checkpoint_number=449 \
 	--world_forward_model_wandb_link="vaydingul/mbl/23mnzxda" \

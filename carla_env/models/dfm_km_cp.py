@@ -21,20 +21,21 @@ class DecoupledForwardModelKinematicsCoupledPolicy(nn.Module):
             command,
             target_location,
             occupancy,
-            benchmark=False) -> torch.tensor:
+            debug=False,
+            test=False,
+            action_gt=None) -> torch.tensor:
+
+        assert (debug and (action_gt is not None)) or (not debug), "Ground truth action must be provided in debug mode"
 
         action = self.policy_model(
             ego_state,
             world_state,
             command,
             target_location,
-            occupancy)
+            occupancy) if not debug else action_gt
 
-        if benchmark:
+        if not test:
 
-            return {"action": action}
-
-        else:
             (world_future_bev_predicted) = self.world_model(
                 world_previous_bev=world_state, sample_latent=True)
 
@@ -44,6 +45,10 @@ class DecoupledForwardModelKinematicsCoupledPolicy(nn.Module):
                 "ego_state_next": ego_state_next,
                 "world_state_next": world_future_bev_predicted,
                 "action": action}
+
+        else:
+
+            return {"action": action}
 
     def get_policy_model(self):
         return self.policy_model

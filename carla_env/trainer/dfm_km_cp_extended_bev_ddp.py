@@ -93,10 +93,10 @@ class Trainer(object):
         self.debug_path = debug_path / date_ / time_
         self.debug_path.mkdir(parents=True, exist_ok=True)
 
-    def train(self, run):
+    def train(self, epoch, run):
 
         self.model.train()
-
+        self.dataloader_train.sampler.set_epoch(epoch)
         for i, (data) in enumerate(self.dataloader_train):
 
             world_previous_bev = data["bev_world"]["bev"][:,
@@ -149,6 +149,9 @@ class Trainer(object):
                 "speed": ego_previous_speed}
 
             for k in range(self.num_time_step_future):
+                # action_gt = ego_future_action[:, k].clone()
+                # action_gt[..., 0] -= action_gt[..., -1]
+                # action_gt = action_gt[..., :2]
 
                 # Predict the future bev
                 output = self.model(
@@ -156,12 +159,12 @@ class Trainer(object):
                     world_previous_bev,
                     command,
                     target_location,
-                    occupancy)
+                    occupancy,
+                )
 
                 ego_state_next = output["ego_state_next"]
                 world_state_next = output["world_state_next"]
                 action = output["action"]
-
                 world_future_bev_predicted = torch.sigmoid(
                     world_state_next)
 
@@ -197,7 +200,6 @@ class Trainer(object):
 
             ego_future_action_predicted = torch.stack(
                 ego_future_action_predicted_list, dim=1)
-
             if self.num_time_step_future > 1:
                 cost = self.cost(
                     ego_future_location_predicted,
@@ -435,14 +437,17 @@ class Trainer(object):
                     "speed": ego_previous_speed}
 
                 for k in range(self.num_time_step_future):
-
+                    # action_gt = ego_future_action[:, k].clone()
+                    # action_gt[..., 0] -= action_gt[..., -1]
+                    # action_gt = action_gt[..., :2]
                     # Predict the future bev
                     output = self.model(
                         ego_state_previous,
                         world_previous_bev,
                         command,
                         target_location,
-                        occupancy)
+                        occupancy,
+                    )
 
                     ego_state_next = output["ego_state_next"]
                     world_state_next = output["world_state_next"]
@@ -574,9 +579,8 @@ class Trainer(object):
                     ego_state_mse += F.l1_loss(torch.sin(ego_future_yaw_predicted), torch.sin(
                         ego_future_yaw), reduction="sum") / (world_previous_bev.shape[0] * self.num_time_step_future)
                     # ego_state_mse += F.l1_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum") / (
-                    #     world_previous_bev.shape[0] * self.num_time_step_future)
+                    # world_previous_bev.shape[0] * self.num_time_step_future)
 
-                    
                 # action_mse = F.mse_loss(ego_future_action[..., :2], ego_future_action[..., :2], reduction="sum") / (
                 # world_previous_bev.shape[0] * world_previous_bev.shape[1])
 
@@ -674,7 +678,7 @@ class Trainer(object):
 
         for epoch in range(self.current_epoch, self.num_epochs):
             self.epoch = epoch
-            self.train(run)
+            self.train(epoch, run)
             loss_dict = self.validate(run)
             logger.info(
                 f"Epoch: {epoch}")
@@ -763,6 +767,7 @@ class Trainer(object):
 
                     # Draw predicted action to the left corner of each bev
                     # as vector
+
                     action = action_pred[k, m + 1]
                     action = action.detach().cpu().numpy()
                     action = action * 50

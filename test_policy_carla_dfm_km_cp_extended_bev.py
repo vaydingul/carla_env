@@ -3,7 +3,7 @@ from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPol
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.models.policy.policy import Policy
-from carla_env.cost.masked_cost_batched_extended_bev import Cost
+from carla_env.cost.masked_cost_batched_policy_extended_bev import Cost
 from carla_env.bev import BirdViewProducer
 import torch
 import time
@@ -449,7 +449,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Collect data from the CARLA simulator")
 
-    parser.add_argument("--seed", type=int, default=333)
+    parser.add_argument("--seed", type=int, default=555)
 
     parser.add_argument("--rollout_length", type=int, default=10)
     parser.add_argument("--dt", type=float, default=0.1)
@@ -474,12 +474,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--policy_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/29qu22z5")
+        default="vaydingul/mbl/2670284j")
 
     parser.add_argument(
         "--policy_model_checkpoint_number",
         type=int,
-        default=19)
+        default=9)
 
     config = parser.parse_args()
 

@@ -1,10 +1,10 @@
 import logging
-
+from pprint import pprint
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.models.policy.policy import Policy
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
-from carla_env.cost.masked_cost_batched_extended_bev import Cost
+from carla_env.cost.masked_cost_batched_policy_extended_bev import Cost
 from carla_env.trainer.dfm_km_cp_extended_bev_ddp import Trainer
 from carla_env.dataset.instance import InstanceDataset
 import torch
@@ -402,6 +402,8 @@ if __name__ == "__main__":
 
     config.cost_weight = {k: v for (k, v) in vars(
         config).items() if "weight" in k}
+
+    pprint(vars(config), depth=2)
 
     run = create_wandb_run(config)
 
