@@ -140,8 +140,8 @@ tickable_modules
 logs/
 wandb/
 pretrained_models/
-cache/
-
+cache/Carla/Maps/
+data/
 # 
 !cache/Carla/Maps/.gitkeep 
 
