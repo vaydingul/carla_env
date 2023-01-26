@@ -59,7 +59,7 @@ def create_multiple_actors_for_traffic_manager(client, n=20):
         actors.append(actor.ActorModule(
             config={
                 "vehicle": vehicle.VehicleModule(
-                    config=None,  # {"vehicle_model": vehicles[k], },
+                    config={"vehicle_model": vehicles[k], },
                     client=client),
                 "hero": False},
             client=client))
@@ -302,7 +302,12 @@ class CarlaEnvironment(Environment):
             self.video_writer.release()
             return (current_transform, current_velocity, None, None)
 
-    def render(self, predicted_location, bev, cost_canvas=None, **kwargs):
+    def render(
+            self,
+            predicted_location=None,
+            bev=None,
+            cost_canvas=None,
+            **kwargs):
         """Render the environment"""
         for (k, v) in self.__dict__.items():
             if isinstance(v, Module):
@@ -321,15 +326,16 @@ class CarlaEnvironment(Environment):
         # self.canvas[rgb_image.shape[0]:rgb_image.shape[0] +
         # semantic_image.shape[0], :semantic_image.shape[1]] = semantic_image
 
-        bev = cv2.cvtColor(
-            self.bev_module.as_rgb(
-                bev,
-            ),
-            cv2.COLOR_BGR2RGB)
-        # Put image into canvas
-        bev = cv2.resize(bev, (0, 0), fx=4, fy=4)
-        self.canvas[rgb_image.shape[0]:rgb_image.shape[0] +
-                    bev.shape[0], :bev.shape[1]] = bev
+        if bev is not None:
+            bev = cv2.cvtColor(
+                self.bev_module.as_rgb(
+                    bev,
+                ),
+                cv2.COLOR_BGR2RGB)
+            # Put image into canvas
+            bev = cv2.resize(bev, (0, 0), fx=4, fy=4)
+            self.canvas[rgb_image.shape[0]:rgb_image.shape[0] +
+                        bev.shape[0], :bev.shape[1]] = bev
 
         # Draw control as arrowed line to left corner of bev
         if "control" in kwargs.keys():
@@ -419,32 +425,35 @@ class CarlaEnvironment(Environment):
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1)
                 position_y += 20
 
-        for k in range(predicted_location.shape[0]):
-            loc_ = predicted_location[k]
-            loc_ = np.array(
-                [loc_[0], loc_[1], self.render_dict["hero_actor_module"]["location"].z])
-            pixel_loc_ = world_2_pixel(
-                loc_,
-                self.render_dict["rgb_sensor"]["image_transform"].get_inverse_matrix(),
-                rgb_image.shape[0],
-                rgb_image.shape[1])
+        if predicted_location is not None:
+            for k in range(predicted_location.shape[0]):
+                loc_ = predicted_location[k]
+                loc_ = np.array(
+                    [loc_[0], loc_[1], self.render_dict["hero_actor_module"]["location"].z])
+                pixel_loc_ = world_2_pixel(
+                    loc_,
+                    self.render_dict["rgb_sensor"]["image_transform"].get_inverse_matrix(),
+                    rgb_image.shape[0],
+                    rgb_image.shape[1])
 
-            ego_loc = np.array([self.render_dict["hero_actor_module"]["location"].x,
-                                self.render_dict["hero_actor_module"]["location"].y,
-                                self.render_dict["hero_actor_module"]["location"].z])
-            bev_loc_ = world_2_bev(
-                loc_,
-                ego_loc,
-                self.render_dict["hero_actor_module"]["rotation"].yaw,
-                bev.shape[0],
-                bev.shape[1],
-                pixels_per_meter=20)
+                ego_loc = np.array(
+                    [
+                        self.render_dict["hero_actor_module"]["location"].x,
+                        self.render_dict["hero_actor_module"]["location"].y,
+                        self.render_dict["hero_actor_module"]["location"].z])
+                bev_loc_ = world_2_bev(
+                    loc_,
+                    ego_loc,
+                    self.render_dict["hero_actor_module"]["rotation"].yaw,
+                    bev.shape[0],
+                    bev.shape[1],
+                    pixels_per_meter=20)
 
-            if pixel_loc_.shape[0] > 0:
-                cv2.circle(self.canvas, (int(pixel_loc_[0][0]), int(
-                    pixel_loc_[0][1])), 5, (255, 0, 0), -1)
-            cv2.circle(self.canvas, (int(bev_loc_[0]), int(
-                bev_loc_[1] + rgb_image.shape[0])), 5, (255, 0, 0), -1)
+                if pixel_loc_.shape[0] > 0:
+                    cv2.circle(self.canvas, (int(pixel_loc_[0][0]), int(
+                        pixel_loc_[0][1])), 5, (255, 0, 0), -1)
+                cv2.circle(self.canvas, (int(bev_loc_[0]), int(
+                    bev_loc_[1] + rgb_image.shape[0])), 5, (255, 0, 0), -1)
 
         for k in range(
             self.render_dict["route"]["route_index"],

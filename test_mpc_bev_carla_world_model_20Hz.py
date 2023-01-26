@@ -1,4 +1,4 @@
-from carla_env import carla_env_mpc_path_follower_bev_traffic
+from carla_env import carla_env_mpc_bev_traffic
 from carla_env.mpc.mpc_bev import ModelPredictiveControl
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
@@ -59,7 +59,7 @@ def main(config):
         world_model=world_forward_model,
         render_cost=True)
 
-    c = carla_env_mpc_path_follower_bev_traffic.CarlaEnvironment(
+    c = carla_env_mpc_bev_traffic.CarlaEnvironment(
         config={
             "render": True,
             "save": True,

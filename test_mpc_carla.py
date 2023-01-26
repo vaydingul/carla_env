@@ -1,4 +1,4 @@
-from carla_env import carla_env_mpc_path_follower_bev_traffic
+from carla_env import carla_env_mpc_bev_traffic
 from carla_env.mpc.mpc_bev import ModelPredictiveControl
 from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
 
@@ -37,7 +37,7 @@ def main(config):
 
     mpc_module.to(device=config.device)
 
-    c = carla_env_mpc_path_follower_bev_traffic.CarlaEnvironment(
+    c = carla_env_mpc_bev_traffic.CarlaEnvironment(
         config={
             "render": True,
             "save": True,
