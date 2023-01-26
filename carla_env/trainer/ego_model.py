@@ -205,6 +205,11 @@ class Trainer(object):
         return loss, loss_location, loss_rotation
 
     def learn(self, run=None):
+        
+        loss, loss_location, loss_orientation = self.validate(run)
+        logger.info(
+            "Epoch: Start, Val Loss: {}, Val Loss Location: {}, Val Loss Orientation: {}".format(
+                loss, loss_location, loss_orientation))
 
         for epoch in range(self.current_epoch, self.num_epochs):
 

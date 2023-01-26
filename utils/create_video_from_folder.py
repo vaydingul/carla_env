@@ -3,7 +3,7 @@ import os
 import argparse
 
 
-def main(fps, path):
+def main(fps, path, interval):
     
 
     # Read all the images in the folder
@@ -11,6 +11,11 @@ def main(fps, path):
 
     # Sort the images by name index
     images.sort(key=lambda x: int(x[:-4]))
+    
+    if interval:
+        interval = interval.split(":")
+        images = images[int(interval[0]):int(interval[1])]
+    
 
     for (i, image) in enumerate(images):
         
@@ -33,5 +38,6 @@ if __name__ == "__main__":
     arg = argparse.ArgumentParser()
     arg.add_argument("--path", type=str, default="images")
     arg.add_argument("--fps", type=int, default=20)
+    arg.add_argument("--interval", type=str, default="")
     args = arg.parse_args()
-    main(args.fps, args.path)
+    main(args.fps, args.path, args.interval)

@@ -115,7 +115,7 @@ class CarlaEnvironment(Environment):
 
         self.client_module = client.ClientModule(
             config={
-                "world": "Town02",
+                "world": "Town03",
                 "fixed_delta_seconds": self.config["fixed_delta_seconds"]})
 
         self.world = self.client_module.get_world()
@@ -124,35 +124,35 @@ class CarlaEnvironment(Environment):
 
         self.spectator = self.world.get_spectator()
 
-        while True:
-            # Fetch all spawn points
-            spawn_points = self.map.get_spawn_points()
-            # Select two random spawn points
-            start_end_spawn_point = np.random.choice(spawn_points, 2)
-            start = start_end_spawn_point[0]
-            end = start_end_spawn_point[1]
-            self.route = route.RouteModule(config={"start": start,
-                                                   "end": end,
-                                                   "sampling_resolution": 10,
-                                                   "debug": False},
-                                           client=self.client)
+        # while True:
+        #     # Fetch all spawn points
+        #     spawn_points = self.map.get_spawn_points()
+        #     # Select two random spawn points
+        #     start_end_spawn_point = np.random.choice(spawn_points, 2)
+        #     start = start_end_spawn_point[0]
+        #     end = start_end_spawn_point[1]
+        #     self.route = route.RouteModule(config={"start": start,
+        #                                            "end": end,
+        #                                            "sampling_resolution": 10,
+        #                                            "debug": False},
+        #                                    client=self.client)
 
-            if ((RoadOption.LEFT not in [x[1] for x in self.route.get_route()]) and (RoadOption.RIGHT in [
-                    x[1] for x in self.route.get_route()[:2]]) and (len(self.route.get_route()) < 100) and
-                    (len(self.route.get_route()) > 10)):
-                break
+        #     if ((RoadOption.LEFT not in [x[1] for x in self.route.get_route()]) and (RoadOption.RIGHT in [
+        #             x[1] for x in self.route.get_route()[:2]]) and (len(self.route.get_route()) < 100) and
+        #             (len(self.route.get_route()) > 0)):
+        #         break
 
-        # # Fetch all spawn points
-        # spawn_points = self.map.get_spawn_points()
-        # # Select two random spawn points
-        # start_end_spawn_point = np.random.choice(spawn_points, 2)
-        # start = start_end_spawn_point[0]
-        # end = start_end_spawn_point[1]
-        # self.route = route.RouteModule(config={"start": start,
-        #                                        "end": end,
-        #                                        "sampling_resolution": 10,
-        #                                        "debug": True},
-        #                                client=self.client)
+        # Fetch all spawn points
+        spawn_points = self.map.get_spawn_points()
+        # Select two random spawn points
+        start_end_spawn_point = np.random.choice(spawn_points, 2)
+        start = start_end_spawn_point[0]
+        end = start_end_spawn_point[1]
+        self.route = route.RouteModule(config={"start": start,
+                                               "end": end,
+                                               "sampling_resolution": 10,
+                                               "debug": True},
+                                       client=self.client)
 
         # Let's initialize a vehicle
         self.vehicle_module = vehicle.VehicleModule(
@@ -167,7 +167,7 @@ class CarlaEnvironment(Environment):
             client=self.client)
 
         actor_list = create_multiple_actors_for_traffic_manager(
-            self.client, 80)
+            self.client, 150)
         self.traffic_manager_module = traffic_manager.TrafficManagerModule(
             config={"vehicle_list": actor_list}, client=self.client)
         # Sensor suite
@@ -438,7 +438,7 @@ class CarlaEnvironment(Environment):
                 self.render_dict["hero_actor_module"]["rotation"].yaw,
                 bev.shape[0],
                 bev.shape[1],
-                pixels_per_meter=5)
+                pixels_per_meter=20)
 
             if pixel_loc_.shape[0] > 0:
                 cv2.circle(self.canvas, (int(pixel_loc_[0][0]), int(
@@ -468,7 +468,8 @@ class CarlaEnvironment(Environment):
                 ego_loc,
                 self.render_dict["hero_actor_module"]["rotation"].yaw,
                 bev.shape[0],
-                bev.shape[1])
+                bev.shape[1],
+                pixels_per_meter=20)
 
             if pixel_loc_.shape[0] > 0:
                 cv2.circle(self.canvas, (int(pixel_loc_[0][0]), int(

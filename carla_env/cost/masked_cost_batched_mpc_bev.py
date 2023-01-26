@@ -174,9 +174,9 @@ class Cost(nn.Module):
         dy = dy.unsqueeze(-1).unsqueeze(-1)
         dy_light = dy_light.unsqueeze(-1).unsqueeze(-1)
 
-        mask_car, mask_side = calculate_mask(
-            aligned_coordinate_mask, dx, dy, self.vehicle_width, self.vehicle_length, 1.1)
-        mask_light, _ = calculate_mask(
-            aligned_coordinate_mask_light, dx_light, dy_light, self.vehicle_width, self.vehicle_length, 1.1)
+        (mask_car, mask_side) = calculate_mask(aligned_coordinate_mask,
+                                               dx, dy, self.vehicle_width, self.vehicle_length, 1.1)
+        (mask_light, _) = calculate_mask(aligned_coordinate_mask_light,
+                                         dx_light, dy_light, self.vehicle_width, self.vehicle_length, 1.1)
 
         return (mask_car, mask_side, mask_light)

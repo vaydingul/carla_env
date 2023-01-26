@@ -110,5 +110,4 @@ def convert_standard_bev_to_model_bev(
                 bev[0]))
         bev = torch.cat([bev, offroad_mask.unsqueeze(0)], dim=0)
     bev = bev.unsqueeze(0).to(device)
-
     return bev

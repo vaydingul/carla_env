@@ -1,8 +1,8 @@
-from carla_env import carla_env_mpc_path_follower_bev_traffic
-from carla_env.mpc.mpc_bev import ModelPredictiveControl
+from carla_env.carla_env_mpc_extended_bev_traffic import CarlaEnvironment
+from carla_env.mpc.mpc_extended_bev import ModelPredictiveControl
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
-from carla_env.cost.masked_cost_batched_mpc_bev import Cost
+from carla_env.cost.masked_cost_batched_mpc_extended_bev import Cost
 import torch
 import time
 import logging
@@ -25,45 +25,57 @@ def main(config):
 
     # seed_everything(seed=config.seed)
 
+    # ---------------------------------------------------------------------------- #
+    #                              Cost initialization                             #
+    # ---------------------------------------------------------------------------- #
     cost = Cost(
         image_width=192,
         image_height=192,
         device=config.world_device,
-        reduction="sum")
+    )
 
+    # ---------------------------------------------------------------------------- #
+    #                         Pretrained ego forward model                         #
+    # ---------------------------------------------------------------------------- #
     ego_forward_model = load_ego_model_from_checkpoint(
         checkpoint=config.ego_forward_model_path,
         cls=KinematicBicycleModel,
         dt=1 / 20)
     ego_forward_model.to(device=config.ego_device)
 
-    run = wandb.Api().run(config.wandb_link)
+    # ---------------------------------------------------------------------------- #
+    #                        Pretrained world forward model                        #
+    # ---------------------------------------------------------------------------- #
+    world_model_run = wandb.Api().run(
+        config.world_forward_model_wandb_link)
     checkpoint = fetch_checkpoint_from_wandb_link(
-        config.wandb_link, config.checkpoint_number)
-
+        config.world_forward_model_wandb_link,
+        config.world_forward_model_checkpoint_number)
     world_forward_model = WorldBEVModel.load_model_from_wandb_run(
-        run=run,
+        run=world_model_run,
         checkpoint=checkpoint,
         device=config.world_device)
-    world_forward_model.to(device=config.world_device)
+    world_forward_model = world_forward_model.to(
+        device=config.world_device).eval()
 
     mpc_module = ModelPredictiveControl(
         device=config.mpc_device,
         batch_size=config.batch_size,
         rollout_length=config.rollout_length,
         action_size=config.action_size,
-        number_of_optimization_iterations=30,
+        number_of_optimization_iterations=40,
         cost=cost,
         ego_model=ego_forward_model,
         init_action="zeros",
-        world_model=world_forward_model,
+        world_model=None,  # world_forward_model,
         render_cost=True)
 
-    c = carla_env_mpc_path_follower_bev_traffic.CarlaEnvironment(
+    c = CarlaEnvironment(
         config={
             "render": True,
             "save": True,
-            "save_video": True})
+            "save_video": False,
+            "fixed_delta_seconds": 0.05,})
 
     bev_tensor_deque = deque(maxlen=world_forward_model.num_time_step_previous)
 
@@ -79,7 +91,15 @@ def main(config):
             convert_standard_bev_to_model_bev(
                 bev, device=config.world_device, agent_channel=7,
                 vehicle_channel=6,
-                selected_channels=[0, 5, 6, 8, 9, 9, 10, 11],
+                selected_channels=[
+                    0,
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    11],
                 calculate_offroad=False))
 
     frame_counter = 0
@@ -98,7 +118,7 @@ def main(config):
         current_state[..., 2] = current_transform.rotation.yaw * \
             torch.pi / 180.0
         current_state[..., 3] = math.sqrt(
-            current_velocity.x**2 + current_velocity.y**2) + 0.01
+            current_velocity.x**2 + current_velocity.y**2) + 1e-2
         current_state.requires_grad_(True)
 
         logging.debug(f"Current state: {current_state}")
@@ -124,10 +144,10 @@ def main(config):
              cost,
              cost_canvas) = mpc_module.step(initial_state=current_state,
                                             target_state=target_state,
-                                            bev=bev_tensor.detach(),
+                                            bev=bev_tensor,
                                             )
 
-        control_selected = control[0][skip_counter % config.skip_frames]
+        control_selected = control[0][skip_counter % config.skip_frames].copy()
 
         throttle, brake = acceleration_to_throttle_brake(
             acceleration=control_selected[0])
@@ -143,7 +163,15 @@ def main(config):
             convert_standard_bev_to_model_bev(
                 bev, device=config.world_device, agent_channel=7,
                 vehicle_channel=6,
-                selected_channels=[0, 5, 6, 8, 9, 9, 10, 11],
+                selected_channels=[
+                    0,
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    11],
                 calculate_offroad=False))
 
         t1 = time.time()
@@ -154,13 +182,13 @@ def main(config):
             cost_canvas=cost_canvas,
             cost=cost,
             control=control_selected,
-            control_full=control[:,0],
+            control_full=control[:, 0],
             current_state=current_state,
             target_state=target_state,
             frame_counter=frame_counter,
             sim_fps=1 / (t1 - t0),
-            wandb_link=config.wandb_link,
-            checkpoint_number=config.checkpoint_number,)
+            world_forward_model_wandb_link=config.world_forward_model_wandb_link,
+            world_forward_model_checkpoint_number=config.world_forward_model_checkpoint_number,)
 
         mpc_module.reset()
 
@@ -175,21 +203,28 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Collect data from the CARLA simulator")
     parser.add_argument("--seed", type=int, default=333)
-    parser.add_argument(
-        "--ego_forward_model_path",
-        type=str,
-        default="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt",
-        help="Path to the forward model of the ego vehicle")
+
     parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--rollout_length", type=int, default=10)
     parser.add_argument("--action_size", type=int, default=2)
     parser.add_argument("--skip_frames", type=int, default=5)
-    parser.add_argument(
-        "--wandb_link",
-        type=str,
-        default="vaydingul/mbl/1gftiw9w")
 
-    parser.add_argument("--checkpoint_number", type=int, default=49)
+    parser.add_argument("--ego_forward_model_wandb_link", type=str,
+                        default="vaydingul/mbl/ssifa1go")
+    parser.add_argument(
+        "--ego_forward_model_checkpoint_number",
+        type=int,
+        default=459)
+
+    parser.add_argument(
+        "--world_forward_model_wandb_link",
+        type=str,
+        default="vaydingul/mbl/23mnzxda")
+
+    parser.add_argument(
+        "--world_forward_model_checkpoint_number",
+        type=int,
+        default=95)
 
     parser.add_argument("--ego_device", type=str, default="cuda:0",
                         help="Device to use for the forward model")
@@ -199,7 +234,11 @@ if __name__ == "__main__":
 
     parser.add_argument("--mpc_device", type=str, default="cuda:0",
                         help="Device to use for the MPC module")
-
+    parser.add_argument(
+        "--ego_forward_model_path",
+        type=str,
+        default="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt",
+        help="Path to the forward model of the ego vehicle")
     config = parser.parse_args()
 
     main(config)

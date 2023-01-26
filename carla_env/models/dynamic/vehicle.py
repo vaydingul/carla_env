@@ -94,6 +94,91 @@ class KinematicBicycleModel(nn.Module):
 #         self.rear_wheelbase = nn.Parameter(
 #             torch.tensor(1.), requires_grad=True)
 
+#         self.steer_gain = nn.Sequential(
+#             nn.Linear(1, 10, bias=True),
+#             nn.ReLU(),
+#             nn.Linear(10, 1, bias=True),
+#         )
+
+#         self.acceleration_encoder = nn.Sequential(
+#             nn.Linear(1, 10, bias=True),
+#             nn.ReLU(),
+#             nn.Linear(10, 1, bias=True),
+#         )
+
+#     def forward(self, ego_state, action):
+#         '''
+#         One step semi-parametric kinematic bicycle model
+#         '''
+
+#         location = ego_state["location"]
+#         yaw = ego_state["yaw"]
+#         speed = ego_state["speed"]
+
+#         acceleration = torch.clip(action[..., 0:1], -1, 1)
+#         steer = torch.clip(action[..., 1:2], -1, 1)
+
+#         acceleration_encoded = self.acceleration_encoder(acceleration)
+
+#         # Transformation from steer to wheel steering angle
+#         # to use the kinematic model
+
+#         wheel_steer = self.steer_gain(steer)
+
+#         # beta = atan((l_r * tan(delta_f)) / (l_f + l_r))
+#         beta = torch.atan(self.rear_wheelbase /
+#                           (self.front_wheelbase +
+#                            self.rear_wheelbase) *
+#                           torch.tan(wheel_steer))
+
+#         # x_ = x + v * dt
+#         location_next = location + speed * \
+#             torch.cat([torch.cos(yaw + beta), torch.sin(yaw + beta)], -1) * self.dt
+
+#         # speed_ = speed + a * dt
+#         speed_next = speed + acceleration_encoded * self.dt
+
+#         yaw_next = yaw + speed / self.rear_wheelbase * \
+#             torch.sin(beta) * self.dt
+
+#         ego_state_next = {
+#             "location": location_next,
+#             "yaw": yaw_next,
+#             "speed": F.relu(speed_next)
+#         }
+
+#         return ego_state_next
+
+#     @classmethod
+#     def load_model_from_wandb_run(cls, run, checkpoint, device):
+
+#         checkpoint = torch.load(
+#             checkpoint.name,
+#             map_location=f"cuda:{device}" if isinstance(
+#                 device,
+#                 int) else device)
+#         model = cls(
+#             dt=run.config["dt"]
+#         )
+
+#         model.load_state_dict(checkpoint["model_state_dict"])
+
+#         return model
+
+
+
+# class KinematicBicycleModel(nn.Module):
+#     def __init__(self, dt=0.1):
+#         super().__init__()
+
+#         self.dt = dt
+
+#         # Kinematic bicycle model
+#         self.front_wheelbase = nn.Parameter(
+#             torch.tensor(1.), requires_grad=True)
+#         self.rear_wheelbase = nn.Parameter(
+#             torch.tensor(1.), requires_grad=True)
+
 #         self.steer_gain = nn.Parameter(torch.tensor(1.), requires_grad=True)
 
 #         self.brake_acceleration = nn.Parameter(

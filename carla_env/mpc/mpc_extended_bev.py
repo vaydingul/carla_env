@@ -61,7 +61,7 @@ class ModelPredictiveControl(nn.Module):
 
             else:
 
-                bev_predicted.append(bev.unsqueeze(1))
+                bev_predicted.append(bev[:, -1].unsqueeze(1))
 
         bev_predicted = torch.cat(bev_predicted, dim=1)
 
@@ -84,7 +84,7 @@ class ModelPredictiveControl(nn.Module):
 
         for i in range(self.rollout_length - 1):
 
-            action_ = self.action[:, i:i+1].clone()
+            action_ = self.action[:, i:i + 1].clone()
 
             ego_state_next = self.ego_model(
                 ego_state, action_)
@@ -220,29 +220,34 @@ class ModelPredictiveControl(nn.Module):
 
         self.predicted_bev = predicted_bev.clone().detach().cpu().numpy()[0]
 
-        self.lane_cost = cost["lane_cost"]
-        self.vehicle_cost = cost["vehicle_cost"]
-        # green_light_cost = cost["green_light_cost"]
-        # yellow_light_cost = cost["yellow_light_cost"]
-        # red_light_cost = cost["red_light_cost"]
-        # pedestrian_cost = cost["pedestrian_cost"]
-        self.offroad_cost = cost["offroad_cost"]
+        self.road_cost = cost["cost"][0]
+        self.road_on_cost = cost["cost"][1]
+        self.road_off_cost = cost["cost"][2]
+        self.road_red_yellow_cost = cost["cost"][3]
+        self.road_green_cost = cost["cost"][4]
+        self.lane_cost = cost["cost"][5]
+        self.vehicle_cost = cost["cost"][6]
+        self.offroad_cost = cost["cost"][7]
+
         self.mask_car = cost["mask_car"][0]
-        self.mask_side = cost["mask_side"][0]
 
         cost = torch.tensor(0.0).to(self.device)
-        cost += self.lane_cost / 50
-        cost += self.vehicle_cost / 50
-        #cost += self.green_light_cost
-        #cost += self.yellow_light_cost
-        #cost += self.red_light_cost
-        #cost += self.pedestrian_cost
-        cost += self.offroad_cost / 10
 
-        cost += torch.nn.functional.l1_loss(predicted_location[..., :1], target_state[..., :1].expand(
-            *(predicted_location[..., :1].shape))) * 10
+        # cost += self.road_cost * (-1 / 10)
+        # cost += self.road_on_cost * (-1 / 10)
+        cost += self.road_off_cost * (1 / 100)
+        cost += self.road_red_yellow_cost * (1 / 50)
+        cost += self.road_green_cost * (-1 / 50)
+        cost += self.lane_cost * (1 / 100)
+        cost += self.vehicle_cost * (1 / 50)
+        cost += self.offroad_cost * (1 / 50)
+
+        # cost *= 10
+
+        cost += torch.nn.functional.l1_loss(predicted_location[..., 0:1], target_state[..., :1].expand(
+            *(predicted_location[..., 0:1].shape))) * 30
         cost += torch.nn.functional.l1_loss(predicted_location[..., 1:2], target_state[..., 1:2].expand(
-            *(predicted_location[..., 1:2].shape))) * 10
+            *(predicted_location[..., 1:2].shape))) * 30
         cost += torch.nn.functional.l1_loss(torch.cos(predicted_yaw), torch.cos(
             target_state[..., 2:3].expand(*(predicted_yaw.shape))))
         cost += torch.nn.functional.l1_loss(torch.sin(predicted_yaw), torch.sin(
@@ -276,7 +281,14 @@ class ModelPredictiveControl(nn.Module):
                 BirdViewProducer.as_rgb_with_indices(
                     np.transpose(
                         self.predicted_bev[k], (1, 2, 0)), indices=[
-                        0, 5, 6, 8, 9, 9, 10, 11]), cv2.COLOR_BGR2RGB)
+                        0,
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        11]), cv2.COLOR_BGR2RGB)
 
             # Draw mask_car side by side
             mask_car_ = self.mask_car[k].detach().cpu().numpy()
@@ -296,70 +308,112 @@ class ModelPredictiveControl(nn.Module):
             offset_x += mask_car_.shape[1] + 10
 
         offset_x = 0
-        offset_y += mask_car_.shape[0] + 20
-
-        for k in range(self.mask_side.shape[0]):
-            bev_ = cv2.cvtColor(
-                BirdViewProducer.as_rgb_with_indices(
-                    np.transpose(
-                        self.predicted_bev[k], (1, 2, 0)), indices=[
-                        0, 5, 6, 8, 9, 9, 10, 11]), cv2.COLOR_BGR2RGB)
-            # Draw mask_car side by side
-            mask_side_ = self.mask_side[k].detach().cpu().numpy()
-            # Normalize to 0-255 int
-            mask_side_ = (mask_side_ - mask_side_.min()) / \
-                (mask_side_.max() - mask_side_.min()) * 255
-            mask_side_ = mask_side_.astype(np.uint8)
-            mask_side_color_map = cv2.applyColorMap(
-                mask_side_, cv2.COLORMAP_JET)
-            self.canvas[offset_y:offset_y + mask_side_.shape[0],
-                        offset_x:offset_x + mask_side_.shape[1],
-                        :] = cv2.addWeighted(bev_,
-                                             0.5,
-                                             mask_side_color_map,
-                                             0.5,
-                                             0)
-
-            offset_x += mask_side_.shape[1] + 10
-
-        offset_x = 0
-        offset_y += mask_side_.shape[0] + 20
+        offset_y += mask_car_.shape[0] + 40
 
         cv2.putText(
             self.canvas,
-            f"Offroad Cost: {self.offroad_cost}",
+            f"Road: {self.road_cost:.2f}",
             (offset_x,
              offset_y),
             cv2.FONT_HERSHEY_SIMPLEX,
-            0.75,
+            1.5,
             (255,
              255,
              0),
             1)
-        offset_y += 50
+
+        offset_y += 40
         cv2.putText(
             self.canvas,
-            f"Vehicle Cost: {self.vehicle_cost}",
+            f"Road on: {self.road_on_cost:.2f}",
             (offset_x,
              offset_y),
             cv2.FONT_HERSHEY_SIMPLEX,
-            0.75,
+            1.5,
             (255,
              255,
              0),
             1)
-        offset_y += 50
+
+        offset_y += 40
         cv2.putText(
             self.canvas,
-            f"Lane Cost: {self.lane_cost}",
+            f"Road off: {self.road_off_cost:.2f}",
             (offset_x,
              offset_y),
             cv2.FONT_HERSHEY_SIMPLEX,
-            0.75,
+            1.5,
             (255,
              255,
              0),
             1)
+
+        offset_y += 40
+        cv2.putText(
+            self.canvas,
+            f"Road red_yellow: {self.road_red_yellow_cost:.2f}",
+            (offset_x,
+             offset_y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.5,
+            (255,
+             255,
+             0),
+            1)
+
+        offset_y += 40
+        cv2.putText(
+            self.canvas,
+            f"Road green: {self.road_green_cost:.2f}",
+            (offset_x,
+             offset_y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.5,
+            (255,
+             255,
+             0),
+            1)
+
+        offset_y += 40
+        cv2.putText(
+            self.canvas,
+            f"Lane: {self.lane_cost:.2f}",
+            (offset_x,
+             offset_y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.5,
+            (255,
+             255,
+             0),
+            1)
+
+        offset_y += 40
+        cv2.putText(
+            self.canvas,
+            f"Vehicle: {self.vehicle_cost:.2f}",
+            (offset_x,
+             offset_y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.5,
+            (255,
+             255,
+             0),
+            1)
+
+        offset_y += 40
+        cv2.putText(
+            self.canvas,
+            f"Offroad: {self.offroad_cost:.2f}",
+            (offset_x,
+             offset_y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.5,
+            (255,
+             255,
+             0),
+            1)
+
+        offset_y += 20
 
         # canvas_display = cv2.resize(self.canvas, (0, 0), fx=0.9, fy=0.9)
 

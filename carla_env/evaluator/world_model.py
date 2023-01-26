@@ -308,7 +308,8 @@ class Evaluator(object):
             # rgb_image = BirdViewProducer.as_rgb_with_indices(
             #     bev[...,6:7], [6])
         return rgb_image
-
+        
+        
     def _save(self, step):
 
         if self.save_path is not None:

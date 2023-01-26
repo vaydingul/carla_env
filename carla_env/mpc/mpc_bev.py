@@ -61,7 +61,7 @@ class ModelPredictiveControl(nn.Module):
 
             else:
 
-                bev_predicted.append(bev.unsqueeze(1))
+                bev_predicted.append(bev[:, -1].unsqueeze(1))
 
         bev_predicted = torch.cat(bev_predicted, dim=1)
 
@@ -84,7 +84,7 @@ class ModelPredictiveControl(nn.Module):
 
         for i in range(self.rollout_length - 1):
 
-            action_ = self.action[:, i:i+1].clone()
+            action_ = self.action[:, i:i + 1].clone()
 
             ego_state_next = self.ego_model(
                 ego_state, action_)

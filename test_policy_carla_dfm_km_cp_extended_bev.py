@@ -1,4 +1,4 @@
-from carla_env import carla_env_mpc_path_follower_bev_traffic_extended_bev
+from carla_env import carla_env_mpc_extended_bev_traffic
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
@@ -84,7 +84,7 @@ def main(config):
         policy_model=policy_model)
     model = model.to(device=device).eval()
 
-    c = carla_env_mpc_path_follower_bev_traffic_extended_bev.CarlaEnvironment(
+    c = carla_env_mpc_extended_bev_traffic.CarlaEnvironment(
         config={
             "render": True,
             "save": True,

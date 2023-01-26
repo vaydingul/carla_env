@@ -59,7 +59,7 @@ def create_multiple_actors_for_traffic_manager(client, n=20):
         actors.append(actor.ActorModule(
             config={
                 "vehicle": vehicle.VehicleModule(
-                    config={"vehicle_model": vehicles[k], },
+                    config=None, #{"vehicle_model": vehicles[k], },
                     client=client),
                 "hero": False},
             client=client))
@@ -138,8 +138,8 @@ class CarlaEnvironment(Environment):
         #                                    client=self.client)
 
         #     if ((RoadOption.LEFT not in [x[1] for x in self.route.get_route()]) and (RoadOption.RIGHT in [
-        #             x[1] for x in self.route.get_route()[:2]]) and (len(self.route.get_route()) < 50) and
-        #             (len(self.route.get_route()) > 40)):
+        #             x[1] for x in self.route.get_route()[:10]]) and (len(self.route.get_route()) < 50) and
+        #             (len(self.route.get_route()) > 0)):
         #         break
 
         # Fetch all spawn points
@@ -267,7 +267,8 @@ class CarlaEnvironment(Environment):
                     logger.debug(f"Collision impulse: {impulse_amplitude}")
                     if impulse_amplitude > 1:
                         self.is_done = True
-                        self.video_writer.release()
+                        if self.config["save_video"]:
+                            self.video_writer.release()
 
         data_dict["snapshot"] = snapshot
 
@@ -299,7 +300,8 @@ class CarlaEnvironment(Environment):
 
         else:
             self.is_done = True
-            self.video_writer.release()
+            if self.config["save_video"]:
+                self.video_writer.release()
             return (current_transform, current_velocity, None, None)
 
     def render(self, predicted_location, bev, cost_canvas=None, **kwargs):
@@ -322,18 +324,9 @@ class CarlaEnvironment(Environment):
         # semantic_image.shape[0], :semantic_image.shape[1]] = semantic_image
 
         bev = cv2.cvtColor(
-            self.bev_module.as_rgb_with_indices(
+            self.bev_module.as_rgb(
                 bev,
-                indices=[
-                    0,
-                    1,
-                    2,
-                    3,
-                    4,
-                    5,
-                    6,
-                    7,
-                    11]),
+            ),
             cv2.COLOR_BGR2RGB)
         # Put image into canvas
         bev = cv2.resize(bev, (0, 0), fx=4, fy=4)
@@ -343,7 +336,6 @@ class CarlaEnvironment(Environment):
         # Draw control as arrowed line to left corner of bev
         if "control" in kwargs.keys():
             action = kwargs["control"]
-            action = action.detach().cpu().numpy()
             action *= 100
             action = action.astype(np.int32)
             cv2.arrowedLine(
@@ -448,7 +440,7 @@ class CarlaEnvironment(Environment):
                 self.render_dict["hero_actor_module"]["rotation"].yaw,
                 bev.shape[0],
                 bev.shape[1],
-                pixels_per_meter=5)
+                pixels_per_meter=20)
 
             if pixel_loc_.shape[0] > 0:
                 cv2.circle(self.canvas, (int(pixel_loc_[0][0]), int(
@@ -478,7 +470,9 @@ class CarlaEnvironment(Environment):
                 ego_loc,
                 self.render_dict["hero_actor_module"]["rotation"].yaw,
                 bev.shape[0],
-                bev.shape[1])
+                bev.shape[1],
+                pixels_per_meter=20)
+                
 
             if pixel_loc_.shape[0] > 0:
                 cv2.circle(self.canvas, (int(pixel_loc_[0][0]), int(
@@ -592,7 +586,7 @@ class CarlaEnvironment(Environment):
 
     def _create_save_folder(self):
 
-        debug_path = Path("figures/env_debug/test_policy")
+        debug_path = Path("figures/env_debug/test_mpc")
 
         date_ = Path(datetime.today().strftime('%Y-%m-%d'))
         time_ = Path(datetime.today().strftime('%H-%M-%S'))
