@@ -142,6 +142,8 @@ wandb/
 pretrained_models/
 cache/
 
+# 
+!cache/Carla/Maps/.gitkeep 
 
 # Individual files
 WoR_ego_model_parameters
