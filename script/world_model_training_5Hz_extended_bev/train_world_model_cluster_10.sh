@@ -15,11 +15,11 @@ python3 train_world_forward_model_ddp.py \
 	--lr=1e-4 \
 	--num_epochs=100 \
 	--batch_size=80 \
-	--num_workers=5 \
+	--num_workers=4 \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_10Hz_multichannel_bev_dense_traffic/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_10Hz_multichannel_bev_dense_traffic/" \
 	--resume=false \
-	--num_gpu=2 \
+	--num_gpu=4 \
 	--master_port="12111" \
 	--save_every=6 \
 	--val_every=3 \
