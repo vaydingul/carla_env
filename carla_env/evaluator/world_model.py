@@ -191,7 +191,13 @@ class Evaluator(object):
             if "roc" in self.metrics and "auroc" in self.metrics:
                 fpr, tpr, thresholds = metric_plot["roc"]
                 auroc = metric_plot["auroc"]
-                plot_roc(fpr, tpr, thresholds, auroc, self.save_path, multi=True)
+                plot_roc(
+                    fpr,
+                    tpr,
+                    thresholds,
+                    auroc,
+                    self.save_path,
+                    multi=True)
 
             if "stat" in self.metrics:
                 tp = metric_plot["stat"][..., 0]
@@ -297,7 +303,10 @@ class Evaluator(object):
         bev = bev.transpose(1, 2, 0)
 
         # Old BEV
-        # rgb_image = BirdViewProducer.as_rgb_with_indices(bev, [0, 5, 6, 8, 9, 9, 10, 11])
+
+        # rgb_image = BirdViewProducer.as_rgb_with_indices(
+        #     bev, [0, 5, 6, 8, 9, 9, 10, 11])
+        # return rgb_image
 
         # New BEV
         if self.bev_selected_channels is None:
@@ -308,8 +317,7 @@ class Evaluator(object):
             # rgb_image = BirdViewProducer.as_rgb_with_indices(
             #     bev[...,6:7], [6])
         return rgb_image
-        
-        
+
     def _save(self, step):
 
         if self.save_path is not None:

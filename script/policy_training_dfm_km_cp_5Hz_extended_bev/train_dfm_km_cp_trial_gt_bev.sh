@@ -24,7 +24,7 @@ python3 train_dfm_km_cp_extended_bev_gt_bev.py \
 	--input_ego_location=1 \
 	--input_ego_yaw=1 \
 	--input_ego_speed=1 \
-	--delta_target=false \
+	--delta_target=true \
 	--single_world_state_input=false \
 	--occupancy_size=8 \
 	--action_size=2 \
