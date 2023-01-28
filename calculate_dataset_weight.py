@@ -12,7 +12,8 @@ logging.basicConfig(
 
 
 def main(config):
-
+    weight_path = f"{config.dataset_path}/weights_{config.num_time_step_previous}_{config.num_time_step_future}_{config.dataset_dilation}.pt"
+    
     dataset = InstanceDataset(
         data_path=config.dataset_path,
         sequence_length=config.num_time_step_previous +
@@ -26,16 +27,16 @@ def main(config):
 
     logger.info(f"Train dataset size: {len(dataset)}")
 
-    if os.path.exists(f"{config.dataset_path}/weights.pt"):
+    if os.path.exists(weight_path):
         logger.info("Loading weights from file")
-        weights = torch.load(f"{config.dataset_path}/weights.pt")
+        weights = torch.load(
+            weight_path)
     else:
         logger.info("Calculating weights")
         weights = torch.Tensor(
             [dataset.__getweight__(k) for k in tqdm(range(
                 len(dataset)))])
-        torch.save(weights, f"{config.dataset_path}/weights.pt")
-
+        torch.save(weights, weight_path)
 
 if __name__ == "__main__":
 
