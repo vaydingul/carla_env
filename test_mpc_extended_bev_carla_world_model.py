@@ -69,7 +69,7 @@ def main(config):
         cost=cost,
         ego_model=ego_forward_model,
         init_action="zeros",
-        world_model=None,  # world_forward_model,
+        world_model=world_forward_model,
         render_cost=True)
 
     c = CarlaEnvironment(
@@ -77,7 +77,7 @@ def main(config):
             "render": True,
             "save": True,
             "save_video": True,
-            "fixed_delta_seconds": 0.2,})
+            "fixed_delta_seconds": 0.1, })
 
     bev_tensor_deque = deque(maxlen=world_forward_model.num_time_step_previous)
 
@@ -101,12 +101,12 @@ def main(config):
                     4,
                     5,
                     6,
-                    7,
                     11],
                 calculate_offroad=False))
 
     frame_counter = 0
     skip_counter = 0
+    repeat_counter = 0
 
     while not c.is_done:
 
@@ -143,7 +143,8 @@ def main(config):
         # Convert bev tensor deque to torch tensor
         bev_tensor = torch.cat(list(bev_tensor_deque), dim=0).unsqueeze(0)
 
-        if (skip_counter % config.skip_frames) == 0:
+        if (skip_counter == 0) and (repeat_counter == 0):
+
             (control,
              location_predicted,
              cost,
@@ -152,7 +153,7 @@ def main(config):
                                             bev=bev_tensor.detach(),
                                             )
 
-        control_selected = control[0][skip_counter % config.skip_frames].copy()
+        control_selected = control[0][skip_counter].copy()
 
         throttle, brake = acceleration_to_throttle_brake(
             acceleration=control_selected[0])
@@ -176,7 +177,6 @@ def main(config):
                     4,
                     5,
                     6,
-                    7,
                     11],
                 calculate_offroad=False))
 
@@ -188,18 +188,23 @@ def main(config):
             cost_canvas=cost_canvas,
             cost=cost,
             control=control_selected,
-            control_full=control[:, 0],
             current_state=current_state,
             target_state=target_state,
             frame_counter=frame_counter,
+            skip_counter=skip_counter,
+            repeat_counter=repeat_counter,
             sim_fps=1 / (t1 - t0),
+            ego_forward_model_wandb_link=config.ego_forward_model_wandb_link,
+            ego_forward_model_checkpoint_number=config.ego_forward_model_checkpoint_number,
             world_forward_model_wandb_link=config.world_forward_model_wandb_link,
             world_forward_model_checkpoint_number=config.world_forward_model_checkpoint_number,)
 
         mpc_module.reset()
 
         frame_counter += 1
-        skip_counter += 1
+        skip_counter = (skip_counter + (repeat_counter + 1 ==
+                        (config.repeat_frames))) % config.skip_frames
+        repeat_counter = (repeat_counter + 1) % config.repeat_frames
 
     c.close()
 
@@ -214,6 +219,7 @@ if __name__ == "__main__":
     parser.add_argument("--rollout_length", type=int, default=10)
     parser.add_argument("--action_size", type=int, default=2)
     parser.add_argument("--skip_frames", type=int, default=1)
+    parser.add_argument("--repeat_frames", type=int, default=2)
 
     parser.add_argument("--ego_forward_model_wandb_link", type=str,
                         default="vaydingul/mbl/ssifa1go")
@@ -225,12 +231,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--world_forward_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/23mnzxda")
+        default="vaydingul/mbl/2aed7ypg")
 
     parser.add_argument(
         "--world_forward_model_checkpoint_number",
         type=int,
-        default=95)
+        default=89)
 
     parser.add_argument("--ego_device", type=str, default="cuda:0",
                         help="Device to use for the forward model")

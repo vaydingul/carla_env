@@ -63,7 +63,7 @@ def main(config):
         batch_size=config.batch_size,
         rollout_length=config.rollout_length,
         action_size=config.action_size,
-        number_of_optimization_iterations=40,
+        number_of_optimization_iterations=20,
         cost=cost,
         ego_model=ego_forward_model,
         init_action="zeros",

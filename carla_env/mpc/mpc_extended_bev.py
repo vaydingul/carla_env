@@ -237,10 +237,10 @@ class ModelPredictiveControl(nn.Module):
         # cost += self.road_on_cost * (-1 / 10)
         cost += self.road_off_cost * (1 / 100)
         cost += self.road_red_yellow_cost * (1 / 50)
-        cost += self.road_green_cost * (-1 / 50)
+        cost += self.road_green_cost * (-1 / 25)
         cost += self.lane_cost * (1 / 100)
         cost += self.vehicle_cost * (1 / 50)
-        cost += self.offroad_cost * (1 / 50)
+        cost += self.offroad_cost * (1 / 10)
 
         # cost *= 10
 
@@ -256,8 +256,8 @@ class ModelPredictiveControl(nn.Module):
         #                                     target_state[...,
         #                                                  3:4].expand(*(predicted_speed.shape)))
 
-        cost += torch.diff(self.action[..., 0], dim=1).square().sum()
-        cost += torch.diff(self.action[..., 1], dim=1).square().sum()
+        cost += torch.diff(self.action[..., 0], dim=1).square().sum() * 50
+        cost += torch.diff(self.action[..., 1], dim=1).square().sum() * 50
         # cost += -torch.diff(self.action, dim=0).square().sum() * 0.1
         if self.render_cost and last_step:
 
