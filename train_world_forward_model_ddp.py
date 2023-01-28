@@ -69,16 +69,10 @@ def main(rank, world_size, run, config):
     logger.info(f"Weighted sampling is {config.weighted_sampling}")
 
     if config.weighted_sampling:
-        if os.path.exists(f"{config.data_path_train}/weights.pt"):
-            logger.info("Loading weights from file!")
-            weights = torch.load(f"{config.data_path_train}/weights.pt")
-        else:
-            logger.info("Calculating weights")
-            weights = torch.Tensor(
-                [world_model_dataset_train.__getweight__(k) for k in range(
-                    len(world_model_dataset_train))])
-            torch.save(weights, f"{config.data_path_train}/weights.pt")
 
+        logger.info("Loading weights from file!")
+        weights = torch.load(
+            f"{config.data_path_train}/weights_{config.num_time_step_previous}_{config.num_time_step_future}_{config.dataset_dilation}.pt")
     else:
 
         weights = None
@@ -184,7 +178,7 @@ def main(rank, world_size, run, config):
         world_model_optimizer,
         rank,
         save_every=config.save_every if rank == 0 else 1000,
-        val_every = config.val_every,
+        val_every=config.val_every,
         num_time_step_previous=config.num_time_step_previous,
         num_time_step_future=config.num_time_step_future,
         num_epochs=config.num_epochs,
