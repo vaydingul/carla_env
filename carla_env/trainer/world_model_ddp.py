@@ -92,7 +92,7 @@ class Trainer(object):
                 self.bev_channel_weights).to(
                 self.gpu_id)
 
-        if gpu_id == 0:
+        if gpu_id == 0 and self.report_metrics:
             self.metrics_ = [METRIC_DICT[metric].to(
                 self.gpu_id) for metric in self.metrics]
         else:
