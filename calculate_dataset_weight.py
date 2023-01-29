@@ -13,7 +13,7 @@ logging.basicConfig(
 
 def main(config):
     weight_path = f"{config.dataset_path}/weights_{config.num_time_step_previous}_{config.num_time_step_future}_{config.dataset_dilation}.pt"
-    
+
     dataset = InstanceDataset(
         data_path=config.dataset_path,
         sequence_length=config.num_time_step_previous +
@@ -37,6 +37,7 @@ def main(config):
             [dataset.__getweight__(k) for k in tqdm(range(
                 len(dataset)))])
         torch.save(weights, weight_path)
+
 
 if __name__ == "__main__":
 
