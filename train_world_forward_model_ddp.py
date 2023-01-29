@@ -92,7 +92,7 @@ def main(rank, world_size, run, config):
 
     world_model_dataloader_val = DataLoader(
         world_model_dataset_val,
-        batch_size=config.batch_size,
+        batch_size=config.batch_size * 2,
         shuffle=False,
         num_workers=config.num_workers,
         drop_last=True,

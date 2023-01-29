@@ -216,7 +216,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=333)
 
     parser.add_argument("--batch_size", type=int, default=1)
-    parser.add_argument("--rollout_length", type=int, default=10)
+    parser.add_argument("--rollout_length", type=int, default=5)
     parser.add_argument("--action_size", type=int, default=2)
     parser.add_argument("--skip_frames", type=int, default=1)
     parser.add_argument("--repeat_frames", type=int, default=2)
@@ -231,12 +231,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--world_forward_model_wandb_link",
         type=str,
-        default="vaydingul/mbl/2aed7ypg")
+        default="vaydingul/mbl/3bzai68t")
 
     parser.add_argument(
         "--world_forward_model_checkpoint_number",
         type=int,
-        default=89)
+        default=47)
 
     parser.add_argument("--ego_device", type=str, default="cuda:0",
                         help="Device to use for the forward model")

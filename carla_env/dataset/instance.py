@@ -186,7 +186,7 @@ class InstanceDataset(Dataset):
         weight_road_red_yellow = scipy.stats.norm(
             0, 1).pdf(bev_road_red_yellow_sum)
         weight_road_green = scipy.stats.norm(0, 1).pdf(bev_road_green_sum)
-        weight_yaw = scipy.stats.norm(0, 1).pdf(yaw) * 2
+        weight_yaw = scipy.stats.norm(0, 1).pdf(yaw) * 10 # 2
 
         return (
             weight_vehicle *
