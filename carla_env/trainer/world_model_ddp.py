@@ -3,32 +3,9 @@ import numpy as np
 import torch
 from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torchmetrics.classification import (
-    MultilabelJaccardIndex,
-    MultilabelPrecision,
-    MultilabelRecall,
-)
+
 from pathlib import Path
 logger = logging.getLogger(__name__)
-
-
-NUM_LABELS = 8
-THRESHOLD = 0.5
-NUM_THRESHOLD = 10
-AVERAGE = None
-
-SETTING_1 = {
-    "threshold": THRESHOLD,
-    "average": AVERAGE,
-    "num_labels": NUM_LABELS,
-}
-
-
-METRIC_DICT = {
-    "iou": MultilabelJaccardIndex(**SETTING_1),
-    "precision": MultilabelPrecision(**SETTING_1),
-    "recall": MultilabelRecall(**SETTING_1),
-}
 
 
 class Trainer(object):
@@ -69,8 +46,6 @@ class Trainer(object):
         self.num_time_step_previous = num_time_step_previous
         self.num_time_step_future = num_time_step_future
         self.num_epochs = num_epochs
-        self.report_metrics = report_metrics
-        self.metrics = metrics
         self.current_epoch = current_epoch
         self.reconstruction_loss = F.mse_loss if reconstruction_loss == "mse_loss" else F.binary_cross_entropy_with_logits
         self.bev_channel_weights = bev_channel_weights
@@ -91,12 +66,6 @@ class Trainer(object):
             self.weight = torch.Tensor(
                 self.bev_channel_weights).to(
                 self.gpu_id)
-
-        if gpu_id == 0 and self.report_metrics:
-            self.metrics_ = [METRIC_DICT[metric].to(
-                self.gpu_id) for metric in self.metrics]
-        else:
-            self.metrics_ = None
 
         self.model.to(self.gpu_id)
         self.model = DDP(self.model, device_ids=[self.gpu_id])
@@ -192,7 +161,8 @@ class Trainer(object):
                 run.log({"train/step": self.train_step,
                          "train/loss": loss,
                          "train/loss_kl_divergence": loss_kl_div,
-                         "train/loss_reconstruction": loss_reconstruction})
+                         "train/loss_reconstruction": loss_reconstruction},
+                        commit=True)
         logger.info("Training routine finished!")
 
     def validate(self, run=None):
@@ -259,15 +229,6 @@ class Trainer(object):
 
                         loss_reconstruction = self.reconstruction_loss(
                             input=world_future_bev_predicted, target=world_future_bev)
-                if (self.report_metrics) and (self.metrics_ is not None):
-                    for metric_ in self.metrics_:
-                        world_future_bev_predicted_ = world_future_bev_predicted.permute(
-                            0, 2, 1, 3, 4).clone()
-                        world_future_bev_ = world_future_bev.permute(
-                            0, 2, 1, 3, 4).clone().to(torch.uint8)
-
-                        metric_.update(world_future_bev_predicted_,
-                                       world_future_bev_)
 
                 # Calculate the KL divergence loss
                 loss_kl_div = -0.5 * \
@@ -284,26 +245,11 @@ class Trainer(object):
         loss = np.mean(losses_total)
         loss_kl_div = np.mean(losses_kl_div)
         loss_reconstruction = np.mean(losses_reconstruction)
-        logger.info(f"Run is {run} for GPU {self.gpu_id}")
-        if self.metrics_ is not None:
-            logger.info(f"Length metrics_ is {len(self.metrics_)}")
+
+
 
         if run is not None:
 
-            if (self.report_metrics):
-                run.log({"eval/step": self.val_step}, commit=False)
-                for (metric, metric_) in zip(self.metrics, self.metrics_):
-                    logger.info(f"Metric: {metric}")
-                    logger.info(f"Metric_: {metric_}")
-                    result = metric_.compute().cpu().numpy()
-                    logger.info(f"Metric {metric} is calculated")
-                    for k in range(result.shape[0]):
-                        logger.info(f"Validation {metric}: {result[k]}")
-                        logger.info(
-                            f"Validation {type(metric)}: {type(result[k])}")
-                        run.log({"eval/{}_{}".format(metric, k): result[k]}, commit=False)
-
-                    metric_.reset()
             if self.lr_scheduler is not None:
                 run.log(
                     {"val/lr": self.lr_scheduler.get_last_lr()[0]}, commit=False)
