@@ -17,8 +17,7 @@ if __name__ == "__main__":
     vehicle_physics_control = vehicle.get_physics_control()
     print(f"Vehicle Mass: {vehicle_physics_control.mass}")
     print(f"Vehicle Center of Mass: {vehicle_physics_control.center_of_mass}")
-    print(
-        f"Vehicle Drag Coefficient: {vehicle_physics_control.drag_coefficient}")
+    print(f"Vehicle Drag Coefficient: {vehicle_physics_control.drag_coefficient}")
 
     wheels = vehicle_physics_control.wheels
     front_left = wheels[0]
@@ -42,12 +41,16 @@ if __name__ == "__main__":
     print(f"Rear Right Max Steer Angle: {rear_right.max_steer_angle}")
 
     print(
-        f"Front Left Lateral Stiffness Value (Cornering Stiffness): {front_left.lat_stiff_value}")
+        f"Front Left Lateral Stiffness Value (Cornering Stiffness): {front_left.lat_stiff_value}"
+    )
     print(
-        f"Front Right Lateral Stiffness Value (Cornering Stiffness): {front_right.lat_stiff_value}")
+        f"Front Right Lateral Stiffness Value (Cornering Stiffness): {front_right.lat_stiff_value}"
+    )
     print(
-        f"Rear Left Lateral Stiffness Value (Cornering Stiffness): {rear_left.lat_stiff_value}")
+        f"Rear Left Lateral Stiffness Value (Cornering Stiffness): {rear_left.lat_stiff_value}"
+    )
     print(
-        f"Rear Right Lateral Stiffness Value (Cornering Stiffness): {rear_right.lat_stiff_value}")
+        f"Rear Right Lateral Stiffness Value (Cornering Stiffness): {rear_right.lat_stiff_value}"
+    )
 
     c.close()

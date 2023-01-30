@@ -17,14 +17,12 @@ PINK = carla.Color(r=255, g=0, b=255)
 
 
 ROAD_OPTION_COLOR_MAP = {
-
-    'LEFT': CYAN,
-    'RIGHT': MAGENTA,
-    'STRAIGHT': RED,
-    'LANEFOLLOW': GREEN,
-    'CHANGELANELEFT': YELLOW,
-    'CHANGELANERIGHT': BLUE
-
+    "LEFT": CYAN,
+    "RIGHT": MAGENTA,
+    "STRAIGHT": RED,
+    "LANEFOLLOW": GREEN,
+    "CHANGELANELEFT": YELLOW,
+    "CHANGELANERIGHT": BLUE,
 }
 
 
@@ -65,29 +63,23 @@ def visualize_route(world, start=None, end=None):
         if ix <= 10:
 
             world.debug.draw_string(
-                waypoint.transform.location,
-                'o',
-                color=WHITE,
-                life_time=10000)
+                waypoint.transform.location, "o", color=WHITE, life_time=10000
+            )
 
         elif ix >= len(route) - 10:
 
             world.debug.draw_string(
-                waypoint.transform.location,
-                'o',
-                color=BLACK,
-                life_time=10000)
+                waypoint.transform.location, "o", color=BLACK, life_time=10000
+            )
 
         else:
 
             world.debug.draw_string(
-                waypoint.transform.location,
-                'o',
-                color=GRAY,
-                life_time=10000)
+                waypoint.transform.location, "o", color=GRAY, life_time=10000
+            )
 
-        #offset_loc = waypoint.transform.location + carla.Location(z=0.5)
-        #world.debug.draw_string(offset_loc, str(waypoint.transform.location), color=RED, life_time=10000)
+        # offset_loc = waypoint.transform.location + carla.Location(z=0.5)
+        # world.debug.draw_string(offset_loc, str(waypoint.transform.location), color=RED, life_time=10000)
     return start, end
 
 

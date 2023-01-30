@@ -5,21 +5,20 @@ import seaborn as sns
 
 
 def plot_result_eval(
-        vehicle_location,
-        vehicle_rotation,
-        vehicle_velocity,
-        vehicle_control,
-        elapsed_time,
-        location_predicted,
-        yaw_predicted,
-        speed_predicted,
-        savedir):
+    vehicle_location,
+    vehicle_rotation,
+    vehicle_velocity,
+    vehicle_control,
+    elapsed_time,
+    location_predicted,
+    yaw_predicted,
+    speed_predicted,
+    savedir,
+):
 
     plt.figure()
-    plt.plot(vehicle_location[:-1, 1],
-             vehicle_location[:-1, 0], "r-", label="CARLA")
-    plt.plot(location_predicted[:, 1],
-             location_predicted[:, 0], "b-", label="NN")
+    plt.plot(vehicle_location[:-1, 1], vehicle_location[:-1, 0], "r-", label="CARLA")
+    plt.plot(location_predicted[:, 1], location_predicted[:, 0], "b-", label="NN")
     plt.legend()
     plt.xlabel("y")
     plt.ylabel("x")
@@ -45,11 +44,12 @@ def plot_result_eval(
     plt.savefig(savedir / "y-loc.png")
 
     plt.figure()
-    plt.plot(elapsed_time[:-1],
-             np.linalg.norm(vehicle_velocity[:-1],
-                            axis=-1),
-             "r-",
-             label="CARLA")
+    plt.plot(
+        elapsed_time[:-1],
+        np.linalg.norm(vehicle_velocity[:-1], axis=-1),
+        "r-",
+        label="CARLA",
+    )
     plt.plot(elapsed_time[:-1], speed_predicted, "b-", label="NN")
     plt.legend()
     plt.xlabel("Time")
@@ -66,9 +66,9 @@ def plot_result_eval(
     plt.savefig(savedir / "action.png")
 
     plt.figure()
-    plt.plot(elapsed_time[:-
-                          1], np.rad2deg(vehicle_rotation[:-
-                                                          1, 1]), "r-", label="CARLA")
+    plt.plot(
+        elapsed_time[:-1], np.rad2deg(vehicle_rotation[:-1, 1]), "r-", label="CARLA"
+    )
     plt.plot(elapsed_time[:-1], np.rad2deg(yaw_predicted), "b-", label="NN")
     plt.xlabel("Time")
     plt.ylabel("Yaw")
@@ -82,8 +82,8 @@ def plot_result_eval(
 def plot_result_mpc(state, action, target_state, savedir):
     plt.figure()
     plt.plot(state[:, 0, 1], state[:, 0, 0])
-    plt.plot(state[0, 0, 1], state[0, 0, 0], 'go')
-    plt.plot(target_state[0, 0, 1], target_state[0, 0, 0], 'ro')
+    plt.plot(state[0, 0, 1], state[0, 0, 0], "go")
+    plt.plot(target_state[0, 0, 1], target_state[0, 0, 0], "ro")
     plt.title("Trajectory")
     plt.xlabel("y")
     plt.ylabel("x")
@@ -91,19 +91,19 @@ def plot_result_mpc(state, action, target_state, savedir):
 
     plt.figure()
     plt.plot(state[:, 0, 2])
-    plt.plot(state.shape[0] - 1, target_state[0, 0, 2], 'ro')
+    plt.plot(state.shape[0] - 1, target_state[0, 0, 2], "ro")
     plt.title("Yaw")
     plt.savefig(savedir / "yaw.png")
 
     plt.figure()
     plt.plot(state[:, 0, 3])
-    plt.plot(state.shape[0] - 1, target_state[0, 0, 3], 'ro')
+    plt.plot(state.shape[0] - 1, target_state[0, 0, 3], "ro")
     plt.title("Speed")
     plt.savefig(savedir / "speed.png")
 
     plt.figure()
-    plt.plot(action[:, 0, 0], label='Throttle')
-    plt.plot(action[:, 0, 1], label='Steer')
+    plt.plot(action[:, 0, 0], label="Throttle")
+    plt.plot(action[:, 0, 1], label="Steer")
     plt.legend()
     plt.title("Control Actions")
     plt.savefig(savedir / "action.png")
@@ -111,23 +111,31 @@ def plot_result_mpc(state, action, target_state, savedir):
 
 
 def plot_result_mpc_path_follow(
-        state,
-        action,
-        vehicle_location,
-        vehicle_rotation,
-        vehicle_velocity,
-        vehicle_control,
-        target_state,
-        offset,
-        end_ix,
-        savedir):
+    state,
+    action,
+    vehicle_location,
+    vehicle_rotation,
+    vehicle_velocity,
+    vehicle_control,
+    target_state,
+    offset,
+    end_ix,
+    savedir,
+):
 
     plt.figure()
     plt.plot(state[:, 0, 1], state[:, 0, 0], label="ModelPredictiveControl")
-    plt.plot(vehicle_location[offset:end_ix, 1],
-             vehicle_location[offset:end_ix, 0], label="Ground Truth")
-    plt.plot(target_state[:, 0, 1], target_state[:, 0, 0],
-             "ro", label="Intermediate Target Points")
+    plt.plot(
+        vehicle_location[offset:end_ix, 1],
+        vehicle_location[offset:end_ix, 0],
+        label="Ground Truth",
+    )
+    plt.plot(
+        target_state[:, 0, 1],
+        target_state[:, 0, 0],
+        "ro",
+        label="Intermediate Target Points",
+    )
     plt.title("Trajectory")
     plt.xlabel("y")
     plt.ylabel("x")
@@ -135,40 +143,56 @@ def plot_result_mpc_path_follow(
     plt.savefig(savedir / "trajectory.png")
 
     plt.figure()
-    plt.plot(np.linspace(0, 1, action.shape[0]),
-             action[:, 0, 0], label='Throttle - ModelPredictiveControl')
-    plt.plot(np.linspace(0, 1, action.shape[0]),
-             action[:, 0, 1], label='Steer - ModelPredictiveControl')
-    plt.plot(np.linspace(0,
-                         1,
-                         vehicle_control[offset:end_ix].shape[0]),
-             vehicle_control[offset:end_ix,
-                             0],
-             label='Throttle - Ground Truth')
-    plt.plot(np.linspace(0,
-                         1,
-                         vehicle_control[offset:end_ix].shape[0]),
-             vehicle_control[offset:end_ix,
-                             1],
-             label='Steer - Ground Truth')
+    plt.plot(
+        np.linspace(0, 1, action.shape[0]),
+        action[:, 0, 0],
+        label="Throttle - ModelPredictiveControl",
+    )
+    plt.plot(
+        np.linspace(0, 1, action.shape[0]),
+        action[:, 0, 1],
+        label="Steer - ModelPredictiveControl",
+    )
+    plt.plot(
+        np.linspace(0, 1, vehicle_control[offset:end_ix].shape[0]),
+        vehicle_control[offset:end_ix, 0],
+        label="Throttle - Ground Truth",
+    )
+    plt.plot(
+        np.linspace(0, 1, vehicle_control[offset:end_ix].shape[0]),
+        vehicle_control[offset:end_ix, 1],
+        label="Steer - Ground Truth",
+    )
     plt.legend()
     plt.title("Control Actions")
     plt.savefig(savedir / "action.png")
 
     plt.figure()
-    plt.plot(np.linspace(
-        0, 1, state.shape[0]), state[:, 0, 3], label='ModelPredictiveControl')
-    plt.plot(np.linspace(0, 1, vehicle_velocity[offset:end_ix].shape[0]), np.linalg.norm(
-        vehicle_velocity[offset:end_ix], axis=-1), label='Ground Truth')
+    plt.plot(
+        np.linspace(0, 1, state.shape[0]),
+        state[:, 0, 3],
+        label="ModelPredictiveControl",
+    )
+    plt.plot(
+        np.linspace(0, 1, vehicle_velocity[offset:end_ix].shape[0]),
+        np.linalg.norm(vehicle_velocity[offset:end_ix], axis=-1),
+        label="Ground Truth",
+    )
     plt.legend()
     plt.title("Speed")
     plt.savefig(savedir / "speed.png")
 
     plt.figure()
-    plt.plot(np.linspace(0, 1, state.shape[0]), np.rad2deg(
-        state[:, 0, 2]), label='ModelPredictiveControl')
-    plt.plot(np.linspace(0, 1, vehicle_rotation[offset:end_ix].shape[0]), np.rad2deg(
-        vehicle_rotation[offset:end_ix, 1]), label='Ground Truth')
+    plt.plot(
+        np.linspace(0, 1, state.shape[0]),
+        np.rad2deg(state[:, 0, 2]),
+        label="ModelPredictiveControl",
+    )
+    plt.plot(
+        np.linspace(0, 1, vehicle_rotation[offset:end_ix].shape[0]),
+        np.rad2deg(vehicle_rotation[offset:end_ix, 1]),
+        label="Ground Truth",
+    )
     plt.legend()
     plt.title("Yaw")
     plt.savefig(savedir / "yaw.png")
@@ -182,11 +206,7 @@ def plot_roc(fpr, tpr, thresholds, auroc, savedir, multi=False):
 
     if multi:
 
-        fig, axs = plt.subplots(
-            ncols=fpr.shape[0],
-            figsize=(
-                fpr.shape[0] * 5,
-                5))
+        fig, axs = plt.subplots(ncols=fpr.shape[0], figsize=(fpr.shape[0] * 5, 5))
 
         for i in range(fpr.shape[0]):
             # Color orange with markers
@@ -196,38 +216,35 @@ def plot_roc(fpr, tpr, thresholds, auroc, savedir, multi=False):
                 lw=lw,
                 label=f"ROC curve {i} (AUC = {auroc[i]:.2f})",
                 color="#FFA500",
-                marker="o")
+                marker="o",
+            )
             # Find the index such that difference between tpr-fpr is maximum
             # This is the point where tpr is closest to 1 and fpr is closest to 0
             j = np.argmax(tpr[i] - fpr[i])
             # Plot the point
-            axs[i].plot(
-                fpr[i][j],
-                tpr[i][j],
-                marker='*',
-                markersize=5,
-                color="green")
+            axs[i].plot(fpr[i][j], tpr[i][j], marker="*", markersize=5, color="green")
             for k in range(len(thresholds)):
 
                 axs[i].text(
-                    fpr[i][k] + .05,
-                    tpr[i][k] - .05,
+                    fpr[i][k] + 0.05,
+                    tpr[i][k] - 0.05,
                     f"{thresholds[k]:0.2f}",
-                    fontsize=8)
-            axs[i].plot([0, 1], [0, 1], color='navy', lw=lw,
-                        linestyle='--')
+                    fontsize=8,
+                )
+            axs[i].plot([0, 1], [0, 1], color="navy", lw=lw, linestyle="--")
             axs[i].set_xlim([0.0, 1.0])
             axs[i].set_ylim([0.0, 1.05])
-            axs[i].set_xlabel('False Positive Rate')
-            axs[i].set_ylabel('True Positive Rate')
+            axs[i].set_xlabel("False Positive Rate")
+            axs[i].set_ylabel("True Positive Rate")
             axs[i].set_title(f"Receiver operating characteristic {i}")
             axs[i].legend(loc="lower right")
         fig.tight_layout()
         plt.savefig(os.path.join(savedir, "roc.png"))
     else:
         plt.figure()
-        plt.plot(fpr, tpr, color='darkorange',
-                 lw=lw, label=f"ROC curve (area = {auroc:.2f})")
+        plt.plot(
+            fpr, tpr, color="darkorange", lw=lw, label=f"ROC curve (area = {auroc:.2f})"
+        )
         plt.savefig(os.path.join(savedir, "roc.png"))
 
     plt.close("all")
@@ -240,12 +257,7 @@ def plot_confusion_matrix(tp, fp, tn, fn, savedir, multi=False):
         # Draw a heatmap with the numeric values in each cell
         for i in range(tp.shape[0]):
             cm = np.array([[tp[i], fp[i]], [fn[i], tn[i]]])
-            sns.heatmap(
-                cm,
-                annot=True,
-                fmt="d",
-                xticklabels=label,
-                yticklabels=label)
+            sns.heatmap(cm, annot=True, fmt="d", xticklabels=label, yticklabels=label)
             plt.title(f"Confusion Matrix {i}")
             plt.xlabel("Predicted")
             plt.ylabel("Actual")

@@ -8,7 +8,8 @@ def create_initial_run(config):
         group=config.wandb_group,
         name=config.wandb_name,
         resume="allow",
-        config=config)
+        config=config,
+    )
 
     if config.wandb_id is None:
         run.config.update({"wandb_id": run.id}, allow_val_change=True)
@@ -29,7 +30,8 @@ def create_resumed_run(config):
         project=config.wandb_project,
         group=config.wandb_group,
         id=config.wandb_id,
-        resume="allow")
+        resume="allow",
+    )
     return run
 
 

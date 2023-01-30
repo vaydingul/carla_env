@@ -7,14 +7,16 @@ from torch.utils.data import DataLoader, Subset
 from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.evaluator.ego_model import Evaluator
-from utils.train_utils import (get_device, seed_everything)
-from utils.model_utils import (fetch_checkpoint_from_wandb_link)
+from utils.train_utils import get_device, seed_everything
+from utils.model_utils import fetch_checkpoint_from_wandb_link
 import wandb
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
-    datefmt='%Y-%m-%d %H:%M:%S',
-    format="%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d ==> %(message)s")
+    datefmt="%Y-%m-%d %H:%M:%S",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d ==> %(message)s",
+)
 
 
 def main(config):
@@ -25,19 +27,22 @@ def main(config):
     run = wandb.Api().run(config.ego_forward_model_wandb_link)
     checkpoint = fetch_checkpoint_from_wandb_link(
         wandb_link=config.ego_forward_model_wandb_link,
-        checkpoint_number=config.ego_forward_model_checkpoint_number)
+        checkpoint_number=config.ego_forward_model_checkpoint_number,
+    )
     model = KinematicBicycleModel.load_model_from_wandb_run(
-        run=run, checkpoint=checkpoint, device=device)
+        run=run, checkpoint=checkpoint, device=device
+    )
     model.to(device).eval()
 
     # Create dataset and its loader
     data_path_test = config.data_path_test
     dataset_test = InstanceDataset(
         data_path=data_path_test,
-        sequence_length=run.config["num_time_step_previous"] +
-        run.config["num_time_step_future"],
+        sequence_length=run.config["num_time_step_previous"]
+        + run.config["num_time_step_future"],
         read_keys=["ego"],
-        dilation=run.config["dataset_dilation"])
+        dilation=run.config["dataset_dilation"],
+    )
 
     logger.info(f"Test dataset size: {len(dataset_test)}")
 
@@ -47,12 +52,17 @@ def main(config):
             range(
                 0,
                 len(dataset_test),
-                (run.config["num_time_step_previous"] +
-                 run.config["num_time_step_future"]) *
-                run.config["dataset_dilation"])),
+                (
+                    run.config["num_time_step_previous"]
+                    + run.config["num_time_step_future"]
+                )
+                * run.config["dataset_dilation"],
+            ),
+        ),
         batch_size=20,
         shuffle=False,
-        num_workers=0)
+        num_workers=0,
+    )
 
     # dataloader_test = DataLoader(
     #     dataset=dataset_test,
@@ -64,9 +74,10 @@ def main(config):
         model=model,
         dataloader=dataloader_test,
         device=device,
-        sequence_length=run.config["num_time_step_previous"] +
-        run.config["num_time_step_future"],
-        save_path=f"{config.save_path}")
+        sequence_length=run.config["num_time_step_previous"]
+        + run.config["num_time_step_future"],
+        save_path=f"{config.save_path}",
+    )
 
     evaluator.evaluate(render=False, save=True)
 
@@ -78,19 +89,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_path_test",
         type=str,
-        default="/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_test_data_10Hz_multichannel_bev_dense_traffic/")
+        default="/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_test_data_10Hz_multichannel_bev_dense_traffic/",
+    )
     parser.add_argument(
         "--save_path",
         type=str,
-        default="figures/ego_forward_model_evaluation_extensive/ashdgjhsagdjsa/")
+        default="figures/ego_forward_model_evaluation_extensive/ashdgjhsagdjsa/",
+    )
     parser.add_argument("--num_time_step_previous", type=int, default=1)
     parser.add_argument("--num_time_step_future", type=int, default=10)
-    parser.add_argument("--ego_forward_model_wandb_link", type=str,
-                        default="vaydingul/mbl/ssifa1go")
     parser.add_argument(
-        "--ego_forward_model_checkpoint_number",
-        type=int,
-        default=459)
+        "--ego_forward_model_wandb_link", type=str, default="vaydingul/mbl/ssifa1go"
+    )
+    parser.add_argument("--ego_forward_model_checkpoint_number", type=int, default=459)
     config = parser.parse_args()
 
     main(config)

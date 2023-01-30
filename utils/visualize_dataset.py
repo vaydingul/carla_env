@@ -1,4 +1,3 @@
-
 from carla_env.dataset.instance import InstanceDataset
 import torch
 from torch.utils.data import DataLoader, Subset
@@ -9,11 +8,13 @@ import cv2
 from cv2 import VideoWriter, VideoWriter_fourcc
 from carla_env.bev import BirdViewProducer
 import os
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
-    datefmt='%Y-%m-%d %H:%M:%S',
-    format="%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d ==> %(message)s")
+    datefmt="%Y-%m-%d %H:%M:%S",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d ==> %(message)s",
+)
 
 
 def bev_to_rgb(bev):
@@ -37,35 +38,38 @@ def main(config):
         bev_agent_channel=7,
         bev_vehicle_channel=6,
         bev_selected_channels=range(12),
-        bev_calculate_offroad=False)
-    
+        bev_calculate_offroad=False,
+    )
+
     world_model_dataset_test = Subset(world_model_dataset_test, range(1000))
 
     logger.info(f"Test dataset size: {len(world_model_dataset_test)}")
 
     rgb_size = (
         world_model_dataset_test[0]["rgb_front"].shape[2],
-        world_model_dataset_test[0]["rgb_front"].shape[3])
+        world_model_dataset_test[0]["rgb_front"].shape[3],
+    )
     bev_size = (
         world_model_dataset_test[0]["bev_world"]["bev"].shape[2],
-        world_model_dataset_test[0]["bev_world"]["bev"].shape[3])
+        world_model_dataset_test[0]["bev_world"]["bev"].shape[3],
+    )
     # Create video writer
     canvas = np.zeros(
-        (rgb_size[0] +
-         bev_size[0] * 3 +
-         100,
-         rgb_size[1],
-         3),
-        dtype=np.uint8)
+        (rgb_size[0] + bev_size[0] * 3 + 100, rgb_size[1], 3), dtype=np.uint8
+    )
 
     # Create the folder for save path
     save_path = config.save_path
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
-    fourcc = VideoWriter_fourcc(*'mp4v')
-    video = VideoWriter(f"{config.save_path}/video.mp4",
-                        fourcc, 10.0, (canvas.shape[1], canvas.shape[0]))
+    fourcc = VideoWriter_fourcc(*"mp4v")
+    video = VideoWriter(
+        f"{config.save_path}/video.mp4",
+        fourcc,
+        10.0,
+        (canvas.shape[1], canvas.shape[0]),
+    )
 
     for i in range(len(world_model_dataset_test)):
         # Get data
@@ -76,27 +80,35 @@ def main(config):
 
         # Create canvas
         canvas = np.zeros_like(canvas)
-        canvas[:rgb_size[0], :rgb_size[1], :] = cv2.cvtColor(
-            rgb_front, cv2.COLOR_RGB2BGR)
-        canvas[rgb_size[0] + 100:rgb_size[0] + 100 +  3 *bev_size[0],
-               :bev_size[1] * 3] = cv2.resize(cv2.cvtColor(bev_to_rgb(bev), cv2.COLOR_RGB2BGR), (0,0), fx=3, fy=3)
+        canvas[: rgb_size[0], : rgb_size[1], :] = cv2.cvtColor(
+            rgb_front, cv2.COLOR_RGB2BGR
+        )
+        canvas[
+            rgb_size[0] + 100 : rgb_size[0] + 100 + 3 * bev_size[0], : bev_size[1] * 3
+        ] = cv2.resize(
+            cv2.cvtColor(bev_to_rgb(bev), cv2.COLOR_RGB2BGR), (0, 0), fx=3, fy=3
+        )
 
         # Put text on the top-middle of the images and bev
-        cv2.putText(canvas, "Front", (rgb_size[1] // 2 - 50, 20),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
-        
-        
+        cv2.putText(
+            canvas,
+            "Front",
+            (rgb_size[1] // 2 - 50, 20),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 255, 255),
+            2,
+        )
+
         cv2.putText(
             canvas,
             "Bird's Eye View",
-            (bev_size[1] // 2 - 50,
-             rgb_size[0] + 50),
+            (bev_size[1] // 2 - 50, rgb_size[0] + 50),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.5,
-            (0,
-             255,
-             255),
-            2)
+            (0, 255, 255),
+            2,
+        )
 
         offset_x = bev_size[1] + 100
         offset_y = rgb_size[0] + 100
@@ -127,12 +139,12 @@ def main(config):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_path_test", type=str,
-                        default="data/ground_truth_bev_model_test_data/")
     parser.add_argument(
-        "--save_path",
-        type=str,
-        default="figures/world_model_dataset_visualization/")
+        "--data_path_test", type=str, default="data/ground_truth_bev_model_test_data/"
+    )
+    parser.add_argument(
+        "--save_path", type=str, default="figures/world_model_dataset_visualization/"
+    )
 
     config = parser.parse_args()
 

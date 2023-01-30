@@ -19,16 +19,15 @@ def visualize_waypoints_in_world(world="Town04"):
     for point in points:
         waypoint = map.get_waypoint(point.location)
         world.debug.draw_point(
-            waypoint.transform.location,
-            size=0.5,
-            color=RED,
-            life_time=10000)
+            waypoint.transform.location, size=0.5, color=RED, life_time=10000
+        )
         offset_loc = waypoint.transform.location + carla.Location(z=0.5)
         world.debug.draw_string(
             offset_loc,
             f"{str(waypoint.transform.location)} -- {str(waypoint.transform.rotation)}",
             color=RED,
-            life_time=10000)
+            life_time=10000,
+        )
 
 
 if __name__ == "__main__":

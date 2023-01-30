@@ -9,6 +9,5 @@ def check_latest_episode(path):
         return 0
     else:
         # Get the latest episode
-        latest_episode = max([int(x.name.split("_")[-1])
-                             for x in path.iterdir()])
+        latest_episode = max([int(x.name.split("_")[-1]) for x in path.iterdir()])
         return latest_episode + 1

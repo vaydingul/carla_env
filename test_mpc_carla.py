@@ -22,7 +22,8 @@ def main(config):
     ego_forward_model = KinematicBicycleModelV2(dt=1 / 20)
 
     ego_forward_model.load_state_dict(
-        state_dict=torch.load(f=config.ego_forward_model_path))
+        state_dict=torch.load(f=config.ego_forward_model_path)
+    )
 
     ego_forward_model.to(device=config.device)
 
@@ -33,7 +34,8 @@ def main(config):
         number_of_optimization_iterations=40,
         cost=cost,
         ego_model=ego_forward_model,
-        render_cost=True)
+        render_cost=True,
+    )
 
     mpc_module.to(device=config.device)
 
@@ -41,18 +43,23 @@ def main(config):
         config={
             "render": True,
             "save": True,
-            "allowed_sensors": [
-                "VehicleSensorModule",
-                "CollisionSensorModule"],
-            "save_video": True})
+            "allowed_sensors": ["VehicleSensorModule", "CollisionSensorModule"],
+            "save_video": True,
+        }
+    )
 
-    current_transform, current_velocity, target_waypoint, navigational_command = c.step()
+    (
+        current_transform,
+        current_velocity,
+        target_waypoint,
+        navigational_command,
+    ) = c.step()
 
     data = c.get_data()
     bev_ = data["bev"]
 
     bev = convert_standard_bev_to_model_bev(bev=bev_, device=config.device)
-    
+
     counter = 0
 
     while True:
@@ -62,28 +69,30 @@ def main(config):
         if counter % 1 == 0:
 
             # Set the current state of the ego vehicle for the kinematic model
-            current_state = torch.zeros(
-                size=(1, 4), device=config.device).unsqueeze(dim=0)
+            current_state = torch.zeros(size=(1, 4), device=config.device).unsqueeze(
+                dim=0
+            )
 
             current_state[..., 0] = current_transform.location.x
             current_state[..., 1] = current_transform.location.y
-            current_state[..., 2] = current_transform.rotation.yaw * \
-                torch.pi / 180.0
-            current_state[..., 3] = math.sqrt(
-                current_velocity.x**2 + current_velocity.y**2) + 0.01
+            current_state[..., 2] = current_transform.rotation.yaw * torch.pi / 180.0
+            current_state[..., 3] = (
+                math.sqrt(current_velocity.x**2 + current_velocity.y**2) + 0.01
+            )
             current_state.requires_grad_(True)
 
             logging.debug(f"Current state: {current_state}")
 
-            target_state = torch.zeros(
-                size=(1, 4), device=config.device).unsqueeze(0)
+            target_state = torch.zeros(size=(1, 4), device=config.device).unsqueeze(0)
 
             target_state[..., 0] = target_waypoint.transform.location.x
             target_state[..., 1] = target_waypoint.transform.location.y
-            target_state[..., 2] = target_waypoint.transform.rotation.yaw * \
-                torch.pi / 180.0
+            target_state[..., 2] = (
+                target_waypoint.transform.rotation.yaw * torch.pi / 180.0
+            )
             if (navigational_command != RoadOption.LANEFOLLOW) and (
-                    navigational_command != RoadOption.STRAIGHT):
+                navigational_command != RoadOption.STRAIGHT
+            ):
 
                 target_state[..., 3] = 3
 
@@ -94,25 +103,27 @@ def main(config):
             logging.debug(f"Target state: {target_state}")
             # Get the control from the ModelPredictiveControl module
             control, location_predicted, cost, cost_canvas = mpc_module.step(
-                current_state, target_state, bev)
+                current_state, target_state, bev
+            )
 
-        throttle, brake = acceleration_to_throttle_brake(
-            acceleration=control[0])
+        throttle, brake = acceleration_to_throttle_brake(acceleration=control[0])
 
         control = [throttle, control[1], brake]
 
-        current_transform, current_velocity, target_waypoint, navigational_command = c.step(
-            action=control)
+        (
+            current_transform,
+            current_velocity,
+            target_waypoint,
+            navigational_command,
+        ) = c.step(action=control)
 
         if c.is_done:
             break
 
         data = c.get_data()
         bev_ = data["bev"]
-       
+
         bev = convert_standard_bev_to_model_bev(bev=bev_, device=config.device)
-
-
 
         t1 = time.time()
 
@@ -125,9 +136,8 @@ def main(config):
             current_state=current_state,
             target_state=target_state,
             counter=counter,
-            sim_fps=1 / (t1 - t0))
-
-       
+            sim_fps=1 / (t1 - t0),
+        )
 
         mpc_module.reset()
 
@@ -139,15 +149,18 @@ def main(config):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        description="Collect data from the CARLA simulator")
+        description="Collect data from the CARLA simulator"
+    )
     parser.add_argument(
         "--ego_forward_model_path",
         type=str,
         default="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt",
-        help="Path to the forward model of the ego vehicle")
+        help="Path to the forward model of the ego vehicle",
+    )
     parser.add_argument("--rollout_length", type=int, default=10)
-    parser.add_argument("--device", type=str, default="cuda",
-                        help="Device to use for the forward model")
+    parser.add_argument(
+        "--device", type=str, default="cuda", help="Device to use for the forward model"
+    )
     config = parser.parse_args()
 
     main(config)

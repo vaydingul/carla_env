@@ -20,8 +20,9 @@ from utils.model_utils import (
     load_ego_model_from_checkpoint,
     load_policy_model_from_wandb_run,
     fetch_checkpoint_from_wandb_link,
-    convert_standard_bev_to_model_bev)
-from utils.train_utils import (seed_everything, get_device)
+    convert_standard_bev_to_model_bev,
+)
+from utils.train_utils import seed_everything, get_device
 
 logging.basicConfig(level=logging.INFO)
 
@@ -46,13 +47,19 @@ def main(config):
             "render": True,
             "save": True,
             "save_video": True,
-            "fixed_delta_seconds": config.dt, })
+            "fixed_delta_seconds": config.dt,
+        }
+    )
 
     NUM_TIME_STEP_PREVIOUS = 5  # Number of conditioning frames
     bev_tensor_deque = deque(maxlen=NUM_TIME_STEP_PREVIOUS)
 
-    (current_transform, current_velocity, target_waypoint,
-     navigational_command) = c.step()  # Initial step to fill the deque
+    (
+        current_transform,
+        current_velocity,
+        target_waypoint,
+        navigational_command,
+    ) = c.step()  # Initial step to fill the deque
 
     # Fetch all sensor data from environment
     data = c.get_data()
@@ -70,17 +77,11 @@ def main(config):
                 bev,
                 agent_channel=7,
                 vehicle_channel=6,
-                selected_channels=[
-                    0,
-                    1,
-                    2,
-                    3,
-                    4,
-                    5,
-                    6,
-                    11],
+                selected_channels=[0, 1, 2, 3, 4, 5, 6, 11],
                 calculate_offroad=False,
-                device=device))
+                device=device,
+            )
+        )
 
     counter = 0
 
@@ -117,58 +118,50 @@ def main(config):
             # target_location = target_location.to(device=device)
 
             # Convert bev tensor deque to torch tensor
-            bev_tensor = torch.cat(
-                list(bev_tensor_deque),
-                dim=0).unsqueeze(0)  # Batch dimension is added
+            bev_tensor = torch.cat(list(bev_tensor_deque), dim=0).unsqueeze(
+                0
+            )  # Batch dimension is added
 
             # Convert navigational command to one-hot torch tensor
             navigational_command = torch.tensor(
-                navigational_command.value - 1, device=device).unsqueeze(0)
-            navigational_command = torch.nn.functional.one_hot(
-                navigational_command, num_classes=6).float().to(device=device)
+                navigational_command.value - 1, device=device
+            ).unsqueeze(0)
+            navigational_command = (
+                torch.nn.functional.one_hot(navigational_command, num_classes=6)
+                .float()
+                .to(device=device)
+            )
 
             # Predict control from your model
             # control = model(bev_tensor, navigational_command)
 
             # Some helper function to convert acceleration to throttle and
             # brake
-            throttle, brake = acceleration_to_throttle_brake(
-                acceleration=control[0])
+            throttle, brake = acceleration_to_throttle_brake(acceleration=control[0])
 
             # Final control vector that will be passed to the environment
             control = [throttle, control[1], brake]
 
-            (current_transform, current_velocity, target_waypoint,
-             navigational_command) = c.step(action=control)
+            (
+                current_transform,
+                current_velocity,
+                target_waypoint,
+                navigational_command,
+            ) = c.step(action=control)
 
             data = c.get_data()
             bev = data["bev"]
-            bev_ = bev[..., [
-                0,
-                1,
-                2,
-                3,
-                4,
-                5,
-                6,
-
-                11]]
+            bev_ = bev[..., [0, 1, 2, 3, 4, 5, 6, 11]]
             bev_tensor_deque.append(
                 convert_standard_bev_to_model_bev(
                     bev,
                     agent_channel=7,
                     vehicle_channel=6,
-                    selected_channels=[
-                        0,
-                        1,
-                        2,
-                        3,
-                        4,
-                        5,
-                        6,
-                        11],
+                    selected_channels=[0, 1, 2, 3, 4, 5, 6, 11],
                     calculate_offroad=False,
-                    device=device))
+                    device=device,
+                )
+            )
 
             t1 = time.time()
 
@@ -193,7 +186,8 @@ def main(config):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        description="Test pretrained model on Carla environment")
+        description="Test pretrained model on Carla environment"
+    )
 
     parser.add_argument("--seed", type=int, default=555)
     parser.add_argument("--dt", type=float, default=0.1)

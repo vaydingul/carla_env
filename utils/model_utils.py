@@ -12,14 +12,17 @@ def fetch_checkpoint_from_wandb_link(wandb_link, checkpoint_number=-1):
     api = wandb.Api()
     run = api.run(wandb_link)
 
-    torch_files_ = [f for f in run.files() if f.name.endswith('.pt')]
-    torch_files_.sort(key=lambda x: abs(int(x.name.split(
-        "/")[-1].split(".")[0].split("_")[-1]) - (checkpoint_number if checkpoint_number >= 0 else 0)))
+    torch_files_ = [f for f in run.files() if f.name.endswith(".pt")]
+    torch_files_.sort(
+        key=lambda x: abs(
+            int(x.name.split("/")[-1].split(".")[0].split("_")[-1])
+            - (checkpoint_number if checkpoint_number >= 0 else 0)
+        )
+    )
 
     checkpoint = torch_files_[0 if checkpoint_number >= 0 else -1]
 
-    logger.info(
-        f"Fetching checkpoint {checkpoint.name} from wandb run {wandb_link}")
+    logger.info(f"Fetching checkpoint {checkpoint.name} from wandb run {wandb_link}")
 
     # Check if it exists, if not, download it
     if not os.path.exists(checkpoint.name):
@@ -35,34 +38,25 @@ def fetch_checkpoint_from_wandb_run(run, checkpoint_number=-1):
     return checkpoint
 
 
-def load_world_model_from_wandb_run(
-        run,
-        checkpoint,
-        cls,
-        world_model_device):
+def load_world_model_from_wandb_run(run, checkpoint, cls, world_model_device):
 
-    checkpoint = torch.load(
-        checkpoint.name,
-        map_location=world_model_device)
+    checkpoint = torch.load(checkpoint.name, map_location=world_model_device)
     world_bev_model = cls(
         input_shape=run.config["input_shape"],
         hidden_channel=run.config["hidden_channel"],
         output_channel=run.config["output_channel"],
         num_encoder_layer=run.config["num_encoder_layer"],
-        num_probabilistic_encoder_layer=run.config[
-            "num_probabilistic_encoder_layer"],
+        num_probabilistic_encoder_layer=run.config["num_probabilistic_encoder_layer"],
         num_time_step=run.config["num_time_step_previous"] + 1,
-        dropout=run.config["dropout"])
+        dropout=run.config["dropout"],
+    )
     world_bev_model.load_state_dict(checkpoint["model_state_dict"])
 
     return world_bev_model, checkpoint
 
 
-def load_policy_model_from_wandb_run(
-        run, checkpoint, cls, policy_model_device):
-    checkpoint = torch.load(
-        checkpoint.name,
-        map_location=policy_model_device)
+def load_policy_model_from_wandb_run(run, checkpoint, cls, policy_model_device):
+    checkpoint = torch.load(checkpoint.name, map_location=policy_model_device)
     policy_model = cls(
         input_shape_world_state=run.config["input_shape_world_state"],
         input_ego_location=run.config["input_ego_location"],
@@ -71,7 +65,8 @@ def load_policy_model_from_wandb_run(
         action_size=run.config["action_size"],
         hidden_size=run.config["hidden_size"],
         layers=run.config["num_layer"],
-        delta_target=run.config["delta_target"])
+        delta_target=run.config["delta_target"],
+    )
     policy_model.load_state_dict(checkpoint["model_state_dict"])
 
     return policy_model, checkpoint
@@ -79,24 +74,25 @@ def load_policy_model_from_wandb_run(
 
 def load_ego_model_from_checkpoint(checkpoint, cls, dt):
     ego_forward_model = cls(dt=dt)
-    ego_forward_model.load_state_dict(
-        state_dict=torch.load(f=checkpoint))
+    ego_forward_model.load_state_dict(state_dict=torch.load(f=checkpoint))
     return ego_forward_model
 
 
 def convert_standard_bev_to_model_bev(
-        bev,
-        agent_channel=7,
-        vehicle_channel=6,
-        selected_channels=[0, 1, 2, 3, 4, 5, 6, 11],
-        calculate_offroad=False,
-        device="cpu"):
+    bev,
+    agent_channel=7,
+    vehicle_channel=6,
+    selected_channels=[0, 1, 2, 3, 4, 5, 6, 11],
+    calculate_offroad=False,
+    device="cpu",
+):
 
     bev_ = torch.from_numpy(bev).float()
     # Permute the dimensions such that the channel dim is the first one
     agent_mask = bev_[..., agent_channel]
     bev_[..., vehicle_channel] = torch.logical_and(
-        bev_[..., vehicle_channel], torch.logical_not(bev_[..., agent_channel]))
+        bev_[..., vehicle_channel], torch.logical_not(bev_[..., agent_channel])
+    )
 
     bev = bev_[..., selected_channels]
 
@@ -104,10 +100,10 @@ def convert_standard_bev_to_model_bev(
     # Add offroad mask to BEV representation
     if calculate_offroad:
         offroad_mask = torch.where(
-            torch.all(
-                bev == 0, dim=0), torch.ones_like(
-                bev[0]), torch.zeros_like(
-                bev[0]))
+            torch.all(bev == 0, dim=0),
+            torch.ones_like(bev[0]),
+            torch.zeros_like(bev[0]),
+        )
         bev = torch.cat([bev, offroad_mask.unsqueeze(0)], dim=0)
     bev = bev.unsqueeze(0).to(device)
     return bev

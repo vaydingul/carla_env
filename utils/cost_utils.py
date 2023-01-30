@@ -8,9 +8,8 @@ def create_coordinate_mask(nx, ny, pixels_per_meter, device):
 
     # Create a matrix of the same size as the image
     X, Y = torch.meshgrid(
-        torch.arange(
-            nx, device=device), torch.arange(
-            ny, device=device))
+        torch.arange(nx, device=device), torch.arange(ny, device=device)
+    )
 
     # Calculate the distance from the center of the image
     x = X - nx // 2
@@ -37,18 +36,18 @@ def align_coordinate_mask_with_ego_vehicle(x, y, yaw, coordinate_mask):
 
     aligned_coordinate_mask = coordinate_mask.clone()
     # Translate the coordinate mask
-    aligned_coordinate_mask[...,
-                            0] -= y.unsqueeze(-1).repeat(1,
-                                                         1,
-                                                         aligned_coordinate_mask.shape[2],
-                                                         aligned_coordinate_mask.shape[3],
-                                                         )
-    aligned_coordinate_mask[...,
-                            1] -= x.unsqueeze(-1).repeat(1,
-                                                         1,
-                                                         aligned_coordinate_mask.shape[2],
-                                                         aligned_coordinate_mask.shape[3],
-                                                         )
+    aligned_coordinate_mask[..., 0] -= y.unsqueeze(-1).repeat(
+        1,
+        1,
+        aligned_coordinate_mask.shape[2],
+        aligned_coordinate_mask.shape[3],
+    )
+    aligned_coordinate_mask[..., 1] -= x.unsqueeze(-1).repeat(
+        1,
+        1,
+        aligned_coordinate_mask.shape[2],
+        aligned_coordinate_mask.shape[3],
+    )
 
     # Rotate the coordinate mask
     rotation_matrix.unsqueeze_(2).unsqueeze_(3)
@@ -58,24 +57,26 @@ def align_coordinate_mask_with_ego_vehicle(x, y, yaw, coordinate_mask):
     return aligned_coordinate_mask
 
 
-def calculate_mask(aligned_coordinate_mask, dx, dy, width, length, alpha=0.1, side_mask=True):
+def calculate_mask(
+    aligned_coordinate_mask, dx, dy, width, length, alpha=0.1, side_mask=True
+):
     """Calculate the mask for the ego vehicle"""
 
-    term_1 = (
-        dx - torch.abs(aligned_coordinate_mask[..., 0:1])) / (dx - (width / 2))
-    term_2 = (
-        dy - torch.abs(aligned_coordinate_mask[..., 1:2])) / (dy - (length / 2))
+    term_1 = (dx - torch.abs(aligned_coordinate_mask[..., 0:1])) / (dx - (width / 2))
+    term_2 = (dy - torch.abs(aligned_coordinate_mask[..., 1:2])) / (dy - (length / 2))
 
-    mask_car = torch.maximum(term_1, torch.tensor(
-        0)) * torch.minimum(torch.maximum(term_2, torch.tensor(0)), torch.tensor(1))
+    mask_car = torch.maximum(term_1, torch.tensor(0)) * torch.minimum(
+        torch.maximum(term_2, torch.tensor(0)), torch.tensor(1)
+    )
     mask_car = torch.pow(mask_car, alpha)
     mask_car = mask_car.flip(-2).permute((0, 1, 3, 2, -1)).squeeze(-1)
 
     if not side_mask:
         return mask_car
-        
-    mask_side = torch.maximum(term_1, torch.tensor(
-        0)) * torch.maximum(term_2, torch.tensor(0))
+
+    mask_side = torch.maximum(term_1, torch.tensor(0)) * torch.maximum(
+        term_2, torch.tensor(0)
+    )
     mask_side = torch.pow(mask_side, alpha)
 
     mask_side = mask_side.flip(-2).permute((0, 1, 3, 2, -1)).squeeze(-1)
@@ -89,7 +90,8 @@ def rotate(location, yaw, location_next, yaw_next):
     # Calculate the rotation matrix
     theta = -yaw
     rotation_matrix = torch.tensor(
-        [[torch.cos(theta), -torch.sin(theta)], [torch.sin(theta), torch.cos(theta)]])
+        [[torch.cos(theta), -torch.sin(theta)], [torch.sin(theta), torch.cos(theta)]]
+    )
 
     # Rotate the coordinate mask
     location_next_prime = rotation_matrix @ location_next.T
@@ -122,10 +124,8 @@ def rotate_batched(location, yaw):
     # Translate the coordinate mask
     # delta_x = rotated_coordinates[1:, 0:1] - rotated_coordinates[0, 0:1]
     # delta_y = rotated_coordinates[1:, 1:2] - rotated_coordinates[0, 1:2]
-    delta_x = rotated_coordinates[:, 1:, 0:1] - \
-        rotated_coordinates[:, 0:1, 0:1]
-    delta_y = rotated_coordinates[:, 1:, 1:2] - \
-        rotated_coordinates[:, 0:1, 1:2]
+    delta_x = rotated_coordinates[:, 1:, 0:1] - rotated_coordinates[:, 0:1, 0:1]
+    delta_y = rotated_coordinates[:, 1:, 1:2] - rotated_coordinates[:, 0:1, 1:2]
     delta_theta = yaw[:, 1:, 0:1] - yaw[:, 0:1, 0:1]
     return (delta_x, delta_y, delta_theta)
 
@@ -133,9 +133,13 @@ def rotate_batched(location, yaw):
 def create_2x2_rotation_tensor_from_angle_tensor(angle_tensor):
     """Create a 2x2 rotation tensor from an angle tensor"""
 
-    rotation_tensor = torch.zeros(*angle_tensor.shape[:-1], 2, 2,
-                                  device=angle_tensor.device,
-                                  dtype=angle_tensor.dtype)
+    rotation_tensor = torch.zeros(
+        *angle_tensor.shape[:-1],
+        2,
+        2,
+        device=angle_tensor.device,
+        dtype=angle_tensor.dtype
+    )
     cos = torch.cos(angle_tensor).squeeze(-1)
     sin = torch.sin(angle_tensor).squeeze(-1)
     rotation_tensor[..., 0, 0] = cos
@@ -150,21 +154,25 @@ if __name__ == "__main__":
     speed = 3
     vehicle_width = 2
     vehicle_length = 4
-    dx = 1.5 * (torch.maximum(torch.tensor(0.1),
-                              torch.tensor(speed)) + vehicle_length) + 1
+    dx = (
+        1.5 * (torch.maximum(torch.tensor(0.1), torch.tensor(speed)) + vehicle_length)
+        + 1
+    )
     dy = (vehicle_width / 2) + 3
 
     # Visualization for testing purposes
-    coordinate_mask, X, Y = create_coordinate_mask(500, 500, 10, 'cpu')
+    coordinate_mask, X, Y = create_coordinate_mask(500, 500, 10, "cpu")
     coordinate_mask_ = coordinate_mask.repeat(1, 1, 1, 1, 1)
     x = torch.tensor([-10.0]).repeat(1, 1, 1)
     y = torch.tensor([10.0]).repeat(1, 1, 1)
     yaw = torch.deg2rad(torch.tensor([-30.0]).repeat(1, 1, 1))
     aligned_coordinate_mask = align_coordinate_mask_with_ego_vehicle(
-        x, y, yaw, coordinate_mask_)
+        x, y, yaw, coordinate_mask_
+    )
 
     mask_car, mask_side = calculate_mask(
-        aligned_coordinate_mask, dy, dx, vehicle_width, vehicle_length, 1)  # 8 2 2.1 4.9 1
+        aligned_coordinate_mask, dy, dx, vehicle_width, vehicle_length, 1
+    )  # 8 2 2.1 4.9 1
 
     # coordinate_mask, X, Y = create_coordinate_mask(40, 20, 1)
     # aligned_coordinate_mask = align_coordinate_mask_with_ego_vehicle(0, 0, 0, coordinate_mask)
@@ -178,33 +186,30 @@ if __name__ == "__main__":
     plt.quiver(X, Y, coordinate_mask[..., 0], coordinate_mask[..., 1])
 
     plt.figure()
-    plt.quiver(
-        X, Y, aligned_coordinate_mask[..., 0], aligned_coordinate_mask[..., 1])
+    plt.quiver(X, Y, aligned_coordinate_mask[..., 0], aligned_coordinate_mask[..., 1])
 
     plt.figure()
-    plt.imshow(coordinate_mask[..., 0], cmap='hot', interpolation='nearest')
+    plt.imshow(coordinate_mask[..., 0], cmap="hot", interpolation="nearest")
     plt.colorbar()
 
     plt.figure()
-    plt.imshow(coordinate_mask[..., 1], cmap='hot', interpolation='nearest')
+    plt.imshow(coordinate_mask[..., 1], cmap="hot", interpolation="nearest")
     plt.colorbar()
 
     plt.figure()
-    plt.imshow(aligned_coordinate_mask[..., 0],
-               cmap='hot', interpolation='nearest')
+    plt.imshow(aligned_coordinate_mask[..., 0], cmap="hot", interpolation="nearest")
     plt.colorbar()
 
     plt.figure()
-    plt.imshow(aligned_coordinate_mask[..., 1],
-               cmap='hot', interpolation='nearest')
+    plt.imshow(aligned_coordinate_mask[..., 1], cmap="hot", interpolation="nearest")
     plt.colorbar()
 
     plt.figure()
-    plt.imshow(mask_car, cmap='hot', interpolation='nearest')
+    plt.imshow(mask_car, cmap="hot", interpolation="nearest")
     plt.colorbar()
 
     plt.figure()
-    plt.imshow(mask_side, cmap='hot', interpolation='nearest')
+    plt.imshow(mask_side, cmap="hot", interpolation="nearest")
     plt.colorbar()
 
     plt.show()

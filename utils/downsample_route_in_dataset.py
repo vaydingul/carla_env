@@ -6,8 +6,7 @@ import math
 
 
 def distance(p1, p2):
-    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])
-                     ** 2 + (p1[2] - p2[2])**2)
+    return math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2 + (p1[2] - p2[2]) ** 2)
 
 
 def downsample_route(route, sample_factor=30):
@@ -31,8 +30,7 @@ def downsample_route(route, sample_factor=30):
             dist = 0
 
         # When road option changes
-        elif prev_option != curr_option and prev_option not in (5,
-                                                                6):
+        elif prev_option != curr_option and prev_option not in (5, 6):
             if (i - 1) not in ids_to_sample:
                 ids_to_sample.append(max(0, i - 1))
                 dist = 0
@@ -79,15 +77,19 @@ def main(config):
             episode_path = dataset_path / item
             episode_navigation_path = episode_path / Path("navigation")
             episode_navigation_path_downsampled = episode_path / Path(
-                "navigation_downsampled")
+                "navigation_downsampled"
+            )
             # Create folder if it does not exist
             episode_navigation_path_downsampled.mkdir(parents=True, exist_ok=True)
-            
-            navigation_files = [file for file in os.listdir(
-                episode_navigation_path) if file.endswith(".json")]
+
+            navigation_files = [
+                file
+                for file in os.listdir(episode_navigation_path)
+                if file.endswith(".json")
+            ]
             navigation_files_sorted = sorted(
-                navigation_files, key=lambda x: int(
-                    x.split(".")[0]))
+                navigation_files, key=lambda x: int(x.split(".")[0])
+            )
 
             navigation_data_list = []
             # Read the navigation file
@@ -95,31 +97,36 @@ def main(config):
                 with open(episode_navigation_path / navigation_file, "r") as f:
                     navigation_data = json.load(f)
                     navigation_data_list.append(
-                        (navigation_data["waypoint"], navigation_data["command"]))
+                        (navigation_data["waypoint"], navigation_data["command"])
+                    )
 
-            navigation_data_downsampled_list = downsample_route(
-                navigation_data_list)
+            navigation_data_downsampled_list = downsample_route(navigation_data_list)
 
-            assert len(navigation_data_downsampled_list) == len(
-                navigation_files_sorted)
+            assert len(navigation_data_downsampled_list) == len(navigation_files_sorted)
 
             for k in range(len(navigation_files_sorted)):
-                with open(episode_navigation_path_downsampled / navigation_files_sorted[k], "w") as f:
+                with open(
+                    episode_navigation_path_downsampled / navigation_files_sorted[k],
+                    "w",
+                ) as f:
                     json.dump(
                         obj={
                             "command": navigation_data_downsampled_list[k][1],
-                            "waypoint": navigation_data_downsampled_list[k][0]},
+                            "waypoint": navigation_data_downsampled_list[k][0],
+                        },
                         fp=f,
-                        indent=10)
+                        indent=10,
+                    )
 
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description='Downsample route in dataset')
+    parser = argparse.ArgumentParser(description="Downsample route in dataset")
     parser.add_argument(
-        '--dataset_path',
+        "--dataset_path",
         type=str,
-        default="/home/vaydingul/Documents/Codes/carla_env/data/ground_truth_bev_model_train_data_3_town_02")
+        default="/home/vaydingul/Documents/Codes/carla_env/data/ground_truth_bev_model_train_data_3_town_02",
+    )
     config = parser.parse_args()
 
     main(config)

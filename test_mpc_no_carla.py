@@ -31,8 +31,7 @@ def go_to_waypoint(current_state, target_state, mpc_module, ego_forward_model):
             logging.info(f"Target State: {target_state}")
             logging.info(f"Current state: {current_state}")
 
-            action = mpc_module.optimize_action(
-                current_state, target_state)
+            action = mpc_module.optimize_action(current_state, target_state)
 
             logging.info(f"Action: {action}")
 
@@ -42,11 +41,9 @@ def go_to_waypoint(current_state, target_state, mpc_module, ego_forward_model):
         yaw = current_state[:, :, 2]
         speed = current_state[:, :, 3]
 
-        location_, yaw_, speed_ = ego_forward_model(
-            location, yaw, speed, action)
+        location_, yaw_, speed_ = ego_forward_model(location, yaw, speed, action)
 
-        current_state = torch.cat(
-            (location_, yaw_, speed_), dim=-1)
+        current_state = torch.cat((location_, yaw_, speed_), dim=-1)
 
         state_list.append(current_state.detach().cpu().numpy())
         action_list.append(action)
@@ -65,8 +62,7 @@ def main(config):
 
     # Initialize the environment
     ego_forward_model = KinematicBicycleModel(dt=1 / 20)
-    ego_forward_model.load_state_dict(
-        torch.load(config.ego_forward_model_path))
+    ego_forward_model.load_state_dict(torch.load(config.ego_forward_model_path))
     ego_forward_model.to(config.device)
     mpc_module = mpc.ModelPredictiveControl(config.device, 10, 30, ego_forward_model)
     mpc_module.to(config.device)
@@ -85,20 +81,37 @@ def main(config):
     stride = 10
     for k in range(50, vehicle_location.shape[0] - 1 - stride, stride):
 
-        current_state = torch.cat((vehicle_location[k, 0:2], vehicle_rotation[k, 1:2], torch.norm(
-            vehicle_velocity[k], dim=-1, keepdim=True)), dim=-1).unsqueeze(0).unsqueeze(0)
+        current_state = (
+            torch.cat(
+                (
+                    vehicle_location[k, 0:2],
+                    vehicle_rotation[k, 1:2],
+                    torch.norm(vehicle_velocity[k], dim=-1, keepdim=True),
+                ),
+                dim=-1,
+            )
+            .unsqueeze(0)
+            .unsqueeze(0)
+        )
         current_state.requires_grad = True
 
-        target_state = torch.cat((vehicle_location[k +
-                                                   stride, 0:2], vehicle_rotation[k +
-                                                                                  stride, 1:2], torch.norm(vehicle_velocity[k +
-                                                                                                                            stride], dim=-
-                                                                                                           1, keepdim=True)), dim=-
-                                 1).unsqueeze(0).unsqueeze(0)
+        target_state = (
+            torch.cat(
+                (
+                    vehicle_location[k + stride, 0:2],
+                    vehicle_rotation[k + stride, 1:2],
+                    torch.norm(vehicle_velocity[k + stride], dim=-1, keepdim=True),
+                ),
+                dim=-1,
+            )
+            .unsqueeze(0)
+            .unsqueeze(0)
+        )
         target_state_list.append(target_state.detach().cpu().numpy())
 
         state, action = go_to_waypoint(
-            current_state, target_state, mpc_module, ego_forward_model)
+            current_state, target_state, mpc_module, ego_forward_model
+        )
 
         state_list.append(state)
         action_list.append(action)
@@ -125,26 +138,31 @@ def main(config):
         target_state,
         50,
         k + stride,
-        Path(savedir))
+        Path(savedir),
+    )
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        description="Collect data from the CARLA simulator")
+        description="Collect data from the CARLA simulator"
+    )
     # parser.add_argument("--ego_forward_model_path", type=str, default="pretrained_models/2022-09-22/16-24-58/ego_model_new.pt",
     # 					help="Path to the forward model of the ego vehicle")
     parser.add_argument(
         "--ego_forward_model_path",
         type=str,
         default="pretrained_models/2022-09-28/03-24-39/ego_model_new.pt",
-        help="Path to the forward model of the ego vehicle")
+        help="Path to the forward model of the ego vehicle",
+    )
     parser.add_argument(
         "--validation_data_path",
         type=str,
-        default="data/kinematic_model_data_val_2/dynamic_kinematic_model_data_5.npz")
-    parser.add_argument("--device", type=str, default="cpu",
-                        help="Device to use for the forward model")
+        default="data/kinematic_model_data_val_2/dynamic_kinematic_model_data_5.npz",
+    )
+    parser.add_argument(
+        "--device", type=str, default="cpu", help="Device to use for the forward model"
+    )
     parser.add_argument("--wandb", type=bool, default=False)
 
     config = parser.parse_args()

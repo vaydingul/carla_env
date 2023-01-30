@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from carla_env.models.static.vehicle import KinematicBicycleModel, DynamicBicycleModel
 import os
 import pathlib
+
 DELTA_T = 0.1
 
 
@@ -13,8 +14,7 @@ def plot_all():
 if __name__ == "__main__":
 
     fname = "dynamic_kinematic_model_data_3.npz"
-    data = np.load(
-        "data/kinematic_model_data_train/dynamic_kinematic_model_data_3.npz")
+    data = np.load("data/kinematic_model_data_train/dynamic_kinematic_model_data_3.npz")
 
     vehicle_location = data["vehicle_location"]
     vehicle_rotation = data["vehicle_rotation"]
@@ -27,18 +27,19 @@ if __name__ == "__main__":
     print(f"Number of Steps: {elapsed_time.shape[0]}")
 
     kinematic_bicycle_model = KinematicBicycleModel(
-        x=vehicle_location[0, 0], y=vehicle_location[0, 1], yaw=vehicle_rotation[0, 1], v=np.linalg.norm(vehicle_velocity[0, :]))
-    dynamic_bicycle_model = DynamicBicycleModel(x=vehicle_location[0,
-                                                                   0],
-                                                y=vehicle_location[0,
-                                                                   1],
-                                                yaw=vehicle_rotation[0,
-                                                                     1],
-                                                velocity_x=vehicle_velocity[0,
-                                                                            0],
-                                                velocity_y=vehicle_velocity[0,
-                                                                            1],
-                                                omega=0)
+        x=vehicle_location[0, 0],
+        y=vehicle_location[0, 1],
+        yaw=vehicle_rotation[0, 1],
+        v=np.linalg.norm(vehicle_velocity[0, :]),
+    )
+    dynamic_bicycle_model = DynamicBicycleModel(
+        x=vehicle_location[0, 0],
+        y=vehicle_location[0, 1],
+        yaw=vehicle_rotation[0, 1],
+        velocity_x=vehicle_velocity[0, 0],
+        velocity_y=vehicle_velocity[0, 1],
+        omega=0,
+    )
 
     kinematic_bicycle_location = np.zeros((elapsed_time.shape[0], 2))
     dynamic_bicycle_location = np.zeros((elapsed_time.shape[0], 2))
@@ -63,16 +64,19 @@ if __name__ == "__main__":
 
         steer = action[1]
 
-        #kinematic_bicycle_model.step(acceleration, steer, DELTA_T)
-        #dynamic_bicycle_model.step(acceleration, steer, DELTA_T)
-        kinematic_bicycle_model.step(
-            vehicle_acceleration[k, 0], steer, DELTA_T)
+        # kinematic_bicycle_model.step(acceleration, steer, DELTA_T)
+        # dynamic_bicycle_model.step(acceleration, steer, DELTA_T)
+        kinematic_bicycle_model.step(vehicle_acceleration[k, 0], steer, DELTA_T)
         dynamic_bicycle_model.step(vehicle_acceleration[k, 0], steer, DELTA_T)
 
-        kinematic_bicycle_location[k,
-                                   :] = kinematic_bicycle_model.x, kinematic_bicycle_model.y
-        dynamic_bicycle_location[k,
-                                 :] = dynamic_bicycle_model.x, dynamic_bicycle_model.y
+        kinematic_bicycle_location[k, :] = (
+            kinematic_bicycle_model.x,
+            kinematic_bicycle_model.y,
+        )
+        dynamic_bicycle_location[k, :] = (
+            dynamic_bicycle_model.x,
+            dynamic_bicycle_model.y,
+        )
 
         kinematic_bicycle_speed[k] = kinematic_bicycle_model.v
         dynamic_bicycle_speed[k] = dynamic_bicycle_model.velocity_x
@@ -89,15 +93,14 @@ if __name__ == "__main__":
     os.makedirs(savedir, exist_ok=True)
 
     plt.figure()
-    plt.plot(vehicle_location[:, 1],
-             vehicle_location[:, 0], "r-", label="CARLA")
-    plt.plot(kinematic_bicycle_location[:,
-                                        1],
-             kinematic_bicycle_location[:,
-                                        0],
-             "b-o",
-             label="Kinematic Bicycle")
-    #plt.plot(dynamic_bicycle_location[:, 1], dynamic_bicycle_location[:, 0], "g-", label="Dynamic Bicycle")
+    plt.plot(vehicle_location[:, 1], vehicle_location[:, 0], "r-", label="CARLA")
+    plt.plot(
+        kinematic_bicycle_location[:, 1],
+        kinematic_bicycle_location[:, 0],
+        "b-o",
+        label="Kinematic Bicycle",
+    )
+    # plt.plot(dynamic_bicycle_location[:, 1], dynamic_bicycle_location[:, 0], "g-", label="Dynamic Bicycle")
     plt.legend()
     plt.xlabel("y")
     plt.ylabel("x")
@@ -107,12 +110,10 @@ if __name__ == "__main__":
 
     plt.figure()
     plt.plot(elapsed_time, vehicle_location[:, 0], "r-", label="CARLA")
-    plt.plot(elapsed_time,
-             kinematic_bicycle_location[:,
-                                        0],
-             "b-",
-             label="Kinematic Bicycle")
-    #plt.plot(elapsed_time, dynamic_bicycle_location[:, 0], "g-", label="Dynamic Bicycle")
+    plt.plot(
+        elapsed_time, kinematic_bicycle_location[:, 0], "b-", label="Kinematic Bicycle"
+    )
+    # plt.plot(elapsed_time, dynamic_bicycle_location[:, 0], "g-", label="Dynamic Bicycle")
     plt.legend()
     plt.xlabel("Time")
     plt.ylabel("x")
@@ -121,12 +122,10 @@ if __name__ == "__main__":
 
     plt.figure()
     plt.plot(elapsed_time, vehicle_location[:, 1], "r-", label="CARLA")
-    plt.plot(elapsed_time,
-             kinematic_bicycle_location[:,
-                                        1],
-             "b-",
-             label="Kinematic Bicycle")
-    #plt.plot(elapsed_time, dynamic_bicycle_location[:, 1], "g-", label="Dynamic Bicycle")
+    plt.plot(
+        elapsed_time, kinematic_bicycle_location[:, 1], "b-", label="Kinematic Bicycle"
+    )
+    # plt.plot(elapsed_time, dynamic_bicycle_location[:, 1], "g-", label="Dynamic Bicycle")
     plt.legend()
     plt.xlabel("Time")
     plt.ylabel("y")
@@ -134,14 +133,10 @@ if __name__ == "__main__":
     plt.savefig(savedir / "figure3.png")
 
     plt.figure()
-    #plt.plot(elapsed_time, np.array([np.linalg.norm(vehicle_velocity[k, :]) for k in range(vehicle_velocity.shape[0])]), "r-", label="CARLA")
+    # plt.plot(elapsed_time, np.array([np.linalg.norm(vehicle_velocity[k, :]) for k in range(vehicle_velocity.shape[0])]), "r-", label="CARLA")
     plt.plot(elapsed_time, vehicle_velocity[:, 0], "r-", label="CARLA")
-    plt.plot(
-        elapsed_time,
-        kinematic_bicycle_speed,
-        "b-",
-        label="Kinematic Bicycle")
-    #plt.plot(elapsed_time, dynamic_bicycle_speed, "g-", label="Dynamic Bicycle")
+    plt.plot(elapsed_time, kinematic_bicycle_speed, "b-", label="Kinematic Bicycle")
+    # plt.plot(elapsed_time, dynamic_bicycle_speed, "g-", label="Dynamic Bicycle")
     plt.legend()
     plt.xlabel("Time")
     plt.ylabel("Speed")
@@ -150,10 +145,10 @@ if __name__ == "__main__":
     # plt.show()
 
     plt.figure()
-    #plt.plot(elapsed_time, np.array([np.linalg.norm(vehicle_acceleration[k, :]) for k in range(vehicle_acceleration.shape[0])]), "r-", label="CARLA")
+    # plt.plot(elapsed_time, np.array([np.linalg.norm(vehicle_acceleration[k, :]) for k in range(vehicle_acceleration.shape[0])]), "r-", label="CARLA")
     plt.plot(elapsed_time, vehicle_acceleration[:, 0], "r-", label="CARLA")
-    #plt.plot(elapsed_time, kinematic_bicycle_acceleration, "b-", label="Kinematic Bicycle")
-    #plt.plot(elapsed_time, dynamic_bicycle_acceleration, "g-", label="Dynamic Bicycle")
+    # plt.plot(elapsed_time, kinematic_bicycle_acceleration, "b-", label="Kinematic Bicycle")
+    # plt.plot(elapsed_time, dynamic_bicycle_acceleration, "g-", label="Dynamic Bicycle")
     plt.legend()
     plt.xlabel("Time")
     plt.ylabel("Acceleration-x")
@@ -162,14 +157,12 @@ if __name__ == "__main__":
     # plt.show()
 
     plt.figure()
-    #plt.plot(elapsed_time, np.array([np.linalg.norm(vehicle_acceleration[k, :]) for k in range(vehicle_acceleration.shape[0])]), "r-", label="CARLA")
+    # plt.plot(elapsed_time, np.array([np.linalg.norm(vehicle_acceleration[k, :]) for k in range(vehicle_acceleration.shape[0])]), "r-", label="CARLA")
     plt.plot(elapsed_time, vehicle_acceleration[:, 1], "r-", label="CARLA")
     plt.plot(
-        elapsed_time,
-        kinematic_bicycle_acceleration,
-        "b-",
-        label="Kinematic Bicycle")
-    #plt.plot(elapsed_time, dynamic_bicycle_acceleration, "g-", label="Dynamic Bicycle")
+        elapsed_time, kinematic_bicycle_acceleration, "b-", label="Kinematic Bicycle"
+    )
+    # plt.plot(elapsed_time, dynamic_bicycle_acceleration, "g-", label="Dynamic Bicycle")
     plt.legend()
     plt.xlabel("Time")
     plt.ylabel("Acceleration-y")
@@ -187,14 +180,11 @@ if __name__ == "__main__":
     # plt.show()
 
     plt.figure()
-    plt.plot(elapsed_time, np.rad2deg(
-        vehicle_rotation[:, 1]), "r-", label="CARLA")
+    plt.plot(elapsed_time, np.rad2deg(vehicle_rotation[:, 1]), "r-", label="CARLA")
     plt.plot(
-        elapsed_time,
-        np.rad2deg(kinematic_bicycle_yaw),
-        "b-",
-        label="Kinematic Bicycle")
-    #plt.plot(elapsed_time, np.rad2deg(dynamic_bicycle_yaw), "g-", label="Dynamic Bicycle")
+        elapsed_time, np.rad2deg(kinematic_bicycle_yaw), "b-", label="Kinematic Bicycle"
+    )
+    # plt.plot(elapsed_time, np.rad2deg(dynamic_bicycle_yaw), "g-", label="Dynamic Bicycle")
     plt.xlabel("Time")
     plt.ylabel("Yaw")
     plt.title("Vehicle Yaw")

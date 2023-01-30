@@ -4,29 +4,27 @@ import argparse
 
 
 def main(fps, path, interval):
-    
 
     # Read all the images in the folder
     images = [img for img in os.listdir(path) if img.endswith(".png")]
 
     # Sort the images by name index
     images.sort(key=lambda x: int(x[:-4]))
-    
+
     if interval:
         interval = interval.split(":")
-        images = images[int(interval[0]):int(interval[1])]
-    
+        images = images[int(interval[0]) : int(interval[1])]
 
     for (i, image) in enumerate(images):
-        
+
         img = cv2.imread(os.path.join(path, image))
         # img = cv2.resize(img, (1200, 600))
         h, w, _ = img.shape
         if i == 0:
             # Create a VideoWriter object for mp4 video
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
             out = cv2.VideoWriter(f"{path}/video.mp4", fourcc, fps, (w, h))
-        
+
         out.write(img)
 
     # Release everything if job is finished

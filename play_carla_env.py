@@ -9,15 +9,17 @@ import cv2
 import numpy as np
 
 from carla_env import carla_env_playground
+
 # Save the log to a file name with the current date
 # logging.basicConfig(filename=f"logs/sim_log_debug",level=logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 
+
 def main(config):
     c = carla_env_playground.CarlaEnvironment(
-        config={"render": True, "save": True, "save_video": True,
-                "max_steps": 10000})
+        config={"render": True, "save": True, "save_video": True, "max_steps": 10000}
+    )
 
     for k in range(config.num_episodes):
 
@@ -41,17 +43,20 @@ def main(config):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        description="Collect data from the CARLA simulator")
+        description="Collect data from the CARLA simulator"
+    )
     parser.add_argument(
         "--data_save_path",
         type=str,
         default="./data/ground_truth_bev_model_test_data_2",
-        help="Path to save the data")
+        help="Path to save the data",
+    )
     parser.add_argument(
         "--num_episodes",
         type=int,
         default=10,
-        help="Number of episodes to collect data from")
+        help="Number of episodes to collect data from",
+    )
     config = parser.parse_args()
 
     main(config)

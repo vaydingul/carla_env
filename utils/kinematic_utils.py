@@ -1,4 +1,3 @@
-
 def throttle_brake_to_acceleration(throttle, brake):
     """Convert throttle and brake to acceleration."""
 
