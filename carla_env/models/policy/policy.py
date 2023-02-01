@@ -127,10 +127,10 @@ class Policy(nn.Module):
 
         if self.delta_target:
             target_location = target_location - ego_state["location"]
-            rot = create_2x2_rotation_tensor_from_angle_tensor(
-                ego_state["yaw"])
-            target_location = torch.matmul(
-                rot, target_location.unsqueeze(-1)).squeeze(-1)
+            # rot = create_2x2_rotation_tensor_from_angle_tensor(
+            #     ego_state["yaw"])
+            # target_location = torch.matmul(
+            #     rot, target_location.unsqueeze(-1)).squeeze(-1)
 
         target_encoded = self.target_encoder(target_location)
 
