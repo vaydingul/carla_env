@@ -287,6 +287,7 @@ def main(rank, world_size, run, config):
         cost_weight=config.cost_weight,
         num_time_step_previous=config.num_time_step_previous,
         num_time_step_future=config.num_time_step_future,
+        binary_occupancy=config.binary_occupancy,
         num_epochs=config.num_epochs,
         current_epoch=checkpoint["epoch"] + 1 if config.resume else 0,
         lr_scheduler=lr_scheduler if config.lr_schedule else None,
@@ -351,6 +352,9 @@ if __name__ == "__main__":
     parser.add_argument("--gradient_clip_value", type=float, default=1)
     parser.add_argument("--num_time_step_previous", type=int, default=-1)
     parser.add_argument("--num_time_step_future", type=int, default=-1)
+    parser.add_argument(
+        "--binary_occupancy", type=lambda x: (str(x).lower() == "true"), default=False
+    )
     parser.add_argument("--dataset_dilation", type=int, default=1)
     parser.add_argument(
         "--debug_render", type=lambda x: (str(x).lower() == "true"), default=False

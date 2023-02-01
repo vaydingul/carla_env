@@ -48,10 +48,10 @@ def create_multiple_actors_for_traffic_manager(client, n=20):
     np.random.shuffle(vehicles)
     actors = [actor.ActorModule(
         config={
-            "actor": vehicle.VehicleModule(
+            "vehicle": vehicle.VehicleModule(
                 config=None,
                 client=client),
-            "hero": False},
+            "hero": True},
         client=client)]
 
     for k in range(n):
@@ -161,7 +161,7 @@ class CarlaEnvironment(Environment):
             client=self.client)
         # Make this vehicle actor
         self.hero_actor_module = actor.ActorModule(config={
-            "actor": self.vehicle_module,
+            "vehicle": self.vehicle_module,
             "hero": True,
             "selected_spawn_point": start},
             client=self.client)
@@ -170,18 +170,23 @@ class CarlaEnvironment(Environment):
             self.client, 80)
         self.traffic_manager_module = traffic_manager.TrafficManagerModule(
             config={"vehicle_list": actor_list}, client=self.client)
+            
         # Sensor suite
         self.vehicle_sensor = vehicle_sensor.VehicleSensorModule(
             config=None, client=self.client,
             actor=self.hero_actor_module, id="ego")
+
         self.collision_sensor = collision_sensor.CollisionSensorModule(
             config=None, client=self.client,
             actor=self.hero_actor_module, id="col")
+
         self.occupancy_sensor = occupancy_sensor.OccupancySensorModule(
             config=None, actor=self.hero_actor_module, client=self.client, id="occ")
+
         self.rgb_sensor = rgb_sensor.RGBSensorModule(
             config={"yaw": 0, "width": 900, "height": 256}, client=self.client,
             actor=self.hero_actor_module, id="rgb_front")
+
         self.bev_module = BirdViewProducer(
             client=self.client,
             target_size=PixelDimensions(

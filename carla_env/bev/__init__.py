@@ -79,7 +79,7 @@ RGB_BY_MASK = {
     BirdViewMasks.ROAD_ON: RGB.DIM_GRAY,
     BirdViewMasks.ROAD_OFF: RGB.DARK_GRAY,
     BirdViewMasks.ROAD: RGB.CHOCOLATE,
-    BirdViewMasks.OFFROAD: RGB.DARK_VIOLET
+    BirdViewMasks.OFFROAD: RGB.DARK_VIOLET,
 }
 
 
@@ -146,7 +146,7 @@ class BirdViewProducer:
         road_on_off: bool = False,
         road_light: bool = False,
         light_circle: bool = False,
-        lane_marking_thickness = 1,
+        lane_marking_thickness=1,
     ) -> None:
 
         self.client = client
@@ -163,7 +163,9 @@ class BirdViewProducer:
             rendering_square_size = round(
                 square_fitting_rect_at_any_rotation(self.target_size)
             )
-        elif (crop_type is BirdViewCropType.FRONT_AREA_ONLY) or (crop_type is BirdViewCropType.DYNAMIC):
+        elif (crop_type is BirdViewCropType.FRONT_AREA_ONLY) or (
+            crop_type is BirdViewCropType.DYNAMIC
+        ):
             # We must keep rendering size from FRONT_AND_REAR_AREA (in order to
             # avoid rotation issues)
             enlarged_size = PixelDimensions(
@@ -193,14 +195,15 @@ class BirdViewProducer:
                 self.full_road_cache = static_cache[0]
                 self.full_lanes_cache = static_cache[1]
                 self.full_centerlines_cache = static_cache[2]
-                LOGGER.info(
-                    f"Loaded static layers from cache file: {cache_path}")
+                LOGGER.info(f"Loaded static layers from cache file: {cache_path}")
             else:
                 LOGGER.warning(
                     f"Cache file does not exist, generating cache at {cache_path}"
                 )
                 self.full_road_cache = self.masks_generator.road_mask()
-                self.full_lanes_cache = self.masks_generator.lanes_mask(self.lane_marking_thickness)
+                self.full_lanes_cache = self.masks_generator.lanes_mask(
+                    self.lane_marking_thickness
+                )
                 self.full_centerlines_cache = self.masks_generator.centerlines_mask()
                 static_cache = np.stack(
                     [
@@ -215,8 +218,7 @@ class BirdViewProducer:
     def parametrized_cache_path(self) -> str:
         cache_dir = Path("cache")
         cache_dir.mkdir(parents=True, exist_ok=True)
-        opendrive_content_hash = cache.generate_opendrive_content_hash(
-            self._map)
+        opendrive_content_hash = cache.generate_opendrive_content_hash(self._map)
         cache_filename = (
             f"{self._map.name}__"
             f"px_per_meter={self.pixels_per_meter}__"
@@ -232,15 +234,16 @@ class BirdViewProducer:
     def step(self, agent_vehicle: carla.Actor) -> BirdView:
         all_actors = actors.query_all(world=self._world)
         segregated_actors = actors.segregate_by_type(
-            actors=all_actors, agent_vehicle=agent_vehicle)
+            actors=all_actors, agent_vehicle=agent_vehicle
+        )
         agent_vehicle_loc = agent_vehicle.get_location()
         agent_vehicle_loc_waypoint = self._map.get_waypoint(
-            agent_vehicle_loc, project_to_road=True, lane_type=carla.LaneType.Driving)
+            agent_vehicle_loc, project_to_road=True, lane_type=carla.LaneType.Driving
+        )
         # Reusing already generated static masks for whole map
         self.masks_generator.disable_local_rendering_mode()
 
-        agent_global_px_pos = self.masks_generator.location_to_pixel(
-            agent_vehicle_loc)
+        agent_global_px_pos = self.masks_generator.location_to_pixel(agent_vehicle_loc)
 
         cropping_rect = CroppingRect(
             x=int(agent_global_px_pos.x - self.rendering_area.width / 2),
@@ -262,7 +265,9 @@ class BirdViewProducer:
                 self.is_first_frame = False
                 self.cropping_rect = cropping_rect
                 self.agent_vehicle_loc = agent_vehicle_loc
-                self.agent_vehicle_angle = agent_vehicle.get_transform().rotation.yaw + 90
+                self.agent_vehicle_angle = (
+                    agent_vehicle.get_transform().rotation.yaw + 90
+                )
                 self.agent_global_px_pos = agent_global_px_pos
         else:
 
@@ -296,17 +301,24 @@ class BirdViewProducer:
 
         if self.road_on_off:
             road_on_mask = self.masks_generator.road_on_mask(agent_vehicle_loc_waypoint)
-            road_off_mask = self.masks_generator.road_off_mask(agent_vehicle_loc_waypoint)
+            road_off_mask = self.masks_generator.road_off_mask(
+                agent_vehicle_loc_waypoint
+            )
             masks[BirdViewMasks.ROAD_ON.value] = road_on_mask
             masks[BirdViewMasks.ROAD_OFF.value] = road_off_mask
 
-        masks = self._render_actors_masks(
-            agent_vehicle, segregated_actors, masks)
+        masks = self._render_actors_masks(agent_vehicle, segregated_actors, masks)
 
-        (cropped_masks, reference_change) = self.apply_agent_following_transformation_to_masks(
+        (
+            cropped_masks,
+            reference_change,
+        ) = self.apply_agent_following_transformation_to_masks(
             agent_vehicle,
             masks=masks,
-            angle=self.agent_vehicle_angle if self._crop_type == BirdViewCropType.DYNAMIC else None)
+            angle=self.agent_vehicle_angle
+            if self._crop_type == BirdViewCropType.DYNAMIC
+            else None,
+        )
 
         if self._crop_type is BirdViewCropType.DYNAMIC:
 
@@ -314,28 +326,31 @@ class BirdViewProducer:
 
                 self.cropping_rect = cropping_rect
                 self.agent_vehicle_loc = agent_vehicle_loc
-                self.agent_vehicle_angle = agent_vehicle.get_transform().rotation.yaw + 90
+                self.agent_vehicle_angle = (
+                    agent_vehicle.get_transform().rotation.yaw + 90
+                )
                 self.agent_global_px_pos = agent_global_px_pos
         else:
 
             self.cropping_rect = cropping_rect
             self.agent_vehicle_loc = agent_vehicle_loc
 
-        ordered_indices = [
-            mask.value for mask in BirdViewMasks.bottom_to_top()]
+        ordered_indices = [mask.value for mask in BirdViewMasks.bottom_to_top()]
 
         # Create offroad mask which is the where every channel is zero
         offroad_mask = np.where(cropped_masks.sum(axis=-1) == 0, 1, 0)
         cropped_masks[:, :, BirdViewMasks.OFFROAD.value] = offroad_mask
 
-        return (cropped_masks[:, :, ordered_indices])
+        return cropped_masks[:, :, ordered_indices]
 
     @staticmethod
     def as_rgb(birdview: BirdView) -> RgbCanvas:
         h, w, d = birdview.shape
         assert d == len(BirdViewMasks)
         rgb_canvas = np.zeros(shape=(h, w, 3), dtype=np.uint8)
-        def nonzero_indices(arr): return arr == COLOR_ON
+
+        def nonzero_indices(arr):
+            return arr == COLOR_ON
 
         for mask_type in BirdViewMasks.bottom_to_top():
             rgb_color = RGB_BY_MASK[mask_type]
@@ -350,7 +365,9 @@ class BirdViewProducer:
         h, w, d = birdview.shape
         assert d == len(indices)
         rgb_canvas = np.zeros(shape=(h, w, 3), dtype=np.uint8)
-        def nonzero_indices(arr): return arr == COLOR_ON
+
+        def nonzero_indices(arr):
+            return arr == COLOR_ON
 
         for (k, mask_type) in enumerate(indices):
             # print(BirdViewMasks.bottom_to_top()[mask_type])
@@ -378,36 +395,54 @@ class BirdViewProducer:
         if self.light_circle:
             red_lights_mask, yellow_lights_mask, green_lights_mask = lights_masks
             masks[BirdViewMasks.RED_YELLOW_LIGHTS.value] = np.logical_or(
-                red_lights_mask, yellow_lights_mask)
+                red_lights_mask, yellow_lights_mask
+            )
             # masks[BirdViewMasks.YELLOW_LIGHTS.value] = yellow_lights_mask
             masks[BirdViewMasks.GREEN_LIGHTS.value] = green_lights_mask
 
         if self.road_light:
             road_green_mask = self.masks_generator.road_light_mask(
-                [tl for tl in segregated_actors.traffic_lights if tl.state == carla.TrafficLightState.Green])
+                [
+                    tl
+                    for tl in segregated_actors.traffic_lights
+                    if tl.state == carla.TrafficLightState.Green
+                ]
+            )
             road_yellow_mask = self.masks_generator.road_light_mask(
-                [tl for tl in segregated_actors.traffic_lights if tl.state == carla.TrafficLightState.Yellow])
+                [
+                    tl
+                    for tl in segregated_actors.traffic_lights
+                    if tl.state == carla.TrafficLightState.Yellow
+                ]
+            )
             road_red_mask = self.masks_generator.road_light_mask(
-                [tl for tl in segregated_actors.traffic_lights if tl.state == carla.TrafficLightState.Red])
+                [
+                    tl
+                    for tl in segregated_actors.traffic_lights
+                    if tl.state == carla.TrafficLightState.Red
+                ]
+            )
             masks[BirdViewMasks.ROAD_GREEN.value] = road_green_mask
             # masks[BirdViewMasks.ROAD_YELLOW.value] = road_yellow_mask
             masks[BirdViewMasks.ROAD_RED_YELLOW.value] = np.logical_or(
-                road_red_mask, road_yellow_mask)
+                road_red_mask, road_yellow_mask
+            )
 
         masks[BirdViewMasks.AGENT.value] = self.masks_generator.agent_vehicle_mask(
-            agent_vehicle)
+            agent_vehicle
+        )
         masks[BirdViewMasks.VEHICLES.value] = self.masks_generator.vehicles_mask(
-            segregated_actors.vehicles)
+            segregated_actors.vehicles
+        )
         masks[BirdViewMasks.PEDESTRIANS.value] = self.masks_generator.pedestrians_mask(
-            segregated_actors.pedestrians)
+            segregated_actors.pedestrians
+        )
 
         return masks
 
     def apply_agent_following_transformation_to_masks(
-            self,
-            agent_vehicle: carla.Actor,
-            masks: np.ndarray,
-            angle=None) -> np.ndarray:
+        self, agent_vehicle: carla.Actor, masks: np.ndarray, angle=None
+    ) -> np.ndarray:
         """Returns image of shape: height, width, channels"""
         agent_transform = agent_vehicle.get_transform()
         angle_ = (
@@ -427,25 +462,23 @@ class BirdViewProducer:
         rotated = rotate(
             crop_with_centered_car,
             angle=angle if angle is not None else angle_,
-            center=rotation_center)
+            center=rotation_center,
+        )
 
         half_width = self.target_size.width // 2
-        hslice = slice(
-            rotation_center.x -
-            half_width,
-            rotation_center.x +
-            half_width)
+        hslice = slice(rotation_center.x - half_width, rotation_center.x + half_width)
 
         if (self._crop_type is BirdViewCropType.FRONT_AREA_ONLY) or (
-                self._crop_type is BirdViewCropType.DYNAMIC):
+            self._crop_type is BirdViewCropType.DYNAMIC
+        ):
             vslice = slice(
                 rotation_center.y - self.target_size.height, rotation_center.y
             )
-        elif (self._crop_type is BirdViewCropType.FRONT_AND_REAR_AREA):
+        elif self._crop_type is BirdViewCropType.FRONT_AND_REAR_AREA:
             half_height = self.target_size.height // 2
             vslice = slice(
-                rotation_center.y - half_height,
-                rotation_center.y + half_height)
+                rotation_center.y - half_height, rotation_center.y + half_height
+            )
         else:
             raise NotImplementedError
         assert (
@@ -453,7 +486,6 @@ class BirdViewProducer:
         ), "Trying to access negative indexes is not allowed, check for calculation errors!"
         car_on_the_bottom = rotated[vslice, hslice]
 
-        reference_change = car_on_the_bottom[...,
-                                             BirdViewMasks.AGENT.value].sum() == 0
+        reference_change = car_on_the_bottom[..., BirdViewMasks.AGENT.value].sum() == 0
 
         return car_on_the_bottom, reference_change
