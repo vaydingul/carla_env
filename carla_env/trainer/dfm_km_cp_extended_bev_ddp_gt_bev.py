@@ -501,7 +501,7 @@ class Trainer(object):
 
         self.render(
             i,
-            world_future_bev,
+            world_future_bev.detach(),
             cost,
             ego_future_action_predicted,
             ego_future_action[..., :2],
