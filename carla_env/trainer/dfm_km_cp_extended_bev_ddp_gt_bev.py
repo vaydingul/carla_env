@@ -345,8 +345,9 @@ class Trainer(object):
             ego_future_action_predicted_list.append(action)
 
             # Update the previous bev
-            # world_previous_bev = torch.cat(
-            #     (world_previous_bev[:, 1:], world_future_bev_predicted.unsqueeze(1)), dim=1)
+            world_previous_bev = torch.cat(
+                (world_previous_bev[:, 1:], world_future_bev[:, k].unsqueeze(1)), dim=1
+            )
 
             ego_state_previous = ego_state_next
 
