@@ -12,12 +12,12 @@ echo "Conda environment is activated"
 python3 train_dfm_km_cp_extended_bev_gt_bev.py \
 	--lr=1e-4 \
 	--num_epochs=50 \
-	--batch_size=70 \
+	--batch_size=75 \
 	--num_workers=4 \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_10Hz_multichannel_bev_dense_traffic/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_10Hz_multichannel_bev_dense_traffic/" \
 	--resume=false \
-	--num_gpu=4 \
+	--num_gpu=6 \
 	--master_port="12355" \
 	--lr_schedule=false \
 	--gradient_clip_type="norm" \
