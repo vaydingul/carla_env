@@ -269,7 +269,7 @@ def main(config):
 
             data = c.get_data()
             bev = data["bev"]
-            bev_ = bev[..., [0, 1, 2, 3, 4, 5, 6, 7, 11]]
+            bev_ = bev.copy()
             bev_tensor_deque.append(
                 convert_standard_bev_to_model_bev(
                     bev,
@@ -284,8 +284,8 @@ def main(config):
             occupancy = torch.tensor(
                 occupancy, dtype=torch.float32, device=device
             ).unsqueeze(0)
-            occupancy[occupancy <= 5] = 1
-            occupancy[occupancy > 5] = 0
+            # occupancy[occupancy <= 5] = 1
+            # occupancy[occupancy > 5] = 0
 
             t1 = time.time()
 
@@ -304,7 +304,7 @@ def main(config):
                 predicted_location=ego_state["location"].detach().cpu().numpy(),
                 bev=bev_,
                 cost_canvas=cost_canvas,
-                control=ego_future_action_predicted_list[0][0],
+                control=ego_future_action_predicted_list[0][0].detach().cpu().numpy(),
                 current_state=ego_state,
                 target_state=target_location,
                 target_wrt_ego=target_wrt_ego,
@@ -439,10 +439,10 @@ if __name__ == "__main__":
         description="Collect data from the CARLA simulator"
     )
 
-    parser.add_argument("--seed", type=int, default=555)
+    parser.add_argument("--seed", type=int, default=333)
 
     parser.add_argument("--rollout_length", type=int, default=10)
-    parser.add_argument("--dt", type=float, default=0.1)
+    parser.add_argument("--dt", type=float, default=0.2)
 
     parser.add_argument(
         "--ego_forward_model_wandb_link", type=str, default="vaydingul/mbl/ssifa1go"
@@ -450,16 +450,16 @@ if __name__ == "__main__":
     parser.add_argument("--ego_forward_model_checkpoint_number", type=int, default=459)
 
     parser.add_argument(
-        "--world_forward_model_wandb_link", type=str, default="vaydingul/mbl/23mnzxda"
+        "--world_forward_model_wandb_link", type=str, default="vaydingul/mbl/2aed7ypg"
     )
 
-    parser.add_argument("--world_forward_model_checkpoint_number", type=int, default=95)
+    parser.add_argument("--world_forward_model_checkpoint_number", type=int, default=89)
 
     parser.add_argument(
-        "--policy_model_wandb_link", type=str, default="vaydingul/mbl/2670284j"
+        "--policy_model_wandb_link", type=str, default="vaydingul/mbl/ni41s5a8"
     )
 
-    parser.add_argument("--policy_model_checkpoint_number", type=int, default=9)
+    parser.add_argument("--policy_model_checkpoint_number", type=int, default=99)
 
     config = parser.parse_args()
 

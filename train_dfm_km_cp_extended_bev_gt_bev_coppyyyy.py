@@ -5,7 +5,7 @@ from carla_env.models.world.world import WorldBEVModel
 from carla_env.models.policy.policy import Policy
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
 from carla_env.cost.masked_cost_batched_policy_extended_bev import Cost
-from carla_env.trainer.dfm_km_cp_extended_bev_ddp import Trainer
+from carla_env.trainer.dfm_km_cp_extended_bev_ddp_gt_bev import Trainer
 from carla_env.dataset.instance import InstanceDataset
 import torch
 from torch.utils.data import DataLoader
@@ -96,28 +96,28 @@ def main(rank, world_size, run, config):
     # ---------------------------------------------------------------------------- #
     #                        Pretrained world forward model                        #
     # ---------------------------------------------------------------------------- #
-    world_model_run = wandb.Api().run(config.world_forward_model_wandb_link)
-    checkpoint = fetch_checkpoint_from_wandb_link(
-        config.world_forward_model_wandb_link,
-        config.world_forward_model_checkpoint_number,
-    )
-    world_forward_model = WorldBEVModel.load_model_from_wandb_run(
-        run=world_model_run,
-        checkpoint=checkpoint,
-        device={f"cuda:0": f"cuda:{rank}"} if config.num_gpu > 1 else rank,
-    )
-    world_forward_model.to(device=rank)
+    # world_model_run = wandb.Api().run(config.world_forward_model_wandb_link)
+    # checkpoint = fetch_checkpoint_from_wandb_link(
+    #     config.world_forward_model_wandb_link,
+    #     config.world_forward_model_checkpoint_number,
+    # )
+    # world_forward_model = WorldBEVModel.load_model_from_wandb_run(
+    #     run=world_model_run,
+    #     checkpoint=checkpoint,
+    #     device={f"cuda:0": f"cuda:{rank}"} if config.num_gpu > 1 else rank,
+    # )
+    # world_forward_model.to(device=rank)
 
-    config.num_time_step_previous = (
-        world_model_run.config["num_time_step_previous"]
-        if config.num_time_step_previous < 0
-        else config.num_time_step_previous
-    )
-    config.num_time_step_future = (
-        world_model_run.config["num_time_step_future"]
-        if config.num_time_step_future < 0
-        else config.num_time_step_future
-    )
+    # config.num_time_step_previous = (
+    #     world_model_run.config["num_time_step_previous"]
+    #     if config.num_time_step_previous < 0
+    #     else config.num_time_step_previous
+    # )
+    # config.num_time_step_future = (
+    #     world_model_run.config["num_time_step_future"]
+    #     if config.num_time_step_future < 0
+    #     else config.num_time_step_future
+    # )
 
     # ---------------------------------------------------------------------------- #
     #                                    Dataset                                   #
@@ -208,7 +208,6 @@ def main(rank, world_size, run, config):
     # ---------------------------------------------------------------------------- #
     model = DecoupledForwardModelKinematicsCoupledPolicy(
         ego_model=ego_forward_model,
-        world_model=world_forward_model,
         policy_model=policy_model,
     )
     model.to(device=rank)
@@ -271,6 +270,7 @@ def main(rank, world_size, run, config):
     )
 
     if rank == 0 and run is not None:
+
         run.watch(policy_model)
     # ---------------------------------------------------------------------------- #
 
@@ -287,6 +287,7 @@ def main(rank, world_size, run, config):
         cost_weight=config.cost_weight,
         num_time_step_previous=config.num_time_step_previous,
         num_time_step_future=config.num_time_step_future,
+        binary_occupancy=config.binary_occupancy,
         num_epochs=config.num_epochs,
         current_epoch=checkpoint["epoch"] + 1 if config.resume else 0,
         lr_scheduler=lr_scheduler if config.lr_schedule else None,
@@ -322,18 +323,18 @@ if __name__ == "__main__":
 
     # TRAINING PARAMETERS
     parser.add_argument("--lr", type=float, default=1e-4)
-    parser.add_argument("--num_epochs", type=int, default=100)
-    parser.add_argument("--batch_size", type=int, default=5)
-    parser.add_argument("--num_workers", type=int, default=4)
+    parser.add_argument("--num_epochs", type=int, default=10)
+    parser.add_argument("--batch_size", type=int, default=70)
+    parser.add_argument("--num_workers", type=int, default=10)
     parser.add_argument(
         "--data_path_train",
         type=str,
-        default="data/ground_truth_bev_model_test_data_4_town_02",
+        default="data/ground_truth_bev_model_train_data_10Hz_multichannel_bev_special_seed_33",
     )
     parser.add_argument(
         "--data_path_val",
         type=str,
-        default="data/ground_truth_bev_model_test_data_4_town_02",
+        default="data/ground_truth_bev_model_train_data_10Hz_multichannel_bev_special_seed_33",
     )
     parser.add_argument("--pretrained_model_path", type=str, default=checkpoint_path)
     parser.add_argument(
@@ -351,15 +352,18 @@ if __name__ == "__main__":
     parser.add_argument("--gradient_clip_value", type=float, default=1)
     parser.add_argument("--num_time_step_previous", type=int, default=-1)
     parser.add_argument("--num_time_step_future", type=int, default=-1)
-    parser.add_argument("--dataset_dilation", type=int, default=1)
     parser.add_argument(
-        "--debug_render", type=lambda x: (str(x).lower() == "true"), default=False
+        "--binary_occupancy", type=lambda x: (str(x).lower() == "true"), default=False
+    )
+    parser.add_argument("--dataset_dilation", type=int, default=2)
+    parser.add_argument(
+        "--debug_render", type=lambda x: (str(x).lower() == "true"), default=True
     )
     parser.add_argument("--save_interval", type=int, default=100)
 
     # POLICY MODEL PARAMETERS
-    parser.add_argument("--input_ego_location", type=int, default=1)
-    parser.add_argument("--input_ego_yaw", type=int, default=1)
+    parser.add_argument("--input_ego_location", type=int, default=0)
+    parser.add_argument("--input_ego_yaw", type=int, default=0)
     parser.add_argument("--input_ego_speed", type=int, default=1)
     parser.add_argument(
         "--delta_target", type=lambda x: (str(x).lower() == "true"), default=True
@@ -378,12 +382,12 @@ if __name__ == "__main__":
     # COST WEIGHTS
     parser.add_argument("--road_cost_weight", type=float, default=0.0)
     parser.add_argument("--road_on_cost_weight", type=float, default=0.0)
-    parser.add_argument("--road_off_cost_weight", type=float, default=0.0)
-    parser.add_argument("--road_red_yellow_cost_weight", type=float, default=0.0)
-    parser.add_argument("--road_green_cost_weight", type=float, default=0.0)
-    parser.add_argument("--vehicle_cost_weight", type=float, default=0.0)
-    parser.add_argument("--lane_cost_weight", type=float, default=0.0)
-    parser.add_argument("--offroad_cost_weight", type=float, default=0.0)
+    parser.add_argument("--road_off_cost_weight", type=float, default=0.1)
+    parser.add_argument("--road_red_yellow_cost_weight", type=float, default=0.1)
+    parser.add_argument("--road_green_cost_weight", type=float, default=-0.1)
+    parser.add_argument("--vehicle_cost_weight", type=float, default=0.1)
+    parser.add_argument("--lane_cost_weight", type=float, default=0.1)
+    parser.add_argument("--offroad_cost_weight", type=float, default=0.1)
     parser.add_argument("--action_mse_weight", type=float, default=1.0)
     parser.add_argument("--action_jerk_weight", type=float, default=0.0)
     parser.add_argument("--target_progress_weight", type=float, default=0.0)
@@ -392,13 +396,19 @@ if __name__ == "__main__":
     parser.add_argument("--world_state_mse_weight", type=float, default=0.0)
     # WANDB RELATED PARAMETERS
     parser.add_argument(
-        "--wandb", type=lambda x: (str(x).lower() == "true"), default=False
+        "--wandb", type=lambda x: (str(x).lower() == "true"), default=True
     )
     parser.add_argument("--wandb_project", type=str, default="mbl")
     parser.add_argument(
-        "--wandb_group", type=str, default="dfm_km_with_policy_normalized_costs"
+        "--wandb_group",
+        type=str,
+        default="dfm-km-cp-5Hz-extended-extended-bev-toy-experiments",
     )
-    parser.add_argument("--wandb_name", type=str, default="model")
+    parser.add_argument(
+        "--wandb_name",
+        type=str,
+        default="policy+bc(continuous_occupancy)(target_difference_no_rotation)",
+    )
     parser.add_argument("--wandb_id", type=str, default=None)
 
     parser.add_argument(
@@ -406,10 +416,10 @@ if __name__ == "__main__":
     )
     parser.add_argument("--ego_forward_model_checkpoint_number", type=int, default=459)
     parser.add_argument(
-        "--world_forward_model_wandb_link", type=str, default="vaydingul/mbl/r4la61x3"
+        "--world_forward_model_wandb_link", type=str, default="vaydingul/mbl/2aed7ypg"
     )
 
-    parser.add_argument("--world_forward_model_checkpoint_number", type=int, default=49)
+    parser.add_argument("--world_forward_model_checkpoint_number", type=int, default=89)
 
     config = parser.parse_args()
 

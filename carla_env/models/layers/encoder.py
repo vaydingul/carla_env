@@ -11,11 +11,11 @@ class Encoder2D(nn.Module):
 
         (self.input_channel, self.input_height, self.input_width) = input_shape
 
-        assert output_channel % (
-            2 ** (layers - 1)) == 0, "Output size must be divisible by 2^(layers - 1)"
+        assert (
+            output_channel % (2 ** (layers - 1)) == 0
+        ), "Output size must be divisible by 2^(layers - 1)"
 
-        feature_maps = [output_channel // (2 ** i)
-                        for i in range(layers - 1, 0, -1)]
+        feature_maps = [output_channel // (2**i) for i in range(layers - 1, 0, -1)]
 
         encoder_layers = []
 
@@ -38,7 +38,8 @@ class Encoder2D(nn.Module):
         """Calculates the output shape of the encoder given image input"""
         with torch.no_grad():
             inp = torch.randn(
-                (1, self.input_channel, self.input_height, self.input_width))
+                (1, self.input_channel, self.input_height, self.input_width)
+            )
             out = self.encoder(inp)
             return out.shape[1:]
 
@@ -47,14 +48,11 @@ class ProbabilisticEncoder2D(Encoder2D):
     """Probabilistic encoder for image-like data"""
 
     def __init__(
-            self,
-            input_shape,
-            output_channel=256,
-            layers=4,
-            dropout=0.2,
-            latent_size=256):
+        self, input_shape, output_channel=256, layers=4, dropout=0.2, latent_size=256
+    ):
         super(ProbabilisticEncoder2D, self).__init__(
-            input_shape, output_channel, layers, dropout)
+            input_shape, output_channel, layers, dropout
+        )
 
         in_features = self.get_output_shape().numel()
         self.fc_mu = nn.Linear(in_features, latent_size)
@@ -77,19 +75,14 @@ class ProbabilisticEncoder2D(Encoder2D):
 class Encoder(nn.Module):
     """Encoder for 1D data"""
 
-    def __init__(
-            self,
-            input_size=5,
-            output_size=256,
-            layers=4,
-            dropout=0.2):
+    def __init__(self, input_size=5, output_size=256, layers=4, dropout=0.2):
         super(Encoder, self).__init__()
 
-        assert output_size % (
-            2 ** (layers - 1)) == 0, "Output size must be divisible by 2^(layers - 1)"
+        assert (
+            output_size % (2 ** (layers - 1)) == 0
+        ), "Output size must be divisible by 2^(layers - 1)"
 
-        feature_maps = [output_size // (2 ** i)
-                        for i in range(layers - 1, 0, -1)]
+        feature_maps = [output_size // (2**i) for i in range(layers - 1, 0, -1)]
 
         encoder_layers = []
 
@@ -113,14 +106,11 @@ class ProbabilisticEncoder(Encoder):
     """Probabilistic encoder for 1D data"""
 
     def __init__(
-            self,
-            input_size=7,
-            output_size=256,
-            layers=4,
-            dropout=0.2,
-            latent_size=256):
+        self, input_size=7, output_size=256, layers=4, dropout=0.2, latent_size=256
+    ):
         super(ProbabilisticEncoder, self).__init__(
-            input_size, output_size, layers, dropout)
+            input_size, output_size, layers, dropout
+        )
 
         self.fc_mu = nn.Linear(output_size, latent_size)
         self.fc_logvar = nn.Linear(output_size, latent_size)

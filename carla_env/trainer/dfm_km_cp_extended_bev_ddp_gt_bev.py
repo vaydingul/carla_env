@@ -234,7 +234,7 @@ class Trainer(object):
 
         (_, S_previous, _, _, _) = world_previous_bev.shape
         (B, S_future, C, H, W) = world_future_bev.shape
-
+        world_future_bev_ = world_future_bev.clone()
         world_future_bev_predicted_list = []
 
         ego_previous_location = data["ego"]["location_array"][
@@ -287,12 +287,14 @@ class Trainer(object):
         ego_future_action_predicted_list = []
 
         command = (
-            data["navigation"]["command"][:, self.num_time_step_previous - 1]
+            data["navigation_downsampled"]["command"][
+                :, self.num_time_step_previous - 1
+            ]
             .long()
             .to(self.gpu_id)
         )
         command = F.one_hot(command - 1, num_classes=6).float()
-        target_location = data["navigation"]["waypoint"][
+        target_location = data["navigation_downsampled"]["waypoint"][
             :, self.num_time_step_previous - 1, 0:2
         ].to(self.gpu_id)
 
@@ -346,7 +348,7 @@ class Trainer(object):
 
             # Update the previous bev
             world_previous_bev = torch.cat(
-                (world_previous_bev[:, 1:], world_future_bev[:, k].unsqueeze(1)), dim=1
+                (world_previous_bev[:, 1:], world_future_bev[:, k].unsqueeze(1).clone()), dim=1
             )
 
             ego_state_previous = ego_state_next
@@ -367,11 +369,12 @@ class Trainer(object):
         )
 
         if self.num_time_step_future > 1:
+            world_future_bev.requires_grad = True
             cost = self.cost(
                 ego_future_location_predicted,
                 ego_future_yaw_predicted,
                 ego_future_speed_predicted,
-                world_future_bev.requires_grad_(True),
+                world_future_bev,
             )
 
             road_cost = cost["cost"][0] / (B * S_future)
@@ -502,7 +505,7 @@ class Trainer(object):
 
         self.render(
             i,
-            world_future_bev.detach(),
+            world_future_bev_,
             cost,
             ego_future_action_predicted,
             ego_future_action[..., :2],

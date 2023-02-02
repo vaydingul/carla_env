@@ -122,13 +122,13 @@ def main(rank, world_size, run, config):
     dataset_train = InstanceDataset(
         data_path=data_path_train,
         sequence_length=config.num_time_step_previous + config.num_time_step_future,
-        read_keys=["bev_world", "ego", "navigation", "occ"],
+        read_keys=["bev_world", "ego", "navigation_downsampled", "occ"],
         dilation=config.dataset_dilation,
     )
     dataset_val = InstanceDataset(
         data_path=data_path_val,
         sequence_length=config.num_time_step_previous + config.num_time_step_future,
-        read_keys=["bev_world", "ego", "navigation", "occ"],
+        read_keys=["bev_world", "ego", "navigation_downsampled", "occ"],
         dilation=config.dataset_dilation,
     )
 

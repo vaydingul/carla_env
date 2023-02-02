@@ -101,12 +101,12 @@ def main(rank, world_size, run, config):
         config.world_forward_model_wandb_link,
         config.world_forward_model_checkpoint_number,
     )
-    world_forward_model = WorldBEVModel.load_model_from_wandb_run(
-        run=world_model_run,
-        checkpoint=checkpoint,
-        device={f"cuda:0": f"cuda:{rank}"} if config.num_gpu > 1 else rank,
-    )
-    world_forward_model.to(device=rank)
+    # world_forward_model = WorldBEVModel.load_model_from_wandb_run(
+    #     run=world_model_run,
+    #     checkpoint=checkpoint,
+    #     device={f"cuda:0": f"cuda:{rank}"} if config.num_gpu > 1 else rank,
+    # )
+    # world_forward_model.to(device=rank)
 
     config.num_time_step_previous = (
         world_model_run.config["num_time_step_previous"]
@@ -129,7 +129,7 @@ def main(rank, world_size, run, config):
     dataset_train = InstanceDataset(
         data_path=data_path_train,
         sequence_length=config.num_time_step_previous + config.num_time_step_future,
-        read_keys=["bev_world", "ego", "navigation", "occ"],
+        read_keys=["bev_world", "ego", "navigation_downsampled", "occ"],
         dilation=config.dataset_dilation,
         bev_agent_channel=7,
         bev_vehicle_channel=6,
@@ -139,7 +139,7 @@ def main(rank, world_size, run, config):
     dataset_val = InstanceDataset(
         data_path=data_path_val,
         sequence_length=config.num_time_step_previous + config.num_time_step_future,
-        read_keys=["bev_world", "ego", "navigation", "occ"],
+        read_keys=["bev_world", "ego", "navigation_downsampled", "occ"],
         dilation=config.dataset_dilation,
         bev_agent_channel=7,
         bev_vehicle_channel=6,
@@ -208,7 +208,7 @@ def main(rank, world_size, run, config):
     # ---------------------------------------------------------------------------- #
     model = DecoupledForwardModelKinematicsCoupledPolicy(
         ego_model=ego_forward_model,
-        world_model=world_forward_model,
+        world_model=None,
         policy_model=policy_model,
     )
     model.to(device=rank)
@@ -271,6 +271,7 @@ def main(rank, world_size, run, config):
     )
 
     if rank == 0 and run is not None:
+        
         run.watch(policy_model)
     # ---------------------------------------------------------------------------- #
 

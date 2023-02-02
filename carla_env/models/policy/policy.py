@@ -5,22 +5,22 @@ from utils.cost_utils import create_2x2_rotation_tensor_from_angle_tensor
 
 
 class Policy(nn.Module):
-
     def __init__(
-            self,
-            input_shape_world_state,
-            input_ego_location,
-            input_ego_yaw,
-            input_ego_speed,
-            action_size,
-            command_size=6,
-            target_location_size=2,
-            occupancy_size=None,
-            hidden_size=256,
-            layers=4,
-            delta_target=True,
-            single_world_state_input=False,
-            dropout=0.1):
+        self,
+        input_shape_world_state,
+        input_ego_location,
+        input_ego_yaw,
+        input_ego_speed,
+        action_size,
+        command_size=6,
+        target_location_size=2,
+        occupancy_size=None,
+        hidden_size=256,
+        layers=4,
+        delta_target=True,
+        single_world_state_input=False,
+        dropout=0.1,
+    ):
         super(Policy, self).__init__()
 
         self.input_shape_world_state = input_shape_world_state
@@ -32,8 +32,9 @@ class Policy(nn.Module):
             self.keys.append("yaw")
         if input_ego_speed > 0:
             self.keys.append("speed")
-        self.input_shape_ego_state = input_ego_location * \
-            2 + input_ego_yaw + input_ego_speed
+        self.input_shape_ego_state = (
+            input_ego_location * 2 + input_ego_yaw + input_ego_speed
+        )
 
         self.action_size = action_size
         self.command_size = command_size
@@ -49,29 +50,34 @@ class Policy(nn.Module):
             input_shape=self.input_shape_world_state,
             output_channel=self.hidden_size,
             layers=self.layers,
-            dropout=self.dropout)
+            dropout=self.dropout,
+        )
 
         self.world_state_encoder_fc = nn.Linear(
             in_features=self.world_state_encoder.get_output_shape().numel(),
-            out_features=self.hidden_size)
+            out_features=self.hidden_size,
+        )
 
         self.ego_state_encoder = Encoder(
             input_size=self.input_shape_ego_state,
             output_size=self.hidden_size,
             layers=self.layers,
-            dropout=self.dropout)
+            dropout=self.dropout,
+        )
 
         self.command_encoder = Encoder(
             input_size=self.command_size,
             output_size=self.hidden_size,
             layers=self.layers,
-            dropout=self.dropout)
+            dropout=self.dropout,
+        )
 
         self.target_encoder = Encoder(
             input_size=self.target_location_size,
             output_size=self.hidden_size,
             layers=self.layers,
-            dropout=self.dropout)
+            dropout=self.dropout,
+        )
 
         if self.occupancy_size is not None and self.occupancy_size > 0:
 
@@ -79,7 +85,8 @@ class Policy(nn.Module):
                 input_size=self.occupancy_size,
                 output_size=self.hidden_size,
                 layers=self.layers,
-                dropout=self.dropout)
+                dropout=self.dropout,
+            )
 
             self.fc = nn.Sequential(
                 nn.Linear(self.hidden_size * 5, self.hidden_size * 3),
@@ -97,31 +104,26 @@ class Policy(nn.Module):
                 nn.ReLU(),
             )
 
-        self.fc_acceleration = nn.Sequential(nn.Linear(self.hidden_size, 1),
-                                             nn.Tanh())
-        self.fc_steer = nn.Sequential(nn.Linear(self.hidden_size, 1),
-                                      nn.Tanh())
+        self.fc_acceleration = nn.Sequential(nn.Linear(self.hidden_size, 1), nn.Tanh())
+        self.fc_steer = nn.Sequential(nn.Linear(self.hidden_size, 1), nn.Tanh())
 
-    def forward(
-            self,
-            ego_state,
-            world_state,
-            command,
-            target_location,
-            occupancy=None):
+    def forward(self, ego_state, world_state, command, target_location, occupancy=None):
 
         if self.single_world_state_input:
             world_state = world_state[:, -1:]
         world_state = world_state.view(
-            world_state.shape[0], -1, world_state.shape[-2], world_state.shape[-1])
+            world_state.shape[0], -1, world_state.shape[-2], world_state.shape[-1]
+        )
         world_state_encoded = self.world_state_encoder(world_state)
 
         # Flatten the encoded world state
         world_state_encoded = self.world_state_encoder_fc(
-            world_state_encoded.view(world_state_encoded.size(0), -1))
+            world_state_encoded.view(world_state_encoded.size(0), -1)
+        )
 
-        ego_state_encoded = self.ego_state_encoder(torch.cat(
-            [ego_state[k] for k in self.keys], dim=1))
+        ego_state_encoded = self.ego_state_encoder(
+            torch.cat([ego_state[k] for k in self.keys], dim=1)
+        )
 
         command_encoded = self.command_encoder(command)
 
@@ -134,25 +136,35 @@ class Policy(nn.Module):
 
         target_encoded = self.target_encoder(target_location)
 
-        if occupancy is not None and self.occupancy_size is not None and self.occupancy_size > 0:
+        if (
+            occupancy is not None
+            and self.occupancy_size is not None
+            and self.occupancy_size > 0
+        ):
 
             occupancy_encoded = self.occupancy_encoder(occupancy)
 
             x = torch.cat(
-                (world_state_encoded,
-                 ego_state_encoded,
-                 command_encoded,
-                 target_encoded,
-                 occupancy_encoded),
-                dim=1)
+                (
+                    world_state_encoded,
+                    ego_state_encoded,
+                    command_encoded,
+                    target_encoded,
+                    occupancy_encoded,
+                ),
+                dim=1,
+            )
         else:
 
             x = torch.cat(
-                (world_state_encoded,
-                 ego_state_encoded,
-                 command_encoded,
-                 target_encoded),
-                dim=1)
+                (
+                    world_state_encoded,
+                    ego_state_encoded,
+                    command_encoded,
+                    target_encoded,
+                ),
+                dim=1,
+            )
 
         x_encoded = self.fc(x)
         acceleration = self.fc_acceleration(x_encoded)
@@ -166,10 +178,9 @@ class Policy(nn.Module):
 
         checkpoint = torch.load(
             checkpoint.name,
-            map_location=f"cuda:{device}" if isinstance(
-                device,
-                int) else device)
-                
+            map_location=f"cuda:{device}" if isinstance(device, int) else device,
+        )
+
         model = cls(
             input_shape_world_state=run.config["input_shape_world_state"],
             input_ego_location=run.config["input_ego_location"],
@@ -201,7 +212,8 @@ if __name__ == "__main__":
         target_location_size=2,
         hidden_size=256,
         layers=4,
-        dropout=0.1)
+        dropout=0.1,
+    )
 
     out = policy(inp2, inp1, inp3, inp4)
     print(out.shape)
