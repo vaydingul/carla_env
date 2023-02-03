@@ -12,7 +12,7 @@ echo "Conda environment is activated"
 python3 train_dfm_km_cp_extended_bev_gt_bev_encoded_policy_fused.py \
 	--lr=1e-4 \
 	--num_epochs=50 \
-	--batch_size=95 \
+	--batch_size=90 \
 	--num_workers=4 \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_10Hz_multichannel_bev_dense_traffic/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_10Hz_multichannel_bev_dense_traffic/" \
@@ -51,7 +51,7 @@ python3 train_dfm_km_cp_extended_bev_gt_bev_encoded_policy_fused.py \
 	--ego_state_mse_weight=0.0 \
 	--wandb=true \
 	--wandb_project="mbl" \
-	--wandb_group="dfm-km-cp-5Hz-extended-extended-bev-toy-experiments" \
+	--wandb_group="dfm-km-cp-5Hz-extended-extended-bev" \
 	--wandb_name="policy+bc+target(bev_encoded_policy_fused)" \
 	--ego_forward_model_wandb_link="vaydingul/mbl/ssifa1go" \
 	--ego_forward_model_checkpoint_number=449 \
