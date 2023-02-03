@@ -479,7 +479,7 @@ if __name__ == "__main__":
         "--policy_model_wandb_link", type=str, default="vaydingul/mbl/23p87ft8"
     )
 
-    parser.add_argument("--policy_model_checkpoint_number", type=int, default=34)
+    parser.add_argument("--policy_model_checkpoint_number", type=int, default=9)
 
     config = parser.parse_args()
 

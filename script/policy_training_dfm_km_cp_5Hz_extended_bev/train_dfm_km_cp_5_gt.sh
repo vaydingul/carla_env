@@ -17,7 +17,7 @@ python3 train_dfm_km_cp_extended_bev_gt_bev_encoded_policy_fused.py \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_10Hz_multichannel_bev_dense_traffic/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_10Hz_multichannel_bev_dense_traffic/" \
 	--resume=false \
-	--num_gpu=7 \
+	--num_gpu=6 \
 	--master_port="12355" \
 	--lr_schedule=false \
 	--gradient_clip_type="norm" \
