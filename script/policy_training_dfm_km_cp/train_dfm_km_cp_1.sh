@@ -2,6 +2,12 @@
 
 echo "DFM with KM CP Training!"
 
+# Conda activation
+module load anaconda/2022.05
+source activate carla
+
+echo "Conda environment is activated"
+
 # Run the world model
 python3 train_dfm_km_cp_bev_gt_bev_encoded_policy_fused.py \
 	--lr=1e-4 \

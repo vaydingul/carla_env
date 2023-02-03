@@ -20,7 +20,7 @@ python3 train_dfm_km_cp_bev_gt_bev_encoded_policy_fused.py \
 	--num_time_step_future=10 \
 	--dataset_dilation=1 \
 	--debug_render=true \
-	--save_interval=50 \
+	--save_interval=1 \
 	--input_ego_location=0 \
 	--input_ego_yaw=0 \
 	--input_ego_speed=1 \
