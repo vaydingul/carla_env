@@ -1,8 +1,8 @@
-from carla_env.carla_env_policy_extended_bev_traffic import CarlaEnvironment
+from carla_env import carla_env_mpc_extended_bev_traffic
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
-from carla_env.models.policy.policy import Policy
+from carla_env.models.policy.policy_fused import Policy
 from carla_env.cost.masked_cost_batched_policy_extended_bev import Cost
 from carla_env.bev import BirdViewProducer
 import torch
@@ -85,7 +85,7 @@ def main(config):
     )
     model = model.to(device=device).eval()
 
-    c = CarlaEnvironment(
+    c = carla_env_mpc_extended_bev_traffic.CarlaEnvironment(
         config={
             "render": True,
             "save": True,
@@ -152,10 +152,9 @@ def main(config):
             target_location[..., 1] = target_waypoint.transform.location.y
             target_location = target_location.to(device=device)
 
+            # Get the current state of the world
             logging.debug(f"Ego State: {ego_state}")
             logging.debug(f"Target Location: {target_location}")
-
-            # Get the control from the ModelPredictiveControl module
 
             # Convert bev tensor deque to torch tensor
             bev_tensor = torch.cat(list(bev_tensor_deque), dim=0).unsqueeze(0)
@@ -163,20 +162,14 @@ def main(config):
             navigational_command = torch.tensor(
                 navigational_command.value - 1, device=device
             ).unsqueeze(0)
+
             navigational_command = (
                 torch.nn.functional.one_hot(navigational_command, num_classes=6)
                 .float()
                 .to(device=device)
             )
 
-            # output = model(
-            #     ego_state=ego_state,
-            #     world_state=bev_tensor,
-            #     command=navigational_command,
-            #     target_location=target_location,
-            #     occupancy=occupancy,
-            #     benchmark=True
-            # )
+            B, S, C, H, W = bev_tensor.shape
 
             world_future_bev_predicted_list = []
             ego_future_location_predicted_list = []
@@ -193,17 +186,21 @@ def main(config):
                 for k in range(config.rollout_length):
 
                     # Predict the future bev
-                    output = model(
+                    
+                    action = model.get_policy_model()(
                         ego_state_previous,
-                        world_previous_bev,
+                        world_forward_model.world_previous_bev_encoder(
+                            world_previous_bev.view(B, -1, H, W)
+                        ),
                         command,
                         target_location,
                         occupancy,
                     )
 
-                    ego_state_next = output["ego_state_next"]
-                    world_state_next = output["world_state_next"]
-                    action = output["action"]
+                    ego_state_next = model.get_ego_model()(ego_state_previous, action)
+                    world_state_next = model.get_world_model()(world_previous_bev, sample_latent=True)
+
+                    
 
                     world_future_bev_predicted = torch.sigmoid(world_state_next)
 
@@ -217,13 +214,13 @@ def main(config):
                     # Predict the future ego location
 
                     # Update the previous bev
-                    # world_previous_bev = torch.cat(
-                    #     (
-                    #         world_previous_bev[:, 1:],
-                    #         world_future_bev_predicted.unsqueeze(1),
-                    #     ),
-                    #     dim=1,
-                    # )
+                    world_previous_bev = torch.cat(
+                        (
+                            world_previous_bev[:, 1:],
+                            world_future_bev_predicted.unsqueeze(1),
+                        ),
+                        dim=1,
+                    )
 
                     ego_state_previous = ego_state_next
 
@@ -457,7 +454,7 @@ if __name__ == "__main__":
         description="Collect data from the CARLA simulator"
     )
 
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--seed", type=int, default=333)
 
     parser.add_argument("--rollout_length", type=int, default=5)
     parser.add_argument("--skip_frames", type=int, default=1)
@@ -476,10 +473,10 @@ if __name__ == "__main__":
     parser.add_argument("--world_forward_model_checkpoint_number", type=int, default=47)
 
     parser.add_argument(
-        "--policy_model_wandb_link", type=str, default="vaydingul/mbl/23p87ft8"
+        "--policy_model_wandb_link", type=str, default="vaydingul/mbl/ex9xyg94"
     )
 
-    parser.add_argument("--policy_model_checkpoint_number", type=int, default=34)
+    parser.add_argument("--policy_model_checkpoint_number", type=int, default=49)
 
     config = parser.parse_args()
 

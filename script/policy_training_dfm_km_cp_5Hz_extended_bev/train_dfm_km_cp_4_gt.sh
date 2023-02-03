@@ -2,16 +2,22 @@
 
 echo "DFM with KM CP Training!"
 
+# Conda activation
+module load anaconda/2022.05
+source activate carla
+
+echo "Conda environment is activated"
+
 # Run the world model
 python3 train_dfm_km_cp_extended_bev_gt_bev.py \
 	--lr=1e-4 \
-	--num_epochs=1000 \
-	--batch_size=70 \
+	--num_epochs=50 \
+	--batch_size=72 \
 	--num_workers=4 \
-	--data_path_train="data/ground_truth_bev_model_train_data_10Hz_multichannel_bev_special_seed_33" \
-	--data_path_val="data/ground_truth_bev_model_train_data_10Hz_multichannel_bev_special_seed_33" \
+	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_10Hz_multichannel_bev_dense_traffic/" \
+	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_10Hz_multichannel_bev_dense_traffic/" \
 	--resume=false \
-	--num_gpu=1 \
+	--num_gpu=6 \
 	--master_port="12355" \
 	--lr_schedule=false \
 	--gradient_clip_type="norm" \
@@ -20,7 +26,7 @@ python3 train_dfm_km_cp_extended_bev_gt_bev.py \
 	--num_time_step_future=10 \
 	--dataset_dilation=2 \
 	--debug_render=true \
-	--save_interval=50 \
+	--save_interval=5 \
 	--input_ego_location=0 \
 	--input_ego_yaw=0 \
 	--input_ego_speed=1 \
@@ -30,7 +36,7 @@ python3 train_dfm_km_cp_extended_bev_gt_bev.py \
 	--action_size=2 \
 	--hidden_size=256 \
 	--num_layer=4 \
-	--dropout=0.0 \
+	--dropout=0.2 \
 	--road_cost_weight=0.0 \
 	--road_on_cost_weight=0.0 \
 	--road_off_cost_weight=0.01 \
@@ -39,16 +45,16 @@ python3 train_dfm_km_cp_extended_bev_gt_bev.py \
 	--lane_cost_weight=0.01 \
 	--vehicle_cost_weight=0.01 \
 	--offroad_cost_weight=0.01 \
-	--action_mse_weight=0.0 \
+	--action_mse_weight=10.0 \
 	--action_jerk_weight=0.0 \
 	--target_progress_weight=-1.0 \
 	--target_remainder_weight=1.0 \
 	--ego_state_mse_weight=0.0 \
 	--wandb=true \
 	--wandb_project="mbl" \
-	--wandb_group="dfm-km-cp-5Hz-extended-extended-bev-toy-experiments" \
-	--wandb_name="policy+target(continuous_occupancy)(target_difference_no_rotation)" \
+	--wandb_group="dfm-km-cp-5Hz-extended-extended-bev" \
+	--wandb_name="policy+bc+target(continuous_occupancy)(target_difference_no_rotation)" \
 	--ego_forward_model_wandb_link="vaydingul/mbl/ssifa1go" \
 	--ego_forward_model_checkpoint_number=449 \
-	--world_forward_model_wandb_link="vaydingul/mbl/2aed7ypg" \
-	--world_forward_model_checkpoint_number=89
+	--world_forward_model_wandb_link="vaydingul/mbl/31mxv8ub" \
+	--world_forward_model_checkpoint_number=47

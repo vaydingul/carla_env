@@ -2,10 +2,12 @@ import logging
 from pprint import pprint
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
-from carla_env.models.policy.policy import Policy
+from carla_env.models.policy.policy_fused import Policy
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
 from carla_env.cost.masked_cost_batched_policy_extended_bev import Cost
-from carla_env.trainer.dfm_km_cp_extended_bev_ddp_gt_bev import Trainer
+from carla_env.trainer.dfm_km_cp_extended_bev_ddp_gt_bev_encoded_policy_fused import (
+    Trainer,
+)
 from carla_env.dataset.instance import InstanceDataset
 import torch
 from torch.utils.data import DataLoader
@@ -96,28 +98,28 @@ def main(rank, world_size, run, config):
     # ---------------------------------------------------------------------------- #
     #                        Pretrained world forward model                        #
     # ---------------------------------------------------------------------------- #
-    # world_model_run = wandb.Api().run(config.world_forward_model_wandb_link)
-    # checkpoint = fetch_checkpoint_from_wandb_link(
-    #     config.world_forward_model_wandb_link,
-    #     config.world_forward_model_checkpoint_number,
-    # )
-    # world_forward_model = WorldBEVModel.load_model_from_wandb_run(
-    #     run=world_model_run,
-    #     checkpoint=checkpoint,
-    #     device={f"cuda:0": f"cuda:{rank}"} if config.num_gpu > 1 else rank,
-    # )
-    # world_forward_model.to(device=rank)
+    world_model_run = wandb.Api().run(config.world_forward_model_wandb_link)
+    checkpoint = fetch_checkpoint_from_wandb_link(
+        config.world_forward_model_wandb_link,
+        config.world_forward_model_checkpoint_number,
+    )
+    world_forward_model = WorldBEVModel.load_model_from_wandb_run(
+        run=world_model_run,
+        checkpoint=checkpoint,
+        device={f"cuda:0": f"cuda:{rank}"} if config.num_gpu > 1 else rank,
+    )
+    world_forward_model.to(device=rank)
 
-    # config.num_time_step_previous = (
-    #     world_model_run.config["num_time_step_previous"]
-    #     if config.num_time_step_previous < 0
-    #     else config.num_time_step_previous
-    # )
-    # config.num_time_step_future = (
-    #     world_model_run.config["num_time_step_future"]
-    #     if config.num_time_step_future < 0
-    #     else config.num_time_step_future
-    # )
+    config.num_time_step_previous = (
+        world_model_run.config["num_time_step_previous"]
+        if config.num_time_step_previous < 0
+        else config.num_time_step_previous
+    )
+    config.num_time_step_future = (
+        world_model_run.config["num_time_step_future"]
+        if config.num_time_step_future < 0
+        else config.num_time_step_future
+    )
 
     # ---------------------------------------------------------------------------- #
     #                                    Dataset                                   #
@@ -172,12 +174,15 @@ def main(rank, world_size, run, config):
     # ---------------------------------------------------------------------------- #
     if not config.resume:
 
-        _input_shape_world_state = world_model_run.config["input_shape"]
-        _input_shape_world_state[0] *= (
-            config.num_time_step_previous if not config.single_world_state_input else 1
-        )
+        c, h, w = world_forward_model.world_previous_bev_encoder.to(
+            "cpu"
+        ).get_output_shape()
+
+        _input_shape_world_state = (c, h, w)
+
         if config.wandb:
             run.config.update({"input_shape_world_state": _input_shape_world_state})
+
         policy_model = Policy(
             input_shape_world_state=_input_shape_world_state,
             input_ego_location=config.input_ego_location,
@@ -188,9 +193,9 @@ def main(rank, world_size, run, config):
             occupancy_size=config.occupancy_size,
             layers=config.num_layer,
             delta_target=config.delta_target,
-            single_world_state_input=config.single_world_state_input,
             dropout=config.dropout,
         )
+
     else:
 
         checkpoint = fetch_checkpoint_from_wandb_run(
@@ -208,6 +213,7 @@ def main(rank, world_size, run, config):
     # ---------------------------------------------------------------------------- #
     model = DecoupledForwardModelKinematicsCoupledPolicy(
         ego_model=ego_forward_model,
+        world_model=world_forward_model,
         policy_model=policy_model,
     )
     model.to(device=rank)
@@ -324,8 +330,8 @@ if __name__ == "__main__":
     # TRAINING PARAMETERS
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--num_epochs", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=70)
-    parser.add_argument("--num_workers", type=int, default=10)
+    parser.add_argument("--batch_size", type=int, default=1)
+    parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument(
         "--data_path_train",
         type=str,
@@ -342,7 +348,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--resume_checkpoint_number", type=int, default=14)
     parser.add_argument("--num_gpu", type=int, default=1)
-    parser.add_argument("--master_port", type=str, default="12355")
+    parser.add_argument("--master_port", type=str, default="12356")
     parser.add_argument(
         "--lr_schedule", type=lambda x: (str(x).lower() == "true"), default=False
     )
@@ -368,30 +374,26 @@ if __name__ == "__main__":
     parser.add_argument(
         "--delta_target", type=lambda x: (str(x).lower() == "true"), default=True
     )
-    parser.add_argument(
-        "--single_world_state_input",
-        type=lambda x: (str(x).lower() == "true"),
-        default=False,
-    )
+
     parser.add_argument("--occupancy_size", type=int, default=8)
     parser.add_argument("--action_size", type=int, default=2)
     parser.add_argument("--hidden_size", type=int, default=256)
-    parser.add_argument("--num_layer", type=int, default=6)
+    parser.add_argument("--num_layer", type=int, default=2)
     parser.add_argument("--dropout", type=float, default=0.1)
 
     # COST WEIGHTS
     parser.add_argument("--road_cost_weight", type=float, default=0.0)
     parser.add_argument("--road_on_cost_weight", type=float, default=0.0)
-    parser.add_argument("--road_off_cost_weight", type=float, default=0.1)
-    parser.add_argument("--road_red_yellow_cost_weight", type=float, default=0.1)
-    parser.add_argument("--road_green_cost_weight", type=float, default=-0.1)
-    parser.add_argument("--vehicle_cost_weight", type=float, default=0.1)
-    parser.add_argument("--lane_cost_weight", type=float, default=0.1)
-    parser.add_argument("--offroad_cost_weight", type=float, default=0.1)
+    parser.add_argument("--road_off_cost_weight", type=float, default=0.01)
+    parser.add_argument("--road_red_yellow_cost_weight", type=float, default=0.01)
+    parser.add_argument("--road_green_cost_weight", type=float, default=-0.01)
+    parser.add_argument("--vehicle_cost_weight", type=float, default=0.01)
+    parser.add_argument("--lane_cost_weight", type=float, default=0.01)
+    parser.add_argument("--offroad_cost_weight", type=float, default=0.01)
     parser.add_argument("--action_mse_weight", type=float, default=1.0)
     parser.add_argument("--action_jerk_weight", type=float, default=0.0)
-    parser.add_argument("--target_progress_weight", type=float, default=0.0)
-    parser.add_argument("--target_remainder_weight", type=float, default=0.0)
+    parser.add_argument("--target_progress_weight", type=float, default=1.0)
+    parser.add_argument("--target_remainder_weight", type=float, default=1.0)
     parser.add_argument("--ego_state_mse_weight", type=float, default=0.0)
     parser.add_argument("--world_state_mse_weight", type=float, default=0.0)
     # WANDB RELATED PARAMETERS
@@ -416,10 +418,10 @@ if __name__ == "__main__":
     )
     parser.add_argument("--ego_forward_model_checkpoint_number", type=int, default=459)
     parser.add_argument(
-        "--world_forward_model_wandb_link", type=str, default="vaydingul/mbl/2aed7ypg"
+        "--world_forward_model_wandb_link", type=str, default="vaydingul/mbl/31mxv8ub"
     )
 
-    parser.add_argument("--world_forward_model_checkpoint_number", type=int, default=89)
+    parser.add_argument("--world_forward_model_checkpoint_number", type=int, default=47)
 
     config = parser.parse_args()
 
