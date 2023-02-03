@@ -636,7 +636,7 @@ class CarlaEnvironment(Environment):
 
     def _create_save_folder(self):
 
-        debug_path = Path("figures/env_debug/test_mpc")
+        debug_path = Path("figures/env_debug/test_policy/")
 
         date_ = Path(datetime.today().strftime("%Y-%m-%d"))
         time_ = Path(datetime.today().strftime("%H-%M-%S"))

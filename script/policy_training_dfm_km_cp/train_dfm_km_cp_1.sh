@@ -14,8 +14,8 @@ python3 train_dfm_km_cp_bev_gt_bev_encoded_policy_fused.py \
 	--num_epochs=50 \
 	--batch_size=100 \
 	--num_workers=4 \
-	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_4_town_02/" \
-	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_4_town_02/" \
+	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_4_town_02/ground_truth_bev_model_train_data_4_town_02/" \
+	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_4_town_02/ground_truth_bev_model_val_data_4_town_02/" \
 	--resume=false \
 	--num_gpu=4 \
 	--master_port="12355" \
