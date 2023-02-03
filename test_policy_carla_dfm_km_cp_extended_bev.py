@@ -457,7 +457,7 @@ if __name__ == "__main__":
         description="Collect data from the CARLA simulator"
     )
 
-    parser.add_argument("--seed", type=int, default=653)
+    parser.add_argument("--seed", type=int, default=154687)
 
     parser.add_argument("--rollout_length", type=int, default=5)
     parser.add_argument("--skip_frames", type=int, default=1)

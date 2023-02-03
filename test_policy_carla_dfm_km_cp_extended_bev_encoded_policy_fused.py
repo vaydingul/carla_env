@@ -1,4 +1,4 @@
-from carla_env import carla_env_mpc_extended_bev_traffic
+from carla_env.carla_env_policy_extended_bev_traffic import CarlaEnvironment
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
@@ -85,7 +85,7 @@ def main(config):
     )
     model = model.to(device=device).eval()
 
-    c = carla_env_mpc_extended_bev_traffic.CarlaEnvironment(
+    c = CarlaEnvironment(
         config={
             "render": True,
             "save": True,
@@ -473,10 +473,10 @@ if __name__ == "__main__":
     parser.add_argument("--world_forward_model_checkpoint_number", type=int, default=47)
 
     parser.add_argument(
-        "--policy_model_wandb_link", type=str, default="vaydingul/mbl/ex9xyg94"
+        "--policy_model_wandb_link", type=str, default="vaydingul/mbl/wavqqghv"
     )
 
-    parser.add_argument("--policy_model_checkpoint_number", type=int, default=49)
+    parser.add_argument("--policy_model_checkpoint_number", type=int, default=4)
 
     config = parser.parse_args()
 

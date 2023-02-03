@@ -35,7 +35,7 @@ python3 train_dfm_km_cp_extended_bev_gt_bev_encoded_policy_fused.py \
 	--action_size=2 \
 	--hidden_size=256 \
 	--num_layer=3 \
-	--dropout=0.0 \
+	--dropout=0.1 \
 	--road_cost_weight=0.0 \
 	--road_on_cost_weight=0.0 \
 	--road_off_cost_weight=0.01 \

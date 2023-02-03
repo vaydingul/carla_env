@@ -1,0 +1,23 @@
+Vehicle Mass: 1696.0
+Vehicle Center of Mass: Location(x=0.600000, y=0.000000, z=-0.300000)
+Vehicle Drag Coefficient: 0.30000001192092896
+Vehicle Location (x, y, z): Location(x=136.110016, y=306.420044, z=0.240056) # meters w.r.t World
+Vehicle Rotation (pitch, yaw, roll): Rotation(pitch=0.000000, yaw=-0.000183, roll=0.000000)
+Vehicle Bounding Box Extent (x, y, z): Vector3D(x=2.450842, y=1.064162, z=0.755373) # meters
+Vehicle Bounding Box Location (x, y, z): Location(x=0.004043, y=0.000000, z=0.718861) 
+Front Left Tire Friction: 3.5
+Front Right Tire Friction: 3.5
+Rear Left Tire Friction: 3.5
+Rear Right Tire Friction: 3.5
+Front Left Position (x, y, z): Vector3D(x=13758.754883, y=30563.519531, z=82.107666) # meters w.r.t World
+Front Right Position (x, y, z): Vector3D(x=13758.754883, y=30720.488281, z=82.107666) # meters w.r.t World
+Rear Left Position (x, y, z): Vector3D(x=13471.641602, y=30563.519531, z=82.107666) # meters w.r.t World
+Rear Right Position (x, y, z): Vector3D(x=13471.642578, y=30720.488281, z=82.107666) # meters w.r.t World
+Front Left Max Steer Angle: 69.99999237060547
+Front Right Max Steer Angle: 69.99999237060547
+Rear Left Max Steer Angle: 0.0
+Rear Right Max Steer Angle: 0.0
+Front Left Lateral Stiffness Value (Cornering Stiffness): 20.0
+Front Right Lateral Stiffness Value (Cornering Stiffness): 20.0
+Rear Left Lateral Stiffness Value (Cornering Stiffness): 20.0
+Rear Right Lateral Stiffness Value (Cornering Stiffness): 20.0
