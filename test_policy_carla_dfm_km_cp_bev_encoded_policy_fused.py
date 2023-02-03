@@ -468,10 +468,10 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--world_forward_model_wandb_link", type=str, default="vaydingul/mbl/31mxv8ub"
+        "--world_forward_model_wandb_link", type=str, default="vaydingul/mbl/1gftiw9w"
     )
 
-    parser.add_argument("--world_forward_model_checkpoint_number", type=int, default=47)
+    parser.add_argument("--world_forward_model_checkpoint_number", type=int, default=49)
 
     parser.add_argument(
         "--policy_model_wandb_link", type=str, default="vaydingul/mbl/wavqqghv"
