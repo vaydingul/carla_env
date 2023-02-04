@@ -8,29 +8,36 @@ source activate carla
 
 echo "Conda environment is activated"
 
-
 # Run the world model
-python3 train_world_forward_model_ddp.py \
+python3 train_world_forward_model_extended_bev_ddp.py \
 	--seed=42 \
 	--lr=1e-4 \
-	--num_epochs=100 \
-	--batch_size=120 \
-	--num_workers=4 \
-	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_10Hz_multichannel_bev/" \
-	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_10Hz_multichannel_bev/" \
+	--num_epochs=48 \
+	--batch_size=35 \
+	--num_workers=5 \
+	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_20Hz_multichannel_bev_dense_traffic/" \
+	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_20Hz_multichannel_bev_dense_traffic/" \
 	--resume=false \
-	--num_gpu=2 \
-	--master_port="12555" \
-	--save_every=5 \
-	--input_shape="8-192-192"\
-	--num_time_step_previous=5 \
+	--num_gpu=8 \
+	--master_port="12345" \
+	--save_every=6 \
+	--val_every=3 \
+	--input_shape="8-192-192" \
+	--latent_size=64 \
+	--hidden_channel=256 \
+	--output_channel=512 \
+	--num_encoder_layer=4 --num_probabilistic_encoder_layer=2 \
+	--dropout=0.1 \
+	--num_time_step_previous=20 \
 	--num_time_step_future=10 \
-	--dataset_dilation=2 \
-	--reconstruction_loss="mse_loss" \
+	--dataset_dilation=1 \
+	--reconstruction_loss="binary_cross_entropy" \
+	--bev_channel_weights="1,1,1,1,1,1,1,1" \
+	--weighted_sampling=false \
+	--report_metrics=false \
 	--logvar_clip=false \
 	--lr_schedule=false \
 	--wandb=true \
 	--wandb_project="mbl" \
-	--wandb_group="world-forward-model-multi-step-5Hz-extended-bev" \
-	--wandb_name="5-10-mse_loss-gradient_clip_norm_0.3" \
-	
+	--wandb_group="world-forward-model-multi-step-20Hz-extended-bev" \
+	--wandb_name="20-10-binary_cross_entropy"
