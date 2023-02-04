@@ -31,7 +31,7 @@ def main(config):
             ],
             "max_steps": 1000,
             "random": False,
-            "fixed_delta_seconds": 1 / 10,
+            "fixed_delta_seconds": 1 / 20,
             "port": config.port,
             "tm_port": config.tm_port,
         }
@@ -61,9 +61,9 @@ def main(config):
         writer.add_key(
             key="bev_world", value="bev_world", type=InstanceWriterType.BEV_IMAGE
         )
-        writer.add_key(
-            key="bev_ego", value="bev_ego", type=InstanceWriterType.BEV_IMAGE
-        )
+        # writer.add_key(
+        #     key="bev_ego", value="bev_ego", type=InstanceWriterType.BEV_IMAGE
+        # )
         writer.add_key(key="ego", value="ego", type=InstanceWriterType.JSON)
         writer.add_key(
             key="navigation", value="navigation", type=InstanceWriterType.JSON
@@ -112,6 +112,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--tm_port", type=int, default=8000, help="Port to connect to the server"
     )
+
+    parser.add_argument("--fps", type=int, default=20, help="FPS to run the simulator")
     config = parser.parse_args()
 
     main(config)
