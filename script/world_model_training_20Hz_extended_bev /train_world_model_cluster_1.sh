@@ -26,7 +26,8 @@ python3 train_world_forward_model_extended_bev_ddp.py \
 	--latent_size=64 \
 	--hidden_channel=256 \
 	--output_channel=512 \
-	--num_encoder_layer=4 --num_probabilistic_encoder_layer=2 \
+	--num_encoder_layer=4 \
+	--num_probabilistic_encoder_layer=2 \
 	--dropout=0.1 \
 	--num_time_step_previous=20 \
 	--num_time_step_future=10 \
