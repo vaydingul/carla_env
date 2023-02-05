@@ -457,7 +457,7 @@ if __name__ == "__main__":
         description="Collect data from the CARLA simulator"
     )
 
-    parser.add_argument("--seed", type=int, default=154687)
+    parser.add_argument("--seed", type=int, default=333)
 
     parser.add_argument("--rollout_length", type=int, default=5)
     parser.add_argument("--skip_frames", type=int, default=1)
@@ -476,10 +476,10 @@ if __name__ == "__main__":
     parser.add_argument("--world_forward_model_checkpoint_number", type=int, default=47)
 
     parser.add_argument(
-        "--policy_model_wandb_link", type=str, default="vaydingul/mbl/23p87ft8"
+        "--policy_model_wandb_link", type=str, default="vaydingul/mbl/pinc1rf6"
     )
 
-    parser.add_argument("--policy_model_checkpoint_number", type=int, default=9)
+    parser.add_argument("--policy_model_checkpoint_number", type=int, default=49)
 
     config = parser.parse_args()
 

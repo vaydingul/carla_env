@@ -184,7 +184,7 @@ class CarlaEnvironment(Environment):
             client=self.client,
         )
 
-        actor_list = create_multiple_actors_for_traffic_manager(self.client, 80)
+        actor_list = create_multiple_actors_for_traffic_manager(self.client, 90)
         self.traffic_manager_module = traffic_manager.TrafficManagerModule(
             config={"vehicle_list": actor_list}, client=self.client
         )
@@ -337,7 +337,7 @@ class CarlaEnvironment(Environment):
             bev = cv2.cvtColor(
                 self.bev_module.as_rgb_with_indices(
                     bev,
-                    [0, 5, 6, 8, 9, 9, 10, 11],
+                    [0, 5, 6, 7, 8, 9, 9, 10, 11],
                 ),
                 cv2.COLOR_BGR2RGB,
             )

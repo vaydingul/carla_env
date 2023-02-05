@@ -274,7 +274,7 @@ def main(config):
             data = c.get_data()
             bev = data["bev"]
             bev_ = bev.copy()
-            bev_ = bev[..., [0, 5, 6, 8, 9, 9, 10, 11]]
+            bev_ = bev[..., [0, 5, 6, 7, 8, 9, 9, 10, 11]]
             bev_tensor_deque.append(
                 convert_standard_bev_to_model_bev(
                     bev,
@@ -330,7 +330,7 @@ def main(config):
                 skip_counter + (repeat_counter + 1 == (config.repeat_frames))
             ) % config.skip_frames
             repeat_counter = (repeat_counter + 1) % config.repeat_frames
-
+        time.sleep(0.1)    
     c.close()
 
 
@@ -457,8 +457,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--rollout_length", type=int, default=5)
     parser.add_argument("--skip_frames", type=int, default=1)
-    parser.add_argument("--repeat_frames", type=int, default=2)
-    parser.add_argument("--dt", type=float, default=0.1)
+    parser.add_argument("--repeat_frames", type=int, default=1)
+    parser.add_argument("--dt", type=float, default=0.05)
 
     parser.add_argument(
         "--ego_forward_model_path",
@@ -474,10 +474,10 @@ if __name__ == "__main__":
     parser.add_argument("--world_forward_model_checkpoint_number", type=int, default=49)
 
     parser.add_argument(
-        "--policy_model_wandb_link", type=str, default="vaydingul/mbl/wavqqghv"
+        "--policy_model_wandb_link", type=str, default="vaydingul/mbl/33t1uu18"
     )
 
-    parser.add_argument("--policy_model_checkpoint_number", type=int, default=9)
+    parser.add_argument("--policy_model_checkpoint_number", type=int, default=34)
 
     config = parser.parse_args()
 
