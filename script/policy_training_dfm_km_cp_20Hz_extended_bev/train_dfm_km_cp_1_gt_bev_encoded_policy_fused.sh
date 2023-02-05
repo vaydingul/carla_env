@@ -12,7 +12,7 @@ echo "Conda environment is activated"
 python3 train_dfm_km_cp_extended_bev_gt_bev_encoded_policy_fused_20Hz.py \
 	--lr=1e-4 \
 	--num_epochs=50 \
-	--batch_size=80 \
+	--batch_size=75 \
 	--num_workers=5 \
 	--data_path_train="/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_20Hz_multichannel_bev_dense_traffic/" \
 	--data_path_val="/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_20Hz_multichannel_bev_dense_traffic/" \
