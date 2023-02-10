@@ -62,7 +62,10 @@ def create_multiple_actors_for_traffic_manager(client, n=20):
             actor.ActorModule(
                 config={
                     "vehicle": vehicle.VehicleModule(
-                        config=None, client=client  # {"vehicle_model": vehicles[k], },
+                        config={
+                            "vehicle_model": vehicles[k],
+                        },
+                        client=client,
                     ),
                     "hero": False,
                 },
@@ -181,7 +184,7 @@ class CarlaEnvironment(Environment):
             client=self.client,
         )
 
-        actor_list = create_multiple_actors_for_traffic_manager(self.client, 80)
+        actor_list = create_multiple_actors_for_traffic_manager(self.client, 90)
         self.traffic_manager_module = traffic_manager.TrafficManagerModule(
             config={"vehicle_list": actor_list}, client=self.client
         )

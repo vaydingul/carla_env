@@ -453,7 +453,7 @@ if __name__ == "__main__":
         description="Collect data from the CARLA simulator"
     )
 
-    parser.add_argument("--seed", type=int, default=333)
+    parser.add_argument("--seed", type=int, default=26845)
 
     parser.add_argument("--rollout_length", type=int, default=5)
     parser.add_argument("--skip_frames", type=int, default=1)
@@ -477,7 +477,7 @@ if __name__ == "__main__":
         "--policy_model_wandb_link", type=str, default="vaydingul/mbl/33t1uu18"
     )
 
-    parser.add_argument("--policy_model_checkpoint_number", type=int, default=34)
+    parser.add_argument("--policy_model_checkpoint_number", type=int, default=49)
 
     config = parser.parse_args()
 
