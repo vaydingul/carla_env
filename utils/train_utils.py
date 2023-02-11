@@ -14,3 +14,10 @@ def seed_everything(seed):
 
 def get_device():
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def organize_device(device):
+    
+    if isinstance(device, int):
+        return f"cuda:{device}"
+    return device
