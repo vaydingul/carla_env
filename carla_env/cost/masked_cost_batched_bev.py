@@ -146,6 +146,21 @@ class Cost(nn.Module):
             pedestrian_cost = torch.mean(pedestrian_cost_tensor, dim=[2, 3, 4])
             offroad_cost = torch.mean(offroad_cost_tensor, dim=[2, 3, 4])
 
+        elif self.reduction == "none":
+            lane_cost = lane_cost_tensor
+            vehicle_cost = vehicle_cost_tensor
+            green_light_cost = green_light_cost_tensor
+            yellow_light_cost = yellow_light_cost_tensor
+            red_light_cost = red_light_cost_tensor
+            pedestrian_cost = pedestrian_cost_tensor
+            offroad_cost = offroad_cost_tensor
+
+        else:
+
+            raise ValueError(
+                "Invalid reduction type. Expected 'sum', 'mean', 'batch-sum', 'batch-mean', or 'none'."
+            )
+
         return {
             "lane_cost": lane_cost,
             "vehicle_cost": vehicle_cost,

@@ -2,7 +2,7 @@ from carla_env import carla_env_mpc_bev_traffic
 from carla_env.mpc.mpc_bev import ModelPredictiveControl
 from carla_env.models.dynamic.vehicle import KinematicBicycleModelV2
 
-from carla_env.cost.masked_cost_batched_mpc_bev import Cost
+from carla_env.cost.masked_cost_batched_bev import Cost
 from agents.navigation.local_planner import RoadOption
 import torch
 import time
