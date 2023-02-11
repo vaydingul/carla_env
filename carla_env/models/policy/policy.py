@@ -89,10 +89,9 @@ class Policy(nn.Module):
             nn.ReLU(),
             nn.Linear(self.hidden_size * 2, self.hidden_size),
             nn.ReLU(),
+            nn.Linear(self.hidden_size, self.action_size),
+            nn.Tanh(),
         )
-
-        self.fc_acceleration = nn.Sequential(nn.Linear(self.hidden_size, 1), nn.Tanh())
-        self.fc_steer = nn.Sequential(nn.Linear(self.hidden_size, 1), nn.Tanh())
 
     def build_from_config(self):
 
@@ -219,10 +218,7 @@ class Policy(nn.Module):
             # Concatenate the occupancy encoded vector to the feature vector
             x = torch.cat([x, occupancy_encoded], dim=1)
 
-        x_encoded = self.fc(x)
-        acceleration = self.fc_acceleration(x_encoded)
-        steer = self.fc_steer(x_encoded)
-        action = torch.cat((acceleration, steer), dim=1)
+        action = self.fc(x)
 
         return action
 
@@ -246,6 +242,9 @@ class Policy(nn.Module):
             "single_world_state_input": False,
             "dropout": 0.1,
         }
+    
+    def append_config(self, config):
+        self.config.update(config)
 
     @classmethod
     def load_model_from_wandb_run(cls, config, checkpoint_path, device):
