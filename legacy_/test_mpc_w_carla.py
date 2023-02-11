@@ -1,4 +1,4 @@
-from carla_env import carla_env_basic, carla_env_random_driver, carla_env_mpc
+from carla_env import carla_env_basic, carla_env_random_driver
 from carla_env.mpc import mpc
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel, KinematicBicycleModelV2, KinematicBicycleModelWoR
 import torch
@@ -7,6 +7,7 @@ import logging
 import math
 import numpy as np
 import argparse
+from legacy_ import carla_env_mpc
 from utils.kinematic_utils import acceleration_to_throttle_brake
 
 

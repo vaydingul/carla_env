@@ -75,12 +75,3 @@ class InstanceWriter:
 
                     # Save the BEV
                     np.savez(str(self.path / key / f"{count}.npz"), bev=bev)
-
-# class H5DFWriter(Object):
-#     def __init__(self, data, path):
-#         self.data = data
-#         self.path = path
-
-#     def write(self):
-#         with h5py.File(self.path, 'w') as f:
-#             f.create_dataset('data', data=self.data)

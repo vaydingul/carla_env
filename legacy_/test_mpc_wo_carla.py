@@ -1,6 +1,7 @@
-from carla_env import carla_env_basic, carla_env_random_driver, carla_env_mpc
+from carla_env import carla_env_basic, carla_env_random_driver
 from carla_env.mpc import mpc
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel, KinematicBicycleModelV2, KinematicBicycleModelWoR
+from legacy_ import carla_env_mpc
 from utils.plot_utils import plot_result_mpc
 import torch
 import logging

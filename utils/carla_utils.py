@@ -1,4 +1,8 @@
 import carla
+from carla_env.modules.actor import actor
+from carla_env.modules.vehicle import vehicle
+import numpy as np
+
 
 BIG_VEHICLES = ["carlacola", "firetruck", "ambulance"]
 
@@ -15,3 +19,41 @@ def fetch_all_vehicles(client, spawn_big_vehicle=False):
             if vehicle.id.split(".")[-1] not in BIG_VEHICLES:
                 vehicles_.append(".".join(vehicle.id.split(".")[1:]))
     return vehicles_
+
+def create_multiple_actors_for_traffic_manager(client, n=20, include_hero_actor=False):
+    """Create multiple vehicles in the world"""
+
+    vehicles = fetch_all_vehicles(client)
+    vehicles = vehicles * (n // len(vehicles) + 1)
+    # Shuffle the list and take first n vehicles
+    np.random.shuffle(vehicles)
+
+    if include_hero_actor:
+        actors = [
+            actor.ActorModule(
+                config={
+                    "actor": vehicle.VehicleModule(config=None, client=client),
+                    "hero": True,
+                },
+                client=client,
+            )
+        ]
+
+    for k in range(n):
+
+        actors.append(
+            actor.ActorModule(
+                config={
+                    "vehicle": vehicle.VehicleModule(
+                        config={
+                            "vehicle_model": vehicles[k],
+                        },
+                        client=client,
+                    ),
+                    "hero": False,
+                },
+                client=client,
+            )
+        )
+
+    return actors

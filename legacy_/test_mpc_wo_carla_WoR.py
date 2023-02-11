@@ -1,4 +1,4 @@
-from carla_env import carla_env_basic, carla_env_random_driver, carla_env_mpc
+from carla_env import carla_env_basic, carla_env_random_driver
 from carla_env.mpc import mpc
 from carla_env.models.dynamic.vehicle import KinematicBicycleModelWoR
 import torch
@@ -6,6 +6,8 @@ import logging
 import numpy as np
 import argparse
 import matplotlib.pyplot as plt
+
+from legacy_ import carla_env_mpc
 
 torch.autograd.set_detect_anomaly(True)
 # Save the log to a file name with the current date

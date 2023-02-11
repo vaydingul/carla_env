@@ -32,39 +32,12 @@ from cv2 import VideoWriter, VideoWriter_fourcc
 from datetime import datetime
 from pathlib import Path
 from queue import Queue, Empty
-from utils.carla_utils import (fetch_all_vehicles)
+from utils.carla_utils import create_multiple_actors_for_traffic_manager
 
 import logging
 
 logger = logging.getLogger(__name__)
 
-
-def create_multiple_actors_for_traffic_manager(client, n=20):
-    """Create multiple vehicles in the world"""
-
-    vehicles = fetch_all_vehicles(client)
-    vehicles = vehicles * (n // len(vehicles) + 1)
-    # Shuffle the list and take first n vehicles
-    np.random.shuffle(vehicles)
-    actors = [actor.ActorModule(
-        config={
-            "actor": vehicle.VehicleModule(
-                config=None,
-                client=client),
-            "hero": False},
-        client=client)]
-
-    for k in range(n):
-
-        actors.append(actor.ActorModule(
-            config={
-                "vehicle": vehicle.VehicleModule(
-                    config={"vehicle_model": vehicles[k], },
-                    client=client),
-                "hero": False},
-            client=client))
-
-    return actors
 
 # def create_multiple_actors_for_traffic_manager(client, n=20):
 #     """Create multiple vehicles in the world"""
@@ -114,7 +87,8 @@ class CarlaEnvironment(Environment):
             self.traffic_manager_module.close()
 
         self.client_module = client.ClientModule(
-            config={"world": "Town02", "fixed_delta_seconds": 1 / 10})
+            config={"world": "Town02", "fixed_delta_seconds": 1 / 10}
+        )
 
         self.world = self.client_module.get_world()
         self.map = self.client_module.get_map()
@@ -154,69 +128,67 @@ class CarlaEnvironment(Environment):
 
         # Let's initialize a vehicle
         self.vehicle_module = vehicle.VehicleModule(
-            config={
-                "vehicle_model": "lincoln.mkz_2017"},
-            client=self.client)
+            config={"vehicle_model": "lincoln.mkz_2017"}, client=self.client
+        )
         # Make this vehicle actor
 
-        actor_list = create_multiple_actors_for_traffic_manager(
-            self.client, 100)
+        actor_list = create_multiple_actors_for_traffic_manager(self.client, 100)
         self.hero_actor_module = actor_list[0]
 
         self.traffic_manager_module = traffic_manager.TrafficManagerModule(
-            config={"vehicle_list": actor_list}, client=self.client)
+            config={"vehicle_list": actor_list}, client=self.client
+        )
         # Sensor suite
         self.vehicle_sensor = vehicle_sensor.VehicleSensorModule(
-            config=None, client=self.client,
-            actor=self.hero_actor_module, id="ego")
+            config=None, client=self.client, actor=self.hero_actor_module, id="ego"
+        )
         self.collision_sensor = collision_sensor.CollisionSensorModule(
-            config=None, client=self.client,
-            actor=self.hero_actor_module, id="col")
+            config=None, client=self.client, actor=self.hero_actor_module, id="col"
+        )
         self.occupancy_sensor = occupancy_sensor.OccupancySensorModule(
-            config=None, actor=self.hero_actor_module, client=self.client, id="occ")
+            config=None, actor=self.hero_actor_module, client=self.client, id="occ"
+        )
         self.rgb_sensor_1 = rgb_sensor.RGBSensorModule(
-            config={"yaw": 0, "width": 900, "height": 256}, client=self.client,
-            actor=self.hero_actor_module, id="rgb_sensor_1")
+            config={"yaw": 0, "width": 900, "height": 256},
+            client=self.client,
+            actor=self.hero_actor_module,
+            id="rgb_sensor_1",
+        )
 
         bev_module_1 = BirdViewProducer(
             client=self.client,
-            target_size=PixelDimensions(
-                192,
-                192),
+            target_size=PixelDimensions(192, 192),
             render_lanes_on_junctions=False,
             pixels_per_meter=5,
-            crop_type=BirdViewCropType.FRONT_AREA_ONLY)
+            crop_type=BirdViewCropType.FRONT_AREA_ONLY,
+        )
 
         bev_module_2 = BirdViewProducer(
             client=self.client,
-            target_size=PixelDimensions(
-                192,
-                192),
+            target_size=PixelDimensions(192, 192),
             render_lanes_on_junctions=False,
             pixels_per_meter=5,
             crop_type=BirdViewCropType.FRONT_AREA_ONLY,
             road_on_off=True,
-            )
+        )
 
         bev_module_3 = BirdViewProducer(
             client=self.client,
-            target_size=PixelDimensions(
-                192,
-                192),
+            target_size=PixelDimensions(192, 192),
             render_lanes_on_junctions=False,
             pixels_per_meter=5,
             crop_type=BirdViewCropType.FRONT_AREA_ONLY,
             road_on_off=True,
             road_light=True,
-            light_circle=True)
+            light_circle=True,
+        )
 
         self.bev_module_list = [bev_module_1, bev_module_2, bev_module_3]
 
         time.sleep(1.0)
         logger.info("Everything is set!")
 
-        for _ in range(
-                int(1 / self.client_module.config["fixed_delta_seconds"]) * 2):
+        for _ in range(int(1 / self.client_module.config["fixed_delta_seconds"]) * 2):
             self.client_module.step()
 
         self.is_done = False
@@ -253,8 +225,7 @@ class CarlaEnvironment(Environment):
 
                         data_ = v.get_queue().get(True, 10)
 
-                        equivalent_frame_fetched = data_[
-                            "frame"] == snapshot.frame
+                        equivalent_frame_fetched = data_["frame"] == snapshot.frame
 
                 except Empty:
 
@@ -295,8 +266,7 @@ class CarlaEnvironment(Environment):
         #     pass
 
         for (i, bev_module) in enumerate(self.bev_module_list):
-            bev = bev_module.step(
-                agent_vehicle=self.hero_actor_module.get_actor())
+            bev = bev_module.step(agent_vehicle=self.hero_actor_module.get_actor())
             data_dict[f"bev_{i}"] = bev
 
         self.data.put(data_dict)
@@ -323,7 +293,7 @@ class CarlaEnvironment(Environment):
         rgb_image_1 = self.render_dict["rgb_sensor_1"]["image_data"]
         rgb_image_1 = cv2.cvtColor(rgb_image_1, cv2.COLOR_BGR2RGB)
         # Put image into canvas
-        self.canvas[:rgb_image_1.shape[0], :rgb_image_1.shape[1]] = rgb_image_1
+        self.canvas[: rgb_image_1.shape[0], : rgb_image_1.shape[1]] = rgb_image_1
 
         position_x = 10
         position_y = rgb_image_1.shape[0] + 10
@@ -334,16 +304,15 @@ class CarlaEnvironment(Environment):
             bev = cv2.cvtColor(bev, cv2.COLOR_BGR2RGB)
             bev = cv2.resize(
                 bev,
-                dsize=(
-                    0,
-                    0),
-                fx=rgb_image_1.shape[1] //
-                bev.shape[1],
-                fy=rgb_image_1.shape[1] //
-                bev.shape[1])
+                dsize=(0, 0),
+                fx=rgb_image_1.shape[1] // bev.shape[1],
+                fy=rgb_image_1.shape[1] // bev.shape[1],
+            )
             # Put image into canvas
-            self.canvas[position_y:position_y + bev.shape[0],
-                        position_x:position_x + bev.shape[1]] = bev
+            self.canvas[
+                position_y : position_y + bev.shape[0],
+                position_x : position_x + bev.shape[1],
+            ] = bev
 
             position_x += bev.shape[1] + 10
 
@@ -384,16 +353,13 @@ class CarlaEnvironment(Environment):
         #                     1)
         #                 position_y += 20
 
-        canvas_display = cv2.resize(
-            src=self.canvas, dsize=(
-                0, 0), fx=0.7, fy=0.7)
+        canvas_display = cv2.resize(src=self.canvas, dsize=(0, 0), fx=0.7, fy=0.7)
 
         cv2.imshow("Environment", canvas_display)
 
         if self.config["save"]:
             canvas_save = self.canvas
-            cv2.imwrite(str(self.debug_path /
-                            Path(f"{self.counter}.png")), canvas_save)
+            cv2.imwrite(str(self.debug_path / Path(f"{self.counter}.png")), canvas_save)
 
         if self.config["save_video"]:
             self.video_writer.write(canvas_save)
@@ -442,46 +408,45 @@ class CarlaEnvironment(Environment):
 
     def _set_default_config(self):
         """Set the default config of the environment"""
-        self.config = {"render": False, "save": False, "save_video": False,
-                       "max_steps": 1000}
+        self.config = {
+            "render": False,
+            "save": False,
+            "save_video": False,
+            "max_steps": 1000,
+        }
 
     def _create_render_window(self):
 
-        self.canvas = np.zeros((256 +
-                                192 *
-                                (900 //
-                                 192) +
-                                50, 10 * 3 +
-                                len(self.bev_module_list) *
-                                192 *
-                                (900 //
-                                    192), 3), np.uint8)
+        self.canvas = np.zeros(
+            (
+                256 + 192 * (900 // 192) + 50,
+                10 * 3 + len(self.bev_module_list) * 192 * (900 // 192),
+                3,
+            ),
+            np.uint8,
+        )
         cv2.imshow("Environment", self.canvas)
 
-        if cv2.waitKey(1) == ord('q'):
+        if cv2.waitKey(1) == ord("q"):
 
             # press q to terminate the loop
             cv2.destroyAllWindows()
 
         if self.config["save_video"]:
-            fourcc = VideoWriter_fourcc(*'mp4v')
+            fourcc = VideoWriter_fourcc(*"mp4v")
             self.video_writer = VideoWriter(
-                str(
-                    self.debug_path /
-                    Path("video.mp4")),
+                str(self.debug_path / Path("video.mp4")),
                 fourcc,
                 int(20),
-                (self.canvas.shape[1] //
-                 2,
-                 self.canvas.shape[0] //
-                 2))
+                (self.canvas.shape[1] // 2, self.canvas.shape[0] // 2),
+            )
 
     def _create_save_folder(self):
 
         debug_path = Path("figures/env_debug")
 
-        date_ = Path(datetime.today().strftime('%Y-%m-%d'))
-        time_ = Path(datetime.today().strftime('%H-%M-%S'))
+        date_ = Path(datetime.today().strftime("%Y-%m-%d"))
+        time_ = Path(datetime.today().strftime("%H-%M-%S"))
 
         self.debug_path = debug_path / date_ / time_
         self.debug_path.mkdir(parents=True, exist_ok=True)

@@ -1,5 +1,6 @@
 from carla_env.environment import Environment
 from agents.navigation.local_planner import RoadOption
+
 # Import modules
 from carla_env.modules.server import server
 from carla_env.modules.client import client
@@ -16,7 +17,7 @@ from carla_env.bev import (
     BirdViewCropType,
 )
 from carla_env.bev.mask import PixelDimensions
-from utils.carla_utils import (fetch_all_vehicles)
+from utils.carla_utils import create_multiple_actors_for_traffic_manager
 
 # Import utils
 import time
@@ -33,13 +34,13 @@ logger = logging.getLogger(__name__)
 
 
 class RandomActionDesigner(object):
-
     def __init__(
-            self,
-            brake_probability=0.1,
-            max_throttle=1.0,
-            max_steering_angle=1.0,
-            action_repeat=1):
+        self,
+        brake_probability=0.1,
+        max_throttle=1.0,
+        max_steering_angle=1.0,
+        action_repeat=1,
+    ):
         self.brake_probability = brake_probability
         self.max_throttle = max_throttle
         self.max_steering_angle = max_steering_angle
@@ -60,16 +61,14 @@ class RandomActionDesigner(object):
         if np.random.random() < self.brake_probability:
 
             acceleration = np.random.uniform(-self.max_throttle, 0)
-            steer = np.random.uniform(-self.max_steering_angle,
-                                      self.max_steering_angle)
+            steer = np.random.uniform(-self.max_steering_angle, self.max_steering_angle)
 
             action = [0, steer, -acceleration]
 
         else:
 
             acceleration = np.random.uniform(0, self.max_throttle)
-            steer = np.random.uniform(-self.max_steering_angle,
-                                      self.max_steering_angle)
+            steer = np.random.uniform(-self.max_steering_angle, self.max_steering_angle)
 
             action = [acceleration, steer, 0]
 
@@ -77,33 +76,6 @@ class RandomActionDesigner(object):
         self.previous_count = 0
 
         return action
-
-
-def create_multiple_actors_for_traffic_manager(client, n=20):
-    """Create multiple vehicles in the world"""
-    vehicles = fetch_all_vehicles(client)
-    vehicles = vehicles * (n // len(vehicles) + 1)
-    # Shuffle the list and take first n vehicles
-    np.random.shuffle(vehicles)
-    actors = [actor.ActorModule(
-        config={
-            "actor": vehicle.VehicleModule(
-                config=None,
-                client=client),
-            "hero": True},
-        client=client)]
-
-    for k in range(n):
-
-        actors.append(actor.ActorModule(
-            config={
-                "vehicle": vehicle.VehicleModule(
-                    config={"vehicle_model": vehicles[k], },
-                    client=client),
-                "hero": False},
-            client=client))
-
-    return actors
 
 
 class CarlaEnvironment(Environment):
@@ -119,8 +91,7 @@ class CarlaEnvironment(Environment):
                 self.config[k] = config[k]
 
         # We have our server and client up and running
-        self.server_module = server.ServerModule(
-            config={"port": self.config["port"]})
+        self.server_module = server.ServerModule(config={"port": self.config["port"]})
 
         self.render_dict = {}
 
@@ -151,7 +122,9 @@ class CarlaEnvironment(Environment):
             config={
                 "world": selected_task["world"],
                 "fixed_delta_seconds": self.config["fixed_delta_seconds"],
-                "port": self.config["port"], })
+                "port": self.config["port"],
+            }
+        )
 
         self.world = self.client_module.get_world()
         self.map = self.client_module.get_map()
@@ -160,11 +133,11 @@ class CarlaEnvironment(Environment):
         self.spectator = self.world.get_spectator()
 
         # Make this vehicle actor
-        number_of_actors = np.random.randint(
-            *
-            selected_task["num_vehicles"]) if isinstance(
-            selected_task["num_vehicles"],
-            list) else selected_task["num_vehicles"]
+        number_of_actors = (
+            np.random.randint(*selected_task["num_vehicles"])
+            if isinstance(selected_task["num_vehicles"], list)
+            else selected_task["num_vehicles"]
+        )
         logger.info(f"Number of actors: {number_of_actors}")
 
         # Fetch all spawn points
@@ -174,74 +147,84 @@ class CarlaEnvironment(Environment):
         start = start_end_spawn_point[0]
         # Let's initialize a vehicle
         self.vehicle_module = vehicle.VehicleModule(
-            config={
-                "vehicle_model": "lincoln.mkz_2017"},
-            client=self.client)
+            config={"vehicle_model": "lincoln.mkz_2017"}, client=self.client
+        )
         # Make this vehicle actor
-        self.hero_actor_module = actor.ActorModule(config={
-            "actor": self.vehicle_module,
-            "hero": True,
-            "selected_spawn_point": start},
-            client=self.client)
+        self.hero_actor_module = actor.ActorModule(
+            config={
+                "actor": self.vehicle_module,
+                "hero": True,
+                "selected_spawn_point": start,
+            },
+            client=self.client,
+        )
 
         actor_list = create_multiple_actors_for_traffic_manager(
-            self.client,
-            n=number_of_actors + 1)
+            self.client, n=number_of_actors + 1
+        )
 
         actor_list.append(self.hero_actor_module)
 
         if not self.config["random"]:
             self.traffic_manager_module = traffic_manager.TrafficManagerModule(
-                config={"vehicle_list": actor_list,
-                        "port": self.config["tm_port"]}, client=self.client)
+                config={"vehicle_list": actor_list, "port": self.config["tm_port"]},
+                client=self.client,
+            )
 
         # Sensor suite
         self.vehicle_sensor = vehicle_sensor.VehicleSensorModule(
-            config=None, client=self.client,
-            actor=self.hero_actor_module, id="ego")
+            config=None, client=self.client, actor=self.hero_actor_module, id="ego"
+        )
         self.collision_sensor = collision_sensor.CollisionSensorModule(
-            config=None, client=self.client,
-            actor=self.hero_actor_module, id="col")
+            config=None, client=self.client, actor=self.hero_actor_module, id="col"
+        )
         self.rgb_sensor_1 = rgb_sensor.RGBSensorModule(
-            config={"yaw": -60, "width": 900, "height": 256}, client=self.client,
-            actor=self.hero_actor_module, id="rgb_right")
+            config={"yaw": -60, "width": 900, "height": 256},
+            client=self.client,
+            actor=self.hero_actor_module,
+            id="rgb_right",
+        )
         self.rgb_sensor_2 = rgb_sensor.RGBSensorModule(
-            config={"yaw": 0, "width": 900, "height": 256}, client=self.client,
-            actor=self.hero_actor_module, id="rgb_front")
+            config={"yaw": 0, "width": 900, "height": 256},
+            client=self.client,
+            actor=self.hero_actor_module,
+            id="rgb_front",
+        )
         self.rgb_sensor_3 = rgb_sensor.RGBSensorModule(
-            config={"yaw": 60, "width": 900, "height": 256}, client=self.client,
-            actor=self.hero_actor_module, id="rgb_left")
+            config={"yaw": 60, "width": 900, "height": 256},
+            client=self.client,
+            actor=self.hero_actor_module,
+            id="rgb_left",
+        )
         self.occupancy_sensor = occupancy_sensor.OccupancySensorModule(
-            config=None, client=self.client, actor=self.hero_actor_module, id="occ")
+            config=None, client=self.client, actor=self.hero_actor_module, id="occ"
+        )
 
         self.bev_module_world = BirdViewProducer(
             client=self.client,
-            target_size=PixelDimensions(
-                192,
-                192),
+            target_size=PixelDimensions(192, 192),
             render_lanes_on_junctions=False,
             pixels_per_meter=5,
             crop_type=BirdViewCropType.FRONT_AREA_ONLY,
             road_on_off=True,
             road_light=True,
             light_circle=True,
-            lane_marking_thickness=2)
+            lane_marking_thickness=2,
+        )
 
         self.bev_module_ego = BirdViewProducer(
             client=self.client,
-            target_size=PixelDimensions(
-                192,
-                192),
+            target_size=PixelDimensions(192, 192),
             render_lanes_on_junctions=False,
             pixels_per_meter=20,
             crop_type=BirdViewCropType.FRONT_AND_REAR_AREA,
-            light_circle=True)
+            light_circle=True,
+        )
 
         time.sleep(1.0)
         logger.info("Everything is set!")
 
-        for _ in range(
-                int(1 / self.client_module.config["fixed_delta_seconds"]) * 2):
+        for _ in range(int(1 / self.client_module.config["fixed_delta_seconds"]) * 2):
             self.client_module.step()
 
         self.is_done = False
@@ -281,8 +264,7 @@ class CarlaEnvironment(Environment):
 
                         data_ = v.get_queue().get(True, 10)
 
-                        equivalent_frame_fetched = data_[
-                            "frame"] == snapshot.frame
+                        equivalent_frame_fetched = data_["frame"] == snapshot.frame
 
                 except Empty:
 
@@ -310,9 +292,11 @@ class CarlaEnvironment(Environment):
         self.spectator.set_transform(transform)
 
         bev_world = self.bev_module_world.step(
-            agent_vehicle=self.hero_actor_module.get_actor())
+            agent_vehicle=self.hero_actor_module.get_actor()
+        )
         bev_ego = self.bev_module_ego.step(
-            agent_vehicle=self.hero_actor_module.get_actor())
+            agent_vehicle=self.hero_actor_module.get_actor()
+        )
 
         data_dict["bev_world"] = bev_world
         data_dict["bev_ego"] = bev_ego
@@ -321,22 +305,29 @@ class CarlaEnvironment(Environment):
             self._next_agent_command = RoadOption.VOID.value
             self._next_agent_waypoint = [-1, -1, -1]
             try:
-                _next_agent_navigational_action = self.traffic_manager_module.get_next_action(
-                    self.hero_actor_module.get_actor())
-                self._next_agent_command = RoadOption[_next_agent_navigational_action[0].upper(
-                )].value
+                _next_agent_navigational_action = (
+                    self.traffic_manager_module.get_next_action(
+                        self.hero_actor_module.get_actor()
+                    )
+                )
+                self._next_agent_command = RoadOption[
+                    _next_agent_navigational_action[0].upper()
+                ].value
                 self._next_agent_waypoint = [
                     _next_agent_navigational_action[1].transform.location.x,
                     _next_agent_navigational_action[1].transform.location.y,
-                    _next_agent_navigational_action[1].transform.location.z]
+                    _next_agent_navigational_action[1].transform.location.z,
+                ]
 
                 data_dict["navigation"] = {
                     "command": self._next_agent_command,
-                    "waypoint": self._next_agent_waypoint}
+                    "waypoint": self._next_agent_waypoint,
+                }
             except BaseException:
                 data_dict["navigation"] = {
                     "command": self._next_agent_command,
-                    "waypoint": self._next_agent_waypoint}
+                    "waypoint": self._next_agent_waypoint,
+                }
 
         self.data.put(data_dict)
 
@@ -345,8 +336,7 @@ class CarlaEnvironment(Environment):
 
         self.counter += 1
 
-        self.is_done = self.is_done or (
-            self.counter >= self.config["max_steps"])
+        self.is_done = self.is_done or (self.counter >= self.config["max_steps"])
 
     def render(self, bev_list):
         """Render the environment"""
@@ -362,20 +352,26 @@ class CarlaEnvironment(Environment):
         rgb_image_1 = self.render_dict["rgb_sensor_1"]["image_data"]
         rgb_image_1 = cv2.cvtColor(rgb_image_1, cv2.COLOR_BGR2RGB)
         # Put image into canvas
-        self.canvas[:rgb_image_1.shape[0], :rgb_image_1.shape[1]] = rgb_image_1
+        self.canvas[: rgb_image_1.shape[0], : rgb_image_1.shape[1]] = rgb_image_1
 
         rgb_image_2 = self.render_dict["rgb_sensor_2"]["image_data"]
         rgb_image_2 = cv2.cvtColor(rgb_image_2, cv2.COLOR_BGR2RGB)
         # Put image into canvas
-        self.canvas[:rgb_image_2.shape[0], rgb_image_1.shape[1]                    :rgb_image_1.shape[1] + rgb_image_2.shape[1]] = rgb_image_2
+        self.canvas[
+            : rgb_image_2.shape[0],
+            rgb_image_1.shape[1] : rgb_image_1.shape[1] + rgb_image_2.shape[1],
+        ] = rgb_image_2
 
         rgb_image_3 = self.render_dict["rgb_sensor_3"]["image_data"]
         rgb_image_3 = cv2.cvtColor(rgb_image_3, cv2.COLOR_BGR2RGB)
         # Put image into canvas
-        self.canvas[:rgb_image_3.shape[0], rgb_image_1.shape[1] +
-                    rgb_image_2.shape[1]:rgb_image_1.shape[1] +
-                    rgb_image_2.shape[1] +
-                    rgb_image_3.shape[1]] = rgb_image_3
+        self.canvas[
+            : rgb_image_3.shape[0],
+            rgb_image_1.shape[1]
+            + rgb_image_2.shape[1] : rgb_image_1.shape[1]
+            + rgb_image_2.shape[1]
+            + rgb_image_3.shape[1],
+        ] = rgb_image_3
 
         offset = 0
         # Draw bev as
@@ -384,11 +380,15 @@ class CarlaEnvironment(Environment):
             bev = self.bev_module_world.as_rgb(bev)
             bev = cv2.cvtColor(bev, cv2.COLOR_BGR2RGB)
             # Put image into canvas
-            self.canvas[rgb_image_1.shape[0] + 10:rgb_image_1.shape[0] +
-                        10 + bev.shape[0], rgb_image_1.shape[1] +
-                        rgb_image_2.shape[1] + offset:rgb_image_1.shape[1] +
-                        rgb_image_2.shape[1] +
-                        bev.shape[1] + offset] = bev
+            self.canvas[
+                rgb_image_1.shape[0] + 10 : rgb_image_1.shape[0] + 10 + bev.shape[0],
+                rgb_image_1.shape[1]
+                + rgb_image_2.shape[1]
+                + offset : rgb_image_1.shape[1]
+                + rgb_image_2.shape[1]
+                + bev.shape[1]
+                + offset,
+            ] = bev
 
             offset += bev.shape[1] + 10
 
@@ -403,15 +403,13 @@ class CarlaEnvironment(Environment):
                     cv2.putText(
                         self.canvas,
                         f"{module.capitalize()}",
-                        (position_x,
-                         position_y),
+                        (position_x, position_y),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         0.5,
-                        (0,
-                         255,
-                         255),
+                        (0, 255, 255),
                         1,
-                        cv2.LINE_AA)
+                        cv2.LINE_AA,
+                    )
                     position_y += 40
 
                     for (k, v) in render_dict.items():
@@ -419,26 +417,21 @@ class CarlaEnvironment(Environment):
                         cv2.putText(
                             self.canvas,
                             f"{k}: {v}",
-                            (position_x,
-                             position_y),
+                            (position_x, position_y),
                             cv2.FONT_HERSHEY_SIMPLEX,
                             0.5,
-                            (255,
-                             255,
-                             0),
-                            1)
+                            (255, 255, 0),
+                            1,
+                        )
                         position_y += 20
 
-        canvas_display = cv2.resize(
-            src=self.canvas, dsize=(
-                0, 0), fx=0.5, fy=0.5)
+        canvas_display = cv2.resize(src=self.canvas, dsize=(0, 0), fx=0.5, fy=0.5)
 
         cv2.imshow("Environment", canvas_display)
 
         if self.config["save"]:
             canvas_save = self.canvas
-            cv2.imwrite(str(self.debug_path /
-                            Path(f"{self.counter}.png")), canvas_save)
+            cv2.imwrite(str(self.debug_path / Path(f"{self.counter}.png")), canvas_save)
 
         if self.config["save_video"]:
             self.video_writer.write(canvas_save)
@@ -497,24 +490,20 @@ class CarlaEnvironment(Environment):
         cv2.imshow("Environment", self.canvas)
 
         if self.config["save_video"]:
-            fourcc = VideoWriter_fourcc(*'mp4v')
+            fourcc = VideoWriter_fourcc(*"mp4v")
             self.video_writer = VideoWriter(
-                str(
-                    self.debug_path /
-                    Path("video.mp4")),
+                str(self.debug_path / Path("video.mp4")),
                 fourcc,
                 int(20),
-                (self.canvas.shape[1] //
-                 2,
-                 self.canvas.shape[0] //
-                 2))
+                (self.canvas.shape[1] // 2, self.canvas.shape[0] // 2),
+            )
 
     def _create_save_folder(self):
 
         debug_path = Path("figures/env_debug")
 
-        date_ = Path(datetime.today().strftime('%Y-%m-%d'))
-        time_ = Path(datetime.today().strftime('%H-%M-%S'))
+        date_ = Path(datetime.today().strftime("%Y-%m-%d"))
+        time_ = Path(datetime.today().strftime("%H-%M-%S"))
 
         self.debug_path = debug_path / date_ / time_
         self.debug_path.mkdir(parents=True, exist_ok=True)

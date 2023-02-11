@@ -1,4 +1,4 @@
-from carla_env.carla_env_policy_bev_traffic import CarlaEnvironment
+from carla_env.carla_env_bev_traffic import CarlaEnvironment
 from carla_env.models.dfm_km_cp import DecoupledForwardModelKinematicsCoupledPolicy
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.models.world.world import WorldBEVModel
