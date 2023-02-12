@@ -21,33 +21,33 @@ class InstanceDataset(Dataset):
 
     def __init__(
         self,
-        data_path: Union[str, Path],
-        sequence_length: int = 2,
-        read_keys: List[str] = ["bev_world"],
-        dilation: int = 1,
-        bev_agent_channel: int = 3,
-        bev_vehicle_channel: int = 4,
-        bev_selected_channels: list = [0, 5, 6, 8, 9, 9, 10, 11],
-        bev_calculate_offroad: bool = True,
+        config: dict,
     ):
+
+        self.set_default_config()
+        self.append_config(config)
+        self.build_from_config()
 
         self.count_array = []
         self.data = []
 
-        for item in os.listdir(data_path):
+        for item in os.listdir(self.data_path):
 
             if item.startswith("episode"):
 
                 episode_path = self.data_path / item
 
                 key_lengths = np.array(
-                    [len(os.listdir(episode_path / read_key)) for read_key in read_keys]
+                    [
+                        len(os.listdir(episode_path / read_key))
+                        for read_key in self.read_keys
+                    ]
                 )
                 if not np.all(key_lengths == key_lengths[0]):
                     logger.info("All keys should include same amount of data!")
                     logger.info(f"Skipping {episode_path}")
 
-                key_ = read_keys[0]
+                key_ = self.read_keys[0]
 
                 episode_key_path = episode_path / key_
 
@@ -240,14 +240,16 @@ class InstanceDataset(Dataset):
         return ego_
 
     def set_default_config(self):
-        self.config["data_path"] = None
-        self.config["sequence_length"] = 20
-        self.config["read_keys"] = ["bev_world", "ego", "navigation"]
-        self.config["dilation"] = 1
-        self.config["bev_calculate_offroad"] = True
-        self.config["bev_selected_channels"] = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-        self.config["bev_vehicle_channel"] = 1
-        self.config["bev_agent_channel"] = 2
+        self.config = {
+            "data_path": None,
+            "sequence_length": 20,
+            "read_keys": ["bev_world", "ego", "navigation"],
+            "dilation": 1,
+            "bev_calculate_offroad": True,
+            "bev_selected_channels": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+            "bev_vehicle_channel": 1,
+            "bev_agent_channel": 2,
+        }
 
     def append_config(self, config):
         self.config.update(config)

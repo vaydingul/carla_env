@@ -249,6 +249,73 @@ def loss_criterion_factory(config):
         return None
 
 
+def metric_factory(config):
+
+    if (config["experiment_type"] == "eval_world_forward_model") or (
+        config["experiment_type"] == "eval_ego_forward_model"
+    ):
+
+        if config["evaluation"]["metric"] == "MSE":
+
+            from torch.nn import MSELoss
+
+            return MSELoss(
+                reduction=config["evaluation"]["metric_reduction"],
+            )
+
+        elif config["evaluation"]["metric"] == "SmoothL1Loss":
+
+            from torch.nn import SmoothL1Loss
+
+            return SmoothL1Loss(
+                reduction=config["evaluation"]["metric_reduction"],
+            )
+
+        elif config["evaluation"]["metric"] == "L1Loss":
+
+            from torch.nn import L1Loss
+
+            return L1Loss(
+                reduction=config["evaluation"]["metric_reduction"],
+            )
+
+        elif config["evaluation"]["metric"] == "BCELoss":
+
+            from torch.nn import BCELoss
+
+            return BCELoss(
+                reduction=config["evaluation"]["metric_reduction"],
+                weight=config["evaluation"]["metric_weight"],
+            )
+
+        elif config["evaluation"]["metric"] == "BCEWithLogitsLoss":
+
+            from torch.nn import BCEWithLogitsLoss
+
+            return BCEWithLogitsLoss(
+                reduction=config["evaluation"]["metric_reduction"],
+                weight=config["evaluation"]["metric_weight"],
+            )
+
+        elif config["evaluation"]["metric"] == "MAE":
+
+            import torch
+
+            def MAE(y_pred, y_true):
+
+                return torch.mean(torch.abs(y_pred - y_true))
+
+            return MAE
+
+        else:
+
+            raise ValueError("Invalid metric")
+
+    else:
+
+        return None
+
+
 def scheduler_factory(config):
 
     if (

@@ -203,24 +203,24 @@ class Trainer(object):
     def learn(self, run=None):
 
         loss_dict = self.validate(run)
-        logger.info(f"{['='] * 20}")
+        logger.info(f"{'=' * 20}")
 
         logger.info(f"Epoch: Start")
         for (k, v) in loss_dict.items():
             logger.info(f"Val {k}: {v}")
-        logger.info(f"{['='] * 20}")
+        logger.info(f"{'=' * 20}")
 
         for epoch in range(self.current_epoch, self.num_epochs):
 
             self.epoch = epoch
             self.train(run)
-            loss, loss_location, loss_orientation = self.validate(run)
-            
-            logger.info(f"{['='] * 20}")
-            logger.info(f"Epoch: Start")
+            loss_dict = self.validate(run)
+
+            logger.info(f"{'=' * 20}")
+            logger.info(f"Epoch: {epoch}")
             for (k, v) in loss_dict.items():
                 logger.info(f"Val {k}: {v}")
-            logger.info(f"{['='] * 20}")
+            logger.info(f"{'=' * 20}")
 
             if ((epoch + 1) % self.save_interval == 0) and self.save_path is not None:
 
@@ -236,4 +236,4 @@ class Trainer(object):
                 )
 
                 if run is not None:
-                    run.save(str(self.save_path / Path(f"checkpoint_{epoch}.pt")))
+                    run.save(str(self.save_path / Path(f"checkpoint_{epoch}.pt")), )

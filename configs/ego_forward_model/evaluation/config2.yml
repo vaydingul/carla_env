@@ -1,0 +1,41 @@
+experiment_type: "eval_ego_forward_model"
+seed: 42
+log_path: ~ #"/home/volkan/Documents/Codes/carla_env/logs/"
+num_time_step_previous: &previous 1
+num_time_step_future: &future 5
+save_path: "figures/ego_forward_model_detailed_evaluation_2/"
+# Dataset related parameters for training
+
+dataset_test:
+  data_path: "/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_test_data_10Hz_multichannel_bev_dense_traffic"
+  sequence_length: 11
+  read_keys:
+    - "ego"
+  dilation: 2
+
+# Dataloader related parameters for training
+dataloader_test:
+  batch_size: 5
+  shuffle: false
+  num_workers: 0
+
+# Training related parameters
+evaluation:
+  sequence_length: 11
+  metric: "MAE"
+  metric_reduction: "mean"
+  metric_weight: ~
+
+# Wandb related parameters
+wandb:
+  link: "vaydingul/mbl-refactored/3emx14ue"
+  checkpoint_number: 999
+
+  enable: true
+  resume: false
+  resume_checkpoint_number: 0
+  project: "mbl-refactored"
+  group: "eval-ego-forward-model-multi-step-5Hz"
+  name: "1-5-5Hz-large-dataset"
+  id: ~
+  notes: "5 Hz ego forward model evaluation plots"

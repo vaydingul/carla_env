@@ -3,12 +3,12 @@ seed: 42
 checkpoint_path: "pretrained_models/"
 log_path: ~ #"/home/volkan/Documents/Codes/carla_env/logs/"
 num_time_step_previous: &previous 1
-num_time_step_future: &future 5
+num_time_step_future: &future 10
 
 # Dataset related parameters for training
 dataset_train:
   data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_train_data_10Hz"
-  sequence_length: 6
+  sequence_length: 11
   read_keys:
     - "ego"
   dilation: 2
@@ -22,7 +22,7 @@ dataloader_train:
 # Dataset related parameters for validation
 dataset_val:
   data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_val_data_10Hz"
-  sequence_length: 6
+  sequence_length: 11
   read_keys:
     - "ego"
   dilation: 2
@@ -54,6 +54,6 @@ wandb:
   resume_checkpoint_number: 0
   project: "mbl-refactored"
   group: "train-ego-forward-model-multi-step-5Hz"
-  name: "1-5-5Hz"
+  name: "1-10-5Hz"
   id: ~
-  notes: "Ego forward model with 5Hz data and 5 time steps in the future. It can work with every model that works in 5Hz."
+  notes: "Ego forward model with 5Hz data and 10 time steps in the future. It can work with every model that works in 5Hz."

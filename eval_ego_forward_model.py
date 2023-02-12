@@ -8,100 +8,171 @@ from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.evaluator.ego_forward_model import Evaluator
 from utils.train_utils import get_device, seed_everything
-from utils.model_utils import fetch_checkpoint_from_wandb_link
+from utils.model_utils import fetch_run_from_wandb_link, fetch_checkpoint_from_wandb_run
+from utils.path_utils import create_date_time_path
+from utils.config_utils import parse_yml
+from utils.factory import *
+from utils.wandb_utils import create_wandb_run
+from utils.log_utils import get_logger, configure_logger, pretty_print_config
 import wandb
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    datefmt="%Y-%m-%d %H:%M:%S",
-    format="%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d ==> %(message)s",
-)
 
 
 def main(config):
 
-    seed_everything(config.seed)
+    # ---------------------------------------------------------------------------- #
+    #                                    LOGGER                                    #
+    # ---------------------------------------------------------------------------- #
+    logger = get_logger(__name__)
+    configure_logger(__name__, log_path=config["log_path"], log_level=logging.INFO)
+    pretty_print_config(logger, config)
+    # ---------------------------------------------------------------------------- #
+    #                                     SEED                                     #
+    # ---------------------------------------------------------------------------- #
+    seed_everything(config["seed"])
+
+    # ---------------------------------------------------------------------------- #
+    #                                    DEVICE                                    #
+    # ---------------------------------------------------------------------------- #
     device = get_device()
 
-    run = wandb.Api().run(config.ego_forward_model_wandb_link)
-    checkpoint = fetch_checkpoint_from_wandb_link(
-        wandb_link=config.ego_forward_model_wandb_link,
-        checkpoint_number=config.ego_forward_model_checkpoint_number,
-    )
-    model = KinematicBicycleModel.load_model_from_wandb_run(
-        run=run, checkpoint=checkpoint, device=device
-    )
-    model.to(device).eval()
-
-    # Create dataset and its loader
-    data_path_test = config.data_path_test
-    dataset_test = InstanceDataset(
-        data_path=data_path_test,
-        sequence_length=run.config["num_time_step_previous"]
-        + run.config["num_time_step_future"],
-        read_keys=["ego"],
-        dilation=run.config["dataset_dilation"],
+    # ---------------------------------------------------------------------------- #
+    #                                   WANDB RUN CHECKPOINT                                #
+    # ---------------------------------------------------------------------------- #
+    run = fetch_run_from_wandb_link(config["wandb"]["link"])
+    checkpoint = fetch_checkpoint_from_wandb_run(
+        run=run, checkpoint_number=config["wandb"]["checkpoint_number"]
     )
 
+    # ---------------------------------------------------------------------------- #
+    #                                     WANDB                                    #
+    # ---------------------------------------------------------------------------- #
+    run_eval = create_wandb_run(config)
+    # ---------------------------------------------------------------------------- #
+    #                                 DATASET CLASS                                #
+    # ---------------------------------------------------------------------------- #
+    dataset_class = dataset_factory(run.config)
+
+    # ---------------------------------------------------------------------------- #
+    #                         TEST DATASET                                         #
+    # ---------------------------------------------------------------------------- #
+    dataset_test = dataset_class(config["dataset_test"])
+
+    # --------------------- Log information about the dataset -------------------- #
     logger.info(f"Test dataset size: {len(dataset_test)}")
 
+    # ---------------------------------------------------------------------------- #
+    #                       TEST DATALOADER                                        #
+    # ---------------------------------------------------------------------------- #
     dataloader_test = DataLoader(
-        dataset=Subset(
+        Subset(
             dataset_test,
             range(
                 0,
                 len(dataset_test),
-                (
-                    run.config["num_time_step_previous"]
-                    + run.config["num_time_step_future"]
-                )
-                * run.config["dataset_dilation"],
+                dataset_test.dilation * dataset_test.sequence_length,
             ),
         ),
-        batch_size=20,
-        shuffle=False,
-        num_workers=0,
+        **config["dataloader_test"],
     )
 
-    # dataloader_test = DataLoader(
-    #     dataset=dataset_test,
-    #     batch_size=3,
-    #     shuffle=False,
-    #     num_workers=0)
+    # ------------------- Log information about the dataloader -------------------- #
+    logger.info(f"Test dataloader size: {len(dataloader_test)}")
 
+    # ---------------------------------------------------------------------------- #
+    #                               EGO FORWARD MODEL                              #
+    # ---------------------------------------------------------------------------- #
+    model_class = ego_forward_model_factory(run.config)
+
+    # Create and initialize the model with pretrained weights and biases
+    model = model_class.load_model_from_wandb_run(
+        config=run.config["ego_forward_model"],
+        checkpoint_path=checkpoint.name,
+        device=device,
+    )
+
+    model.to(device)
+
+    # ---------------------------------------------------------------------------- #
+    #                                     LOSS                                     #
+    # ---------------------------------------------------------------------------- #
+
+    metric = metric_factory(config)
+
+    # ------------------- Log information about the model ------------------------ #
+    logger.info(
+        f"Number of parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}"
+    )
+
+    if run_eval is not None:
+
+        table = wandb.Table(
+            columns=[
+                "ID",
+                "Location Metric",
+                "Rotation Metric",
+                "Speed Metric",
+                "Image",
+            ]
+        )
+
+    # ---------------------------------------------------------------------------- #
+    #                                   EVALUATOR                                  #
+    # ---------------------------------------------------------------------------- #
     evaluator = Evaluator(
         model=model,
         dataloader=dataloader_test,
         device=device,
-        sequence_length=run.config["num_time_step_previous"]
-        + run.config["num_time_step_future"],
-        save_path=f"{config.save_path}",
+        metric=metric,
+        sequence_length=config["evaluation"]["sequence_length"],
+        save_path=f"{config['save_path']}",
     )
 
-    evaluator.evaluate(render=False, save=True)
+    logger.info(f"Starting evaluation")
+
+    evaluator.evaluate(run_eval, table)
+
+    run_eval.log({"eval/Table": table})
+
+    logger.info(f"Finished evaluation")
+
+
+# def main(config):
+
+
+#     dataloader_test = DataLoader(
+#         dataset=Subset(
+#             dataset_test,
+#             range(
+#                 0,
+#                 len(dataset_test),
+#                 (
+#                     run.config["num_time_step_previous"]
+#                     + run.config["num_time_step_future"]
+#                 )
+#                 * run.config["dataset_dilation"],
+#             ),
+#         ),
+#         batch_size=20,
+#         shuffle=False,
+#         num_workers=0,
+#     )
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
-        "--data_path_test",
+        "--config_path",
         type=str,
-        default="/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_test_data_10Hz_multichannel_bev_dense_traffic/",
+        default="/home/volkan/Documents/Codes/carla_env/configs/ego_forward_model/evaluation/config.yml",
     )
-    parser.add_argument(
-        "--save_path",
-        type=str,
-        default="figures/ego_forward_model_evaluation_extensive/ashdgjhsagdjsa/",
-    )
-    parser.add_argument("--num_time_step_previous", type=int, default=1)
-    parser.add_argument("--num_time_step_future", type=int, default=10)
-    parser.add_argument(
-        "--ego_forward_model_wandb_link", type=str, default="vaydingul/mbl/ssifa1go"
-    )
-    parser.add_argument("--ego_forward_model_checkpoint_number", type=int, default=459)
-    config = parser.parse_args()
+    args = parser.parse_args()
+
+    config = parse_yml(args.config_path)
+
+    assert (
+        config["dataset_test"]["sequence_length"]
+        == config["evaluation"]["sequence_length"]
+    ), "Sequence length of the dataset and the evaluation should be the same"
 
     main(config)

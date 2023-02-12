@@ -7,13 +7,14 @@ def create_initial_run(config):
         project=config["wandb"]["project"],
         group=config["wandb"]["group"],
         name=config["wandb"]["name"],
+        notes=config["wandb"]["notes"],
         resume="allow",
         config=config,
     )
 
     if config["wandb"]["id"] is None:
         run.config["wandb"]["id"] = run.id
-        run.config.update()
+        # run.update()
 
     run.define_metric("train/step")
     run.define_metric("val/step")
