@@ -8,7 +8,7 @@ import torch
 from torch.utils.data import DataLoader, Subset
 from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.world.world import WorldBEVModel
-from carla_env.evaluator.world_model import Evaluator
+from carla_env.evaluator.world_forward_model import Evaluator
 from utils.model_utils import (
     fetch_checkpoint_from_wandb_run,
     fetch_checkpoint_from_wandb_link,

@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import DataLoader, Subset
 from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel
-from carla_env.evaluator.ego_model import Evaluator
+from carla_env.evaluator.ego_forward_model import Evaluator
 from utils.train_utils import get_device, seed_everything
 from utils.model_utils import fetch_checkpoint_from_wandb_link
 import wandb

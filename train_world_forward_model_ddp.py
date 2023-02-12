@@ -11,7 +11,7 @@ import os
 
 from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.world.world import WorldBEVModel
-from carla_env.trainer.world_model_ddp import Trainer
+from carla_env.trainer.world_forward_model import Trainer
 from carla_env.sampler.distributed_weighted_sampler import DistributedWeightedSampler
 from carla_env.sampler.distributed_proxy_sampler import DistributedProxySampler
 from utils.model_utils import fetch_checkpoint_from_wandb_run

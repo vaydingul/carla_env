@@ -4,7 +4,7 @@ import os
 import numpy as np
 from carla_env.models.dynamic.vehicle import KinematicBicycleModel
 from carla_env.dataset.instance import InstanceDataset
-from carla_env.trainer.ego_model import Trainer
+from carla_env.trainer.ego_forward_model import Trainer
 from utils.train_utils import seed_everything, get_device
 from utils.wandb_utils import create_wandb_run
 from utils.model_utils import fetch_checkpoint_from_wandb_run
