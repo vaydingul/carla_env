@@ -18,14 +18,6 @@ from utils.model_utils import fetch_checkpoint_from_wandb_run
 from utils.wandb_utils import create_wandb_run
 from utils.train_utils import seed_everything
 
-logger = logging.getLogger(__name__)
-
-logging.basicConfig(
-    level=logging.INFO,
-    datefmt="%Y-%m-%d %H:%M:%S",
-    format="%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d ==> %(message)s",
-)
-
 
 def ddp_setup(rank, world_size, master_port):
     os.environ["MASTER_ADDR"] = "localhost"

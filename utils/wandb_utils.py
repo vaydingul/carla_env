@@ -4,15 +4,16 @@ import wandb
 def create_initial_run(config):
     run = wandb.init(
         id=wandb.util.generate_id(),
-        project=config.wandb_project,
-        group=config.wandb_group,
-        name=config.wandb_name,
+        project=config["wandb"]["project"],
+        group=config["wandb"]["group"],
+        name=config["wandb"]["name"],
         resume="allow",
         config=config,
     )
 
-    if config.wandb_id is None:
-        run.config.update({"wandb_id": run.id}, allow_val_change=True)
+    if config["wandb"]["id"] is None:
+        run.config["wandb"]["id"] = run.id
+        run.config.update()
 
     run.define_metric("train/step")
     run.define_metric("val/step")
@@ -27,19 +28,20 @@ def create_initial_run(config):
 def create_resumed_run(config):
 
     run = wandb.init(
-        project=config.wandb_project,
-        group=config.wandb_group,
-        id=config.wandb_id,
+        project=config["wandb"]["project"],
+        group=config["wandb"]["group"],
+        id=config["wandb"]["id"],
         resume="allow",
     )
+
     return run
 
 
 def create_wandb_run(config):
     # Setup the wandb
-    if config.wandb:
+    if config["wandb"]["enable"]:
 
-        if not config.resume:
+        if not config["wandb"]["resume"]:
 
             run = create_initial_run(config=config)
 

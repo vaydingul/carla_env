@@ -157,25 +157,25 @@ def optimizer_factory(config):
         or (config["experiment_type"] == "train_ego_forward_model")
     ):
 
-        if config["optimizer_type"] == "Adam":
+        if config["training"]["optimizer_type"] == "Adam":
 
             from torch.optim import Adam
 
             return Adam
 
-        elif config["optimizer_type"] == "SGD":
+        elif config["training"]["optimizer_type"] == "SGD":
 
             from torch.optim import SGD
 
             return SGD
 
-        elif config["optimizer_type"] == "RMSprop":
+        elif config["training"]["optimizer_type"] == "RMSprop":
 
             from torch.optim import RMSprop
 
             return RMSprop
 
-        elif config["optimizer_type"] == "AdamW":
+        elif config["training"]["optimizer_type"] == "AdamW":
 
             from torch.optim import AdamW
 
@@ -184,6 +184,65 @@ def optimizer_factory(config):
         else:
 
             raise ValueError("Invalid optimizer_type")
+
+    else:
+
+        return None
+
+
+def loss_criterion_factory(config):
+
+    if (
+        (config["experiment_type"] == "train_dfm_km_cp")
+        or (config["experiment_type"] == "train_world_forward_model")
+        or (config["experiment_type"] == "train_ego_forward_model")
+    ):
+
+        if config["training"]["loss_criterion"] == "MSELoss":
+
+            from torch.nn import MSELoss
+
+            return MSELoss(
+                reduction=config["training"]["loss_reduction"],
+            )
+
+        elif config["training"]["loss_criterion"] == "SmoothL1Loss":
+
+            from torch.nn import SmoothL1Loss
+
+            return SmoothL1Loss(
+                reduction=config["training"]["loss_reduction"],
+            )
+
+        elif config["training"]["loss_criterion"] == "L1Loss":
+
+            from torch.nn import L1Loss
+
+            return L1Loss(
+                reduction=config["training"]["loss_reduction"],
+            )
+
+        elif config["training"]["loss_criterion"] == "BCELoss":
+
+            from torch.nn import BCELoss
+
+            return BCELoss(
+                reduction=config["training"]["loss_reduction"],
+                weight=config["training"]["loss_weight"],
+            )
+
+        elif config["training"]["loss_criterion"] == "BCEWithLogitsLoss":
+
+            from torch.nn import BCEWithLogitsLoss
+
+            return BCEWithLogitsLoss(
+                reduction=config["training"]["loss_reduction"],
+                weight=config["training"]["loss_weight"],
+            )
+
+        else:
+
+            raise ValueError("Invalid loss_criterion")
 
     else:
 

@@ -1,0 +1,27 @@
+component1:
+  var1: 1
+  var2: 2
+  listvar1:
+    - 1
+    - 2
+    - 3
+  listvar2:
+    - 1
+    - 2
+    - 3
+
+component2:
+  var1: 1
+  var2: 2
+  listvar1:
+    - 1
+    - 2
+    - 3
+  listvar2:
+    - 1
+    - 2
+    - 3
+  dict1:
+    key1: value1
+    key2: value2
+    key3: value3
