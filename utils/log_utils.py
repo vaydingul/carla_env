@@ -12,7 +12,7 @@ def configure_logger(name, log_path=None, log_level=logging.INFO):
     if log_path is not None:
         log_path = create_date_time_path(log_path)
         log_path = log_path / f"{name}.log"
-
+    
     logging.basicConfig(
         filename=log_path,
         level=log_level,

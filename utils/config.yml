@@ -25,3 +25,41 @@ component2:
     key1: value1
     key2: value2
     key3: value3
+
+sensors: # TODO: Fill the values according to the sensor you want to use
+  # TODO: Change environment sensor spawn method
+  # TODO: CARLA-specific factory class can be constructed
+  - rgb_front:
+      type: RGB
+      x: 0.8
+      y: 0.0
+      z: 1.7
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      width: 800
+      height: 600
+      fov: 100
+      attach_to: ego_vehicle
+  - ego:
+      type: Vehicle
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      attach_to: ego_vehicle
+
+  - occ:
+      type: OccupancyGrid
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      width: 800
+      height: 600
+      fov: 100
+      attach_to: ego_vehicle

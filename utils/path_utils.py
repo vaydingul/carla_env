@@ -13,6 +13,7 @@ def check_latest_episode(path):
         latest_episode = max([int(x.name.split("_")[-1]) for x in path.iterdir()])
         return latest_episode + 1
 
+
 def create_date_time_path(path):
     """Create a path with date and time"""
     path = pathlib.Path(path)

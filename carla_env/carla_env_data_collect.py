@@ -7,15 +7,10 @@ from carla_env.modules.client import client
 from carla_env.modules.actor import actor
 from carla_env.modules.vehicle import vehicle
 from carla_env.modules.traffic_manager import traffic_manager
-from carla_env.modules.sensor import vehicle_sensor
-from carla_env.modules.sensor import rgb_sensor
-from carla_env.modules.sensor import collision_sensor
-from carla_env.modules.sensor import occupancy_sensor
+
 from carla_env.modules.module import Module
-from carla_env.bev import (
-    BirdViewProducer,
-    BirdViewCropType,
-)
+from carla_env.renderer.renderer import Renderer, COLORS
+from carla_env.bev import BirdViewProducer, BirdViewCropType, BIRDVIEW_CROP_TYPE
 from carla_env.bev.mask import PixelDimensions
 from utils.carla_utils import create_multiple_actors_for_traffic_manager
 
@@ -73,7 +68,7 @@ class RandomActionDesigner(object):
             action = [acceleration, steer, 0]
 
         self.previous_action = action
-        self.previous_count = 0
+        self.previous_count = 1
 
         return action
 
@@ -86,24 +81,40 @@ class CarlaEnvironment(Environment):
         super().__init__()
 
         self._set_default_config()
-        if config is not None:
-            for k in config.keys():
-                self.config[k] = config[k]
+        self.config.update(config)
+        self.build_from_config()
 
         # We have our server and client up and running
-        self.server_module = server.ServerModule(config={"port": self.config["port"]})
-
-        self.render_dict = {}
+        self.server_module = server.ServerModule(config={"port": self.port})
 
         self.is_first_reset = True
         self.is_done = False
         self.counter = 0
 
-        self.action_designer = RandomActionDesigner(action_repeat=2)
+        if self.random:
+            self.action_designer = RandomActionDesigner(
+                action_repeat=self.action_repeat
+            )
+
+        if self.renderer is not None:
+            self.renderer_module = Renderer(config=self.renderer)
 
         self.data = Queue()
 
         self.reset()
+
+    def build_from_config(self):
+
+        self.random = self.config["random"]
+        self.action_repeat = self.config["action_repeat"]
+        self.fixed_delta_seconds = self.config["fixed_delta_seconds"]
+        self.port = self.config["port"]
+        self.max_steps = self.config["max_steps"]
+        self.tm_port = self.config["tm_port"]
+        self.tasks = self.config["tasks"]
+        self.sensors = self.config["sensors"]
+        self.bevs = self.config["bevs"]
+        self.renderer = self.config["renderer"]
 
     def reset(self):
         """Reset the environment"""
@@ -117,12 +128,12 @@ class CarlaEnvironment(Environment):
                 self.hero_actor_module.close()
 
         # Select a random task
-        selected_task = np.random.choice(self.config["tasks"])
+        selected_task = np.random.choice(self.tasks)
         self.client_module = client.ClientModule(
             config={
                 "world": selected_task["world"],
-                "fixed_delta_seconds": self.config["fixed_delta_seconds"],
-                "port": self.config["port"],
+                "fixed_delta_seconds": self.fixed_delta_seconds,
+                "port": self.port,
             }
         )
 
@@ -145,6 +156,7 @@ class CarlaEnvironment(Environment):
         # Select two random spawn points
         start_end_spawn_point = np.random.choice(spawn_points, 2)
         start = start_end_spawn_point[0]
+
         # Let's initialize a vehicle
         self.vehicle_module = vehicle.VehicleModule(
             config={"vehicle_model": "lincoln.mkz_2017"}, client=self.client
@@ -153,7 +165,7 @@ class CarlaEnvironment(Environment):
         self.hero_actor_module = actor.ActorModule(
             config={
                 "actor": self.vehicle_module,
-                "hero": True,
+                "hero": self.random,
                 "selected_spawn_point": start,
             },
             client=self.client,
@@ -165,79 +177,68 @@ class CarlaEnvironment(Environment):
 
         actor_list.append(self.hero_actor_module)
 
-        if not self.config["random"]:
+        if not self.random:
             self.traffic_manager_module = traffic_manager.TrafficManagerModule(
-                config={"vehicle_list": actor_list, "port": self.config["tm_port"]},
+                config={"vehicle_list": actor_list, "port": self.tm_port},
                 client=self.client,
             )
 
         # Sensor suite
-        self.vehicle_sensor = vehicle_sensor.VehicleSensorModule(
-            config=None, client=self.client, actor=self.hero_actor_module, id="ego"
-        )
-        self.collision_sensor = collision_sensor.CollisionSensorModule(
-            config=None, client=self.client, actor=self.hero_actor_module, id="col"
-        )
-        self.rgb_sensor_1 = rgb_sensor.RGBSensorModule(
-            config={"yaw": -60, "width": 900, "height": 256},
-            client=self.client,
-            actor=self.hero_actor_module,
-            id="rgb_right",
-        )
-        self.rgb_sensor_2 = rgb_sensor.RGBSensorModule(
-            config={"yaw": 0, "width": 900, "height": 256},
-            client=self.client,
-            actor=self.hero_actor_module,
-            id="rgb_front",
-        )
-        self.rgb_sensor_3 = rgb_sensor.RGBSensorModule(
-            config={"yaw": 60, "width": 900, "height": 256},
-            client=self.client,
-            actor=self.hero_actor_module,
-            id="rgb_left",
-        )
-        self.occupancy_sensor = occupancy_sensor.OccupancySensorModule(
-            config=None, client=self.client, actor=self.hero_actor_module, id="occ"
-        )
 
-        self.bev_module_world = BirdViewProducer(
-            client=self.client,
-            target_size=PixelDimensions(192, 192),
-            render_lanes_on_junctions=False,
-            pixels_per_meter=5,
-            crop_type=BirdViewCropType.FRONT_AREA_ONLY,
-            road_on_off=True,
-            road_light=True,
-            light_circle=True,
-            lane_marking_thickness=2,
-        )
+        self.sensor_modules = []
+        for sensor in self.sensors:
 
-        self.bev_module_ego = BirdViewProducer(
-            client=self.client,
-            target_size=PixelDimensions(192, 192),
-            render_lanes_on_junctions=False,
-            pixels_per_meter=20,
-            crop_type=BirdViewCropType.FRONT_AND_REAR_AREA,
-            light_circle=True,
-        )
+            self.sensor_modules.append(
+                {
+                    "id": sensor["args"]["id"],
+                    "module": sensor["class"](
+                        config=sensor["args"],
+                        client=self.client,
+                        actor=self.hero_actor_module,
+                        id=sensor["args"]["id"],
+                    ),
+                }
+            )
+
+        # Bird's eye view
+        self.bev_modules = []
+        for bev in self.bevs:
+
+            self.bev_modules.append(
+                {
+                    "id": bev["id"],
+                    "module": BirdViewProducer(
+                        client=self.client,
+                        target_size=PixelDimensions(bev["width"], bev["height"]),
+                        render_lanes_on_junctions=bev["render_lanes_on_junctions"],
+                        pixels_per_meter=bev["pixels_per_meter"],
+                        crop_type=BIRDVIEW_CROP_TYPE[bev["crop_type"]],
+                        road_on_off=bev["road_on_off"],
+                        road_light=bev["road_light"],
+                        light_circle=bev["light_circle"],
+                        lane_marking_thickness=bev["lane_marking_thickness"],
+                    ),
+                }
+            )
+
+        # self.bev_module_ego = BirdViewProducer(
+        #     client=self.client,
+        #     target_size=PixelDimensions(192, 192),
+        #     render_lanes_on_junctions=False,
+        #     pixels_per_meter=20,
+        #     crop_type=BirdViewCropType.FRONT_AND_REAR_AREA,
+        #     light_circle=True,
+        # )
 
         time.sleep(1.0)
         logger.info("Everything is set!")
 
-        for _ in range(int(1 / self.client_module.config["fixed_delta_seconds"]) * 2):
+        for _ in range(int((1 / self.fixed_delta_seconds))):
             self.client_module.step()
 
         self.is_done = False
         self.counter = 0
         self.data = Queue()
-
-        if self.config["save"]:
-
-            self._create_save_folder()
-
-        if self.config["render"]:
-
-            self._create_render_window()
 
     def step(self, action=None):
         """Perform an action in the environment"""
@@ -248,9 +249,10 @@ class CarlaEnvironment(Environment):
             action = self.action_designer.step()
             self.hero_actor_module.step(action=action)
 
-        self.vehicle_sensor.step()
+        for sensor in self.sensor_modules:
+            sensor["module"].step()
 
-        data_dict = {}
+        self.data_dict = {}
 
         for (k, v) in self.hero_actor_module.get_sensor_dict().items():
 
@@ -270,36 +272,32 @@ class CarlaEnvironment(Environment):
 
                     print("Empty")
 
-                data_dict[k] = data_
+                self.data_dict[k] = data_
 
                 if k == "ego":
 
-                    current_transform = data_dict[k]["transform"]
+                    current_transform = self.data_dict[k]["transform"]
 
                     transform = current_transform
                     transform.location.z += 2.0
 
                 if k == "col":
 
-                    impulse = data_dict[k]["impulse"]
+                    impulse = self.data_dict[k]["impulse"]
                     impulse_amplitude = np.linalg.norm(impulse)
                     logger.debug(f"Collision impulse: {impulse_amplitude}")
                     if impulse_amplitude > 100:
                         self.is_done = True
 
-        data_dict["snapshot"] = snapshot
+        self.data_dict["snapshot"] = snapshot
 
         self.spectator.set_transform(transform)
 
-        bev_world = self.bev_module_world.step(
-            agent_vehicle=self.hero_actor_module.get_actor()
-        )
-        bev_ego = self.bev_module_ego.step(
-            agent_vehicle=self.hero_actor_module.get_actor()
-        )
-
-        data_dict["bev_world"] = bev_world
-        data_dict["bev_ego"] = bev_ego
+        for bev_module in self.bev_modules:
+            bev_output = bev_module["module"].step(
+                agent_vehicle=self.hero_actor_module.get_actor()
+            )
+            self.data_dict[bev_module["id"]] = bev_output
 
         if not self.config["random"]:
             self._next_agent_command = RoadOption.VOID.value
@@ -319,124 +317,87 @@ class CarlaEnvironment(Environment):
                     _next_agent_navigational_action[1].transform.location.z,
                 ]
 
-                data_dict["navigation"] = {
+                self.data_dict["navigation"] = {
                     "command": self._next_agent_command,
                     "waypoint": self._next_agent_waypoint,
                 }
             except BaseException:
-                data_dict["navigation"] = {
+                self.data_dict["navigation"] = {
                     "command": self._next_agent_command,
                     "waypoint": self._next_agent_waypoint,
                 }
 
-        self.data.put(data_dict)
+        self.data.put(self.data_dict)
 
         self.server_module.step()
         self.client_module.step()
 
         self.counter += 1
 
-        self.is_done = self.is_done or (self.counter >= self.config["max_steps"])
+        self.is_done = self.is_done or (self.counter >= self.max_steps)
 
-    def render(self, bev_list):
+    def render(self):
         """Render the environment"""
-        if not self.config["render"]:
+
+        self.renderer_module.reset()
+
+        if not self.renderer_module.show():
             return
+
+        self.render_dict = {}
         for (k, v) in self.__dict__.items():
             if isinstance(v, Module):
                 self.render_dict[k] = v.render()
-
-        self.canvas = np.zeros_like(self.canvas)
+            elif isinstance(v, list):
+                if isinstance(v[0], Module):
+                    for item in v:
+                        self.render_dict[k] = item.render()
 
         # Put all of the rgb cameras as a 2x3 grid
-        rgb_image_1 = self.render_dict["rgb_sensor_1"]["image_data"]
-        rgb_image_1 = cv2.cvtColor(rgb_image_1, cv2.COLOR_BGR2RGB)
-        # Put image into canvas
-        self.canvas[: rgb_image_1.shape[0], : rgb_image_1.shape[1]] = rgb_image_1
+        if "rgb_front" in self.data_dict.keys():
+            rgb_image_front = self.data_dict["rgb_front"]["data"]
+            rgb_image_front = cv2.cvtColor(rgb_image_front, cv2.COLOR_BGR2RGB)
+            (h_image, w_image, c_image) = rgb_image_front.shape
 
-        rgb_image_2 = self.render_dict["rgb_sensor_2"]["image_data"]
-        rgb_image_2 = cv2.cvtColor(rgb_image_2, cv2.COLOR_BGR2RGB)
-        # Put image into canvas
-        self.canvas[
-            : rgb_image_2.shape[0],
-            rgb_image_1.shape[1] : rgb_image_1.shape[1] + rgb_image_2.shape[1],
-        ] = rgb_image_2
+            self.renderer_module.render_image(rgb_image_front, move_cursor="down")
 
-        rgb_image_3 = self.render_dict["rgb_sensor_3"]["image_data"]
-        rgb_image_3 = cv2.cvtColor(rgb_image_3, cv2.COLOR_BGR2RGB)
-        # Put image into canvas
-        self.canvas[
-            : rgb_image_3.shape[0],
-            rgb_image_1.shape[1]
-            + rgb_image_2.shape[1] : rgb_image_1.shape[1]
-            + rgb_image_2.shape[1]
-            + rgb_image_3.shape[1],
-        ] = rgb_image_3
+            if "bev_world" in self.data_dict.keys():
+                bev = self.data_dict["bev_world"]
+                bev = self.bev_modules[0]["module"].as_rgb(bev)
+                bev = cv2.cvtColor(bev, cv2.COLOR_BGR2RGB)
+                (h_bev, w_bev, c_bev) = bev.shape
+                # Put image into canvas
+                self.renderer_module.render_image(bev, move_cursor="down")
 
-        offset = 0
-        # Draw bev as
-        for bev in bev_list:
+            self.renderer_module.move_cursor(
+                direction="right-up", amount=(h_image + h_bev, w_image + 20)
+            )
 
-            bev = self.bev_module_world.as_rgb(bev)
-            bev = cv2.cvtColor(bev, cv2.COLOR_BGR2RGB)
-            # Put image into canvas
-            self.canvas[
-                rgb_image_1.shape[0] + 10 : rgb_image_1.shape[0] + 10 + bev.shape[0],
-                rgb_image_1.shape[1]
-                + rgb_image_2.shape[1]
-                + offset : rgb_image_1.shape[1]
-                + rgb_image_2.shape[1]
-                + bev.shape[1]
-                + offset,
-            ] = bev
+        self.renderer_module.render_text("", move_cursor="down", font_color=COLORS.RED)
 
-            offset += bev.shape[1] + 10
-
-        # Put text for other modules
-        position_x = rgb_image_1.shape[1] * 3 + 10
-        position_y = 20
         for (module, render_dict) in self.render_dict.items():
+
             if "rgb" not in module:
 
                 if bool(render_dict):
 
-                    cv2.putText(
-                        self.canvas,
+                    self.renderer_module.render_text(
                         f"{module.capitalize()}",
-                        (position_x, position_y),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
-                        (0, 255, 255),
-                        1,
-                        cv2.LINE_AA,
+                        move_cursor="down",
+                        font_color=COLORS.RED,
                     )
-                    position_y += 40
 
                     for (k, v) in render_dict.items():
 
-                        cv2.putText(
-                            self.canvas,
+                        self.renderer_module.render_text(
                             f"{k}: {v}",
-                            (position_x, position_y),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.5,
-                            (255, 255, 0),
-                            1,
+                            move_cursor="down",
+                            font_color=COLORS.YELLOW,
                         )
-                        position_y += 20
 
-        canvas_display = cv2.resize(src=self.canvas, dsize=(0, 0), fx=0.5, fy=0.5)
+        self.renderer_module.show()
 
-        cv2.imshow("Environment", canvas_display)
-
-        if self.config["save"]:
-            canvas_save = self.canvas
-            cv2.imwrite(str(self.debug_path / Path(f"{self.counter}.png")), canvas_save)
-
-        if self.config["save_video"]:
-            self.video_writer.write(canvas_save)
-
-        cv2.waitKey(1)
+        self.renderer_module.save()
 
     def close(self):
         """Close the environment"""
@@ -482,28 +443,15 @@ class CarlaEnvironment(Environment):
 
     def _set_default_config(self):
         """Set the default config of the environment"""
-        self.config = {}
-
-    def _create_render_window(self):
-        cv2.destroyAllWindows()
-        self.canvas = np.zeros((256 + 192 + 50, 900 * 3 + 1200, 3), np.uint8)
-        cv2.imshow("Environment", self.canvas)
-
-        if self.config["save_video"]:
-            fourcc = VideoWriter_fourcc(*"mp4v")
-            self.video_writer = VideoWriter(
-                str(self.debug_path / Path("video.mp4")),
-                fourcc,
-                int(20),
-                (self.canvas.shape[1] // 2, self.canvas.shape[0] // 2),
-            )
-
-    def _create_save_folder(self):
-
-        debug_path = Path("figures/env_debug")
-
-        date_ = Path(datetime.today().strftime("%Y-%m-%d"))
-        time_ = Path(datetime.today().strftime("%H-%M-%S"))
-
-        self.debug_path = debug_path / date_ / time_
-        self.debug_path.mkdir(parents=True, exist_ok=True)
+        self.config = {
+            "random": False,
+            "action_repeat": 1,
+            "fixed_delta_seconds": 0.05,
+            "port": 2000,
+            "tm_port": 8000,
+            "max_steps": 1000,
+            "tasks": [{"world": "Town02", "num_vehicles": 80}],
+            "sensors": [],
+            "bevs": [],
+            "renderer": None,
+        }

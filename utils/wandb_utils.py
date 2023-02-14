@@ -13,8 +13,8 @@ def create_initial_run(config):
     )
 
     if config["wandb"]["id"] is None:
-        run.config["wandb"]["id"] = run.id
-        # run.update()
+        config["wandb"]["id"] = run.id
+        run.config.update(config, allow_val_change=True)
 
     run.define_metric("train/step")
     run.define_metric("val/step")

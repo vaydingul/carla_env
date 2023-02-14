@@ -45,9 +45,9 @@ class ClientModule(module.Module):
         self.settings = self.world.get_settings()
         self.settings.synchronous_mode = self.config["synchronous_mode"]
         self.settings.fixed_delta_seconds = self.config["fixed_delta_seconds"]
-        self.settings.max_substeps = 15
-        self.settings.max_substep_delta_time = self.settings.fixed_delta_seconds / \
-            self.settings.max_substeps
+        # self.settings.max_substeps = 15
+        # self.settings.max_substep_delta_time = self.settings.fixed_delta_seconds / \
+        #     self.settings.max_substeps
         self.world.apply_settings(self.settings)
         logger.info("Client started")
 

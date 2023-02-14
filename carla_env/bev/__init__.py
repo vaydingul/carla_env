@@ -82,6 +82,12 @@ RGB_BY_MASK = {
     BirdViewMasks.OFFROAD: RGB.DARK_VIOLET,
 }
 
+BIRDVIEW_CROP_TYPE = {
+    "FRONT_AND_REAR_AREA": BirdViewCropType.FRONT_AND_REAR_AREA,
+    "FRONT_AREA_ONLY": BirdViewCropType.FRONT_AREA_ONLY,
+    "DYNAMIC": BirdViewCropType.DYNAMIC,
+}
+
 
 def rotate(image, angle, center=None, scale=1.0):
     assert image.dtype == np.uint8

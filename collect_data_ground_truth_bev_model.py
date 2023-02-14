@@ -8,7 +8,7 @@ import tqdm
 import cv2
 import numpy as np
 
-from carla_env import carla_env_bev_data_collect
+from carla_env import carla_env_data_collect
 from carla_env.writer.writer import InstanceWriter, InstanceWriterType
 from utils.path_utils import check_latest_episode
 from utils.train_utils import seed_everything
@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO)
 
 def main(config):
     # seed_everything(333)
-    c = carla_env_bev_data_collect.CarlaEnvironment(
+    c = carla_env_data_collect.CarlaEnvironment(
         config={
             "render": False,
             "save": False,

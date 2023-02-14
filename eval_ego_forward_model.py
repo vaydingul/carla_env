@@ -136,27 +136,6 @@ def main(config):
     logger.info(f"Finished evaluation")
 
 
-# def main(config):
-
-
-#     dataloader_test = DataLoader(
-#         dataset=Subset(
-#             dataset_test,
-#             range(
-#                 0,
-#                 len(dataset_test),
-#                 (
-#                     run.config["num_time_step_previous"]
-#                     + run.config["num_time_step_future"]
-#                 )
-#                 * run.config["dataset_dilation"],
-#             ),
-#         ),
-#         batch_size=20,
-#         shuffle=False,
-#         num_workers=0,
-#     )
-
 
 if __name__ == "__main__":
 

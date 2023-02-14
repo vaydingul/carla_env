@@ -20,24 +20,15 @@ def fetch_all_vehicles(client, spawn_big_vehicle=False):
                 vehicles_.append(".".join(vehicle.id.split(".")[1:]))
     return vehicles_
 
-def create_multiple_actors_for_traffic_manager(client, n=20, include_hero_actor=False):
+
+def create_multiple_actors_for_traffic_manager(client, n=20):
     """Create multiple vehicles in the world"""
 
     vehicles = fetch_all_vehicles(client)
     vehicles = vehicles * (n // len(vehicles) + 1)
     # Shuffle the list and take first n vehicles
     np.random.shuffle(vehicles)
-
-    if include_hero_actor:
-        actors = [
-            actor.ActorModule(
-                config={
-                    "actor": vehicle.VehicleModule(config=None, client=client),
-                    "hero": True,
-                },
-                client=client,
-            )
-        ]
+    actors = []
 
     for k in range(n):
 

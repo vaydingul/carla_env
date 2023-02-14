@@ -1,7 +1,6 @@
 import abc
 
 
-
 class Environment(abc.ABC):
     """Abstract base class for simulator environment"""
 

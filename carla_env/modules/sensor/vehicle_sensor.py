@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class VehicleSensorModule(sensor.SensorModule):
     """Concrete implementation of SensorModule abstract base class for
-     vehicle sensor management"""
+    vehicle sensor management"""
 
     def __init__(self, config, client, actor=None, id=None) -> None:
         super().__init__(config, client)
@@ -40,43 +40,46 @@ class VehicleSensorModule(sensor.SensorModule):
         """Get the sensor data"""
         vehicle_control = self.actor.get_actor().get_control()
 
-        vehicle_control_ = [vehicle_control.throttle,
-                            vehicle_control.steer, vehicle_control.brake]
-        data = {'transform': self.actor.get_actor().get_transform(),
-                'location': self.actor.get_actor().get_location(),
-                'rotation': self.actor.get_actor().get_transform().rotation,
-                'velocity': self.actor.get_actor().get_velocity(),
-                'acceleration': self.actor.get_actor().get_acceleration(),
-                'control': vehicle_control_,
-                'frame': self.world.get_snapshot().frame,
-                'location_array': [self.actor.get_actor().
-                                   get_transform().location.x,
-                                   self.actor.get_actor().
-                                   get_transform().location.y,
-                                   self.actor.get_actor().
-                                   get_transform().location.z],
-                'rotation_array': [self.actor.get_actor().
-                                   get_transform().rotation.roll,
-                                   self.actor.get_actor().
-                                   get_transform().rotation.pitch,
-                                   self.actor.get_actor().
-                                   get_transform().rotation.yaw],
-                'velocity_array': [self.actor.get_actor().
-                                   get_velocity().x,
-                                   self.actor.get_actor().
-                                   get_velocity().y,
-                                   self.actor.get_actor().
-                                   get_velocity().z],
-                'acceleration_array': [self.actor.get_actor().
-                                       get_acceleration().x,
-                                       self.actor.get_actor().
-                                       get_acceleration().y,
-                                       self.actor.get_actor().
-                                       get_acceleration().z],
-                'control_array': [vehicle_control.throttle,
-                                  vehicle_control.steer,
-                                  vehicle_control.brake],
-                'town': self.world.get_map().name}
+        vehicle_control_ = [
+            vehicle_control.throttle,
+            vehicle_control.steer,
+            vehicle_control.brake,
+        ]
+        data = {
+            "transform": self.actor.get_actor().get_transform(),
+            "location": self.actor.get_actor().get_location(),
+            "rotation": self.actor.get_actor().get_transform().rotation,
+            "velocity": self.actor.get_actor().get_velocity(),
+            "acceleration": self.actor.get_actor().get_acceleration(),
+            "control": vehicle_control_,
+            "frame": self.world.get_snapshot().frame,
+            "location_array": [
+                self.actor.get_actor().get_transform().location.x,
+                self.actor.get_actor().get_transform().location.y,
+                self.actor.get_actor().get_transform().location.z,
+            ],
+            "rotation_array": [
+                self.actor.get_actor().get_transform().rotation.roll,
+                self.actor.get_actor().get_transform().rotation.pitch,
+                self.actor.get_actor().get_transform().rotation.yaw,
+            ],
+            "velocity_array": [
+                self.actor.get_actor().get_velocity().x,
+                self.actor.get_actor().get_velocity().y,
+                self.actor.get_actor().get_velocity().z,
+            ],
+            "acceleration_array": [
+                self.actor.get_actor().get_acceleration().x,
+                self.actor.get_actor().get_acceleration().y,
+                self.actor.get_actor().get_acceleration().z,
+            ],
+            "control_array": [
+                vehicle_control.throttle,
+                vehicle_control.steer,
+                vehicle_control.brake,
+            ],
+            "town": self.world.get_map().name,
+        }
 
         logger.debug(f"Location: {data['location']}")
         logger.debug(f"Rotation: {data['rotation']}")

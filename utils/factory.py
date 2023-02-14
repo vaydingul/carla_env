@@ -370,11 +370,66 @@ def dataset_factory(config):
         None
 
 
+def writer_factory(config):
+
+    if (config["experiment_type"] == "collect_data_random") or (
+        config["experiment_type"] == "collect_data_driving"
+    ):
+
+        from carla_env.writer.writer import InstanceWriter
+
+        return InstanceWriter
+
+    else:
+
+        None
+
+
+def writer_key_factory(config):
+
+    if (config["experiment_type"] == "collect_data_random") or (
+        config["experiment_type"] == "collect_data_driving"
+    ):
+        writer_type_list = []
+
+        from carla_env.writer.writer import InstanceWriterType
+
+        for key_ in config["writer"]["keys"]:
+
+            if key_["type"] == "rgb_image":
+
+                type_ = InstanceWriterType.RGB_IMAGE
+
+            elif key_["type"] == "bev_image":
+
+                type_ = InstanceWriterType.BEV_IMAGE
+
+            elif key_["type"] == "json":
+
+                type_ = InstanceWriterType.JSON
+
+            else:
+
+                raise ValueError("Invalid writer_type")
+
+            writer_type_list.append(
+                {"key": key_["key"], "value": key_["value"], "type": type_}
+            )
+
+    else:
+
+        None
+
+    return writer_type_list
+
+
 def environment_factory(config):
 
-    if config["experiment_type"] == "collect_data":
+    if (config["experiment_type"] == "collect_data_random") or (
+        config["experiment_type"] == "collect_data_driving"
+    ):
 
-        from carla_env.carla_env_bev_data_collect import CarlaEnvironment
+        from carla_env.carla_env_data_collect import CarlaEnvironment
 
         return CarlaEnvironment
 
@@ -399,3 +454,61 @@ def environment_factory(config):
     else:
 
         return None
+
+
+def sensor_factory(config):
+
+    if (
+        (config["experiment_type"] == "collect_data_random")
+        or (config["experiment_type"] == "collect_data_driving")
+        or (config["experiment_type"] == "test_mpc")
+        or (config["experiment_type"] == "test_policy")
+    ):
+
+        sensors = config["environment"]["sensors"]
+        sensor_list = []
+        for sensor in sensors:
+
+            if sensor["type"] == "RGBSensor":
+
+                from carla_env.modules.sensor.rgb_sensor import RGBSensorModule
+
+                cls = RGBSensorModule
+
+            elif sensor["type"] == "CollisionSensor":
+
+                from carla_env.modules.sensor.collision_sensor import (
+                    CollisionSensorModule,
+                )
+
+                cls = CollisionSensorModule
+
+            elif sensor["type"] == "VehicleSensor":
+
+                from carla_env.modules.sensor.vehicle_sensor import VehicleSensorModule
+
+                cls = VehicleSensorModule
+
+            elif sensor["type"] == "SemanticSensor":
+
+                from carla_env.modules.sensor.semantic_sensor import (
+                    SemanticSensorModule,
+                )
+
+                cls = SemanticSensorModule
+
+            elif sensor["type"] == "OccupancySensor":
+
+                from carla_env.modules.sensor.occupancy_sensor import (
+                    OccupancySensorModule,
+                )
+
+                cls = OccupancySensorModule
+
+            else:
+
+                raise ValueError("Invalid sensor_type")
+
+            sensor_list.append({"class": cls, "args": sensor})
+
+    return sensor_list
