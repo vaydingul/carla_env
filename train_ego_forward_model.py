@@ -23,6 +23,7 @@ def main(config):
     logger = get_logger(__name__)
     configure_logger(__name__, log_path=config["log_path"], log_level=logging.INFO)
     pretty_print_config(logger, config)
+    
     # ---------------------------------------------------------------------------- #
     #                                     SEED                                     #
     # ---------------------------------------------------------------------------- #

@@ -64,8 +64,8 @@ class WorldBEVModel(nn.Module):
             "num_probabilistic_encoder_layer"
         ]
 
-        self.num_time_step_previous = self.config["num_time_step"] - 1
-        self.num_time_step_future = 1
+        self.num_time_step_previous = self.config["num_time_step_previous"]
+        self.num_time_step_future = self.config["num_time_step_future"]
 
         self.input_shape_previous[0] *= self.num_time_step_previous
         self.input_shape_future[0] *= self.num_time_step_future
@@ -138,7 +138,8 @@ class WorldBEVModel(nn.Module):
             "output_channel": 512,
             "num_encoder_layer": 4,
             "num_probabilistic_encoder_layer": 2,
-            "num_time_step": 2,
+            "num_time_step_previous": 1,
+            "num_time_step_future": 1,
             "dropout": 0.2,
         }
 

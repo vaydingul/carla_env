@@ -1,0 +1,118 @@
+experiment_type: "train_world_forward_model"
+seed: 42
+checkpoint_path: "pretrained_models/"
+log_path: "logs/"
+
+num_time_step_previous: &previous 20
+num_time_step_future: &future 10
+sequence_length: &sequence_length 30
+num_workers: &num_workers 8
+num_gpu: &num_gpu 1
+read_keys: &read_keys ["bev_world"]
+bev_agent_channel: &bev_agent_channel 7
+bev_vehicle_channel: &bev_vehicle_channel 6
+bev_selected_cahnnels: &bev_selected_cahnnels [0, 1, 2, 3, 4, 5, 6, 11]
+bev_calculate_offroad: &bev_calculate_offroad false
+
+# Dataset related parameters for training
+dataset_train:
+  data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_train_data_10Hz"
+  sequence_length: *sequence_length
+  read_keys:
+    - "bev_world"
+  dilation: 2
+  bev_agent_channel: 7
+  bev_vehicle_channel: 6
+  bev_selected_cahnnels: [0, 1, 2, 3, 4, 5, 6, 11]
+  bev_calculate_offroad: false
+
+# Dataloader related parameters for training
+dataloader_train:
+  batch_size: 100
+  shuffle: false
+  num_workers: 8
+  drop_last: true
+
+# Dataset related parameters for validation
+dataset_val:
+  data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_val_data_10Hz"
+  sequence_length: *sequence_length
+  read_keys:
+    - "bev_world"
+  dilation: 2
+  bev_agent_channel: 7
+  bev_vehicle_channel: 6
+  bev_selected_cahnnels: [0, 1, 2, 3, 4, 5, 6, 11]
+  bev_calculate_offroad: false
+
+# Dataloader related parameters for validation
+dataloader_val:
+  batch_size: 200
+  shuffle: false
+  num_workers: 8
+  drop_last: true
+
+# Training related parameters
+training:
+  learning_rate: 0.001
+  num_epochs: 1000
+  num_gpu: 1
+  master_port: "12345"
+  weighted_sampling: false
+  sigmoid_before_loss: false
+  optimizer:
+    type: "Adam"
+    config:
+      - lr: 0.001
+      - weight_decay: 0.0001
+
+  loss:
+    criterion: "BCEWithLogitsLoss"
+    config:
+      - reduction: "mean"
+      - pos_weight: [1, 1, 1, 1, 1, 1, 1, 1]
+
+  save_interval: 6
+  val_interval: 3
+
+  logvar_clip:
+    enable: false
+    min: -10
+    max: 10
+
+  gradient_clip:
+    enable: false
+    type: "norm"
+    value: 3
+
+  # Scheduler related parameters
+  scheduler:
+    enable: false
+    type: "ReduceLROnPlateau"
+    config:
+      patience: 10
+      factor: 0.5
+      min_lr: 0.0000001
+
+# Ego forward model related parameters
+world_forward_model:
+  input_shape: [8, 192, 192]
+  latent_size: 128
+  hidden_channel: 256
+  output_channel: 512
+  num_encoder_layer: 4
+  num_probabilistic_encoder_layer: 2
+  dropout: 0.1
+  num_time_step_previous: *previous
+  num_time_step_future: 1 #*future
+
+# Wandb related parameters
+wandb:
+  enable: true
+  resume: false
+  resume_checkpoint_number: 0
+  project: "mbl-refactored"
+  group: "train-ego-forward-model-multi-step-5Hz"
+  name: "1-5-5Hz"
+  id: ~
+  notes: "Ego forward model with 5Hz data and 5 time steps in the future. It can work with every model that works in 5Hz."

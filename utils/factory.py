@@ -198,47 +198,35 @@ def loss_criterion_factory(config):
         or (config["experiment_type"] == "train_ego_forward_model")
     ):
 
-        if config["training"]["loss_criterion"] == "MSELoss":
+        if config["training"]["loss"]["criterion"] == "MSELoss":
 
             from torch.nn import MSELoss
 
-            return MSELoss(
-                reduction=config["training"]["loss_reduction"],
-            )
+            return MSELoss
 
-        elif config["training"]["loss_criterion"] == "SmoothL1Loss":
+        elif config["training"]["loss"]["criterion"] == "SmoothL1Loss":
 
             from torch.nn import SmoothL1Loss
 
-            return SmoothL1Loss(
-                reduction=config["training"]["loss_reduction"],
-            )
+            return SmoothL1Loss
 
-        elif config["training"]["loss_criterion"] == "L1Loss":
+        elif config["training"]["loss"]["criterion"] == "L1Loss":
 
             from torch.nn import L1Loss
 
-            return L1Loss(
-                reduction=config["training"]["loss_reduction"],
-            )
+            return L1Loss
 
-        elif config["training"]["loss_criterion"] == "BCELoss":
+        elif config["training"]["loss"]["criterion"] == "BCELoss":
 
             from torch.nn import BCELoss
 
-            return BCELoss(
-                reduction=config["training"]["loss_reduction"],
-                weight=config["training"]["loss_weight"],
-            )
+            return BCELoss
 
-        elif config["training"]["loss_criterion"] == "BCEWithLogitsLoss":
+        elif config["training"]["loss"]["criterion"] == "BCEWithLogitsLoss":
 
             from torch.nn import BCEWithLogitsLoss
 
-            return BCEWithLogitsLoss(
-                reduction=config["training"]["loss_reduction"],
-                weight=config["training"]["loss_weight"],
-            )
+            return BCEWithLogitsLoss
 
         else:
 
@@ -255,49 +243,37 @@ def metric_factory(config):
         config["experiment_type"] == "eval_ego_forward_model"
     ):
 
-        if config["evaluation"]["metric"] == "MSE":
+        if config["evaluation"]["metric"]["type"] == "MSE":
 
             from torch.nn import MSELoss
 
-            return MSELoss(
-                reduction=config["evaluation"]["metric_reduction"],
-            )
+            return MSELoss
 
-        elif config["evaluation"]["metric"] == "SmoothL1Loss":
+        elif config["evaluation"]["metric"]["type"] == "SmoothL1Loss":
 
             from torch.nn import SmoothL1Loss
 
-            return SmoothL1Loss(
-                reduction=config["evaluation"]["metric_reduction"],
-            )
+            return SmoothL1Loss
 
-        elif config["evaluation"]["metric"] == "L1Loss":
+        elif config["evaluation"]["metric"]["type"] == "L1Loss":
 
             from torch.nn import L1Loss
 
-            return L1Loss(
-                reduction=config["evaluation"]["metric_reduction"],
-            )
+            return L1Loss
 
-        elif config["evaluation"]["metric"] == "BCELoss":
+        elif config["evaluation"]["metric"]["type"] == "BCELoss":
 
             from torch.nn import BCELoss
 
-            return BCELoss(
-                reduction=config["evaluation"]["metric_reduction"],
-                weight=config["evaluation"]["metric_weight"],
-            )
+            return BCELoss
 
-        elif config["evaluation"]["metric"] == "BCEWithLogitsLoss":
+        elif config["evaluation"]["metric"]["type"] == "BCEWithLogitsLoss":
 
             from torch.nn import BCEWithLogitsLoss
 
-            return BCEWithLogitsLoss(
-                reduction=config["evaluation"]["metric_reduction"],
-                weight=config["evaluation"]["metric_weight"],
-            )
+            return BCEWithLogitsLoss
 
-        elif config["evaluation"]["metric"] == "MAE":
+        elif config["evaluation"]["metric"]["type"] == "MAE":
 
             import torch
 
@@ -324,15 +300,15 @@ def scheduler_factory(config):
         or (config["experiment_type"] == "train_ego_forward_model")
     ):
 
-        if config["use_scheduler"]:
+        if config["training"]["scheduler"]["enable"]:
 
-            if config["scheduler_type"] == "StepLR":
+            if config["training"]["scheduler"]["type"] == "StepLR":
 
                 from torch.optim.lr_scheduler import StepLR
 
                 return StepLR
 
-            elif config["scheduler_type"] == "ReduceLROnPlateau":
+            elif config["training"]["scheduler"]["type"] == "ReduceLROnPlateau":
 
                 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
