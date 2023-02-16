@@ -129,7 +129,15 @@ class WorldBEVModel(nn.Module):
                 h.view(world_previous_bev_encoded.shape)
             )
 
-            return world_future_bev_predicted
+            return (world_previous_bev_encoded, world_future_bev_predicted)
+
+    def get_input_shape_previous(self):
+
+        return self.input_shape_previous
+
+    def get_input_shape_future(self):
+
+        return self.input_shape_future
 
     def set_default_config(self):
 

@@ -17,7 +17,8 @@ def get_device():
 
 
 def organize_device(device):
-    
+
     if isinstance(device, int):
         return f"cuda:{device}"
+    
     return device

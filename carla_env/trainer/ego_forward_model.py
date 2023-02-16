@@ -236,4 +236,6 @@ class Trainer(object):
                 )
 
                 if run is not None:
-                    run.save(str(self.save_path / Path(f"checkpoint_{epoch}.pt")), )
+                    run.save(
+                        str(self.save_path / Path(f"checkpoint_{epoch}.pt")),
+                    )

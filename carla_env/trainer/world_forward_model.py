@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
-
+from torch.utils.data.distributed import DistributedSampler
 from pathlib import Path
 
 from carla_env.sampler.distributed_weighted_sampler import DistributedWeightedSampler
@@ -87,7 +87,10 @@ class Trainer(object):
 
         self.model.train()
 
-        if isinstance(self.dataloader_train.sampler, DistributedWeightedSampler):
+        if isinstance(
+            self.dataloader_train.sampler,
+            (DistributedWeightedSampler, DistributedSampler),
+        ):
             self.dataloader_train.sampler.set_epoch(epoch)
 
         logger.info("Training routine started!")
@@ -129,9 +132,16 @@ class Trainer(object):
                 )
         logger.info("Training routine finished!")
 
-    def validate(self, run=None):
+    def validate(self, epoch, run=None):
 
         self.model.eval()
+
+        if isinstance(
+            self.dataloader_val.sampler,
+            (DistributedWeightedSampler, DistributedSampler),
+        ):
+            self.dataloader_val.sampler.set_epoch(epoch)
+
         logger.info("Validation routine started!")
         losses_total = []
         losses_kl_div = []
@@ -151,11 +161,11 @@ class Trainer(object):
                 losses_kl_div.append(loss_kl_div.item())
                 losses_reconstruction.append(loss_reconstruction.item())
 
+                self.val_step += self.B_VAL
+
         loss = np.mean(losses_total)
         loss_kl_div = np.mean(losses_kl_div)
         loss_reconstruction = np.mean(losses_reconstruction)
-
-        self.val_step += self.B_VAL
 
         if run is not None:
 
@@ -265,7 +275,7 @@ class Trainer(object):
 
     def learn(self, run=None):
 
-        loss_dict = self.validate(run)
+        loss_dict = self.validate(0, run)
         logger.info(f"{'*' * 10} Initial Validation {'*' * 10}")
         logger.info(f"Epoch: Start")
         for key, value in loss_dict.items():
@@ -278,7 +288,7 @@ class Trainer(object):
 
             if (epoch + 1) % self.val_interval == 0:
 
-                loss_dict = self.validate(run)
+                loss_dict = self.validate(epoch, run)
                 logger.info(f"{'*' * 10} Validation {'*' * 10}")
                 logger.info(f"Epoch: {epoch + 1}")
                 for key, value in loss_dict.items():

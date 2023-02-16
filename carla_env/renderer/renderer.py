@@ -113,21 +113,40 @@ class Renderer:
 
         self._move_cursor(direction=move_cursor, amount=(TEXT_H + BASELINE, TEXT_W))
 
-    def render_point(self, symbol=".", color=None, move_cursor="right"):
+    def render_point(self, pos=None, symbol=".", color=None, move_cursor="none"):
 
         if color in None:
             color = self.font_color
 
-        point_cursor_ = tuple(reversed(self.cursor))
+        if pos is None:
+            pos = tuple(reversed(self.cursor))
 
         cv2.putText(
             self.canvas,
             symbol,
-            point_cursor_,
+            pos,
             self.font,
             self.font_scale,
             color,
             self.font_thickness,
+        )
+
+        self._move_cursor(direction=move_cursor, amount=(0, 0))
+
+    def render_arrow(
+        self, start, end, color=None, thickness=1, tip_length=0.5, move_cursor="none"
+    ):
+
+        if color is None:
+            color = self.font_color
+
+        cv2.arrowedLine(
+            self.canvas,
+            start,
+            end,
+            color,
+            thickness,
+            tipLength=tip_length,
         )
 
         self._move_cursor(direction=move_cursor, amount=(0, 0))
@@ -154,10 +173,10 @@ class Renderer:
         if info is not None:
             save_path = f"{self.save_path}/{info}.{ext}"
         else:
-            save_path = f"{self.save_path}/renderer_output.{ext}"
+            save_path = f"{self.save_path}/rendered_image.{ext}"
 
         if self.save_ and self.save_path is not None:
-            cv2.imwrite(save_path, self.canvas)
+            cv2.imwrite(str(save_path), self.canvas)
 
             return save_path
 
@@ -205,6 +224,8 @@ class Renderer:
             self.cursor = (self.height, self.width)
         elif direction == "point":
             self.cursor = (amount[0], amount[1])
+        elif direction == "none":
+            pass
         else:
             raise ValueError("Invalid direction")
 

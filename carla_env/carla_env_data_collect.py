@@ -172,7 +172,7 @@ class CarlaEnvironment(Environment):
         )
 
         actor_list = create_multiple_actors_for_traffic_manager(
-            self.client, n=number_of_actors + 1
+            self.client, n=number_of_actors
         )
 
         actor_list.append(self.hero_actor_module)
@@ -190,12 +190,12 @@ class CarlaEnvironment(Environment):
 
             self.sensor_modules.append(
                 {
-                    "id": sensor["args"]["id"],
+                    "id": sensor["id"],
                     "module": sensor["class"](
-                        config=sensor["args"],
+                        config=sensor["config"],
                         client=self.client,
                         actor=self.hero_actor_module,
-                        id=sensor["args"]["id"],
+                        id=sensor["id"],
                     ),
                 }
             )
@@ -209,14 +209,18 @@ class CarlaEnvironment(Environment):
                     "id": bev["id"],
                     "module": BirdViewProducer(
                         client=self.client,
-                        target_size=PixelDimensions(bev["width"], bev["height"]),
-                        render_lanes_on_junctions=bev["render_lanes_on_junctions"],
-                        pixels_per_meter=bev["pixels_per_meter"],
-                        crop_type=BIRDVIEW_CROP_TYPE[bev["crop_type"]],
-                        road_on_off=bev["road_on_off"],
-                        road_light=bev["road_light"],
-                        light_circle=bev["light_circle"],
-                        lane_marking_thickness=bev["lane_marking_thickness"],
+                        target_size=PixelDimensions(
+                            bev["config"]["width"], bev["config"]["height"]
+                        ),
+                        render_lanes_on_junctions=bev["config"][
+                            "render_lanes_on_junctions"
+                        ],
+                        pixels_per_meter=bev["config"]["pixels_per_meter"],
+                        crop_type=BIRDVIEW_CROP_TYPE[bev["config"]["crop_type"]],
+                        road_on_off=bev["config"]["road_on_off"],
+                        road_light=bev["config"]["road_light"],
+                        light_circle=bev["config"]["light_circle"],
+                        lane_marking_thickness=bev["config"]["lane_marking_thickness"],
                     ),
                 }
             )

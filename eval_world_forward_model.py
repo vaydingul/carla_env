@@ -114,6 +114,9 @@ def main(config):
         f"Number of parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}"
     )
 
+    if run_eval is not None:
+        run_eval.save(config["config_path"])
+
     # ---------------------------------------------------------------------------- #
     #                                   EVALUATOR                                  #
     # ---------------------------------------------------------------------------- #
@@ -139,26 +142,6 @@ def main(config):
 
     logger.info(f"Finished evaluation")
 
-    # evaluator = Evaluator(
-    #     model=model,
-    #     dataloader=dataloader_test,
-    #     device=device,
-    #     report_metrics=config.report_metrics,
-    #     metrics=config.metrics,
-    #     num_time_step_previous=run.config["num_time_step_previous"],
-    #     num_time_step_predict=(
-    #         config.num_time_step_predict
-    #         if config.num_time_step_predict > 0
-    #         else run.config["num_time_step_future"]
-    #     ),
-    #     threshold=config.threshold,
-    #     vehicle_threshold=config.vehicle_threshold,
-    #     bev_selected_channels=config.bev_selected_channels,
-    #     save_path=f"{config.save_path}/{run.config['num_time_step_previous']}-{run.config['num_time_step_future']}-{(config.num_time_step_predict if config.num_time_step_predict > 0 else run.config['num_time_step_future'])}-{run.config['reconstruction_loss']}-{config.threshold}-{config.checkpoint_number}",
-    # )
-
-    # evaluator.evaluate()
-
 
 if __name__ == "__main__":
 
@@ -171,6 +154,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     config = parse_yml(args.config_path)
+    config["save_path"] = create_date_time_path(config["save_path"])
+    config["config_path"] = args.config_path
 
     assert (
         config["dataset_test"]["sequence_length"]

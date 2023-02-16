@@ -82,7 +82,7 @@ class Evaluator(object):
         self.num_time_step_predict = num_time_step_predict
         self.thresholds = thresholds
         self.wandb_log_interval = wandb_log_interval
-        self.save_path = create_date_time_path(save_path)
+        self.save_path = save_path
 
         self.bev_selected_channels = self.dataset.bev_selected_channels
 

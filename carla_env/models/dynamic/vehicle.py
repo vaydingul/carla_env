@@ -17,9 +17,7 @@ class KinematicBicycleModel(nn.Module):
         self.front_wheelbase = nn.Parameter(torch.tensor(1.0), requires_grad=True)
         self.rear_wheelbase = nn.Parameter(torch.tensor(1.0), requires_grad=True)
         self.steer_gain = nn.Parameter(torch.tensor(1.0), requires_grad=True)
-        self.acceleration_encoder = nn.Sequential(
-            nn.Linear(1, 1, bias=False),
-        )
+        self.acceleration_encoder = nn.Linear(1, 1, bias=False)
 
     def build_from_config(self):
 

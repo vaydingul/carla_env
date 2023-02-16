@@ -9,7 +9,7 @@ sequence_length: &sequence_length 30
 num_workers: &num_workers 8
 num_gpu: &num_gpu 1
 read_keys: &read_keys ["bev_world"]
-dilation: &dilation 2
+dilation: &dilation 1
 bev_agent_channel: &bev_agent_channel 7
 bev_vehicle_channel: &bev_vehicle_channel 6
 bev_selected_channels: &bev_selected_channels [0, 1, 2, 3, 4, 5, 6, 11]
@@ -17,7 +17,7 @@ bev_calculate_offroad: &bev_calculate_offroad false
 
 # Dataset related parameters for training
 dataset_train:
-  data_path: "/home/vaydingul/Documents/Codes/carla_env/data/driving_model_data_20Hz_action_repeat_1"
+  data_path: "/home/volkan/Documents/Codes/carla_env/data/driving_model_data_20Hz_action_repeat_1"
   sequence_length: *sequence_length
   read_keys:
     - "bev_world"
@@ -29,14 +29,14 @@ dataset_train:
 
 # Dataloader related parameters for training
 dataloader_train:
-  batch_size: 1
+  batch_size: 20
   shuffle: false
   num_workers: 8
   drop_last: true
 
 # Dataset related parameters for validation
 dataset_val:
-  data_path: "/home/vaydingul/Documents/Codes/carla_env/data/driving_model_data_20Hz_action_repeat_1"
+  data_path: "/home/volkan/Documents/Codes/carla_env/data/driving_model_data_20Hz_action_repeat_1"
   sequence_length: *sequence_length
   read_keys:
     - "bev_world"
@@ -48,7 +48,7 @@ dataset_val:
 
 # Dataloader related parameters for validation
 dataloader_val:
-  batch_size: 1
+  batch_size: 50
   shuffle: false
   num_workers: 8
   drop_last: true
@@ -97,15 +97,17 @@ training:
 
 # Ego forward model related parameters
 world_forward_model:
-  input_shape: [8, 192, 192]
-  latent_size: 128
-  hidden_channel: 256
-  output_channel: 512
-  num_encoder_layer: 4
-  num_probabilistic_encoder_layer: 2
-  dropout: 0.1
-  num_time_step_previous: *previous
-  num_time_step_future: 1 #*future
+  type: "WorldBEVModel"
+  config:
+    input_shape: [8, 192, 192]
+    latent_size: 128
+    hidden_channel: 256
+    output_channel: 512
+    num_encoder_layer: 4
+    num_probabilistic_encoder_layer: 2
+    dropout: 0.1
+    num_time_step_previous: *previous
+    num_time_step_future: 1 #*future
 
 # Wandb related parameters
 wandb:

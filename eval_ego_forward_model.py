@@ -92,8 +92,8 @@ def main(config):
     # ---------------------------------------------------------------------------- #
     #                                     METRIC                                     #
     # ---------------------------------------------------------------------------- #
-    metric = metric_factory(config)
-
+    metric_class = metric_factory(config)
+    metric = metric_class(**config["evaluation"]["metric"]["config"])
     # ------------------- Log information about the model ------------------------ #
     logger.info(
         f"Number of parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}"

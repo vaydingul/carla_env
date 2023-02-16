@@ -129,22 +129,22 @@ class Cost(nn.Module):
             offroad_cost = torch.mean(offroad_cost_tensor)
 
         elif self.reduction == "batch-sum":
-            lane_cost = torch.sum(lane_cost_tensor, dim=[2, 3, 4])
-            vehicle_cost = torch.sum(vehicle_cost_tensor, dim=[2, 3, 4])
-            green_light_cost = torch.sum(green_light_cost_tensor, dim=[2, 3, 4])
-            yellow_light_cost = torch.sum(yellow_light_cost_tensor, dim=[2, 3, 4])
-            red_light_cost = torch.sum(red_light_cost_tensor, dim=[2, 3, 4])
-            pedestrian_cost = torch.sum(pedestrian_cost_tensor, dim=[2, 3, 4])
-            offroad_cost = torch.sum(offroad_cost_tensor, dim=[2, 3, 4])
+            lane_cost = torch.sum(lane_cost_tensor)
+            vehicle_cost = torch.sum(vehicle_cost_tensor)
+            green_light_cost = torch.sum(green_light_cost_tensor)
+            yellow_light_cost = torch.sum(yellow_light_cost_tensor)
+            red_light_cost = torch.sum(red_light_cost_tensor)
+            pedestrian_cost = torch.sum(pedestrian_cost_tensor)
+            offroad_cost = torch.sum(offroad_cost_tensor)
 
         elif self.reduction == "batch-mean":
-            lane_cost = torch.mean(lane_cost_tensor, dim=[2, 3, 4])
-            vehicle_cost = torch.mean(vehicle_cost_tensor, dim=[2, 3, 4])
-            green_light_cost = torch.mean(green_light_cost_tensor, dim=[2, 3, 4])
-            yellow_light_cost = torch.mean(yellow_light_cost_tensor, dim=[2, 3, 4])
-            red_light_cost = torch.mean(red_light_cost_tensor, dim=[2, 3, 4])
-            pedestrian_cost = torch.mean(pedestrian_cost_tensor, dim=[2, 3, 4])
-            offroad_cost = torch.mean(offroad_cost_tensor, dim=[2, 3, 4])
+            lane_cost = torch.mean(lane_cost_tensor)
+            vehicle_cost = torch.mean(vehicle_cost_tensor)
+            green_light_cost = torch.mean(green_light_cost_tensor)
+            yellow_light_cost = torch.mean(yellow_light_cost_tensor)
+            red_light_cost = torch.mean(red_light_cost_tensor)
+            pedestrian_cost = torch.mean(pedestrian_cost_tensor)
+            offroad_cost = torch.mean(offroad_cost_tensor)
 
         elif self.reduction == "none":
             lane_cost = lane_cost_tensor

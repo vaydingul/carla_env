@@ -100,9 +100,18 @@ def main(rank, world_size, config):
             num_replicas=world_size,
             rank=rank,
             shuffle=True,
-        )
-        if config["training"]["weighted_sampling"]
-        else None,
+        ),
+    )
+
+    dataloader_val = DataLoader(
+        dataset_val,
+        **config["dataloader_val"],
+        sampler=DistributedWeightedSampler(
+            dataset_val,
+            num_replicas=world_size,
+            rank=rank,
+            shuffle=False,
+        ),
     )
 
     dataloader_val = DataLoader(dataset_val, **config["dataloader_val"])
@@ -115,46 +124,68 @@ def main(rank, world_size, config):
     #                               WORLD FORWARD MODEL                              #
     # ---------------------------------------------------------------------------- #
 
-    # Create the model
-    model_class = world_forward_model_factory(config)
-    # Initialize the model
-    model = model_class(config["world_forward_model"])
-
-    # ---------------------------------------------------------------------------- #
-    #                                   OPTIMIZER                                  #
-    # ---------------------------------------------------------------------------- #
-    optimizer_class = optimizer_factory(config)
-    optimizer = optimizer_class(
-        model.parameters(), **config["training"]["optimizer"]["config"]
-    )
-
-    # ---------------------------------------------------------------------------- #
-    #                                   SCHEDULER                                  #
-    # ---------------------------------------------------------------------------- #
-    if config["training"]["scheduler"]["enable"]:
-        scheduler_class = scheduler_factory(config)
-        scheduler = scheduler_class(
-            optimizer, **config["training"]["scheduler"]["config"]
-        )
-    else:
-        scheduler = None
-
-    # ---------------------------------------------------------------------------- #
-    #                            LOAD STATE DICTIONARIES                           #
-    # ---------------------------------------------------------------------------- #
     if config["wandb"]["resume"]:
 
-        # Create and initialize the model with pretrained weights and biases
+        # Create the model
+        model_class = world_forward_model_factory(run.config)
+
         model = model_class.load_model_from_wandb_run(
-            config=run.config["world_forward_model"],
+            config=run.config["world_forward_model"]["config"],
             checkpoint_path=checkpoint_path,
             device=device,
         )
 
+    else:
+
+        model_class = world_forward_model_factory(config)
+
+        # Initialize the model
+        model = model_class(config["world_forward_model"]["config"])
+
+    # ---------------------------------------------------------------------------- #
+    #                            OPTIMIZER AND SCHEDULER                           #
+    # ---------------------------------------------------------------------------- #
+
+    if config["wandb"]["resume"]:
+
+        optimizer_class = optimizer_factory(run.config)
+        optimizer = optimizer_class(
+            model.parameters(), **run.config["optimizer"]["config"]
+        )
+        # Load the optimizer state dictionary
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
+        if run.config["training"]["scheduler"]["enable"]:
+            scheduler_class = scheduler_factory(run.config)
+            scheduler = scheduler_class(
+                optimizer,
+                **run.config["training"]["scheduler"]["config"],
+            )
+
+            # Load the scheduler state dictionary
+
+            scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+
+        else:
+
+            scheduler = None
+
+    else:
+
+        optimizer_class = optimizer_factory(config)
+        optimizer = optimizer_class(
+            model.parameters(), **config["training"]["optimizer"]["config"]
+        )
+
         if config["training"]["scheduler"]["enable"]:
-            scheduler.load_state_dict(checkpoint["lr_scheduler_state_dict"])
+            scheduler_class = scheduler_factory(config)
+            scheduler = scheduler_class(
+                optimizer, **config["training"]["scheduler"]["config"]
+            )
+
+        else:
+
+            scheduler = None
 
     # ---------------------------------------------------------------------------- #
     #                                LOSS CRITERION                                #

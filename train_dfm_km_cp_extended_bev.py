@@ -188,7 +188,6 @@ def main(rank, world_size, run, config):
             occupancy_size=config.occupancy_size,
             layers=config.num_layer,
             delta_target=config.delta_target,
-            single_world_state_input=config.single_world_state_input,
             dropout=config.dropout,
         )
     else:

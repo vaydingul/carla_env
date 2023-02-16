@@ -3,14 +3,20 @@ def ego_forward_model_factory(config):
     if (
         (config["experiment_type"] == "train_ego_forward_model")
         or (config["experiment_type"] == "test_ego_forward_model")
-        or (config["experiment_type"] == "train_dfm_km_cp")
+        or (config["experiment_type"] == "train_policy_model")
         or (config["experiment_type"] == "test_dfm_km_cp")
         or (config["experiment_type"] == "test_mpc")
     ):
 
-        from carla_env.models.dynamic.vehicle import KinematicBicycleModel
+        if config["ego_forward_model"]["type"] == "KinematicBicycleModel":
 
-        return KinematicBicycleModel
+            from carla_env.models.dynamic.vehicle import KinematicBicycleModel
+
+            return KinematicBicycleModel
+
+        else:
+
+            raise ValueError("Invalid ego forward model type")
 
     else:
 
@@ -22,14 +28,19 @@ def world_forward_model_factory(config):
     if (
         (config["experiment_type"] == "train_world_forward_model")
         or (config["experiment_type"] == "test_world_forward_model")
-        or (config["experiment_type"] == "train_dfm_km_cp")
-        or (config["experiment_type"] == "test_poilcy")
+        or (config["experiment_type"] == "train_policy_model")
+        or (config["experiment_type"] == "test_policy_model")
         or (config["experiment_type"] == "test_mpc")
     ):
+        if config["world_forward_model"]["type"] == "WorldBEVModel":
 
-        from carla_env.models.world.world import WorldBEVModel
+            from carla_env.models.world.world import WorldBEVModel
 
-        return WorldBEVModel
+            return WorldBEVModel
+
+        else:
+
+            raise ValueError("Invalid world forward model type")
 
     else:
 
@@ -38,21 +49,25 @@ def world_forward_model_factory(config):
 
 def policy_model_factory(config):
 
-    if (config["experiment_type"] == "train_dfm_km_cp") or (
-        config["experiment_type"] == "test_dfm_km_cp"
+    if (config["experiment_type"] == "train_policy_model") or (
+        config["experiment_type"] == "test_policy_model"
     ):
 
-        if config["fused"]:
+        if config["policy_model"]["type"] == "FusedPolicyModel":
 
             from carla_env.models.policy.policy_fused import Policy
 
             return Policy
 
-        else:
+        elif config["policy_model"]["type"] == "PolicyModel":
 
             from carla_env.models.policy.policy import Policy
 
             return Policy
+
+        else:
+
+            raise ValueError("Invalid policy model type")
 
     else:
 
@@ -62,18 +77,18 @@ def policy_model_factory(config):
 def cost_factory(config):
 
     if (
-        (config["experiment_type"] == "train_dfm_km_cp")
+        (config["experiment_type"] == "train_policy_model")
         or (config["experiment_type"] == "test_dfm_km_cp")
         or (config["experiment_type"] == "test_mpc")
     ):
 
-        if config["bev_type"] == "extended_bev":
+        if config["cost"]["type"] == "extended_bev":
 
             from carla_env.cost.masked_cost_batched_extended_bev import Cost
 
             return Cost
 
-        elif config["bev_type"] == "bev":
+        elif config["cost"]["type"] == "bev":
 
             from carla_env.cost.masked_cost_batched_bev import Cost
 
@@ -90,7 +105,7 @@ def cost_factory(config):
 
 def model_factory(config):
 
-    if (config["experiment_type"] == "train_dfm_km_cp") or (
+    if (config["experiment_type"] == "train_policy_model") or (
         config["experiment_type"] == "test_dfm_km_cp"
     ):
 
@@ -119,9 +134,9 @@ def trainer_factory(config):
 
         return Trainer
 
-    elif config["experiment_type"] == "train_dfm_km_cp":
+    elif config["experiment_type"] == "train_policy_model":
 
-        from carla_env.trainer.dfm_km_cp import Trainer
+        from carla_env.trainer.policy_model_extended_bev import Trainer
 
         return Trainer
 
@@ -152,7 +167,7 @@ def evaluator_factory(config):
 def optimizer_factory(config):
 
     if (
-        (config["experiment_type"] == "train_dfm_km_cp")
+        (config["experiment_type"] == "train_policy_model")
         or (config["experiment_type"] == "train_world_forward_model")
         or (config["experiment_type"] == "train_ego_forward_model")
     ):
@@ -193,7 +208,7 @@ def optimizer_factory(config):
 def loss_criterion_factory(config):
 
     if (
-        (config["experiment_type"] == "train_dfm_km_cp")
+        (config["experiment_type"] == "train_policy_model")
         or (config["experiment_type"] == "train_world_forward_model")
         or (config["experiment_type"] == "train_ego_forward_model")
     ):
@@ -277,7 +292,7 @@ def metric_factory(config):
 
             import torch
 
-            def MAE(y_pred, y_true):
+            def MAE(y_pred, y_true, kwargs):
 
                 return torch.mean(torch.abs(y_pred - y_true))
 
@@ -295,7 +310,7 @@ def metric_factory(config):
 def scheduler_factory(config):
 
     if (
-        (config["experiment_type"] == "train_dfm_km_cp")
+        (config["experiment_type"] == "train_policy_model")
         or (config["experiment_type"] == "train_world_forward_model")
         or (config["experiment_type"] == "train_ego_forward_model")
     ):
@@ -332,7 +347,7 @@ def dataset_factory(config):
     if (
         (config["experiment_type"] == "train_ego_forward_model")
         or (config["experiment_type"] == "test_ego_forward_model")
-        or (config["experiment_type"] == "train_dfm_km_cp")
+        or (config["experiment_type"] == "train_policy_model")
         or (config["experiment_type"] == "train_world_forward_model")
         or (config["experiment_type"] == "test_world_forward_model")
     ):
@@ -438,7 +453,7 @@ def sensor_factory(config):
         (config["experiment_type"] == "collect_data_random")
         or (config["experiment_type"] == "collect_data_driving")
         or (config["experiment_type"] == "test_mpc")
-        or (config["experiment_type"] == "test_policy")
+        or (config["experiment_type"] == "test_policy_model")
     ):
 
         sensors = config["environment"]["sensors"]
@@ -485,6 +500,8 @@ def sensor_factory(config):
 
                 raise ValueError("Invalid sensor_type")
 
-            sensor_list.append({"class": cls, "args": sensor})
+            sensor_list.append(
+                {"class": cls, "id": sensor["id"], "config": sensor["config"]}
+            )
 
     return sensor_list

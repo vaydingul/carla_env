@@ -143,9 +143,6 @@ class Policy(nn.Module):
         # Whether to use target location as delta state or absolute state
         self.delta_target = self.config["delta_target"]
 
-        # Whether to use single world state input or multiple world state inputs (history)
-        self.single_world_state_input = self.config["single_world_state_input"]
-
         # Dropout rate
         self.dropout = self.config["dropout"]
 
@@ -166,8 +163,6 @@ class Policy(nn.Module):
             "but no occupancy is provided or vice versa"
         )
 
-        if self.single_world_state_input:
-            world_state = world_state[:, -1:]
         world_state = world_state.view(
             world_state.shape[0], -1, world_state.shape[-2], world_state.shape[-1]
         )
@@ -222,6 +217,10 @@ class Policy(nn.Module):
 
         return action
 
+    def get_keys(self):
+
+        return self.keys
+
     def set_default_config(self):
 
         self.config = {
@@ -239,10 +238,9 @@ class Policy(nn.Module):
             "hidden_size": 256,
             "layers": 4,
             "delta_target": True,
-            "single_world_state_input": False,
             "dropout": 0.1,
         }
-    
+
     def append_config(self, config):
         self.config.update(config)
 

@@ -29,8 +29,8 @@ class Policy(nn.Module):
             self.hidden_size
             + self.input_shape_ego_state
             + (self.command_size * self.use_command)
-            + (self.target_location_size + self.use_target)
-            + (self.occupancy_size + self.use_occupancy)
+            + (self.target_location_size * self.use_target)
+            + (self.occupancy_size * self.use_occupancy)
         )
 
         self.action_decoder = nn.Sequential(
@@ -55,7 +55,7 @@ class Policy(nn.Module):
         if self.config["input_ego_speed"] > 0:
             self.keys.append("speed")
         self.input_shape_ego_state = (
-            self.config["input_ego_location"] * 2
+            self.config["input_ego_location"]
             + self.config["input_ego_yaw"]
             + self.config["input_ego_speed"]
         )
@@ -66,19 +66,19 @@ class Policy(nn.Module):
         self.action_size = self.config["action_size"]
 
         # Whether to use command encoder in the architecture or not
-        self.use_command_encoder = self.config["use_command"]
+        self.use_command = self.config["use_command"]
 
         # The size of the command input
         self.command_size = self.config["command_size"]
 
         # Whether to use target encoder in the architecture or not
-        self.use_target_encoder = self.config["use_target"]
+        self.use_target = self.config["use_target"]
 
         # The size of the target location input
         self.target_location_size = self.config["target_location_size"]
 
         # Whether to use occupancy encoder in the architecture or not
-        self.use_occupancy_encoder = self.config["use_occupancy"]
+        self.use_occupancy = self.config["use_occupancy"]
 
         # The size of the occupancy input
         self.occupancy_size = self.config["occupancy_size"]
@@ -112,11 +112,6 @@ class Policy(nn.Module):
         # Initiate the fused state
         fused = torch.cat([world_state_encoded], dim=1)
 
-        ego_state = torch.cat([ego_state[k] for k in self.keys], dim=1)
-
-        # Concatenate the ego state to the fused state
-        fused = torch.cat([fused, ego_state], dim=1)
-
         if self.use_target:
             if self.delta_target:
                 target_location = target_location - ego_state["location"]
@@ -127,6 +122,10 @@ class Policy(nn.Module):
 
             # Concatenate the target location to the fused state
             fused = torch.cat([fused, target_location], dim=1)
+
+        ego_state = torch.cat([ego_state[k] for k in self.keys], dim=1)
+        # Concatenate the ego state to the fused state
+        fused = torch.cat([fused, ego_state], dim=1)
 
         if self.use_command:
             # Concatenate the command to the fused state
@@ -139,6 +138,10 @@ class Policy(nn.Module):
         action = self.action_decoder(fused)
 
         return action
+
+    def get_keys(self):
+
+        return self.keys
 
     def set_default_config(self):
 

@@ -23,7 +23,7 @@ def main(config):
     logger = get_logger(__name__)
     configure_logger(__name__, log_path=config["log_path"], log_level=logging.INFO)
     pretty_print_config(logger, config)
-    
+
     # ---------------------------------------------------------------------------- #
     #                                     SEED                                     #
     # ---------------------------------------------------------------------------- #
@@ -38,7 +38,13 @@ def main(config):
     #                                   WANDB RUN                                  #
     # ---------------------------------------------------------------------------- #
     run = create_wandb_run(config)
-
+    if config["wandb"]["resume"]:
+        # Fetch the specific checkpoint from wandb cloud storage
+        checkpoint_object = fetch_checkpoint_from_wandb_run(
+            run=run, checkpoint_number=config.resume_checkpoint_number
+        )
+        checkpoint_path = checkpoint_object.name
+        checkpoint = torch.load(f=checkpoint_path, map_location=device)
     # ---------------------------------------------------------------------------- #
     #                                 DATASET CLASS                                #
     # ---------------------------------------------------------------------------- #
@@ -72,27 +78,45 @@ def main(config):
     logger.info(f"Validation dataloader size: {len(dataloader_val)}")
 
     # ---------------------------------------------------------------------------- #
-    #                               EGO FORWARD MODEL                              #
+    #                               WORLD FORWARD MODEL                              #
     # ---------------------------------------------------------------------------- #
 
-    if not config["wandb"]["resume"]:
+    if config["wandb"]["resume"]:
+
         # Create the model
-        model_class = ego_forward_model_factory(config)
-        # Initialize the model
-        model = model_class(config["ego_forward_model"])
+        model_class = ego_forward_model_factory(run.config)
+
+        model = model_class.load_model_from_wandb_run(
+            config=run.config["ego_forward_model"]["config"],
+            checkpoint_path=checkpoint_path,
+            device=device,
+        )
 
     else:
 
-        # Fetch the specific checkpoint from wandb cloud storage
-        checkpoint = fetch_checkpoint_from_wandb_run(
-            run=run, checkpoint_number=config.resume_checkpoint_number
-        )
+        model_class = ego_forward_model_factory(config)
 
-        # Create and initialize the model with pretrained weights and biases
-        model = model.load_model_from_wandb_run(
-            config=run.config["ego_forward_model"],
-            checkpoint_path=checkpoint.name,
-            device=device,
+        # Initialize the model
+        model = model_class(config["ego_forward_model"]["config"])
+
+    # ---------------------------------------------------------------------------- #
+    #                            OPTIMIZER AND SCHEDULER                           #
+    # ---------------------------------------------------------------------------- #
+
+    if config["wandb"]["resume"]:
+
+        optimizer_class = optimizer_factory(run.config)
+        optimizer = optimizer_class(
+            model.parameters(), **run.config["optimizer"]["config"]
+        )
+        # Load the optimizer state dictionary
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+
+    else:
+
+        optimizer_class = optimizer_factory(config)
+        optimizer = optimizer_class(
+            model.parameters(), **config["training"]["optimizer"]["config"]
         )
 
     model.to(device)
@@ -102,22 +126,25 @@ def main(config):
         f"Number of parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}"
     )
 
-    if not config["wandb"]["resume"]:
-        optimizer_class = optimizer_factory(config)
-        optimizer = optimizer_class(
-            model.parameters(), lr=config["training"]["learning_rate"]
-        )
+    loss_criterion_class = loss_criterion_factory(config)
 
-    else:
+    # ---------------------------------------------------------------------------- #
+    #                                LOSS CRITERION                                #
+    # ---------------------------------------------------------------------------- #
+    loss_criterion_class = loss_criterion_factory(config)
 
-        checkpoint = torch.load(checkpoint.name, map_location=device)
+    # The stupidest thing I've ever done
+    if "pos_weight" in config["training"]["loss"]["config"].keys():
+        config["training"]["loss"]["config"]["pos_weight"] = torch.tensor(
+            config["training"]["loss"]["config"]["pos_weight"]
+        ).to(device)
 
-        optimizer = optimizer_class(
-            model.parameters(), lr=run.config["training"]["learning_rate"]
-        )
-        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    if "weight" in config["training"]["loss"]["config"].keys():
+        config["training"]["loss"]["config"]["weight"] = torch.tensor(
+            config["training"]["loss"]["config"]["weight"]
+        ).to(device)
 
-    loss_criterion = loss_criterion_factory(config)
+    loss_criterion = loss_criterion_class(**config["training"]["loss"]["config"])
 
     if run is not None:
         run.save(config["config_path"])

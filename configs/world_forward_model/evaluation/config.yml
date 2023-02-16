@@ -10,7 +10,7 @@ sequence_length: &sequence_length 30
 num_workers: &num_workers 8
 num_gpu: &num_gpu 1
 read_keys: &read_keys ["bev_world"]
-dilation: &dilation 2
+dilation: &dilation 1
 bev_agent_channel: &bev_agent_channel 7
 bev_vehicle_channel: &bev_vehicle_channel 6
 bev_selected_channels: &bev_selected_channels [0, 1, 2, 3, 4, 5, 6, 11]
@@ -19,17 +19,24 @@ bev_calculate_offroad: &bev_calculate_offroad false
 # Dataset related parameters for training
 
 dataset_test:
-  data_path: "/home/vaydingul/Documents/Codes/carla_env/data/driving_model_data_20Hz_action_repeat_1"
-  sequence_length: *sequence_length
-  read_keys: *read_keys
   dilation: *dilation
-  bev_agent_channel: *bev_agent_channel
-  bev_vehicle_channel: *bev_vehicle_channel
-  bev_selected_channels: *bev_selected_channels
-  bev_calculate_offroad: *bev_calculate_offroad
 
-# Dataloader related parameters for training
-dataloader_test:
+# Dataloader related parameters for validation
+dataloader_val:
+  batch_size: 5000
+  shuffle: false
+  num_workers: *num_workers
+
+# Training related parameters
+training:
+  num_epochs: 1000
+  optimizer:
+    type: "Adam"
+    config:
+      lr: 0.01
+      weight_decay: 0.0001
+  loss:
+    criterion: "L1Loss"
   batch_size: 5
   shuffle: false
   num_workers: 0
@@ -68,7 +75,7 @@ wandb:
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"
-  group: "eval-ego-forward-model-multi-step-20Hz"
+  group: "eval-world-forward-model-multi-step-20Hz"
   name: "20-10-20Hz"
   id: ~
   notes: "20 Hz world forward model evaluation plots"
