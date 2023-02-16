@@ -4,9 +4,6 @@ import logging
 
 import torch
 from torch.utils.data import DataLoader, Subset
-from carla_env.dataset.instance import InstanceDataset
-from carla_env.models.dynamic.vehicle import KinematicBicycleModel
-from carla_env.evaluator.ego_forward_model import Evaluator
 from utils.train_utils import get_device, seed_everything
 from utils.model_utils import fetch_run_from_wandb_link, fetch_checkpoint_from_wandb_run
 from utils.path_utils import create_date_time_path
@@ -93,9 +90,8 @@ def main(config):
     model.to(device)
 
     # ---------------------------------------------------------------------------- #
-    #                                     LOSS                                     #
+    #                                     METRIC                                     #
     # ---------------------------------------------------------------------------- #
-
     metric = metric_factory(config)
 
     # ------------------- Log information about the model ------------------------ #
@@ -118,7 +114,9 @@ def main(config):
     # ---------------------------------------------------------------------------- #
     #                                   EVALUATOR                                  #
     # ---------------------------------------------------------------------------- #
-    evaluator = Evaluator(
+    evaluator_class = evaluator_factory(config)
+
+    evaluator = evaluator_class(
         model=model,
         dataloader=dataloader_test,
         device=device,
@@ -136,7 +134,6 @@ def main(config):
     logger.info(f"Finished evaluation")
 
 
-
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -148,6 +145,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     config = parse_yml(args.config_path)
+    config["config_path"] = args.config_path
 
     assert (
         config["dataset_test"]["sequence_length"]

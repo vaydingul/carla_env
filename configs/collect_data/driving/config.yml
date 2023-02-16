@@ -16,12 +16,12 @@ environment:
   tasks:
     - world: Town01
       num_vehicles: [60, 90]
-    - world: Town03
-      num_vehicles: [60, 90]
-    - world: Town04
-      num_vehicles: [120, 180]
-    - world: Town06
-      num_vehicles: [150, 300]
+    # - world: Town03
+    #   num_vehicles: [60, 90]
+    # - world: Town04
+    #   num_vehicles: [120, 180]
+    # - world: Town06
+    #   num_vehicles: [150, 300]
 
   renderer:
     width: 1300
@@ -84,15 +84,18 @@ environment:
 
 writer:
   keys:
-    # - key: rgb_front
-    #   value: rgb_front
-    #   type: rgb_image
+    - key: rgb_front
+      value: rgb_front
+      type: rgb_image
     - key: ego
       value: ego
       type: json
-    # - key: occ
-    #   value: occ
-    #   type: json
+    - key: occ
+      value: occ
+      type: json
+    - key: bev_world
+      value: bev_world
+      type: bev_image
 
   # TODO: Add navigation key
 

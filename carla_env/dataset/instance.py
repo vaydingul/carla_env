@@ -207,7 +207,7 @@ class InstanceDataset(Dataset):
             torch.logical_not(bev_[..., self.bev_agent_channel]),
         )
 
-        bev = bev_[..., [k for k in self.bev_selected_channels]]
+        bev = bev_[..., self.bev_selected_channels]
 
         bev = bev.permute(2, 0, 1)
         # Add offroad mask to BEV representation

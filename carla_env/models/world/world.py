@@ -70,6 +70,8 @@ class WorldBEVModel(nn.Module):
         self.input_shape_previous[0] *= self.num_time_step_previous
         self.input_shape_future[0] *= self.num_time_step_future
 
+        self.dropout = self.config["dropout"]
+
     def forward(self, world_previous_bev, world_future_bev=None, sample_latent=False):
 
         world_previous_bev = world_previous_bev.view(

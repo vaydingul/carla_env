@@ -132,13 +132,13 @@ def trainer_factory(config):
 
 def evaluator_factory(config):
 
-    if config["experiment_type"] == "test_ego_forward_model":
+    if config["experiment_type"] == "eval_ego_forward_model":
 
         from carla_env.evaluator.ego_forward_model import Evaluator
 
         return Evaluator
 
-    elif config["experiment_type"] == "test_world_forward_model":
+    elif config["experiment_type"] == "eval_world_forward_model":
 
         from carla_env.evaluator.world_forward_model import Evaluator
 
@@ -157,25 +157,25 @@ def optimizer_factory(config):
         or (config["experiment_type"] == "train_ego_forward_model")
     ):
 
-        if config["training"]["optimizer_type"] == "Adam":
+        if config["training"]["optimizer"]["type"] == "Adam":
 
             from torch.optim import Adam
 
             return Adam
 
-        elif config["training"]["optimizer_type"] == "SGD":
+        elif config["training"]["optimizer"]["type"] == "SGD":
 
             from torch.optim import SGD
 
             return SGD
 
-        elif config["training"]["optimizer_type"] == "RMSprop":
+        elif config["training"]["optimizer"]["type"] == "RMSprop":
 
             from torch.optim import RMSprop
 
             return RMSprop
 
-        elif config["training"]["optimizer_type"] == "AdamW":
+        elif config["training"]["optimizer"]["type"] == "AdamW":
 
             from torch.optim import AdamW
 

@@ -1,7 +1,7 @@
 experiment_type: "train_world_forward_model"
 seed: 42
 checkpoint_path: "pretrained_models/"
-log_path: "logs/"
+log_path: ~ #"logs/"
 
 num_time_step_previous: &previous 20
 num_time_step_future: &future 10
@@ -9,45 +9,46 @@ sequence_length: &sequence_length 30
 num_workers: &num_workers 8
 num_gpu: &num_gpu 1
 read_keys: &read_keys ["bev_world"]
+dilation: &dilation 2
 bev_agent_channel: &bev_agent_channel 7
 bev_vehicle_channel: &bev_vehicle_channel 6
-bev_selected_cahnnels: &bev_selected_cahnnels [0, 1, 2, 3, 4, 5, 6, 11]
+bev_selected_channels: &bev_selected_channels [0, 1, 2, 3, 4, 5, 6, 11]
 bev_calculate_offroad: &bev_calculate_offroad false
 
 # Dataset related parameters for training
 dataset_train:
-  data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_train_data_10Hz"
+  data_path: "/home/vaydingul/Documents/Codes/carla_env/data/driving_model_data_20Hz_action_repeat_1"
   sequence_length: *sequence_length
   read_keys:
     - "bev_world"
-  dilation: 2
-  bev_agent_channel: 7
-  bev_vehicle_channel: 6
-  bev_selected_cahnnels: [0, 1, 2, 3, 4, 5, 6, 11]
-  bev_calculate_offroad: false
+  dilation: *dilation
+  bev_agent_channel: *bev_agent_channel
+  bev_vehicle_channel: *bev_vehicle_channel
+  bev_selected_channels: *bev_selected_channels
+  bev_calculate_offroad: *bev_calculate_offroad
 
 # Dataloader related parameters for training
 dataloader_train:
-  batch_size: 100
+  batch_size: 1
   shuffle: false
   num_workers: 8
   drop_last: true
 
 # Dataset related parameters for validation
 dataset_val:
-  data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_val_data_10Hz"
+  data_path: "/home/vaydingul/Documents/Codes/carla_env/data/driving_model_data_20Hz_action_repeat_1"
   sequence_length: *sequence_length
   read_keys:
     - "bev_world"
-  dilation: 2
-  bev_agent_channel: 7
-  bev_vehicle_channel: 6
-  bev_selected_cahnnels: [0, 1, 2, 3, 4, 5, 6, 11]
-  bev_calculate_offroad: false
+  dilation: *dilation
+  bev_agent_channel: *bev_agent_channel
+  bev_vehicle_channel: *bev_vehicle_channel
+  bev_selected_channels: *bev_selected_channels
+  bev_calculate_offroad: *bev_calculate_offroad
 
 # Dataloader related parameters for validation
 dataloader_val:
-  batch_size: 200
+  batch_size: 1
   shuffle: false
   num_workers: 8
   drop_last: true
@@ -63,14 +64,14 @@ training:
   optimizer:
     type: "Adam"
     config:
-      - lr: 0.001
-      - weight_decay: 0.0001
+      lr: 0.0001
+      weight_decay: 0.0001
 
   loss:
     criterion: "BCEWithLogitsLoss"
     config:
-      - reduction: "mean"
-      - pos_weight: [1, 1, 1, 1, 1, 1, 1, 1]
+      reduction: "mean"
+      pos_weight: [1, 1, 1, 1, 1, 1, 1, 1]
 
   save_interval: 6
   val_interval: 3
@@ -81,9 +82,9 @@ training:
     max: 10
 
   gradient_clip:
-    enable: false
+    enable: true
     type: "norm"
-    value: 3
+    value: 1
 
   # Scheduler related parameters
   scheduler:
@@ -112,7 +113,7 @@ wandb:
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"
-  group: "train-ego-forward-model-multi-step-5Hz"
-  name: "1-5-5Hz"
+  group: "train-world-forward-model-multi-step-20Hz"
+  name: "20-10-20Hz"
   id: ~
-  notes: "Ego forward model with 5Hz data and 5 time steps in the future. It can work with every model that works in 5Hz."
+  notes: "World forward model with 20Hz data and 20 time steps in the past and 10 time step in the future. It can work with every model that works in 20Hz."

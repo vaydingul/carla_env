@@ -24,9 +24,6 @@ class Renderer:
 
         self.reset()
 
-        if self.save_:
-            self.save_path = create_date_time_path(self.save_path)
-
     def build_from_config(self):
 
         self.width = self.config["width"]
@@ -152,10 +149,17 @@ class Renderer:
             cv2.imshow(f"{self.name}", self.canvas)
             cv2.waitKey(1)
 
-    def save(self, info=None):
+    def save(self, info=None, ext="png"):
 
-        if self.save_:
-            cv2.imwrite(self.save_path, self.canvas)
+        if info is not None:
+            save_path = f"{self.save_path}/{info}.{ext}"
+        else:
+            save_path = f"{self.save_path}/renderer_output.{ext}"
+
+        if self.save_ and self.save_path is not None:
+            cv2.imwrite(save_path, self.canvas)
+
+            return save_path
 
     def move_cursor(self, direction="right", amount=(0, 0)):
 
@@ -199,8 +203,13 @@ class Renderer:
             self.cursor = (self.height, 0)
         elif direction == "MASTER-RIGHT-DOWN":
             self.cursor = (self.height, self.width)
+        elif direction == "point":
+            self.cursor = (amount[0], amount[1])
         else:
             raise ValueError("Invalid direction")
+
+    def get_cursor(self):
+        return self.cursor
 
     def set_default_config(self):
         self.config = {

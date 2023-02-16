@@ -6,6 +6,8 @@ import os
 
 import torch.multiprocessing as mp
 from torch.distributed import init_process_group, destroy_process_group
+from torch.utils.data import DataLoader
+
 
 from carla_env.sampler.distributed_weighted_sampler import DistributedWeightedSampler
 from utils.train_utils import seed_everything
@@ -131,7 +133,11 @@ def main(rank, world_size, config):
     # ---------------------------------------------------------------------------- #
     if config["training"]["scheduler"]["enable"]:
         scheduler_class = scheduler_factory(config)
-        scheduler = scheduler_class(optimizer, **config["training"]["scheduler"]["config"])
+        scheduler = scheduler_class(
+            optimizer, **config["training"]["scheduler"]["config"]
+        )
+    else:
+        scheduler = None
 
     # ---------------------------------------------------------------------------- #
     #                            LOAD STATE DICTIONARIES                           #
@@ -154,7 +160,19 @@ def main(rank, world_size, config):
     #                                LOSS CRITERION                                #
     # ---------------------------------------------------------------------------- #
     loss_criterion_class = loss_criterion_factory(config)
-    loss_criterion = loss_criterion_class(**config["loss"]["config"])
+
+    # The stupidest thing I've ever done
+    if "pos_weight" in config["training"]["loss"]["config"].keys():
+        config["training"]["loss"]["config"]["pos_weight"] = torch.tensor(
+            config["training"]["loss"]["config"]["pos_weight"]
+        ).to(device)
+
+    if "weight" in config["training"]["loss"]["config"].keys():
+        config["training"]["loss"]["config"]["weight"] = torch.tensor(
+            config["training"]["loss"]["config"]["weight"]
+        ).to(device)
+
+    loss_criterion = loss_criterion_class(**config["training"]["loss"]["config"])
 
     if run is not None:
         run.save(config["config_path"])
@@ -185,10 +203,10 @@ def main(rank, world_size, config):
         num_time_step_previous=config["num_time_step_previous"],
         num_time_step_future=config["num_time_step_future"],
         num_epochs=config["training"]["num_epochs"],
-        current_eopch=checkpoint["epoch"] + 1 if config["wandb"]["resume"] else 0,
+        current_epoch=checkpoint["epoch"] + 1 if config["wandb"]["resume"] else 0,
         logvar_clip=config["training"]["logvar_clip"]["enable"],
-        logvar_clip_min=config["training"]["logvar_clip"]["logvar_clip_min"],
-        logvar_clip_max=config["training"]["logvar_clip"]["logvar_clip_max"],
+        logvar_clip_min=config["training"]["logvar_clip"]["min"],
+        logvar_clip_max=config["training"]["logvar_clip"]["max"],
         gradient_clip=config["training"]["gradient_clip"]["enable"],
         gradient_clip_type=config["training"]["gradient_clip"]["type"],
         gradient_clip_value=config["training"]["gradient_clip"]["value"],
@@ -221,4 +239,8 @@ if __name__ == "__main__":
     config["checkpoint_path"] = create_date_time_path(config["checkpoint_path"])
     config["config_path"] = args.config_path
 
-    mp.spawn(main, args=(config.num_gpu, config), nprocs=config.num_gpu)
+    mp.spawn(
+        main,
+        args=(config["training"]["num_gpu"], config),
+        nprocs=config["training"]["num_gpu"],
+    )

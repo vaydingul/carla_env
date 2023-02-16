@@ -14,155 +14,167 @@ from utils.model_utils import (
     fetch_checkpoint_from_wandb_link,
 )
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    datefmt="%Y-%m-%d %H:%M:%S",
-    format="%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d ==> %(message)s",
-)
+import torch
+from torch.utils.data import DataLoader, Subset
+from carla_env.dataset.instance import InstanceDataset
+from carla_env.models.dynamic.vehicle import KinematicBicycleModel
+from carla_env.evaluator.ego_forward_model import Evaluator
+from utils.train_utils import get_device, seed_everything
+from utils.model_utils import fetch_run_from_wandb_link, fetch_checkpoint_from_wandb_run
+from utils.path_utils import create_date_time_path
+from utils.config_utils import parse_yml
+from utils.factory import *
+from utils.wandb_utils import create_wandb_run
+from utils.log_utils import get_logger, configure_logger, pretty_print_config
+import wandb
 
 
 def main(config):
 
-    # Load the pretrained world_bev_model
+    # ---------------------------------------------------------------------------- #
+    #                                    LOGGER                                    #
+    # ---------------------------------------------------------------------------- #
+    logger = get_logger(__name__)
+    configure_logger(__name__, log_path=config["log_path"], log_level=logging.INFO)
+    pretty_print_config(logger, config)
+    # ---------------------------------------------------------------------------- #
+    #                                     SEED                                     #
+    # ---------------------------------------------------------------------------- #
+    seed_everything(config["seed"])
 
-    if config.wandb_link:
-        logger.info(f"Fetching checkpoint from wandb link: {config.wandb_link}")
-        run = wandb.Api().run(config.wandb_link)
-        checkpoint = fetch_checkpoint_from_wandb_link(
-            config.wandb_link, config.checkpoint_number
-        )
+    # ---------------------------------------------------------------------------- #
+    #                                    DEVICE                                    #
+    # ---------------------------------------------------------------------------- #
+    device = get_device()
 
-    else:
-        logger.info(
-            f"Downloading world_bev_model from wandb run {config.wandb_project}-{config.wandb_group}"
-        )
-        run = wandb.init(
-            project=config.wandb_project,
-            group=config.wandb_group,
-            id=config.wandb_id,
-            resume="allow",
-        )
-        checkpoint = fetch_checkpoint_from_wandb_run(run, config.checkpoint_number)
-
-    world_model_device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    logger.info(f"Checkpoint downloaded: {checkpoint.name}")
-    # checkpoint = torch.load(
-    #     checkpoint.name,
-    #     map_location=world_model_device)
-    world_bev_model = WorldBEVModel.load_model_from_wandb_run(
-        run, checkpoint=checkpoint, device=world_model_device
+    # ---------------------------------------------------------------------------- #
+    #                                   WANDB RUN CHECKPOINT                                #
+    # ---------------------------------------------------------------------------- #
+    run = fetch_run_from_wandb_link(config["wandb"]["link"])
+    checkpoint_object = fetch_checkpoint_from_wandb_run(
+        run=run, checkpoint_number=config["wandb"]["checkpoint_number"]
     )
+    checkpoint_path = checkpoint_object.name
+    checkpoint = torch.load(
+        checkpoint_path,
+        map_location=device,
+    )
+    # ---------------------------------------------------------------------------- #
+    #                                     WANDB                                    #
+    # ---------------------------------------------------------------------------- #
+    run_eval = create_wandb_run(config)
 
-    world_bev_model.eval()
+    # ---------------------------------------------------------------------------- #
+    #                                 DATASET CLASS                                #
+    # ---------------------------------------------------------------------------- #
+    dataset_class = dataset_factory(run.config)
 
-    # Create dataset and its loader
-    data_path_test = config.data_path_test
+    # ---------------------------------------------------------------------------- #
+    #                         TEST DATASET                                         #
+    # ---------------------------------------------------------------------------- #
+    dataset_test = dataset_class(config["dataset_test"])
 
-    # Old BEV
-    # world_model_dataset_test = InstanceDataset(
-    #     data_path=data_path_test,
-    #     sequence_length=run.config["num_time_step_previous"] +
-    #     config.num_time_step_predict,
-    #     dilation=run.config["dataset_dilation"] if "dataset_dilation" in run.config.keys() else 1,
-    #     read_keys=["bev_world"],
-    #     bev_agent_channel=3,
-    #     bev_vehicle_channel=2,
-    #     bev_selected_channels=[0, 1, 2, 4, 5, 6, 7],
-    #     bev_calculate_offroad=True)
+    # --------------------- Log information about the dataset -------------------- #
+    logger.info(f"Test dataset size: {len(dataset_test)}")
 
-    # New BEV
-    world_model_dataset_test = InstanceDataset(
-        data_path=data_path_test,
-        sequence_length=run.config["num_time_step_previous"]
-        + (
-            config.num_time_step_predict
-            if config.num_time_step_predict > 0
-            else run.config["num_time_step_future"]
+    # ---------------------------------------------------------------------------- #
+    #                       TEST DATALOADER                                        #
+    # ---------------------------------------------------------------------------- #
+    dataloader_test = DataLoader(
+        Subset(
+            dataset_test,
+            range(
+                0,
+                len(dataset_test),
+                config["evaluation"]["test_step"],
+            ),
         ),
-        dilation=run.config["dataset_dilation"]
-        if "dataset_dilation" in run.config.keys()
-        else 1,
-        read_keys=["bev_world"],
-        bev_agent_channel=7,
-        bev_vehicle_channel=6,
-        bev_selected_channels=config.bev_selected_channels,
-        bev_calculate_offroad=False,
+        **config["dataloader_test"],
     )
 
-    logger.info(f"Test dataset size: {len(world_model_dataset_test)}")
+    # ------------------- Log information about the dataloader -------------------- #
+    logger.info(f"Test dataloader size: {len(dataloader_test)}")
 
-    world_model_dataloader_test = DataLoader(
-        dataset=world_model_dataset_test
-        if config.test_set_step == 1
-        else Subset(
-            world_model_dataset_test,
-            range(0, len(world_model_dataset_test), config.test_set_step),
-        ),
-        batch_size=config.batch_size,
+    # ---------------------------------------------------------------------------- #
+    #                               WORLD FORWARD MODEL                              #
+    # ---------------------------------------------------------------------------- #
+    model_class = world_forward_model_factory(run.config)
+
+    # Create and initialize the model with pretrained weights and biases
+    model = model_class.load_model_from_wandb_run(
+        config=run.config["world_forward_model"],
+        checkpoint_path=checkpoint_path,
+        device=device,
     )
 
-    world_model_device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model.to(device)
 
-    evaluator = Evaluator(
-        model=world_bev_model,
-        dataloader=world_model_dataloader_test,
-        device=world_model_device,
-        report_metrics=config.report_metrics,
-        metrics=config.metrics,
-        num_time_step_previous=run.config["num_time_step_previous"],
-        num_time_step_predict=(
-            config.num_time_step_predict
-            if config.num_time_step_predict > 0
-            else run.config["num_time_step_future"]
-        ),
-        threshold=config.threshold,
-        vehicle_threshold=config.vehicle_threshold,
-        bev_selected_channels=config.bev_selected_channels,
-        save_path=f"{config.save_path}/{run.config['num_time_step_previous']}-{run.config['num_time_step_future']}-{(config.num_time_step_predict if config.num_time_step_predict > 0 else run.config['num_time_step_future'])}-{run.config['reconstruction_loss']}-{config.threshold}-{config.checkpoint_number}",
+    # ------------------- Log information about the model ------------------------ #
+    logger.info(
+        f"Number of parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}"
     )
 
-    evaluator.evaluate(render=False, save=config.plot_prediction)
+    # ---------------------------------------------------------------------------- #
+    #                                   EVALUATOR                                  #
+    # ---------------------------------------------------------------------------- #
+    evaluator_class = evaluator_factory(config)
+
+    evaluator = evaluator_class(
+        model=model,
+        dataset=dataset_test,
+        dataloader=dataloader_test,
+        device=device,
+        renderer=config["evaluation"]["renderer"],
+        metrics=config["evaluation"]["metrics"],
+        num_time_step_previous=config["evaluation"]["num_time_step_previous"],
+        num_time_step_predict=config["evaluation"]["num_time_step_predict"],
+        thresholds=config["evaluation"]["thresholds"],
+        wandb_log_interval=config["evaluation"]["wandb_log_interval"],
+        save_path=f"{config['save_path']}",
+    )
+
+    logger.info(f"Starting evaluation")
+
+    evaluator.evaluate(run_eval)
+
+    logger.info(f"Finished evaluation")
+
+    # evaluator = Evaluator(
+    #     model=model,
+    #     dataloader=dataloader_test,
+    #     device=device,
+    #     report_metrics=config.report_metrics,
+    #     metrics=config.metrics,
+    #     num_time_step_previous=run.config["num_time_step_previous"],
+    #     num_time_step_predict=(
+    #         config.num_time_step_predict
+    #         if config.num_time_step_predict > 0
+    #         else run.config["num_time_step_future"]
+    #     ),
+    #     threshold=config.threshold,
+    #     vehicle_threshold=config.vehicle_threshold,
+    #     bev_selected_channels=config.bev_selected_channels,
+    #     save_path=f"{config.save_path}/{run.config['num_time_step_previous']}-{run.config['num_time_step_future']}-{(config.num_time_step_predict if config.num_time_step_predict > 0 else run.config['num_time_step_future'])}-{run.config['reconstruction_loss']}-{config.threshold}-{config.checkpoint_number}",
+    # )
+
+    # evaluator.evaluate()
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--data_path_test", type=str, default="data/ground_truth_bev_model_test_data/"
+        "--config_path",
+        type=str,
+        default="/home/vaydingul/Documents/Codes/carla_env/configs/world_forward_model/evaluation/config.yml",
     )
-    parser.add_argument("--test_set_step", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=20)
-    parser.add_argument(
-        "--save_path", type=str, default="figures/world_forward_model_evaluation/"
-    )
-    parser.add_argument(
-        "--plot_prediction", type=lambda x: (str(x).lower() == "true"), default=True
-    )
-    parser.add_argument(
-        "--report_metrics", type=lambda x: (str(x).lower() == "true"), default=True
-    )
-    parser.add_argument(
-        "--metrics", type=str, default="iou,accuracy,precision,recall,f1,auroc"
-    )
-    parser.add_argument("--wandb_link", type=str, default="vaydingul/mbl/203kw46a")
-    parser.add_argument("--wandb_project", type=str, default="mbl")
-    parser.add_argument(
-        "--wandb_group", type=str, default="world-forward-model-multi-step"
-    )
-    parser.add_argument("--wandb_id", type=str, default="3aqhglkb")
-    parser.add_argument("--checkpoint_number", type=int, default=4)
-    parser.add_argument("--num_time_step_predict", type=int, default=-1)
-    parser.add_argument("--threshold", type=float, default=0.25)
-    parser.add_argument("--vehicle_threshold", type=float, default=0.25)
-    parser.add_argument("--bev_selected_channels", type=str, default="0,1,2,3,4,5,6,11")
+    args = parser.parse_args()
 
-    config = parser.parse_args()
+    config = parse_yml(args.config_path)
 
-    config.bev_selected_channels = [
-        int(x) for x in config.bev_selected_channels.split(",")
-    ]
-    config.metrics = config.metrics.split(",")
+    assert (
+        config["dataset_test"]["sequence_length"]
+        == config["evaluation"]["sequence_length"]
+    ), "Sequence length of the dataset and the evaluator should be the same"
 
     main(config)

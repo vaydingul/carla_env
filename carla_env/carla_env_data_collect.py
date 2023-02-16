@@ -341,9 +341,6 @@ class CarlaEnvironment(Environment):
 
         self.renderer_module.reset()
 
-        if not self.renderer_module.show():
-            return
-
         self.render_dict = {}
         for (k, v) in self.__dict__.items():
             if isinstance(v, Module):

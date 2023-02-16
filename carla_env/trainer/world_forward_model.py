@@ -6,6 +6,8 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 from pathlib import Path
 
+from carla_env.sampler.distributed_weighted_sampler import DistributedWeightedSampler
+
 logger = logging.getLogger(__name__)
 
 
@@ -67,6 +69,12 @@ class Trainer(object):
 
         (self.B_VAL, _, _, _, _) = next(iter(dataloader_val))["bev_world"]["bev"].shape
 
+        logger.info(f"Batch size train: {self.B_TRAIN}")
+        logger.info(f"Batch size val: {self.B_VAL}")
+        logger.info(f"Number of channels: {self.C}")
+        logger.info(f"Height: {self.H}")
+        logger.info(f"Width: {self.W}")
+
         # ------------------------------------ ... ----------------------------------- #
 
         # ---------------------------------------------------------------------------- #
@@ -78,7 +86,9 @@ class Trainer(object):
     def train(self, epoch, run):
 
         self.model.train()
-        self.dataloader_train.sampler.set_epoch(epoch)
+
+        if isinstance(self.dataloader_train.sampler, DistributedWeightedSampler):
+            self.dataloader_train.sampler.set_epoch(epoch)
 
         logger.info("Training routine started!")
 
@@ -144,6 +154,8 @@ class Trainer(object):
         loss = np.mean(losses_total)
         loss_kl_div = np.mean(losses_kl_div)
         loss_reconstruction = np.mean(losses_reconstruction)
+
+        self.val_step += self.B_VAL
 
         if run is not None:
 
@@ -221,6 +233,16 @@ class Trainer(object):
         if self.sigmoid_before_loss:
 
             world_future_bev_predicted = torch.sigmoid(world_future_bev_predicted)
+
+        if isinstance(
+            self.reconstruction_loss,
+            (torch.nn.BCELoss, torch.nn.BCEWithLogitsLoss),
+        ):
+
+            world_future_bev_predicted = world_future_bev_predicted.permute(
+                0, 1, 3, 4, 2
+            )
+            world_future_bev = world_future_bev.permute(0, 1, 3, 4, 2)
 
         loss_reconstruction = self.reconstruction_loss(
             input=world_future_bev_predicted, target=world_future_bev

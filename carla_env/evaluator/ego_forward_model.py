@@ -4,6 +4,8 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 
+from utils.path_utils import create_date_time_path
+
 
 class Evaluator(object):
     def __init__(
@@ -14,12 +16,7 @@ class Evaluator(object):
         self.device = device
         self.metric = metric
         self.sequence_length = sequence_length
-        self.save_path = save_path
-
-        # Create folder at save_path
-        if self.save_path is not None:
-            if not os.path.exists(self.save_path):
-                os.makedirs(self.save_path)
+        self.save_path = create_date_time_path(save_path)
 
         self.model.to(self.device)
 
