@@ -17,7 +17,6 @@ from torchmetrics.classification import (
 )
 import pandas as pd
 from utils.plot_utils import plot_roc, plot_confusion_matrix
-from utils.path_utils import create_date_time_path
 import wandb
 
 NUM_LABELS = 8

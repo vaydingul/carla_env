@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 class Trainer(object):
-
     def __init__(
             self,
             model,
@@ -35,7 +34,8 @@ class Trainer(object):
             bev_width=192,
             bev_height=192,
             debug_render=False,
-            save_interval=5):
+            save_interval=5
+        ):
 
         self.model = model
         self.dataloader_train = dataloader_train

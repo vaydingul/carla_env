@@ -110,8 +110,8 @@ class Trainer(object):
 
         if self.debug_render:
 
-            self.renderer["width"] = (self.W + 10) * self.num_time_step_future
-            self.renderer["height"] = (self.H + 10) * self.B_VAL + 100
+            self.renderer["width"] = (self.W + 20) * self.num_time_step_future
+            self.renderer["height"] = (self.H + 10) * self.B_VAL
             self.renderer = Renderer(config=self.renderer)
 
         else:
@@ -417,26 +417,11 @@ class Trainer(object):
                 else world_future_bev_predicted,
             )
 
-            road_cost = cost["cost"][0] / (B * S_future)
-            road_on_cost = cost["cost"][1] / (B * S_future)
-            road_off_cost = cost["cost"][2] / (B * S_future)
-            road_red_yellow_cost = cost["cost"][3] / (B * S_future)
-            road_green_cost = cost["cost"][4] / (B * S_future)
-            lane_cost = cost["cost"][5] / (B * S_future)
-            vehicle_cost = cost["cost"][6] / (B * S_future)
-            offroad_cost = cost["cost"][7] / (B * S_future)
+            cost_dict = {k: v / (B * S_future) for (k, v) in cost["cost_dict"].items()}
 
         else:
 
-            cost = {}
-            road_cost = torch.tensor(0.0).to(self.rank)
-            road_on_cost = torch.tensor(0.0).to(self.rank)
-            road_off_cost = torch.tensor(0.0).to(self.rank)
-            road_red_yellow_cost = torch.tensor(0.0).to(self.rank)
-            road_green_cost = torch.tensor(0.0).to(self.rank)
-            lane_cost = torch.tensor(0.0).to(self.rank)
-            vehicle_cost = torch.tensor(0.0).to(self.rank)
-            offroad_cost = torch.tensor(0.0).to(self.rank)
+            cost_dict = {}
 
         action_mse = F.mse_loss(
             ego_future_action_predicted, ego_future_action, reduction="sum"
@@ -508,16 +493,18 @@ class Trainer(object):
 
                 raise NotImplementedError
 
-        loss = (
-            road_cost * self.cost_weight["road_cost"]
-            + road_on_cost * self.cost_weight["road_on_cost"]
-            + road_off_cost * self.cost_weight["road_off_cost"]
-            + road_red_yellow_cost * self.cost_weight["road_red_yellow_cost"]
-            + road_green_cost * self.cost_weight["road_green_cost"]
-            + lane_cost * self.cost_weight["lane_cost"]
-            + vehicle_cost * self.cost_weight["vehicle_cost"]
-            + offroad_cost * self.cost_weight["offroad_cost"]
-            + action_mse * self.cost_weight["action_mse"]
+        loss = torch.tensor(0.0).to(self.rank)
+
+        for cost_key in cost_dict.keys():
+
+            assert (
+                cost_key in self.cost_weight.keys()
+            ), f"{cost_key} not in {self.cost_weight.keys()}"
+
+            loss += cost_dict[cost_key] * self.cost_weight[cost_key]
+
+        loss += (
+            action_mse * self.cost_weight["action_mse"]
             + action_l1 * self.cost_weight["action_l1"]
             + action_jerk * self.cost_weight["action_jerk"]
             + target_progress * self.cost_weight["target_progress"]
@@ -526,14 +513,7 @@ class Trainer(object):
         )
 
         loss_dict = {
-            "road_cost": road_cost,
-            "road_on_cost": road_on_cost,
-            "road_off_cost": road_off_cost,
-            "road_red_yellow_cost": road_red_yellow_cost,
-            "road_green_cost": road_green_cost,
-            "lane_cost": lane_cost,
-            "vehicle_cost": vehicle_cost,
-            "offroad_cost": offroad_cost,
+            **cost_dict,
             "action_mse": action_mse,
             "action_l1": action_l1,
             "action_jerk": action_jerk,
@@ -583,7 +563,7 @@ class Trainer(object):
 
                 torch.save(
                     {
-                        "model_state_dict": self.policy_model.module.get_policy_model().state_dict(),
+                        "model_state_dict": self.policy_model.module.state_dict(),
                         "optimizer_state_dict": self.optimizer.state_dict(),
                         "scheduler_state_dict": self.lr_scheduler.state_dict()
                         if self.lr_scheduler

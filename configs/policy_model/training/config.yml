@@ -102,10 +102,10 @@ training:
 
   binary_occupancy:
     enable: false
-    threshold: 0.5
+    threshold: 5.0
 
   use_world_forward_model_encoder_output_as_world_state: true
-  use_ground_truth: true
+  use_ground_truth: false
   debug_render: true
 
   renderer:
@@ -131,11 +131,11 @@ training:
     vehicle_cost: 0.1
     lane_cost: 0.1
     offroad_cost: 0.1
-    action_mse: 1.0
+    action_mse: 10.0
     action_l1: 0.0
     action_jerk: 0.0
-    target_progress: -1.0
-    target_remainder: 1.0
+    target_progress: -10.0
+    target_remainder: 10.0
     ego_state_mse: 0.0
     world_state_mse: 0.0
 

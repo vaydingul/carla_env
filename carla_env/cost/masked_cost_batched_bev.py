@@ -128,24 +128,6 @@ class Cost(nn.Module):
             pedestrian_cost = torch.mean(pedestrian_cost_tensor)
             offroad_cost = torch.mean(offroad_cost_tensor)
 
-        elif self.reduction == "batch-sum":
-            lane_cost = torch.sum(lane_cost_tensor)
-            vehicle_cost = torch.sum(vehicle_cost_tensor)
-            green_light_cost = torch.sum(green_light_cost_tensor)
-            yellow_light_cost = torch.sum(yellow_light_cost_tensor)
-            red_light_cost = torch.sum(red_light_cost_tensor)
-            pedestrian_cost = torch.sum(pedestrian_cost_tensor)
-            offroad_cost = torch.sum(offroad_cost_tensor)
-
-        elif self.reduction == "batch-mean":
-            lane_cost = torch.mean(lane_cost_tensor)
-            vehicle_cost = torch.mean(vehicle_cost_tensor)
-            green_light_cost = torch.mean(green_light_cost_tensor)
-            yellow_light_cost = torch.mean(yellow_light_cost_tensor)
-            red_light_cost = torch.mean(red_light_cost_tensor)
-            pedestrian_cost = torch.mean(pedestrian_cost_tensor)
-            offroad_cost = torch.mean(offroad_cost_tensor)
-
         elif self.reduction == "none":
             lane_cost = lane_cost_tensor
             vehicle_cost = vehicle_cost_tensor
@@ -161,7 +143,7 @@ class Cost(nn.Module):
                 "Invalid reduction type. Expected 'sum', 'mean', 'batch-sum', 'batch-mean', or 'none'."
             )
 
-        return {
+        cost_dict = {
             "lane_cost": lane_cost,
             "vehicle_cost": vehicle_cost,
             "green_light_cost": green_light_cost,
@@ -169,9 +151,17 @@ class Cost(nn.Module):
             "red_light_cost": red_light_cost,
             "pedestrian_cost": pedestrian_cost,
             "offroad_cost": offroad_cost,
+        }
+
+        mask_dict = {
             "mask_car": mask_car,
             "mask_side": mask_side,
             "mask_light": mask_light,
+        }
+
+        return {
+            "cost": cost_dict,
+            "mask": mask_dict,
         }
 
     def create_masks(self, x, y, yaw, speed):

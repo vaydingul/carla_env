@@ -28,7 +28,7 @@ def get_max_key_length(d):
 
 
 def pretty_print_config(logger, config):
-    """Print the whole config disctionary (it might be nested) in a table format"""
+    """Print the whole config dictionary (it might be nested) in a table format"""
 
     # Get the max length of the keys
     max_key_len = get_max_key_length(config)

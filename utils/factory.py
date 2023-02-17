@@ -136,7 +136,7 @@ def trainer_factory(config):
 
     elif config["experiment_type"] == "train_policy_model":
 
-        from carla_env.trainer.policy_model_extended_bev import Trainer
+        from carla_env.trainer.policy_model import Trainer
 
         return Trainer
 

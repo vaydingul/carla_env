@@ -4,9 +4,9 @@ import logging
 
 import torch
 from torch.utils.data import DataLoader, Subset
+from utils.path_utils import create_date_time_path
 from utils.train_utils import get_device, seed_everything
 from utils.model_utils import fetch_run_from_wandb_link, fetch_checkpoint_from_wandb_run
-from utils.path_utils import create_date_time_path
 from utils.config_utils import parse_yml
 from utils.factory import *
 from utils.wandb_utils import create_wandb_run
@@ -145,6 +145,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     config = parse_yml(args.config_path)
+    config["save_path"] = create_date_time_path(config["save_path"])
+
     config["config_path"] = args.config_path
 
     assert (

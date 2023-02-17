@@ -11,7 +11,6 @@ import numpy as np
 from utils.path_utils import check_latest_episode
 from utils.factory import *
 from utils.wandb_utils import create_wandb_run
-from utils.path_utils import create_date_time_path
 from utils.config_utils import parse_yml
 from utils.log_utils import get_logger, configure_logger, pretty_print_config
 

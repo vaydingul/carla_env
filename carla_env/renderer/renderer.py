@@ -4,7 +4,6 @@ import cv2
 import numpy as np
 from pathlib import Path
 from datetime import datetime
-from utils.path_utils import create_date_time_path
 
 
 class Renderer:

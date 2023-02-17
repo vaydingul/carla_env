@@ -78,25 +78,38 @@ class Cost(nn.Module):
 
         cost_tensor = bev * mask_car * decay_weight
 
-        if self.reduction == "sum":
+        if self.reduction == "sum" or self.reduction == "mean":
 
-            cost = torch.sum(cost_tensor)
+            if self.reduction == "sum":
+                cost = torch.sum(cost_tensor, dim=[0, 1, 3, 4])
 
-        elif self.reduction == "mean":
+            elif self.reduction == "mean":
+                cost = torch.mean(cost_tensor, dim=[0, 1, 3, 4])
 
-            cost = torch.mean(cost_tensor)
-
-        elif self.reduction == "batch-sum":
-
-            cost = torch.sum(cost_tensor, dim=[0, 1, 3, 4])
-
-        elif self.reduction == "batch-mean":
-
-            cost = torch.mean(cost_tensor, dim=[0, 1, 3, 4])
-
+            cost_dict = {
+                "road_cost": cost[0],
+                "road_on_cost": cost[1],
+                "road_off_cost": cost[2],
+                "road_red_yellow_cost": cost[3],
+                "road_green_cost": cost[4],
+                "vehicle_cost": cost[5],
+                "lane_cost": cost[6],
+                "offroad_cost": cost[7],
+            }
         elif self.reduction == "none":
 
             cost = cost_tensor
+
+            cost_dict = {
+                "road_cost": cost[:, :, 0],
+                "road_on_cost": cost[:, :, 1],
+                "road_off_cost": cost[:, :, 2],
+                "road_red_yellow_cost": cost[:, :, 3],
+                "road_green_cost": cost[:, :, 4],
+                "vehicle_cost": cost[:, :, 5],
+                "lane_cost": cost[:, :, 6],
+                "offroad_cost": cost[:, :, 7],
+            }
 
         else:
 
@@ -104,9 +117,13 @@ class Cost(nn.Module):
                 "Unknown reduction type, expected one of 'sum', 'mean', 'batch-sum', 'batch-mean', 'none'"
             )
 
-        return {
-            "cost": cost,
+        mask_dict = {
             "mask_car": mask_car[:, :, 0],
+        }
+
+        return {
+            "cost": cost_dict,
+            "mask": mask_dict,
         }
 
     def create_masks(self, x, y, yaw, speed):
