@@ -114,7 +114,7 @@ class Cost(nn.Module):
         else:
 
             raise ValueError(
-                "Unknown reduction type, expected one of 'sum', 'mean', 'batch-sum', 'batch-mean', 'none'"
+                f"Reduction {self.reduction} not supported. Supported reductions are 'sum', 'mean', 'none'"
             )
 
         mask_dict = {
@@ -122,8 +122,8 @@ class Cost(nn.Module):
         }
 
         return {
-            "cost": cost_dict,
-            "mask": mask_dict,
+            "cost_dict": cost_dict,
+            "mask_dict": mask_dict,
         }
 
     def create_masks(self, x, y, yaw, speed):

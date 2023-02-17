@@ -6,7 +6,7 @@ log_path: ~ #"logs/"
 num_time_step_previous: &previous 20
 num_time_step_future: &future 10
 sequence_length: &sequence_length 30
-num_workers: &num_workers 0
+num_workers: &num_workers 1
 num_gpu: &num_gpu 1
 read_keys: &read_keys ["bev_world", "occ", "navigation_downsampled", "ego"]
 dilation: &dilation 1
@@ -28,7 +28,7 @@ dataset_train:
 
 # Dataloader related parameters for training
 dataloader_train:
-  batch_size: 20
+  batch_size: 30
   shuffle: false
   num_workers: *num_workers
   drop_last: true
@@ -46,7 +46,7 @@ dataset_val:
 
 # Dataloader related parameters for validation
 dataloader_val:
-  batch_size: 20
+  batch_size: 30
   shuffle: false
   num_workers: *num_workers
   drop_last: true
@@ -56,7 +56,7 @@ cost:
   config:
     image_width: 192
     image_height: 192
-    reduction: "batch-sum"
+    reduction: "sum"
     mask_alpha: 1.1
     decay_factor: 0.99
     vehicle_width: 2.1
@@ -85,7 +85,8 @@ training:
 
   save_interval: 50
   val_interval: 1
-
+  num_time_step_future: *future
+  num_time_step_previous: *previous
   gradient_clip:
     enable: true
     type: "norm"
@@ -105,7 +106,7 @@ training:
     threshold: 5.0
 
   use_world_forward_model_encoder_output_as_world_state: true
-  use_ground_truth: false
+  use_ground_truth: true
   debug_render: true
 
   renderer:

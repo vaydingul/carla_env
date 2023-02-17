@@ -38,7 +38,7 @@ class Trainer(object):
         gradient_clip_type="norm",
         gradient_clip_value=0.3,
         binary_occupancy=False,
-        binary_occupancy_threshold=0.5,
+        binary_occupancy_threshold=5.0,
         use_ground_truth=False,
         use_world_forward_model_encoder_output_as_world_state=False,
         debug_render=False,
@@ -110,7 +110,7 @@ class Trainer(object):
 
         if self.debug_render:
 
-            self.renderer["width"] = (self.W + 20) * self.num_time_step_future
+            self.renderer["width"] = (self.W + 20) * self.num_time_step_future + 200
             self.renderer["height"] = (self.H + 10) * self.B_VAL
             self.renderer = Renderer(config=self.renderer)
 
@@ -582,71 +582,92 @@ class Trainer(object):
 
         if self.debug_render and self.num_time_step_future > 1:
 
-            self.renderer.reset()
+            for (mask_type, mask) in cost["mask_dict"].items():
 
-            for k in range(self.B_TRAIN):
+                self.renderer.reset()
 
-                cursor_row = self.renderer.get_cursor()
+                for k in range(self.B_TRAIN):
 
-                for m in range(self.num_time_step_future - 1):
+                    cursor_row = self.renderer.get_cursor()
 
-                    bev = self._postprocess_bev(world_future_bev_predicted[k][m + 1])
-                    mask_car = self._postprocess_mask(cost["mask_car"][k][m])
-                    action_gt_ = self._postprocess_action(action_gt[k][m + 1])
-                    action_pred_ = self._postprocess_action(action_pred[k][m + 1])
+                    for m in range(self.num_time_step_future - 1):
 
-                    cursor_ = tuple(reversed(self.renderer.get_cursor()))
+                        bev = self._postprocess_bev(
+                            world_future_bev_predicted[k][m + 1]
+                        )
+                        mask_ = self._postprocess_mask(mask[k][m])
+                        action_gt_ = self._postprocess_action(action_gt[k][m + 1])
+                        action_pred_ = self._postprocess_action(action_pred[k][m + 1])
 
-                    self.renderer.render_overlay_image(
-                        bev, mask_car, 0.5, 0.5, move_cursor="right"
+                        cursor_ = tuple(reversed(self.renderer.get_cursor()))
+
+                        self.renderer.render_overlay_image(
+                            bev, mask_, 0.5, 0.5, move_cursor="right"
+                        )
+
+                        # Draw ground truth action to the left corner of each bev
+                        # as vector
+
+                        self.renderer.render_arrow(
+                            start=(cursor_[0] + 50, cursor_[1] + 50),
+                            end=(
+                                cursor_[0] + 50 + action_gt_[1],
+                                cursor_[1] + 50 - action_gt_[0],
+                            ),
+                            color=COLORS.RED,
+                            thickness=1,
+                            tip_length=0.5,
+                        )
+
+                        self.renderer.render_arrow(
+                            start=(cursor_[0] + 50, cursor_[1] + 50),
+                            end=(
+                                cursor_[0] + 50 + action_pred_[1],
+                                cursor_[1] + 50 - action_pred_[0],
+                            ),
+                            color=COLORS.GREEN,
+                            thickness=1,
+                            tip_length=0.5,
+                        )
+
+                        self.renderer.move_cursor(direction="right", amount=(0, 10))
+
+                    cursor_end = self.renderer.get_cursor()
+                    self.renderer.move_cursor(direction="point", amount=cursor_row)
+                    self.renderer.move_cursor(direction="down", amount=(self.H + 10, 0))
+
+                cursor_end = (20, cursor_end[1] + 10)
+                self.renderer.move_cursor(direction="point", amount=cursor_end)
+
+                for (k, v) in cost["cost_dict"].items():
+
+                    # Format the value such that only 3 decimal places are shown
+                    self.renderer.render_text(
+                        f"{k}: {v:.3f}",
+                        font_scale=1,
+                        font_thickness=2,
+                        move_cursor="down",
                     )
 
-                    # Draw ground truth action to the left corner of each bev
-                    # as vector
+                self.renderer.render_text(
+                    text="Ground Truth",
+                    font_color=COLORS.RED,
+                    font_scale=1,
+                    font_thickness=5,
+                )
+                self.renderer.render_text(
+                    text="Prediction",
+                    font_color=COLORS.GREEN,
+                    font_scale=1,
+                    font_thickness=5,
+                )
 
-                    self.renderer.render_arrow(
-                        start=(cursor_[0] + 50, cursor_[1] + 50),
-                        end=(
-                            cursor_[0] + 50 + action_gt_[1],
-                            cursor_[1] + 50 - action_gt_[0],
-                        ),
-                        color=COLORS.RED,
-                        thickness=1,
-                        tip_length=0.5,
-                    )
+                # Save the canvas
 
-                    self.renderer.render_arrow(
-                        start=(cursor_[0] + 50, cursor_[1] + 50),
-                        end=(
-                            cursor_[0] + 50 + action_pred_[1],
-                            cursor_[1] + 50 - action_pred_[0],
-                        ),
-                        color=COLORS.GREEN,
-                        thickness=1,
-                        tip_length=0.5,
-                    )
+                info = f"{'training' if self.policy_model.training else 'validation'}-{self.epoch}-{mask_type}-{i}"
 
-                    self.renderer.move_cursor(direction="right", amount=(0, 10))
-
-                self.renderer.move_cursor(direction="point", amount=cursor_row)
-
-                self.renderer.move_cursor(direction="down", amount=(self.H + 10, 0))
-
-            for (k, cost_) in enumerate(cost["cost"]):
-
-                self.renderer.render_text(f"{k}: {cost_}", move_cursor="down")
-
-            # Save the canvas
-
-            # info = (
-            #     Path(("training" if self.policy_model.training else "validation"))
-            #     / str(self.epoch)
-            #     / f"{i}"
-            # )
-
-            info = str(i)
-            self.renderer.show()
-            self.renderer.save(info=info)
+                self.renderer.show()
+                self.renderer.save(info=info)
 
     def _postprocess_bev(self, bev):
 

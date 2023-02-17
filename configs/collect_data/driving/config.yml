@@ -37,50 +37,51 @@ environment:
     save: false
     save_path: ~
 
-  sensors:
-    - id: rgb_front
-      type: RGBSensor
-      x: 1.5
-      y: 0.0
-      z: 2.4
-      roll: 0.0
-      pitch: 0.0
-      yaw: 0.0
-      width: 900
-      height: 256
-      fov: 100
+    sensors:
+      - id: rgb_front
+        type: RGBSensor
+        config:
+          x: 1.5
+          y: 0.0
+          z: 2.4
+          roll: 0.0
+          pitch: 0.0
+          yaw: 0.0
+          width: 900
+          height: 256
+          fov: 100
 
-    - id: ego
-      type: VehicleSensor
+      - id: ego
+        type: VehicleSensor
+        config: {}
 
-    - id: occ
-      type: OccupancySensor
-      threshold: 3
-      number_of_radars: 8
-      horizontal_fov: 5
-      vertical_fov: 5
-      range: 10
-      points_per_second: 100
+      - id: occ
+        type: OccupancySensor
+        config:
+          threshold: 3
+          number_of_radars: 8
+          horizontal_fov: 5
+          vertical_fov: 5
+          range: 10
+          points_per_second: 100
 
-    # TODO: Add ALL OF THE SENSORS AND 6 CAMERAS
-    # TODO: Navigation is not a sensor. Add it to the writer
-    # TODO: Add GPS, IMU, and etc.
+      #! It is a must. NEVER DISCARD IT.
+      - id: col
+        type: CollisionSensor
+        config: {}
 
-    #! It is a must. NEVER DISCARD IT.
-    - id: col
-      type: CollisionSensor
-
-  bevs:
-    - id: "bev_world"
-      width: 192
-      height: 192
-      render_lanes_on_junctions: false
-      pixels_per_meter: 5
-      crop_type: "FRONT_AREA_ONLY"
-      road_on_off: true
-      road_light: true
-      light_circle: true
-      lane_marking_thickness: 2
+    bevs:
+      - id: "bev_world"
+        config:
+          width: 192
+          height: 192
+          render_lanes_on_junctions: false
+          pixels_per_meter: 5
+          crop_type: "FRONT_AREA_ONLY"
+          road_on_off: true
+          road_light: true
+          light_circle: true
+          lane_marking_thickness: 2
 
 writer:
   keys:

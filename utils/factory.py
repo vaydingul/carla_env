@@ -164,6 +164,19 @@ def evaluator_factory(config):
         return None
 
 
+def tester_factory(config):
+
+    if config["experiment_type"] == "test_policy_model":
+
+        from carla_env.tester.policy_model import Tester
+
+        return Tester
+
+    else:
+
+        return None
+
+
 def optimizer_factory(config):
 
     if (
@@ -441,6 +454,12 @@ def environment_factory(config):
         else:
 
             raise ValueError("Invalid bev_type")
+
+    elif config["experiment_type"] == "test_policy_model":
+
+        from carla_env.carla_env_testing_traffic import CarlaEnvironment
+
+        return CarlaEnvironment
 
     else:
 
