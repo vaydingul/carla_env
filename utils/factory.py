@@ -20,7 +20,7 @@ def ego_forward_model_factory(config):
 
     else:
 
-        return None
+        raise ValueError("Invalid experiment type")
 
 
 def world_forward_model_factory(config):
@@ -44,7 +44,7 @@ def world_forward_model_factory(config):
 
     else:
 
-        return None
+        raise ValueError("Invalid experiment type")
 
 
 def policy_model_factory(config):
@@ -71,7 +71,7 @@ def policy_model_factory(config):
 
     else:
 
-        return None
+        raise ValueError("Invalid experiment type")
 
 
 def cost_factory(config):
@@ -100,7 +100,7 @@ def cost_factory(config):
 
     else:
 
-        return None
+        raise ValueError("Invalid experiment type")
 
 
 def model_factory(config):
@@ -117,7 +117,7 @@ def model_factory(config):
 
     else:
 
-        return None
+        raise ValueError("Invalid experiment type")
 
 
 def trainer_factory(config):
@@ -142,7 +142,7 @@ def trainer_factory(config):
 
     else:
 
-        return None
+        raise ValueError("Invalid experiment type")
 
 
 def evaluator_factory(config):
@@ -161,7 +161,7 @@ def evaluator_factory(config):
 
     else:
 
-        return None
+        raise ValueError("Invalid experiment type")
 
 
 def tester_factory(config):
@@ -174,7 +174,7 @@ def tester_factory(config):
 
     else:
 
-        return None
+        raise ValueError("Invalid experiment type")
 
 
 def optimizer_factory(config):
@@ -215,7 +215,7 @@ def optimizer_factory(config):
 
     else:
 
-        return None
+        raise ValueError("Invalid experiment type")
 
 
 def loss_criterion_factory(config):
@@ -262,7 +262,7 @@ def loss_criterion_factory(config):
 
     else:
 
-        return None
+        raise ValueError("Invalid experiment type")
 
 
 def metric_factory(config):
@@ -317,7 +317,7 @@ def metric_factory(config):
 
     else:
 
-        return None
+        raise ValueError("Invalid experiment type")
 
 
 def scheduler_factory(config):
@@ -352,7 +352,7 @@ def scheduler_factory(config):
 
     else:
 
-        return None
+        raise ValueError("Invalid experiment type")
 
 
 def dataset_factory(config):
@@ -371,7 +371,7 @@ def dataset_factory(config):
 
     else:
 
-        None
+        raise ValueError("Invalid experiment type")
 
 
 def writer_factory(config):
@@ -386,7 +386,7 @@ def writer_factory(config):
 
     else:
 
-        None
+        raise ValueError("Invalid experiment type")
 
 
 def writer_key_factory(config):
@@ -420,11 +420,11 @@ def writer_key_factory(config):
                 {"key": key_["key"], "value": key_["value"], "type": type_}
             )
 
+        return writer_type_list
+
     else:
 
-        None
-
-    return writer_type_list
+        raise ValueError("Invalid experiment type")
 
 
 def environment_factory(config):
@@ -463,7 +463,7 @@ def environment_factory(config):
 
     else:
 
-        return None
+        raise ValueError("Invalid experiment type")
 
 
 def sensor_factory(config):
@@ -523,4 +523,8 @@ def sensor_factory(config):
                 {"class": cls, "id": sensor["id"], "config": sensor["config"]}
             )
 
-    return sensor_list
+        return sensor_list
+
+    else:
+
+        raise ValueError("Invalid experiment type")

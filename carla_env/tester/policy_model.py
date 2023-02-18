@@ -1,9 +1,10 @@
 from collections import deque
 import time
 import torch
-
+import wandb
 from utils.kinematic_utils import acceleration_to_throttle_brake
 from utils.model_utils import convert_standard_bev_to_model_bev
+from utils.create_video_from_folder import create_video_from_images
 
 
 class Tester:
@@ -19,6 +20,8 @@ class Tester:
         num_time_step_future=10,
         skip_frames=1,
         repeat_frames=1,
+        log_video=True,
+        log_video_scale=0.1,
         binary_occupancy=False,
         binary_occupancy_threshold=5.0,
         use_world_forward_model_encoder_output_as_world_state=True,
@@ -38,6 +41,8 @@ class Tester:
         self.num_time_step_future = num_time_step_future
         self.skip_frames = skip_frames
         self.repeat_frames = repeat_frames
+        self.log_video = log_video
+        self.log_video_scale = log_video_scale
         self.binary_occupancy = binary_occupancy
         self.binary_occupancy_threshold = binary_occupancy_threshold
         self.use_world_forward_model_encoder_output_as_world_state = (
@@ -55,6 +60,9 @@ class Tester:
         self.frame_counter = 0
         self.skip_counter = 0
         self.repeat_counter = 0
+
+        if self.log_video:
+            self.log_video_images_path = []
 
         self.world_previous_bev_deque = deque(maxlen=self.num_time_step_previous)
 
@@ -205,7 +213,14 @@ class Tester:
                 t1 = time.time()
                 sim_fps = 1 / (t1 - t0)
 
-                self.environment.render(simulation_fps=sim_fps)
+                image_path = self.environment.render(
+                    simulation_fps=sim_fps,
+                    frame_counter=self.frame_counter,
+                    skip_counter=self.skip_counter,
+                    repeat_counter=self.repeat_counter,
+                )
+                if self.log_video:
+                    self.log_video_images_path.append(image_path)
 
                 # Update counters
                 self.frame_counter += 1
@@ -214,6 +229,40 @@ class Tester:
                     + (self.repeat_counter + 1 == (self.repeat_frames))
                 ) % self.skip_frames
                 self.repeat_counter = (self.repeat_counter + 1) % self.repeat_frames
+
+                run.log(
+                    {
+                        "sim_fps": sim_fps,
+                        "frame_counter": self.frame_counter,
+                    }
+                )
+        run.log(
+            {
+                "SUCCESSFUL": self.environment.is_done
+                and (not self.environment.is_collided),
+                "COLLISION": self.environment.is_collided,
+            }
+        )
+        if self.log_video:
+            create_video_from_images(
+                images=self.log_video_images_path,
+                fps=int(
+                    1
+                    / (
+                        self.environment.config["fixed_delta_seconds"]
+                        * self.repeat_frames
+                    )
+                ),
+                scale=self.log_video_scale,
+                path=self.environment.renderer_module.save_path,
+            )
+            run.log(
+                {
+                    "video": wandb.Video(
+                        f"{self.environment.renderer_module.save_path}/video.mp4"
+                    )
+                }
+            )
 
         self.environment.close()
 

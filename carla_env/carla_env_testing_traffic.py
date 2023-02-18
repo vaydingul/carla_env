@@ -85,7 +85,10 @@ class CarlaEnvironment(Environment):
         self.server_module = server.ServerModule(config={"port": self.port})
 
         self.is_first_reset = True
+
         self.is_done = False
+        self.is_collided = False
+
         self.counter = 0
 
         if self.random:
@@ -284,7 +287,7 @@ class CarlaEnvironment(Environment):
                     impulse_amplitude = np.linalg.norm(impulse)
                     logger.debug(f"Collision impulse: {impulse_amplitude}")
                     if impulse_amplitude > 100:
-                        self.is_done = True
+                        self.collided = True
 
         self.data_dict["snapshot"] = snapshot
 
@@ -309,7 +312,9 @@ class CarlaEnvironment(Environment):
 
         self.counter += 1
 
-        self.is_done = self.is_done or (self.counter >= self.max_steps)
+        self.is_done = self.is_collided or (self.counter >= self.max_steps)
+
+        return self.is_done
 
     def render(self, *args, **kwargs):
         """Render the environment"""
@@ -388,7 +393,9 @@ class CarlaEnvironment(Environment):
 
         self.renderer_module.show()
 
-        self.renderer_module.save(info=f"step_{self.counter}")
+        saved_image_path = self.renderer_module.save(info=f"step_{self.counter}")
+
+        return saved_image_path
 
     def close(self):
         """Close the environment"""

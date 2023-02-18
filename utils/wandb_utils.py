@@ -1,6 +1,25 @@
 import wandb
 
 
+class DummyWandb:
+    """Dummy class for wandb when it is not enabled."""
+
+    def __init__(self) -> None:
+        pass
+
+    def log(self, *args, **kwargs):
+        pass
+
+    def watch(self, *args, **kwargs):
+        pass
+
+    def finish(self, *args, **kwargs):
+        pass
+
+    def save(self, *args, **kwargs):
+        pass
+
+
 def create_initial_run(config):
     run = wandb.init(
         id=wandb.util.generate_id(),
@@ -52,6 +71,6 @@ def create_wandb_run(config):
 
     else:
 
-        run = None
+        run = DummyWandb()
 
     return run

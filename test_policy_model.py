@@ -159,6 +159,8 @@ def main(config):
         device=device,
         skip_frames=config["tester"]["skip_frames"],
         repeat_frames=config["tester"]["repeat_frames"],
+        log_video=config["tester"]["log_video"],
+        log_video_scale=config["tester"]["log_video_scale"],
         num_time_step_previous=policy_model_run.config["num_time_step_previous"],
         num_time_step_future=config["tester"]["rollout_length"],
         binary_occupancy=policy_model_run.config["training"]["binary_occupancy"][
@@ -176,11 +178,29 @@ def main(config):
         bev_calculate_offroad=policy_model_run.config["bev_calculate_offroad"],
     )
 
-    logger.info("Starting the tester")
+    try:
 
-    tester.test(run)
+        logger.info("Starting the tester")
 
-    logger.info("Tester finished")
+        tester.test(run)
+
+        logger.info("Tester finished")
+
+    except:
+
+        logger.info("Tester interrupted!")
+        logger.info("Closing the environment")
+
+        run.log(
+            {
+                "INTERRUPTED": True,
+                "SUCCESSFUL": False,
+                "COLLISION": False,
+            }
+        )
+
+        run.finish()
+        environment.close()
 
 
 if __name__ == "__main__":

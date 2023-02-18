@@ -8,9 +8,10 @@ num_time_step_future: &future 10
 
 environment:
   name: carla_env_testing_traffic
-  random: true
+  random: false
   action_repeat: 1
   fixed_delta_seconds: &dt 0.05
+  max_steps: 50
   port: *port_var
   tm_port: *tm_port_var
   tasks:
@@ -93,6 +94,8 @@ tester:
   skip_frames: 1
   repeat_frames: 1
   rollout_length: *future
+  log_video: true
+  log_video_scale: 0.1
 
 # wandb_ego_forward_model:
 #   link: ""
@@ -107,7 +110,7 @@ wandb_policy_model:
   checkpoint_number: 1
 
 wandb:
-  enable: false
+  enable: true
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"
