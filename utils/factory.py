@@ -172,6 +172,12 @@ def tester_factory(config):
 
         return Tester
 
+    elif config["experiment_type"] == "test_mpc":
+
+        from carla_env.tester.mpc import Tester
+
+        return Tester
+
     else:
 
         raise ValueError("Invalid experiment type")
@@ -437,25 +443,9 @@ def environment_factory(config):
 
         return CarlaEnvironment
 
-    elif config["experiment_type"] == "test_mpc":
-
-        if config["bev_type"] == "extended_bev":
-
-            from carla_env.carla_env_extended_bev_traffic import CarlaEnvironment
-
-            return CarlaEnvironment
-
-        elif config["bev_type"] == "bev":
-
-            from carla_env.carla_env_bev_traffic import CarlaEnvironment
-
-            return CarlaEnvironment
-
-        else:
-
-            raise ValueError("Invalid bev_type")
-
-    elif config["experiment_type"] == "test_policy_model":
+    elif (config["experiment_type"] == "test_policy_model") or (
+        config["experiment_type"] == "test_mpc"
+    ):
 
         from carla_env.carla_env_testing_traffic import CarlaEnvironment
 
