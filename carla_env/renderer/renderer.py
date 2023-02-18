@@ -1,4 +1,6 @@
 import cv2
+
+from utils.path_utils import create_date_time_path
 from .colors import COLORS
 import cv2
 import numpy as np
@@ -21,6 +23,9 @@ class Renderer:
         self.update_config(config)
         self.build_from_config()
 
+        if self.create_date_time_path:
+            self.save_path = create_date_time_path(self.save_path)
+
         self.reset()
 
     def build_from_config(self):
@@ -37,6 +42,7 @@ class Renderer:
         self.name = self.config["name"]
         self.show_ = self.config["show"]
         self.save_ = self.config["save"]
+        self.create_date_time_path = self.config["create_date_time_path"]
         self.save_path = self.config["save_path"]
 
     def reset(self):
@@ -245,6 +251,7 @@ class Renderer:
             "name": "canvas",
             "show": True,
             "save": False,
+            "create_date_time_path": True,
             "save_path": "./",
         }
 

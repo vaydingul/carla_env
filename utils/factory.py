@@ -78,7 +78,7 @@ def cost_factory(config):
 
     if (
         (config["experiment_type"] == "train_policy_model")
-        or (config["experiment_type"] == "test_dfm_km_cp")
+        or (config["experiment_type"] == "test_policy_model")
         or (config["experiment_type"] == "test_mpc")
     ):
 

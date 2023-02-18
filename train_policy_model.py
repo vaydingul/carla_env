@@ -376,9 +376,7 @@ if __name__ == "__main__":
 
     config = parse_yml(args.config_path)
     config["checkpoint_path"] = create_date_time_path(config["checkpoint_path"])
-    config["training"]["renderer"]["save_path"] = create_date_time_path(
-        config["training"]["renderer"]["save_path"]
-    )
+    
     config["config_path"] = args.config_path
 
     mp.spawn(

@@ -298,6 +298,7 @@ class CarlaEnvironment(Environment):
             )
             self.data_dict[bev_module["id"]] = bev_output
 
+        self.data_dict["navigation"] = {}
         self.data_dict["navigation"]["waypoint"] = route_step[0]
         self.data_dict["navigation"]["command"] = route_step[1]
 
@@ -356,6 +357,7 @@ class CarlaEnvironment(Environment):
                         f"{module.capitalize()}",
                         move_cursor="down",
                         font_color=COLORS.RED,
+                        font_thickness=2,
                     )
 
                     for (k, v) in render_dict.items():
@@ -365,10 +367,28 @@ class CarlaEnvironment(Environment):
                             move_cursor="down",
                             font_color=COLORS.YELLOW,
                         )
+                    self.renderer_module.move_cursor(direction="down", amount=(10, 0))
+
+        if bool(kwargs):
+
+            self.renderer_module.render_text(
+                f"ADDITIONAL ARGUMENTS",
+                move_cursor="down",
+                font_color=COLORS.PURPLE,
+                font_thickness=2,
+            )
+
+            for (k, v) in kwargs.items():
+
+                self.renderer_module.render_text(
+                    f"{k}: {v}",
+                    move_cursor="down",
+                    font_color=COLORS.BLUE,
+                )
 
         self.renderer_module.show()
 
-        self.renderer_module.save()
+        self.renderer_module.save(info=f"step_{self.counter}")
 
     def close(self):
         """Close the environment"""

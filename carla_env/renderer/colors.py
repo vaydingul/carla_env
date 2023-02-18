@@ -6,6 +6,7 @@ class COLORS:
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
     YELLOW = (0, 255, 255)
+    PURPLE = (255, 0, 255)
     CYAN = (255, 255, 0)
     MAGENTA = (255, 0, 255)
     GREY = (128, 128, 128)

@@ -37,7 +37,8 @@ environment:
     name: Random Data Collection
     show: false
     save: false
-    save_path: ~
+    create_date_time_path: true
+    save_path: figures/env_debug/data_collect_random/
 
   sensors:
     - id: rgb_front

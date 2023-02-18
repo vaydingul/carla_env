@@ -1,16 +1,14 @@
-# TODO: Make it distributed with creating four different config files.
-
 experiment_type: test_policy_model
 log_path: ~
 seed: 42
-num_episodes: 120
 port: &port_var 2000
 tm_port: &tm_port_var 8000
 num_time_step_previous: &previous 20
 num_time_step_future: &future 10
+
 environment:
   name: carla_env_testing_traffic
-  random: false
+  random: true
   action_repeat: 1
   fixed_delta_seconds: &dt 0.05
   port: *port_var
@@ -26,8 +24,8 @@ environment:
     #   num_vehicles: [150, 300]
 
   renderer:
-    width: 1300
-    height: 1000
+    width: 1800
+    height: 900
     channel: 3
     background_color: [0, 0, 0]
     font_scale: 0.5
@@ -37,7 +35,8 @@ environment:
     name: Policy Model Testing
     show: true
     save: true
-    save_path: ~
+    create_date_time_path: true
+    save_path: figures/env_debug/test_policy/
 
   sensors:
     - id: rgb_front
@@ -91,23 +90,24 @@ environment:
       debug: true
 
 tester:
-  use_world_forward_model_encoder_output_as_world_state: true
-  
+  skip_frames: 1
+  repeat_frames: 1
+  rollout_length: *future
 
-wandb_ego_forward_model:
-  link: ""
-  checkpoint_number: 0
+# wandb_ego_forward_model:
+#   link: ""
+#   checkpoint_number: 0
 
-wandb_world_forward_model:
-  link: ""
-  checkpoint_number: 0
+# wandb_world_forward_model:
+#   link: ""
+#   checkpoint_number: 0
 
 wandb_policy_model:
-  link: ""
-  checkpoint_number: 0
+  link: vaydingul/mbl-refactored/blokaisv
+  checkpoint_number: 1
 
 wandb:
-  enable: true
+  enable: false
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"

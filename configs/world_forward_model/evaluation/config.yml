@@ -64,6 +64,7 @@ evaluation:
     name: World Model Evaluation
     show: false
     save: true
+    create_date_time_path: true
     save_path: *save_path
 
 # Wandb related parameters
