@@ -29,11 +29,11 @@ environment:
   random: false
   action_repeat: 1
   fixed_delta_seconds: &dt 0.05
-  max_steps: 50
+  max_steps: 5000
   port: *port_var
   tm_port: *tm_port_var
   tasks:
-    - world: Town01
+    - world: Town02
       num_vehicles: [60, 90]
     # - world: Town03
     #   num_vehicles: [60, 90]
@@ -53,7 +53,7 @@ environment:
     cursor: [0, 0]
     name: MPC Testing
     show: true
-    save: true
+    save: false
     create_date_time_path: true
     save_path: figures/env_debug/test_mpc/
 
@@ -111,7 +111,7 @@ environment:
 tester:
   batch_size: 1
   action_size: 2
-  num_optimization_iteration: 40
+  num_optimization_iteration: 20
   init_action: "zeros"
   skip_frames: 1
   repeat_frames: 1
@@ -132,12 +132,14 @@ tester:
     vehicle_cost: 0.1
     lane_cost: 0.1
     offroad_cost: 0.1
-    acceleration_jerk: 0.0
-    steer_jerk: 0.0
-    ego_location_l1: 0.0
-    ego_rotation_l1: 0.0
+    acceleration_jerk: 1.0
+    steer_jerk: 1.0
+    ego_location_l1: 10.0
+    ego_yaw_l1: 10.0
     ego_speed_l1: 0.0
 
+# MPC is a kind of RL training.
+training:
   gradient_clip:
     enable: true
     type: "norm"
@@ -146,22 +148,23 @@ tester:
   optimizer:
     type: "Adam"
     config:
-      lr: 0.0001
-      weight_decay: 0.0001
+      lr: 0.05
+      # weight_decay: 0.0001
 
 wandb_ego_forward_model:
-  link: ""
-  checkpoint_number: 0
+  link: vaydingul/mbl-refactored/16ruxyiq
+  checkpoint_number: 99
 
 # It can be None.
 # In this case, last BEV tensor should be copied
 # num_time_step_previous times.
 wandb_world_forward_model:
-  link: ""
-  checkpoint_number: 0
+  ~
+  # link: ""
+  # checkpoint_number: 0
 
 wandb:
-  enable: true
+  enable: false
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"

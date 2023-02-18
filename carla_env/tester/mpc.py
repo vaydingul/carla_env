@@ -14,7 +14,6 @@ class Tester:
         environment,
         ego_forward_model,
         world_forward_model,
-        mpc,
         cost,
         cost_weight,
         device,
@@ -42,7 +41,6 @@ class Tester:
         self.environment = environment
         self.ego_forward_model = ego_forward_model
         self.world_forward_model = world_forward_model
-        self.mpc = mpc
         self.cost = cost
         self.cost_weight = cost_weight
         self.device = device
@@ -67,8 +65,8 @@ class Tester:
         self.bev_calculate_offroad = bev_calculate_offroad
 
         self.ego_forward_model.eval().to(self.device)
-        self.world_forward_model.eval().to(self.device)
-        # self.mpc.eval().to(self.device)
+        if self.world_forward_model is not None:
+            self.world_forward_model.eval().to(self.device)
 
         self.frame_counter = 0
         self.skip_counter = 0
@@ -91,84 +89,90 @@ class Tester:
 
             self.world_previous_bev_deque.append(processed_data["bev_tensor"])
 
-        with torch.no_grad():
+        while not self.environment.is_done:
 
-            while not self.environment.is_done:
+            t0 = time.time()
 
-                t0 = time.time()
+            # Get data
+            ego_previous = processed_data["ego_previous"]
+            bev_tensor = processed_data["bev_tensor"]
+            target = processed_data["target"]
 
-                # Get data
-                ego_previous = processed_data["ego_previous"]
-                bev_tensor = processed_data["bev_tensor"]
-                navigational_command = processed_data["navigational_command"]
-                target = processed_data["target_location"]
+            # Append world deque
+            self.world_previous_bev_deque.append(bev_tensor)
 
-                # Append world deque
-                self.world_previous_bev_deque.append(bev_tensor)
+            # Make it compatible with torch
+            world_previous_bev = (
+                torch.stack(list(self.world_previous_bev_deque), dim=1)
+                .to(self.device)
+                .requires_grad_(True)
+            )
 
-                # Make it compatible with torch
-                world_previous_bev = torch.stack(
-                    list(self.world_previous_bev_deque), dim=1
-                ).to(self.device)
+            # It is allowed to calculate a new action
+            if (self.skip_counter == 0) and (self.repeat_counter == 0):
 
-                # It is allowed to calculate a new action
-                if (self.skip_counter == 0) and (self.repeat_counter == 0):
+                # TODO: Insert MPC stuff here
+                # TODO: Output action, cost, predicted ego and world state
 
-                    # TODO: Insert MPC stuff here
-                    # TODO: Output action, cost, predicted ego and world state
-
-                    out = self.mpc()
-
-                # Fetch predicted action
-                control_selected = ego_future_action_predicted[0][self.skip_counter]
-
-                # Convert to environment control
-                acceleration = control_selected[0].item()
-                steer = control_selected[1].item()
-
-                throttle, brake = acceleration_to_throttle_brake(
-                    acceleration=acceleration,
+                out = self._step(
+                    ego_previous=ego_previous,
+                    world_previous_bev=world_previous_bev,
+                    target=target,
                 )
+                ego_future_action_predicted = out["action"]
+                cost = out["cost"]
 
-                env_control = [throttle, steer, brake]
+            # Fetch predicted action
+            control_selected = ego_future_action_predicted[0][self.skip_counter]
 
-                # Step environment
-                self.environment.step(env_control)
+            # Convert to environment control
+            acceleration = control_selected[0].item()
+            steer = control_selected[1].item()
 
-                # Get data
-                data = self.environment.get_data()
+            throttle, brake = acceleration_to_throttle_brake(
+                acceleration=acceleration,
+            )
 
-                # Process data
-                processed_data = self._process_data(data)
+            env_control = [throttle, steer, brake]
 
-                # Calculate current FPS
-                t1 = time.time()
-                sim_fps = 1 / (t1 - t0)
+            # Step environment
+            self.environment.step(env_control)
 
-                image_path = self.environment.render(
-                    simulation_fps=sim_fps,
-                    frame_counter=self.frame_counter,
-                    skip_counter=self.skip_counter,
-                    repeat_counter=self.repeat_counter,
-                )
+            # Get data
+            data = self.environment.get_data()
 
-                if self.log_video:
-                    self.log_video_images_path.append(image_path)
+            # Process data
+            processed_data = self._process_data(data)
 
-                # Update counters
-                self.frame_counter += 1
-                self.skip_counter = (
-                    self.skip_counter
-                    + (self.repeat_counter + 1 == (self.repeat_frames))
-                ) % self.skip_frames
-                self.repeat_counter = (self.repeat_counter + 1) % self.repeat_frames
+            # Calculate current FPS
+            t1 = time.time()
+            sim_fps = 1 / (t1 - t0)
 
-                run.log(
-                    {
-                        "sim_fps": sim_fps,
-                        "frame_counter": self.frame_counter,
-                    }
-                )
+            image_path = self.environment.render(
+                simulation_fps=sim_fps,
+                frame_counter=self.frame_counter,
+                skip_counter=self.skip_counter,
+                repeat_counter=self.repeat_counter,
+                **cost,
+            )
+
+            if self.log_video:
+                self.log_video_images_path.append(image_path)
+
+            # Update counters
+            self.frame_counter += 1
+            self.skip_counter = (
+                self.skip_counter + (self.repeat_counter + 1 == (self.repeat_frames))
+            ) % self.skip_frames
+            self.repeat_counter = (self.repeat_counter + 1) % self.repeat_frames
+
+            run.log(
+                {
+                    "sim_fps": sim_fps,
+                    "frame_counter": self.frame_counter,
+                }
+            )
+
         run.log(
             {
                 "SUCCESSFUL": self.environment.is_done
@@ -176,6 +180,7 @@ class Tester:
                 "COLLISION": self.environment.is_collided,
             }
         )
+
         if self.log_video:
             create_video_from_images(
                 images=self.log_video_images_path,
@@ -210,7 +215,9 @@ class Tester:
 
             ego_previous_location[..., 0] = data["ego"]["location_array"][0]
             ego_previous_location[..., 1] = data["ego"]["location_array"][1]
-            ego_previous_yaw[..., 0] = data["ego"]["rotation_array"][-1]
+            ego_previous_yaw[..., 0] = (
+                data["ego"]["rotation_array"][-1] * torch.pi / 180
+            )
             ego_previous_speed[..., 0] = torch.norm(
                 torch.Tensor(data["ego"]["velocity_array"])
             )
@@ -238,25 +245,20 @@ class Tester:
             target_location[..., 1] = data["navigation"][
                 "waypoint"
             ].transform.location.y
-            target_yaw[..., 0] = data["navigation"]["waypoint"].transform.rotation.yaw
+            target_yaw[..., 0] = (
+                data["navigation"]["waypoint"].transform.rotation.yaw * torch.pi / 180
+            )
 
             target_location.requires_grad_(True)
             target_yaw.requires_grad_(True)
             target_speed.requires_grad_(True)
-
-            navigational_command = torch.zeros((1,), device=self.device)
-            navigational_command[..., 0] = data["navigation"]["command"].value - 1
-            navigational_command = torch.nn.functional.one_hot(
-                navigational_command.long(), num_classes=self.policy_model.command_size
-            ).float()
 
             target = {
                 "location": target_location,
                 "yaw": target_yaw,
                 "speed": target_speed,
             }
-            processed_data["target"] = target_location
-            processed_data["navigational_command"] = navigational_command
+            processed_data["target"] = target
 
         if "bev_world" in data.keys():
             bev_tensor = convert_standard_bev_to_model_bev(
@@ -285,9 +287,9 @@ class Tester:
 
         for i in range(self.num_time_step_future):
 
-            action_ = self.action[:, i : i + 1].clone()
+            action_ = self.action[:, i : i + 1]  # .clone()
 
-            ego_next = self.ego_model(ego_previous, action_)
+            ego_next = self.ego_forward_model(ego_previous, action_)
 
             location_predicted.append(ego_next["location"])
             yaw_predicted.append(ego_next["yaw"])
@@ -307,30 +309,34 @@ class Tester:
 
     def _forward_world_forward_model(self, world_previous_bev):
 
-        bev_predicted = []
+        world_future_bev_predicted_list = []
 
-        # bev_predicted.append(bev[:, -1].unsqueeze(1))
+        # world_future_bev_predicted.append(bev[:, -1].unsqueeze(1))
 
         for i in range(self.num_time_step_future):
 
-            if self.world_model is not None:
+            if self.world_forward_model is not None:
 
-                bev_ = self.world_model(bev, sample_latent=True)
-                bev_ = torch.sigmoid(bev_)
-                # bev_[bev_ > 0.5] = 1
-                # bev_[bev_ <= 0.5] = 0
+                (_, world_future_bev_predicted) = self.world_forward_model(
+                    bev, sample_latent=True
+                )
+                world_future_bev_predicted = torch.sigmoid(world_future_bev_predicted)
+                # world_future_bev_predicted[world_future_bev_predicted > 0.5] = 1
+                # world_future_bev_predicted[world_future_bev_predicted <= 0.5] = 0
 
-                bev = torch.cat([bev[:, 1:], bev_.unsqueeze(1)], dim=1)
+                bev = torch.cat(
+                    [bev[:, 1:], world_future_bev_predicted.unsqueeze(1)], dim=1
+                )
 
-                bev_predicted.append(bev_)
+                world_future_bev_predicted_list.append(world_future_bev_predicted)
 
             else:
 
-                bev_predicted.append(bev[:, -1])
+                world_future_bev_predicted_list.append(world_previous_bev[:, -1])
 
-        bev_predicted = torch.stack(bev_predicted, dim=1)
+        world_future_bev_predicted = torch.stack(world_future_bev_predicted_list, dim=1)
 
-        return bev_predicted
+        return world_future_bev_predicted
 
     def _forward_cost(
         self,
@@ -414,6 +420,8 @@ class Tester:
 
         for _ in range(self.num_optimization_iteration):
 
+            self.optimizer.zero_grad()
+
             (
                 ego_future_location_predicted,
                 ego_future_yaw_predicted,
@@ -430,7 +438,7 @@ class Tester:
 
             loss = cost["loss"]
 
-            loss.backward()
+            loss.backward(retain_graph=True)
 
             if self.gradient_clip:
                 if self.gradient_clip_type == "value":
@@ -457,7 +465,7 @@ class Tester:
                 "world_future_bev_predicted": world_future_bev_predicted,
             }
 
-    def _reset(self, initial_guess):
+    def _reset(self, initial_guess=None):
 
         if initial_guess is None:
 

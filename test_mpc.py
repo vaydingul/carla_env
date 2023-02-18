@@ -79,29 +79,36 @@ def main(config):
     # ---------------------------------------------------------------------------- #
     #                    WORLD FORWARD MODEL WANDB RUN CHECKPOINT                    #
     # ---------------------------------------------------------------------------- #
+    if config["wandb_world_forward_model"] is not None:
 
-    world_forward_model_wandb_link = config["wandb_world_forward_model"]["link"]
-    world_forward_model_checkpoint_number = config["wandb_world_forward_model"][
-        "checkpoint_number"
-    ]
+        world_forward_model_wandb_link = config["wandb_world_forward_model"]["link"]
+        world_forward_model_checkpoint_number = config["wandb_world_forward_model"][
+            "checkpoint_number"
+        ]
 
-    world_forward_model_run = fetch_run_from_wandb_link(world_forward_model_wandb_link)
-    world_forward_model_checkpoint_object = fetch_checkpoint_from_wandb_run(
-        run=world_forward_model_run,
-        checkpoint_number=world_forward_model_checkpoint_number,
-    )
-    world_forward_model_checkpoint_path = world_forward_model_checkpoint_object.name
+        world_forward_model_run = fetch_run_from_wandb_link(
+            world_forward_model_wandb_link
+        )
+        world_forward_model_checkpoint_object = fetch_checkpoint_from_wandb_run(
+            run=world_forward_model_run,
+            checkpoint_number=world_forward_model_checkpoint_number,
+        )
+        world_forward_model_checkpoint_path = world_forward_model_checkpoint_object.name
 
-    # Create the model
-    world_forward_model_class = world_forward_model_factory(
-        world_forward_model_run.config
-    )
-    # Initialize the model
-    world_forward_model = world_forward_model_class.load_model_from_wandb_run(
-        config=world_forward_model_run.config["world_forward_model"]["config"],
-        checkpoint_path=world_forward_model_checkpoint_path,
-        device=device,
-    )
+        # Create the model
+        world_forward_model_class = world_forward_model_factory(
+            world_forward_model_run.config
+        )
+        # Initialize the model
+        world_forward_model = world_forward_model_class.load_model_from_wandb_run(
+            config=world_forward_model_run.config["world_forward_model"]["config"],
+            checkpoint_path=world_forward_model_checkpoint_path,
+            device=device,
+        )
+
+    else:
+
+        world_forward_model = None
 
     # ---------------------------------------------------------------------------- #
     #                                   COST                                       #
@@ -125,9 +132,10 @@ def main(config):
         ego_forward_model=ego_forward_model,
         world_forward_model=world_forward_model,
         cost=cost,
+        cost_weight=config["tester"]["cost_weight"],
         device=device,
         optimizer_class=optimizer_class,
-        optimizer_config=config["tester"]["optimizer"]["config"],
+        optimizer_config=config["training"]["optimizer"]["config"],
         batch_size=config["tester"]["batch_size"],
         action_size=config["tester"]["action_size"],
         num_optimization_iteration=config["tester"]["num_optimization_iteration"],
@@ -155,9 +163,10 @@ def main(config):
 
         logger.info("Tester finished")
 
-    except:
+    except Exception as e:
 
-        logger.info("Tester interrupted!")
+        logger.exception("Tester failed!", exc_info=e)
+
         logger.info("Closing the environment")
 
         run.log(
@@ -180,7 +189,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path",
         type=str,
-        default="/home/volkan/Documents/Codes/carla_env/configs/policy_model/testing/config.yml",
+        default="/home/volkan/Documents/Codes/carla_env/configs/mpc/testing/config.yml",
         help="Path to config file",
     )
 

@@ -189,6 +189,7 @@ def optimizer_factory(config):
         (config["experiment_type"] == "train_policy_model")
         or (config["experiment_type"] == "train_world_forward_model")
         or (config["experiment_type"] == "train_ego_forward_model")
+        or (config["experiment_type"] == "test_mpc")
     ):
 
         if config["training"]["optimizer"]["type"] == "Adam":
