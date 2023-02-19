@@ -412,18 +412,16 @@ class Tester:
             + steer_jerk * self.cost_weight["steer_jerk"]
         )
 
-        return (
-            {
-                **cost["cost_dict"],
-                "mask_dict": cost["mask_dict"],
-                "ego_location_l1": ego_location_l1,
-                "ego_yaw_l1": ego_yaw_l1,
-                "ego_speed_l1": ego_speed_l1,
-                "acceleration_jerk": acceleration_jerk,
-                "steer_jerk": steer_jerk,
-                "loss": loss,
-            },
-        )
+        return {
+            **cost["cost_dict"],
+            "mask_dict": cost["mask_dict"],
+            "ego_location_l1": ego_location_l1,
+            "ego_yaw_l1": ego_yaw_l1,
+            "ego_speed_l1": ego_speed_l1,
+            "acceleration_jerk": acceleration_jerk,
+            "steer_jerk": steer_jerk,
+            "loss": loss,
+        }
 
     def _step(self, ego_previous, world_previous_bev, target):
 
