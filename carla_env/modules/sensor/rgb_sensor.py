@@ -30,24 +30,22 @@ class RGBSensorModule(sensor.SensorModule):
     def _start(self):
         """Start the sensor module"""
 
-        rgb_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
+        rgb_bp = self.world.get_blueprint_library().find("sensor.camera.rgb")
         rgb_bp.set_attribute("image_size_x", str(self.config["width"]))
         rgb_bp.set_attribute("image_size_y", str(self.config["height"]))
         rgb_bp.set_attribute("fov", str(self.config["fov"]))
         self.camera_transform = carla.Transform(
-            carla.Location(
-                x=self.config["x"],
-                y=self.config["y"],
-                z=self.config["z"]),
+            carla.Location(x=self.config["x"], y=self.config["y"], z=self.config["z"]),
             carla.Rotation(
                 roll=self.config["roll"],
                 pitch=self.config["pitch"],
-                yaw=self.config["yaw"]))
+                yaw=self.config["yaw"],
+            ),
+        )
 
         self.camera = self.world.spawn_actor(
-            rgb_bp, self.camera_transform, attach_to=self.actor.get_actor())
-
-        
+            rgb_bp, self.camera_transform, attach_to=self.actor.get_actor()
+        )
 
         self.camera.listen(lambda image: self._get_sensor_data(image))
 
@@ -69,7 +67,7 @@ class RGBSensorModule(sensor.SensorModule):
     def _get_sensor_data(self, image):
         """Get the sensor data"""
 
-        #logger.info("Received an image of frame: " + str(image.frame))
+        # logger.info("Received an image of frame: " + str(image.frame))
 
         image_data = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
         image_data = copy.deepcopy(image_data)
@@ -80,10 +78,7 @@ class RGBSensorModule(sensor.SensorModule):
         self.image_data = image_data
         self.image_transform = image.transform
 
-        data = {'frame': image.frame,
-                'transform': image.transform,
-                'data': image_data
-                }
+        data = {"frame": image.frame, "transform": image.transform, "data": image_data}
 
         if self.save_to_queue:
             self._queue_operation(data)
@@ -102,6 +97,9 @@ class RGBSensorModule(sensor.SensorModule):
         if self.image_data is not None:
             self.render_dict["image_data"] = self.image_data
             self.render_dict["image_transform"] = self.image_transform
+            self.render_dict["image_height"] = self.config["height"]
+            self.render_dict["image_width"] = self.config["width"]
+            self.render_dict["image_fov"] = self.config["fov"]
 
         return self.render_dict
 
@@ -119,15 +117,17 @@ class RGBSensorModule(sensor.SensorModule):
 
     def _set_default_config(self):
         """Set the default config of the sensor"""
-        self.config = {"x": 1.5,
-                       "y": 0.0,
-                       "z": 2.4,
-                       "roll": 0.0,
-                       "pitch": 0.0,
-                       "yaw": 0.0,
-                       "width": 800,
-                       "height": 600,
-                       "fov": 100}
+        self.config = {
+            "x": 1.5,
+            "y": 0.0,
+            "z": 2.4,
+            "roll": 0.0,
+            "pitch": 0.0,
+            "yaw": 0.0,
+            "width": 800,
+            "height": 600,
+            "fov": 100,
+        }
 
     def _queue_operation(self, data):
         """Queue the sensor data and additional stuff"""
