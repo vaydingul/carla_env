@@ -111,20 +111,17 @@ class Tester:
             # It is allowed to calculate a new action
             if (self.skip_counter == 0) and (self.repeat_counter == 0):
 
-                # TODO: Insert MPC stuff here
-                # TODO: Output action, cost, predicted ego and world state
-
                 out = self._step(
                     ego_previous=ego_previous,
                     world_previous_bev=world_previous_bev,
                     target=target,
                 )
                 ego_future_action_predicted = out["action"]
+                world_future_bev_predicted = out["world_future_bev_predicted"]
+                mask_dict = out["cost"]["mask_dict"]
+                ego_future_location_predicted = out["ego_future_location_predicted"]
                 cost = out["cost"]
 
-
-            print(ego_future_action_predicted)
-            time.sleep(0.1)
             # Fetch predicted action
             control_selected = ego_future_action_predicted[0][self.skip_counter]
 
@@ -157,6 +154,14 @@ class Tester:
                 skip_counter=self.skip_counter,
                 repeat_counter=self.repeat_counter,
                 **cost,
+                cost_viz={  # Some dummy arguments for visualization
+                    "world_future_bev_predicted": world_future_bev_predicted,
+                    "mask_dict": mask_dict,
+                    "bev_selected_channels": self.bev_selected_channels,
+                },  # It looks like there is not any other way
+                ego_viz={
+                    "ego_future_location_predicted": ego_future_location_predicted
+                },
             )
 
             if self.log_video:
@@ -407,15 +412,18 @@ class Tester:
             + steer_jerk * self.cost_weight["steer_jerk"]
         )
 
-        return {
-            **cost["cost_dict"],
-            "ego_location_l1": ego_location_l1,
-            "ego_yaw_l1": ego_yaw_l1,
-            "ego_speed_l1": ego_speed_l1,
-            "acceleration_jerk": acceleration_jerk,
-            "steer_jerk": steer_jerk,
-            "loss": loss,
-        }
+        return (
+            {
+                **cost["cost_dict"],
+                "mask_dict": cost["mask_dict"],
+                "ego_location_l1": ego_location_l1,
+                "ego_yaw_l1": ego_yaw_l1,
+                "ego_speed_l1": ego_speed_l1,
+                "acceleration_jerk": acceleration_jerk,
+                "steer_jerk": steer_jerk,
+                "loss": loss,
+            },
+        )
 
     def _step(self, ego_previous, world_previous_bev, target):
 
@@ -459,9 +467,8 @@ class Tester:
                         f"Invalid gradient clip type {self.gradient_clip_type}"
                     )
 
-            print(self.action.grad.sum())
-
             self.optimizer.step()
+
         return {
             "action": self.action,
             "cost": cost,

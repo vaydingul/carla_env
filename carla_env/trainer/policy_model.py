@@ -1,4 +1,3 @@
-from carla_env.bev import BirdViewProducer
 import logging
 import numpy as np
 import torch
@@ -11,6 +10,7 @@ from carla_env.sampler.distributed_weighted_sampler import DistributedWeightedSa
 from datetime import datetime
 from pathlib import Path
 from carla_env.renderer.renderer import Renderer, COLORS
+from utils.render_utils import *
 
 logger = logging.getLogger(__name__)
 
@@ -592,12 +592,10 @@ class Trainer(object):
 
                     for m in range(self.num_time_step_future - 1):
 
-                        bev = self._postprocess_bev(
-                            world_future_bev_predicted[k][m + 1]
-                        )
-                        mask_ = self._postprocess_mask(mask[k][m])
-                        action_gt_ = self._postprocess_action(action_gt[k][m + 1])
-                        action_pred_ = self._postprocess_action(action_pred[k][m + 1])
+                        bev = postprocess_bev(world_future_bev_predicted[k][m + 1])
+                        mask_ = postprocess_mask(mask[k][m])
+                        action_gt_ = postprocess_action(action_gt[k][m + 1])
+                        action_pred_ = postprocess_action(action_pred[k][m + 1])
 
                         cursor_ = tuple(reversed(self.renderer.get_cursor()))
 
@@ -668,35 +666,3 @@ class Trainer(object):
 
                 self.renderer.show()
                 self.renderer.save(info=info)
-
-    def _postprocess_bev(self, bev):
-
-        bev[bev > 0.5] = 1
-        bev[bev <= 0.5] = 0
-        bev = bev.clone().detach().cpu().numpy()
-        bev = np.transpose(bev, (1, 2, 0))
-        bev = BirdViewProducer.as_rgb_with_indices(
-            bev, self.dataloader_train.dataset.bev_selected_channels
-        )
-        bev = cv2.cvtColor(bev, cv2.COLOR_BGR2RGB)
-
-        return bev
-
-    def _postprocess_mask(self, mask):
-
-        mask = mask.clone().detach().cpu().numpy()
-        mask = (((mask - mask.min()) / (mask.max() - mask.min())) * 255).astype(
-            np.uint8
-        )
-
-        mask = cv2.applyColorMap(mask, cv2.COLORMAP_JET)
-
-        return mask
-
-    def _postprocess_action(self, action):
-
-        action = action.clone().detach().cpu().numpy()
-        action = action * 50
-        action = action.astype(np.int32)
-
-        return action

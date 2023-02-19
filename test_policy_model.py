@@ -186,9 +186,10 @@ def main(config):
 
         logger.info("Tester finished")
 
-    except:
+    except Exception as e:
 
-        logger.info("Tester interrupted!")
+        logger.exception("Tester failed!", exc_info=e)
+
         logger.info("Closing the environment")
 
         run.log(

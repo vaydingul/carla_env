@@ -13,6 +13,7 @@ from carla_env.renderer.renderer import Renderer, COLORS
 from carla_env.bev import BirdViewProducer, BIRDVIEW_CROP_TYPE
 from carla_env.bev.mask import PixelDimensions
 from utils.carla_utils import create_multiple_actors_for_traffic_manager
+from utils.render_utils import postprocess_bev, postprocess_mask, postprocess_action
 
 # Import utils
 import time
@@ -164,7 +165,7 @@ class CarlaEnvironment(Environment):
         self.hero_actor_module = actor.ActorModule(
             config={
                 "actor": self.vehicle_module,
-                "hero": True, #self.random,
+                "hero": True,  # self.random,
                 "selected_spawn_point": start,
             },
             client=self.client,
@@ -362,7 +363,7 @@ class CarlaEnvironment(Environment):
                         f"{module.capitalize()}",
                         move_cursor="down",
                         font_color=COLORS.RED,
-                        font_thickness=2,
+                        font_thickness=1,
                     )
 
                     for (k, v) in render_dict.items():
@@ -380,16 +381,55 @@ class CarlaEnvironment(Environment):
                 f"ADDITIONAL ARGUMENTS",
                 move_cursor="down",
                 font_color=COLORS.PURPLE,
-                font_thickness=2,
+                font_thickness=1,
             )
 
             for (k, v) in kwargs.items():
 
+                if not isinstance(k, dict):
+
+                    self.renderer_module.render_text(
+                        f"{k}: {v}",
+                        move_cursor="down",
+                        font_color=COLORS.BLUE,
+                    )
+
+        if "cost_wiz" in kwargs.keys():
+            world_future_bev_predicted = kwargs["cost_wiz"][
+                "world_future_bev_predicted"
+            ]
+            mask_dict = kwargs["cost_wiz"]["mask_dict"]
+            bev_selected_channels = kwargs["cost_wiz"]["bev_selected_channels"]
+
+            _, S, _, H, W = world_future_bev_predicted.shape
+
+            cursor_master = self.renderer_module.get_cursor()
+
+            for (mask_key, mask_value) in mask_dict.items():
+
+                for s in range(S):
+
+                    bev = postprocess_bev(
+                        world_future_bev_predicted[0, s + 1],
+                        bev_selected_channels=bev_selected_channels,
+                    )
+
+                    mask = postprocess_bev(mask_value[0, s])
+
+                    self.renderer_module.render_overlay_image(
+                        bev, mask, 0.5, 0.5, move_cursor="right"
+                    )
+
+                    self.renderer_module.move_cursor("right", amount=(0, 10))
+
                 self.renderer_module.render_text(
-                    f"{k}: {v}",
+                    f"{mask_key}",
                     move_cursor="down",
-                    font_color=COLORS.BLUE,
+                    font_color=COLORS.WHITE,
                 )
+
+                self.renderer_module.move_cursor("point", amount=cursor_master)
+                self.renderer_module.move_cursor("down", amount=(H + 10, 0))
 
         self.renderer_module.show()
 
