@@ -212,7 +212,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path",
         type=str,
-        default="/home/volkan/Documents/Codes/carla_env/configs/policy_model/testing/config.yml",
+        default="/home/vaydingul/Documents/Codes/carla_env/configs/policy_model/testing/config.yml",
         help="Path to config file",
     )
 

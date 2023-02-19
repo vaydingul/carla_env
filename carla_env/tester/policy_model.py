@@ -218,6 +218,16 @@ class Tester:
                     frame_counter=self.frame_counter,
                     skip_counter=self.skip_counter,
                     repeat_counter=self.repeat_counter,
+                    **cost["cost_dict"],
+                    cost_viz={  # Some dummy arguments for visualization
+                        "world_future_bev_predicted": world_future_bev_predicted,
+                        "mask_dict": cost["mask_dict"],
+                        "bev_selected_channels": self.bev_selected_channels,
+                    },  # It looks like there is not any other way
+                    ego_viz={
+                        "ego_future_location_predicted": ego_future_location_predicted,
+                        "control_selected": control_selected,
+                    },
                 )
                 if self.log_video:
                     self.log_video_images_path.append(image_path)
