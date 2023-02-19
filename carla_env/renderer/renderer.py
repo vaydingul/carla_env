@@ -118,22 +118,21 @@ class Renderer:
 
         self._move_cursor(direction=move_cursor, amount=(TEXT_H + BASELINE, TEXT_W))
 
-    def render_point(self, pos=None, symbol=".", color=None, move_cursor="none"):
+    def render_point(self, pos=None, color=None, radius=5, thickness=-1, move_cursor="none"):
 
-        if color in None:
+        if color is None:
             color = self.font_color
 
         if pos is None:
             pos = tuple(reversed(self.cursor))
 
-        cv2.putText(
+
+        cv2.circle(
             self.canvas,
-            symbol,
             pos,
-            self.font,
-            self.font_scale,
+            radius,
             color,
-            self.font_thickness,
+            thickness,
         )
 
         self._move_cursor(direction=move_cursor, amount=(0, 0))

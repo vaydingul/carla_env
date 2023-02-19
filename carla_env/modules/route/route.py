@@ -81,6 +81,7 @@ class RouteModule(module.Module):
         self.render_dict["current_command"] = self.route[self.route_index][1] if self.route_index < self.route_length else None
         self.render_dict["route_index"] = self.route_index
         self.render_dict["route_length"] = self.route_length
+        self.render_dict["route"] = self.route
         return self.render_dict
 
     def close(self):

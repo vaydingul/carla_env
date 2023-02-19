@@ -37,13 +37,23 @@ def postprocess_action(action, val=50):
     return action
 
 
-def postprocess_location(location):
+def postprocess_location(location, ego_current_location = None):
 
     if isinstance(location, torch.Tensor):
+
+        location_ = np.zeros((3, ))
 
         location = location.clone().detach().cpu().numpy()
 
         location = np.reshape(location, (np.prod(location.shape),))
+
+        location_[:location.shape[0]] = location
+
+        if ego_current_location is not None:
+
+            location_[-1] = ego_current_location.z
+        
+        location  = location_
 
     elif isinstance(location, carla.Location):
 
@@ -69,7 +79,7 @@ def world_2_pixel(world_point, world_2_camera, height, width, fov):
     K[1, 2] = HEIGHTH / 2.0
 
     world_point_ = np.ones((4,))
-    world_point_[:3] = world_point
+    world_point_[:world_point.shape[0]] = world_point
 
     # Transform the points from world space to camera space.
     sensor_points = np.dot(world_2_camera, world_point_)
@@ -124,7 +134,10 @@ def world_2_pixel(world_point, world_2_camera, height, width, fov):
 
     if pixel_points.shape[0] == 0:
         return None
-    return pixel_points
+    # Convert to integer
+    pixel_points = pixel_points.astype(np.int32)
+
+    return pixel_points[0]
 
 
 def world_2_bev(loc, ego_loc, ego_yaw, image_height, image_width, pixels_per_meter=20):
@@ -160,5 +173,8 @@ def world_2_bev(loc, ego_loc, ego_yaw, image_height, image_width, pixels_per_met
         or bev_loc[1] >= image_height
     ):
         return None
+
+    # Convert to integer
+    bev_loc = bev_loc.astype(np.int32)
 
     return bev_loc

@@ -189,7 +189,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path",
         type=str,
-        default="/home/vaydingul/Documents/Codes/carla_env/configs/mpc/testing/config.yml",
+        default="/home/volkan/Documents/Codes/carla_env/configs/mpc/testing/config.yml",
         help="Path to config file",
     )
 
