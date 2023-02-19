@@ -462,9 +462,7 @@ class CarlaEnvironment(Environment):
 
                 for k in range(S):
 
-                    self.renderer_module.move_cursor(
-                        "point", amount=cursor_rgb_front_left_down
-                    )
+                    self.renderer_module.move_cursor("point", amount=(0, 0))
 
                     ego_future_location = postprocess_location(
                         ego_future_location_predicted[0, k]
