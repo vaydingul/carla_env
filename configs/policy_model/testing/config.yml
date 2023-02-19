@@ -11,7 +11,7 @@ environment:
   random: false
   action_repeat: 1
   fixed_delta_seconds: &dt 0.05
-  max_steps: 50
+  max_steps: 5000
   port: *port_var
   tm_port: *tm_port_var
   tasks:
@@ -25,8 +25,8 @@ environment:
     #   num_vehicles: [150, 300]
 
   renderer:
-    width: 1800
-    height: 900
+    width: 2800
+    height: 1200
     channel: 3
     background_color: [0, 0, 0]
     font_scale: 0.5
