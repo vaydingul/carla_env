@@ -160,7 +160,8 @@ class Tester:
                     "bev_selected_channels": self.bev_selected_channels,
                 },  # It looks like there is not any other way
                 ego_viz={
-                    "ego_future_location_predicted": ego_future_location_predicted
+                    "ego_future_location_predicted": ego_future_location_predicted,
+                    "control_selected": control_selected,
                 },
             )
 

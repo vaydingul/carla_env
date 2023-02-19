@@ -43,11 +43,11 @@ environment:
     #   num_vehicles: [150, 300]
 
   renderer:
-    width: 1800
+    width: 2800
     height: 900
     channel: 3
     background_color: [0, 0, 0]
-    font_scale: 0.5
+    font_scale: 0.3
     font_color: [255, 255, 255]
     font_thickness: 1
     cursor: [0, 0]

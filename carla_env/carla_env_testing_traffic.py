@@ -338,6 +338,8 @@ class CarlaEnvironment(Environment):
             (h_image, w_image, c_image) = rgb_image_front.shape
 
             self.renderer_module.render_image(rgb_image_front, move_cursor="down")
+            
+            cursor_rgb_front_left_down = self.renderer_module.get_cursor()
 
             if "bev_world" in self.data_dict.keys():
                 bev = self.data_dict["bev_world"]
@@ -346,6 +348,8 @@ class CarlaEnvironment(Environment):
                 (h_bev, w_bev, c_bev) = bev.shape
                 # Put image into canvas
                 self.renderer_module.render_image(bev, move_cursor="down")
+
+                cursor_bev_world_left_down = self.renderer_module.get_cursor()
 
             self.renderer_module.move_cursor(
                 direction="right-up", amount=(h_image + h_bev, w_image + 20)
@@ -373,6 +377,9 @@ class CarlaEnvironment(Environment):
                             move_cursor="down",
                             font_color=COLORS.YELLOW,
                         )
+
+
+                    
                     self.renderer_module.move_cursor(direction="down", amount=(10, 0))
 
         if bool(kwargs):
@@ -386,7 +393,7 @@ class CarlaEnvironment(Environment):
 
             for (k, v) in kwargs.items():
 
-                if not isinstance(k, dict):
+                if not isinstance(v, dict):
 
                     self.renderer_module.render_text(
                         f"{k}: {v}",
@@ -394,12 +401,12 @@ class CarlaEnvironment(Environment):
                         font_color=COLORS.BLUE,
                     )
 
-        if "cost_wiz" in kwargs.keys():
-            world_future_bev_predicted = kwargs["cost_wiz"][
+        if "cost_viz" in kwargs.keys():
+            world_future_bev_predicted = kwargs["cost_viz"][
                 "world_future_bev_predicted"
             ]
-            mask_dict = kwargs["cost_wiz"]["mask_dict"]
-            bev_selected_channels = kwargs["cost_wiz"]["bev_selected_channels"]
+            mask_dict = kwargs["cost_viz"]["mask_dict"]
+            bev_selected_channels = kwargs["cost_viz"]["bev_selected_channels"]
 
             _, S, _, H, W = world_future_bev_predicted.shape
 
@@ -407,14 +414,14 @@ class CarlaEnvironment(Environment):
 
             for (mask_key, mask_value) in mask_dict.items():
 
-                for s in range(S):
+                for s in range(S - 1):
 
                     bev = postprocess_bev(
                         world_future_bev_predicted[0, s + 1],
                         bev_selected_channels=bev_selected_channels,
                     )
 
-                    mask = postprocess_bev(mask_value[0, s])
+                    mask = postprocess_mask(mask_value[0, s])
 
                     self.renderer_module.render_overlay_image(
                         bev, mask, 0.5, 0.5, move_cursor="right"
@@ -430,6 +437,14 @@ class CarlaEnvironment(Environment):
 
                 self.renderer_module.move_cursor("point", amount=cursor_master)
                 self.renderer_module.move_cursor("down", amount=(H + 10, 0))
+
+        if "ego_viz" in kwargs.keys():
+            ego_viz = kwargs["ego_viz"]
+            ego_future_location_predicted = ego_viz["ego_future_location_predicted"]
+
+            
+
+
 
         self.renderer_module.show()
 
