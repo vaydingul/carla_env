@@ -164,7 +164,7 @@ class CarlaEnvironment(Environment):
         self.hero_actor_module = actor.ActorModule(
             config={
                 "actor": self.vehicle_module,
-                "hero": self.random,
+                "hero": True, #self.random,
                 "selected_spawn_point": start,
             },
             client=self.client,

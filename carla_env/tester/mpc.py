@@ -122,6 +122,9 @@ class Tester:
                 ego_future_action_predicted = out["action"]
                 cost = out["cost"]
 
+
+            print(ego_future_action_predicted)
+            time.sleep(0.1)
             # Fetch predicted action
             control_selected = ego_future_action_predicted[0][self.skip_counter]
 
@@ -158,6 +161,8 @@ class Tester:
 
             if self.log_video:
                 self.log_video_images_path.append(image_path)
+
+            self._reset()
 
             # Update counters
             self.frame_counter += 1
@@ -218,8 +223,8 @@ class Tester:
             ego_previous_yaw[..., 0] = (
                 data["ego"]["rotation_array"][-1] * torch.pi / 180
             )
-            ego_previous_speed[..., 0] = torch.norm(
-                torch.Tensor(data["ego"]["velocity_array"])
+            ego_previous_speed[..., 0] = (
+                torch.norm(torch.Tensor(data["ego"]["velocity_array"])) + 1e-2
             )
 
             ego_previous_location.requires_grad_(True)
@@ -454,16 +459,17 @@ class Tester:
                         f"Invalid gradient clip type {self.gradient_clip_type}"
                     )
 
-            self.optimizer.step()
+            print(self.action.grad.sum())
 
-            return {
-                "action": self.action,
-                "cost": cost,
-                "ego_future_location_predicted": ego_future_location_predicted,
-                "ego_future_yaw_predicted": ego_future_yaw_predicted,
-                "ego_future_speed_predicted": ego_future_speed_predicted,
-                "world_future_bev_predicted": world_future_bev_predicted,
-            }
+            self.optimizer.step()
+        return {
+            "action": self.action,
+            "cost": cost,
+            "ego_future_location_predicted": ego_future_location_predicted,
+            "ego_future_yaw_predicted": ego_future_yaw_predicted,
+            "ego_future_speed_predicted": ego_future_speed_predicted,
+            "world_future_bev_predicted": world_future_bev_predicted,
+        }
 
     def _reset(self, initial_guess=None):
 

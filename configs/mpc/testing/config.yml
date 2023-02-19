@@ -126,14 +126,14 @@ tester:
   cost_weight:
     road_cost: 0.0
     road_on_cost: 0.0
-    road_off_cost: 0.1
-    road_red_yellow_cost: 0.1
-    road_green_cost: -0.1
-    vehicle_cost: 0.1
-    lane_cost: 0.1
-    offroad_cost: 0.1
-    acceleration_jerk: 1.0
-    steer_jerk: 1.0
+    road_off_cost: 0.0
+    road_red_yellow_cost: 0.0
+    road_green_cost: -0.0
+    vehicle_cost: 0.0
+    lane_cost: 0.0
+    offroad_cost: 0.0
+    acceleration_jerk: -0.0
+    steer_jerk: -0.0
     ego_location_l1: 10.0
     ego_yaw_l1: 10.0
     ego_speed_l1: 0.0
