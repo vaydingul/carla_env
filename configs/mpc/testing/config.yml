@@ -105,13 +105,13 @@ environment:
 
   route:
     config:
-      sampling_resolution: 30
+      sampling_resolution: 0.5
       debug: true
 
 tester:
   batch_size: 1
   action_size: 2
-  num_optimization_iteration: 20
+  num_optimization_iteration: 40
   init_action: "zeros"
   skip_frames: 1
   repeat_frames: 1
@@ -132,11 +132,11 @@ tester:
     vehicle_cost: 0.0
     lane_cost: 0.0
     offroad_cost: 0.0
-    acceleration_jerk: -0.0
-    steer_jerk: -0.0
-    ego_location_l1: 10.0
+    acceleration_jerk: 1.0
+    steer_jerk: 10.0
+    ego_location_l1: 100.0
     ego_yaw_l1: 10.0
-    ego_speed_l1: 0.0
+    ego_speed_l1: 100.0
 
 # MPC is a kind of RL training.
 training:
