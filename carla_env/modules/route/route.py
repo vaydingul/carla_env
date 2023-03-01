@@ -29,12 +29,12 @@ class RouteModule(module.Module):
         self.world = self.client.get_world()
 
         self.grp = GlobalRoutePlanner(
-            self.world.get_map(),
-            self.config["sampling_resolution"])
+            self.world.get_map(), self.config["sampling_resolution"]
+        )
 
         self.route = self.grp.trace_route(
-            self.config["start"].location,
-            self.config["end"].location)
+            self.config["start"].location, self.config["end"].location
+        )
 
         self.route = self.route[1:]
         self.route_length = len(self.route)
@@ -55,9 +55,10 @@ class RouteModule(module.Module):
         if self.route_index < self.route_length - 1:
             # self.config["sampling_resolution"]:
             distance = _get_distance_between_waypoints(
-                self.route[self.route_index][0], current_location)
+                self.route[self.route_index][0], current_location
+            )
 
-            if distance < 10:
+            if distance < self.config["distance_threshold"]:
                 self.route_index += 1
 
             return self.route[self.route_index]
@@ -76,9 +77,16 @@ class RouteModule(module.Module):
 
     def render(self):
         """Render the vehicle manager"""
-        self.render_dict["current_waypoint"] = self.route[self.route_index][
-            0].transform.location if self.route_index < self.route_length else None
-        self.render_dict["current_command"] = self.route[self.route_index][1] if self.route_index < self.route_length else None
+        self.render_dict["current_waypoint"] = (
+            self.route[self.route_index][0].transform.location
+            if self.route_index < self.route_length
+            else None
+        )
+        self.render_dict["current_command"] = (
+            self.route[self.route_index][1]
+            if self.route_index < self.route_length
+            else None
+        )
         self.render_dict["route_index"] = self.route_index
         self.render_dict["route_length"] = self.route_length
         self.render_dict["route"] = self.route
@@ -102,8 +110,11 @@ class RouteModule(module.Module):
 
     def _set_default_config(self):
         """Set the default config of the vehicle"""
-        self.config = {"sampling_resolution": 1,
-                       "debug": False}
+        self.config = {
+            "sampling_resolution": 1,
+            "debug": False,
+            "distance_threshold": 10,
+        }
 
     def _visualize_route(self):
         """Visualize the route"""
@@ -115,17 +126,20 @@ class RouteModule(module.Module):
             if ix <= 10:
 
                 self.world.debug.draw_string(
-                    waypoint.transform.location, 'o', color=RED, life_time=10000)
+                    waypoint.transform.location, "o", color=RED, life_time=10000
+                )
 
             elif ix >= self.route_length - 10:
 
                 self.world.debug.draw_string(
-                    waypoint.transform.location, 'o', color=GREEN, life_time=10000)
+                    waypoint.transform.location, "o", color=GREEN, life_time=10000
+                )
 
             else:
 
                 self.world.debug.draw_string(
-                    waypoint.transform.location, 'o', color=BLUE, life_time=10000)
+                    waypoint.transform.location, "o", color=BLUE, life_time=10000
+                )
 
 
 def _get_distance_between_waypoints(waypoint1, waypoint2):
@@ -133,8 +147,7 @@ def _get_distance_between_waypoints(waypoint1, waypoint2):
     if isinstance(waypoint2, carla.Transform):
         return waypoint1.transform.location.distance(waypoint2.location)
     else:
-        return waypoint1.transform.location.distance(
-            waypoint2.transform.location)
+        return waypoint1.transform.location.distance(waypoint2.transform.location)
 
     # if isinstance(waypoint2, carla.Transform):
     #     return abs(waypoint2.location.x - waypoint1.transform.location.x) + \

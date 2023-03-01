@@ -9,6 +9,7 @@ from utils.train_utils import organize_device
 class Cost(nn.Module):
     def __init__(
         self,
+        device,
         config,
     ):
         super(Cost, self).__init__()
@@ -21,14 +22,14 @@ class Cost(nn.Module):
             nx=self.image_width,
             ny=self.image_height,
             pixels_per_meter=self.pixels_per_meter,
-            device=organize_device(self.device),
+            device=organize_device(device),
         )
 
     def build_from_config(self):
 
         self.image_width = self.config["image_width"]
         self.image_height = self.config["image_height"]
-        self.device = self.config["device"]
+
         self.reduction = self.config["reduction"]
         self.decay_factor = self.config["decay_factor"]
         self.vehicle_width = self.config["vehicle_width"]
@@ -96,8 +97,8 @@ class Cost(nn.Module):
                 self.decay_factor,
                 torch.arange(0, speed_.shape[1], device=speed_.device).float(),
             )
-            .repeat(speed_.shape[0], speed_.shape[1], 1, 1)
-            .permute(0, 3, 1, 2)
+            .reshape(1, -1, 1, 1)
+            .repeat(speed_.shape[0], 1, 1, 1)
         )
 
         # road_cost_tensor = road_channel * mask_car * decay_weight
@@ -203,8 +204,8 @@ class Cost(nn.Module):
             + self.light_longitudinal_offset
         )
 
-        dy = dy.view(-1, 1, 1)
-        dy_light = dy_light.view(-1, 1, 1)
+        dy = dy.view(*dy.shape, 1, 1)
+        dy_light = dy_light.view(*dy_light.shape, 1, 1)
 
         (mask_car, mask_side) = calculate_mask(
             aligned_coordinate_mask,
@@ -230,7 +231,6 @@ class Cost(nn.Module):
         self.config = {
             "image_width": 192,
             "image_height": 192,
-            "device": "cpu",
             "reduction": "mean",
             "mask_alpha": 1.1,
             "decay_factor": 0.97,

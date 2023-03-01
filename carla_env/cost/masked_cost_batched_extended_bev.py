@@ -22,7 +22,7 @@ class Cost(nn.Module):
             nx=self.image_width,
             ny=self.image_height,
             pixels_per_meter=self.pixels_per_meter,
-            device=device,
+            device=organize_device(device),
         )
 
     def build_from_config(self):

@@ -107,6 +107,7 @@ environment:
     config:
       sampling_resolution: 0.5
       debug: true
+      distance_threshold: 10
 
 tester:
   batch_size: 1
@@ -136,7 +137,7 @@ tester:
     steer_jerk: 10.0
     ego_location_l1: 100.0
     ego_yaw_l1: 10.0
-    ego_speed_l1: 100.0
+    ego_speed_l1: 0.0
 
 # MPC is a kind of RL training.
 training:
@@ -153,7 +154,7 @@ training:
 
 wandb_ego_forward_model:
   link: vaydingul/mbl-refactored/16ruxyiq
-  checkpoint_number: 99
+  checkpoint_number: 49
 
 # It can be None.
 # In this case, last BEV tensor should be copied
