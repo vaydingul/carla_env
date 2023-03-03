@@ -260,7 +260,7 @@ class Tester:
                 data["navigation"]["waypoint"].transform.rotation.yaw * torch.pi / 180
             )
             
-            target_speed[..., 0] = 5
+            # target_speed[..., 0] = 5
             
             target_location.requires_grad_(True)
             target_yaw.requires_grad_(True)

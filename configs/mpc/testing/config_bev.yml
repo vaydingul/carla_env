@@ -134,9 +134,9 @@ tester:
     offroad_cost: 0.0
     acceleration_jerk: 1.0
     steer_jerk: 1.0
-    ego_location_l1: 1000.0
+    ego_location_l1: 10.0
     ego_yaw_l1: 0.0
-    ego_speed_l1: 10.0
+    ego_speed_l1: 0.0
 
 # MPC is a kind of RL training.
 training:
@@ -148,7 +148,7 @@ training:
   optimizer:
     type: "Adam"
     config:
-      lr: 0.01
+      lr: 0.1
       # weight_decay: 0.0001
 
 wandb_ego_forward_model:
