@@ -133,9 +133,9 @@ tester:
     yellow_light_cost: 0.0
     offroad_cost: 0.0
     acceleration_jerk: 1.0
-    steer_jerk: 1.0
+    steer_jerk: 10.0
     ego_location_l1: 10.0
-    ego_yaw_l1: 0.0
+    ego_yaw_l1: 1.0
     ego_speed_l1: 0.0
 
 # MPC is a kind of RL training.
@@ -148,12 +148,12 @@ training:
   optimizer:
     type: "Adam"
     config:
-      lr: 0.25
+      lr: 0.05
       # weight_decay: 0.0001
 
 wandb_ego_forward_model:
-  link: vaydingul/mbl-refactored/16ruxyiq
-  checkpoint_number: 49
+  link: vaydingul/mbl-refactored/m7unelup #vaydingul/mbl-refactored/16ruxyiq
+  checkpoint_number: 99 #49
 
 # It can be None.
 # In this case, last BEV tensor should be copied

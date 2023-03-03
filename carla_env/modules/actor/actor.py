@@ -41,10 +41,12 @@ class ActorModule(module.Module):
             else:
 
                 selected_spawn_point = np.random.choice(
-                    self.world.get_map().get_spawn_points())
+                    self.world.get_map().get_spawn_points()
+                )
 
             self.actor = self.world.try_spawn_actor(
-                self.vehicle.blueprint, selected_spawn_point)
+                self.vehicle.blueprint, selected_spawn_point
+            )
 
             self.spawned = self.actor is not None
 
@@ -58,18 +60,18 @@ class ActorModule(module.Module):
             if isinstance(action, list):
 
                 vehicle_control = carla.VehicleControl(
-                    throttle=float(
-                        action[0]), steer=float(
-                        action[1]), brake=float(
-                        action[2]))
+                    throttle=float(action[0]),
+                    steer=float(action[1]),
+                    brake=float(action[2]),
+                )
                 self.actor.apply_control(vehicle_control)
 
     def _stop(self):
         """Stop the actor manager"""
         if self.spawned and self.actor.is_alive:
-            
+
             self.actor.destroy()
-            self.spawned=False
+            self.spawned = False
             for sensor in self.sensor_dict.values():
                 sensor.close()
 
@@ -82,6 +84,7 @@ class ActorModule(module.Module):
         """Render the actor manager"""
         if self.spawned:
             self.render_dict["velocity"] = self.actor.get_velocity()
+            self.render_dict["speed"] = self.actor.get_velocity().length()
             self.render_dict["location"] = self.actor.get_location()
             self.render_dict["rotation"] = self.actor.get_transform().rotation
             self.render_dict["acceleration"] = self.actor.get_acceleration()
@@ -117,5 +120,7 @@ class ActorModule(module.Module):
 
     def _set_default_config(self):
         """Set the default config of actor manager"""
-        self.config = {"vehicle": vehicle.VehicleModule(None, self.client),
-                       "hero": True}
+        self.config = {
+            "vehicle": vehicle.VehicleModule(None, self.client),
+            "hero": True,
+        }

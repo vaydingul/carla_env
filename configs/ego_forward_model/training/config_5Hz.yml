@@ -6,12 +6,12 @@ num_time_step_previous: &previous 1
 num_time_step_future: &future 10
 sequence_length: &sequence_length 11
 read_keys: &read_keys ["ego"]
-dilation: &dilation 1
+dilation: &dilation 4
 num_workers: &num_workers 8
 
 # Dataset related parameters for training
 dataset_train:
-  data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_data_20Hz_action_repeat_1/train/"
+  data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_data_20Hz_action_repeat_4/train/"
   sequence_length: *sequence_length
   read_keys: *read_keys
   dilation: *dilation
@@ -24,14 +24,14 @@ dataloader_train:
 
 # Dataset related parameters for validation
 dataset_val:
-  data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_data_20Hz_action_repeat_1/val/"
+  data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_data_20Hz_action_repeat_4/val/"
   sequence_length: *sequence_length
   read_keys: *read_keys
   dilation: *dilation
 
 # Dataloader related parameters for validation
 dataloader_val:
-  batch_size: 5000
+  batch_size: 1000
   shuffle: false
   num_workers: *num_workers
 
@@ -54,7 +54,7 @@ training:
 ego_forward_model:
   type: "KinematicBicycleModel"
   config:
-    dt: 0.05
+    dt: 0.2
 
 # Wandb related parameters
 wandb:
@@ -63,6 +63,6 @@ wandb:
   resume_checkpoint_number: 0
   project: "mbl-refactored"
   group: "train-ego-forward-model-multi-step-20Hz"
-  name: "1-10-20Hz-lr_changed"
+  name: "1-10-5Hz-new_dataset"
   id: ~
-  notes: "Different learning rate for ego forward model with 20Hz data and 10 time steps in the future. It can work with every model that works in 20Hz."
+  notes: "Ego forward model with 5Hz data and 10 time steps in the future. It can work with every model that works in 5Hz. Dataset is consisted of action repeat 4."

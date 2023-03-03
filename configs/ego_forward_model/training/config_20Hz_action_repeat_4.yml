@@ -4,56 +4,57 @@ checkpoint_path: "pretrained_models/"
 log_path: ~ #"/home/volkan/Documents/Codes/carla_env/logs/"
 num_time_step_previous: &previous 1
 num_time_step_future: &future 10
+sequence_length: &sequence_length 11
+read_keys: &read_keys ["ego"]
+dilation: &dilation 1
+num_workers: &num_workers 8
 
 # Dataset related parameters for training
 dataset_train:
-  data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_train_data_10Hz"
-  sequence_length: 11
-  read_keys:
-    - "ego"
-  dilation: 2
+  data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_data_20Hz_action_repeat_4/train/"
+  sequence_length: *sequence_length
+  read_keys: *read_keys
+  dilation: *dilation
 
 # Dataloader related parameters for training
 dataloader_train:
-  batch_size: 100
+  batch_size: 5000
   shuffle: true
-  num_workers: 8
+  num_workers: *num_workers
 
 # Dataset related parameters for validation
 dataset_val:
-  data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_val_data_10Hz"
-  sequence_length: 11
-  read_keys:
-    - "ego"
-  dilation: 2
+  data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_data_20Hz_action_repeat_4/val/"
+  sequence_length: *sequence_length
+  read_keys: *read_keys
+  dilation: *dilation
 
 # Dataloader related parameters for validation
 dataloader_val:
-  batch_size: 200
+  batch_size: 1000
   shuffle: false
-  num_workers: 8
+  num_workers: *num_workers
 
 # Training related parameters
 training:
-  learning_rate: 0.001
   num_epochs: 1000
   optimizer:
     type: "Adam"
     config:
-      lr: 0.0001
-      weight_decay: 0.0001
-
+      lr: 0.01
+      # weight_decay: 0.0
   loss:
     criterion: "L1Loss"
     config:
       reduction: "mean"
+
   save_interval: 50
 
 # Ego forward model related parameters
 ego_forward_model:
   type: "KinematicBicycleModel"
   config:
-    dt: 0.2
+    dt: 0.05
 
 # Wandb related parameters
 wandb:
@@ -61,7 +62,7 @@ wandb:
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"
-  group: "train-ego-forward-model-multi-step-5Hz"
-  name: "1-10-5Hz"
+  group: "train-ego-forward-model-multi-step-20Hz"
+  name: "1-10-20Hz-new_dataset-action_repeat_4"
   id: ~
-  notes: "Ego forward model with 5Hz data and 10 time steps in the future. It can work with every model that works in 5Hz."
+  notes: "Ego forward model with 20Hz data and 10 time steps in the future. It can work with every model that works in 20Hz. Dataset is consisted of action repeat 4."

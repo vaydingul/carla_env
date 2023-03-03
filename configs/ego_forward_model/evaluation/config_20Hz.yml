@@ -2,8 +2,8 @@ experiment_type: "eval_ego_forward_model"
 seed: 42
 log_path: ~ #"/home/volkan/Documents/Codes/carla_env/logs/"
 num_time_step_previous: &previous 1
-num_time_step_future: &future 5
-sequence_length: &sequence_length 6
+num_time_step_future: &future 10
+sequence_length: &sequence_length 11
 read_keys: &read_keys ["ego"]
 dilation: &dilation 1
 
@@ -18,7 +18,7 @@ dataset_test:
 
 # Dataloader related parameters for training
 dataloader_test:
-  batch_size: 100
+  batch_size: 10
   shuffle: false
   num_workers: 0
 
@@ -32,14 +32,14 @@ evaluation:
 
 # Wandb related parameters
 wandb:
-  link: "vaydingul/mbl-refactored/16ruxyiq"
-  checkpoint_number: 49
+  link: "vaydingul/mbl-refactored/m7unelup"
+  checkpoint_number: 99
 
   enable: true
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"
   group: "eval-ego-forward-model-multi-step-20Hz"
-  name: "1-5-20Hz"
+  name: "1-10-20Hz"
   id: ~
   notes: "20 Hz ego forward model evaluation plots"

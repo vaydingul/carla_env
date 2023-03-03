@@ -104,7 +104,7 @@ class Trainer(object):
     def shared_step(self, data, i, mode="train"):
 
         ego_previous_location = data["ego"]["location_array"][
-            :, self.num_time_step_previous - 1, 0:2
+            :, self.num_time_step_previous - 1 : self.num_time_step_previous, 0:2
         ].to(self.device)
         ego_future_location = data["ego"]["location_array"][
             :,
@@ -115,9 +115,9 @@ class Trainer(object):
         ego_future_location_predicted_list = []
 
         ego_previous_yaw = torch.deg2rad(
-            data["ego"]["rotation_array"][:, self.num_time_step_previous - 1, 2:].to(
-                self.device
-            )
+            data["ego"]["rotation_array"][
+                :, self.num_time_step_previous - 1 : self.num_time_step_previous, 2:
+            ].to(self.device)
         )
         ego_future_yaw = torch.deg2rad(
             data["ego"]["rotation_array"][
@@ -130,7 +130,9 @@ class Trainer(object):
         ego_future_yaw_predicted_list = []
 
         ego_previous_speed = (
-            data["ego"]["velocity_array"][:, self.num_time_step_previous - 1]
+            data["ego"]["velocity_array"][
+                :, self.num_time_step_previous - 1 : self.num_time_step_previous
+            ]
             .norm(2, -1, keepdim=True)
             .to(self.device)
         )
@@ -161,7 +163,7 @@ class Trainer(object):
 
         for t in range(self.num_time_step_future):
 
-            control_ = ego_action_2[:, t]
+            control_ = ego_action_2[:, t : t + 1]
 
             ego_state_next = self.model(ego_state_previous, control_)
 
@@ -169,11 +171,11 @@ class Trainer(object):
             ego_future_yaw_predicted_list.append(ego_state_next["yaw"])
             ego_future_speed_predicted_list.append(ego_state_next["speed"])
 
-        ego_future_location_predicted = torch.stack(
+        ego_future_location_predicted = torch.cat(
             ego_future_location_predicted_list, dim=1
         )
-        ego_future_yaw_predicted = torch.stack(ego_future_yaw_predicted_list, dim=1)
-        ego_future_speed_predicted = torch.stack(ego_future_speed_predicted_list, dim=1)
+        ego_future_yaw_predicted = torch.cat(ego_future_yaw_predicted_list, dim=1)
+        ego_future_speed_predicted = torch.cat(ego_future_speed_predicted_list, dim=1)
 
         loss_location = self.loss_criterion(
             ego_future_location, ego_future_location_predicted

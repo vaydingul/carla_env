@@ -185,7 +185,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path",
         type=str,
-        default="/home/volkan/Documents/Codes/carla_env/configs/ego_forward_model/training/config.yml",
+        default="/home/volkan/Documents/Codes/carla_env/configs/ego_forward_model/training/config_lr.yml",
     )
     args = parser.parse_args()
 

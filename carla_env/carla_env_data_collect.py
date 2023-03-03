@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class RandomActionDesigner(object):
     def __init__(
         self,
-        brake_probability=0.1,
+        brake_probability=0.03,
         max_throttle=1.0,
         max_steering_angle=1.0,
         action_repeat=1,
@@ -350,9 +350,10 @@ class CarlaEnvironment(Environment):
             if isinstance(v, Module):
                 self.render_dict[k] = v.render()
             elif isinstance(v, list):
-                if isinstance(v[0], Module):
-                    for item in v:
-                        self.render_dict[k] = item.render()
+                if len(v) > 0:
+                    if isinstance(v[0], Module):
+                        for item in v:
+                            self.render_dict[k] = item.render()
 
         # Put all of the rgb cameras as a 2x3 grid
         if "rgb_front" in self.data_dict.keys():

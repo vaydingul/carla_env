@@ -220,9 +220,9 @@ class Tester:
         processed_data = {}
 
         if "ego" in data.keys():
-            ego_previous_location = torch.zeros((1, 2), device=self.device)
-            ego_previous_yaw = torch.zeros((1, 1), device=self.device)
-            ego_previous_speed = torch.zeros((1, 1), device=self.device)
+            ego_previous_location = torch.zeros((1, 1, 2), device=self.device)
+            ego_previous_yaw = torch.zeros((1, 1, 1), device=self.device)
+            ego_previous_speed = torch.zeros((1, 1, 1), device=self.device)
 
             ego_previous_location[..., 0] = data["ego"]["location_array"][0]
             ego_previous_location[..., 1] = data["ego"]["location_array"][1]
@@ -246,9 +246,9 @@ class Tester:
             processed_data["ego_previous"] = ego_previous
 
         if "navigation" in data.keys():
-            target_location = torch.zeros((1, 2), device=self.device)
-            target_yaw = torch.zeros((1, 1), device=self.device)
-            target_speed = torch.zeros((1, 1), device=self.device)
+            target_location = torch.zeros((1, 1, 2), device=self.device)
+            target_yaw = torch.zeros((1, 1, 1), device=self.device)
+            target_speed = torch.zeros((1, 1, 1), device=self.device)
 
             target_location[..., 0] = data["navigation"][
                 "waypoint"
@@ -259,9 +259,9 @@ class Tester:
             target_yaw[..., 0] = (
                 data["navigation"]["waypoint"].transform.rotation.yaw * torch.pi / 180
             )
-            
+
             # target_speed[..., 0] = 5
-            
+
             target_location.requires_grad_(True)
             target_yaw.requires_grad_(True)
             target_speed.requires_grad_(True)

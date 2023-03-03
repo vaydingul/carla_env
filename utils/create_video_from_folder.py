@@ -27,7 +27,7 @@ def main(fps, scale, path, interval):
     images = [img for img in os.listdir(path) if img.endswith(".png")]
 
     # Sort the images by name index
-    images.sort(key=lambda x: int(x[:-4]))
+    images.sort(key=lambda x: int(x[:-4].split("_")[-1]))
 
     images = [os.path.join(path, img) for img in images]
 
@@ -46,4 +46,4 @@ if __name__ == "__main__":
     arg.add_argument("--scale", type=float, default=1)
     arg.add_argument("--interval", type=str, default="")
     args = arg.parse_args()
-    main(args.fps, args.path, args.interval)
+    main(args.fps, args.scale, args.path, args.interval)

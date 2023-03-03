@@ -1,13 +1,13 @@
 experiment_type: collect_data_random
 log_path: ~
-data_save_path: data/kinematic_model_data_20Hz_action_repeat_1/
+data_save_path: data/kinematic_model_data_20Hz_action_repeat_4/
 num_episodes: 120
 port: &port_var 2000
 tm_port: &tm_port_var 8000
 environment:
   name: carla_env_data_collect
   random: true
-  action_repeat: 1
+  action_repeat: 4
   fixed_delta_seconds: &dt 0.05
   port: *port_var
   tm_port: *tm_port_var
@@ -41,32 +41,32 @@ environment:
     save_path: figures/env_debug/data_collect_random/
 
   sensors:
-    - id: rgb_front
-      type: RGBSensor
-      config:
-        x: 1.5
-        y: 0.0
-        z: 2.4
-        roll: 0.0
-        pitch: 0.0
-        yaw: 0.0
-        width: 900
-        height: 256
-        fov: 100
+    # - id: rgb_front
+    #   type: RGBSensor
+    #   config:
+    #     x: 1.5
+    #     y: 0.0
+    #     z: 2.4
+    #     roll: 0.0
+    #     pitch: 0.0
+    #     yaw: 0.0
+    #     width: 900
+    #     height: 256
+    #     fov: 100
 
     - id: ego
       type: VehicleSensor
       config: {}
 
-    - id: occ
-      type: OccupancySensor
-      config:
-        threshold: 3
-        number_of_radars: 8
-        horizontal_fov: 5
-        vertical_fov: 5
-        range: 10
-        points_per_second: 100
+    # - id: occ
+    #   type: OccupancySensor
+    #   config:
+    #     threshold: 3
+    #     number_of_radars: 8
+    #     horizontal_fov: 5
+    #     vertical_fov: 5
+    #     range: 10
+    #     points_per_second: 100
 
     #! It is a must. NEVER DISCARD IT.
     - id: col
@@ -74,29 +74,30 @@ environment:
       config: {}
 
   bevs:
-    - id: "bev_world"
-      config:
-        width: 192
-        height: 192
-        render_lanes_on_junctions: false
-        pixels_per_meter: 5
-        crop_type: "FRONT_AREA_ONLY"
-        road_on_off: true
-        road_light: true
-        light_circle: true
-        lane_marking_thickness: 2
+    []
+    # - id: "bev_world"
+    #   config:
+    #     width: 192
+    #     height: 192
+    #     render_lanes_on_junctions: false
+    #     pixels_per_meter: 5
+    #     crop_type: "FRONT_AREA_ONLY"
+    #     road_on_off: true
+    #     road_light: true
+    #     light_circle: true
+    #     lane_marking_thickness: 2
 
 writer:
   keys:
-    - key: rgb_front
-      value: rgb_front
-      type: rgb_image
+    # - key: rgb_front
+    #   value: rgb_front
+    #   type: rgb_image
     - key: ego
       value: ego
       type: json
-    - key: occ
-      value: occ
-      type: json
+    # - key: occ
+    #   value: occ
+    #   type: json
 
 wandb:
   enable: true
@@ -104,6 +105,6 @@ wandb:
   resume_checkpoint_number: 0
   project: "mbl-refactored"
   group: "collect-data"
-  name: "20Hz-1-repeat-random"
-  id: "2q39m01i"
-  notes: "A data collected in 20Hz with random actions."
+  name: "20Hz-4-repeat-random"
+  id: 3f19qfdv
+  notes: "A data collected in 20Hz (4 action repeat) with random actions."
