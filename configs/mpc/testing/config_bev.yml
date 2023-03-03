@@ -4,7 +4,7 @@ seed: 333
 port: &port_var 2000
 tm_port: &tm_port_var 8000
 num_time_step_previous: &previous 1
-num_time_step_future: &future 5
+num_time_step_future: &future 10
 
 cost:
   type: "bev"
@@ -112,7 +112,7 @@ environment:
 tester:
   batch_size: 1
   action_size: 2
-  num_optimization_iteration: 20
+  num_optimization_iteration: 40
   init_action: "zeros"
   skip_frames: 1
   repeat_frames: 1

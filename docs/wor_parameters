@@ -1,0 +1,9 @@
+OrderedDict(
+    [
+        ("front_wb", tensor(-0.0908, device="cuda:0")),
+        ("rear_wb", tensor(1.4178, device="cuda:0")),
+        ("steer_gain", tensor(0.3685, device="cuda:0")),
+        ("brake_accel", tensor([-4.9524], device="cuda:0")),
+        ("throt_accel.0.weight", tensor([[0.5634]], device="cuda:0")),
+    ]
+)
