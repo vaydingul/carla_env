@@ -2,6 +2,7 @@ from carla_env.modules import module
 import carla
 import logging
 import time
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,9 +19,8 @@ class TrafficManagerModule(module.Module):
 
         self.client = client
         self.world = self.get_world()
-        self.traffic_manager = self.client.get_trafficmanager(
-            self.config["port"])
-    
+        self.traffic_manager = self.client.get_trafficmanager(self.config["port"])
+
         self.render_dict = {}
 
         self.reset()
@@ -32,8 +32,7 @@ class TrafficManagerModule(module.Module):
     def reset(self):
         """Reset the client"""
 
-        self.traffic_manager.set_synchronous_mode(
-            self.config["synchronous_mode"])
+        self.traffic_manager.set_synchronous_mode(self.config["synchronous_mode"])
         # self.traffic_manager.set_hybrid_physics_mode(True)
         # self.traffic_manager.set_hybrid_physics_radius(200)
 
@@ -43,7 +42,10 @@ class TrafficManagerModule(module.Module):
 
     def render(self):
         """Render the client"""
-        pass
+        self.render_dict["port"] = self.traffic_manager.get_port()
+        self.render_dict["num_vehicles"] = len(self.config["vehicle_list"])
+        self.render_dict["num_walkers"] = len(self.config["walker_list"])
+        return self.render_dict
 
     def close(self):
         """Close the client"""

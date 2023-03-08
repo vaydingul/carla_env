@@ -39,7 +39,7 @@ wandb:
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"
-  group: "eval-ego-forward-model-multi-step-20Hz"
+  group: "eval-ego-forward-model-multi-step"
   name: "1-10-5Hz"
   id: ~
   notes: "5 Hz ego forward model evaluation plots"

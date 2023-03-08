@@ -230,7 +230,7 @@ class Tester:
                 data["ego"]["rotation_array"][-1] * torch.pi / 180
             )
             ego_previous_speed[..., 0] = (
-                torch.norm(torch.Tensor(data["ego"]["velocity_array"])) + 1e-2
+                torch.norm(torch.Tensor(data["ego"]["velocity_array"]))
             )
 
             ego_previous_location.requires_grad_(True)

@@ -2,6 +2,7 @@ from carla_env.modules import module
 import carla
 import logging
 import time
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,8 +30,7 @@ class ClientModule(module.Module):
 
         while not self.is_connected:
             try:
-                self.client = carla.Client(
-                    self.config["host"], self.config["port"])
+                self.client = carla.Client(self.config["host"], self.config["port"])
                 self.client.set_timeout(self.config["timeout"])
                 self.is_connected = True
             except RuntimeError:
@@ -71,7 +71,8 @@ class ClientModule(module.Module):
         if self.is_connected:
             self.render_dict["is_connected"] = self.is_connected
             self.render_dict["World"] = self.config["world"]
-
+            self.render_dict["port"] = self.config["port"]
+            self.render_dict["fixed_delta_seconds"] = self.config["fixed_delta_seconds"]
         return self.render_dict
 
     def close(self):
@@ -106,7 +107,7 @@ class ClientModule(module.Module):
             "timeout": 40.0,
             "world": "Town02",
             "synchronous_mode": True,
-            "fixed_delta_seconds": 1 / 20
+            "fixed_delta_seconds": 1 / 20,
         }
 
     @property

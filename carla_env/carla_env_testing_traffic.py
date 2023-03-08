@@ -157,6 +157,16 @@ class CarlaEnvironment(Environment):
             client=self.client,
         )
 
+        self.route_bev = route.RouteModule(
+            config={
+                "start": start,
+                "end": end,
+                "sampling_resolution": 5,
+                "distance_threshold": 5,
+            },
+            client=self.client,
+        )
+
         # Let's initialize a vehicle
         self.vehicle_module = vehicle.VehicleModule(
             config={"vehicle_model": "lincoln.mkz_2017"}, client=self.client
@@ -295,10 +305,14 @@ class CarlaEnvironment(Environment):
         self.spectator.set_transform(transform)
 
         route_step = self.route.step(self.map.get_waypoint(current_transform.location))
+        route_bev_step = self.route_bev.step(
+            self.map.get_waypoint(current_transform.location)
+        )
 
         for bev_module in self.bev_modules:
             bev_output = bev_module["module"].step(
-                agent_vehicle=self.hero_actor_module.get_actor()
+                agent_vehicle=self.hero_actor_module.get_actor(),
+                waypoint=route_bev_step[0],
             )
             self.data_dict[bev_module["id"]] = bev_output
 
@@ -325,13 +339,13 @@ class CarlaEnvironment(Environment):
         self.generate_sensor_dict()
 
         world_2_camera_transformation = self.render_dict["rgb_front"][
-                        "image_transform"
+            "image_transform"
         ].get_inverse_matrix()
         fov = self.render_dict["rgb_front"]["image_fov"]
         ego_current_location = self.render_dict["hero_actor_module"]["location"]
         ego_current_location_ = postprocess_location(ego_current_location)
         ego_yaw = self.render_dict["hero_actor_module"]["rotation"].yaw
-        pixels_per_meter = self.render_dict["bev_world"]["pixels_per_meter"]        
+        pixels_per_meter = self.render_dict["bev_world"]["pixels_per_meter"]
 
         # Put all of the rgb cameras as a 2x3 grid
         if "rgb_front" in self.data_dict.keys():
@@ -429,6 +443,7 @@ class CarlaEnvironment(Environment):
                     self.renderer_module.render_overlay_image(
                         bev, mask, 0.5, 0.5, move_cursor="right"
                     )
+                    
 
                     self.renderer_module.move_cursor("right", amount=(0, 10))
 
@@ -448,12 +463,11 @@ class CarlaEnvironment(Environment):
 
             _, S, _ = ego_future_location_predicted.shape
 
-            self.renderer_module.move_cursor("point", amount=(0,0))
+            self.renderer_module.move_cursor("point", amount=(0, 0))
 
             if ("rgb_front" in self.data_dict.keys()) and (
                 "bev_world" in self.data_dict.keys()
             ):
-
 
                 for k in range(S):
 
@@ -463,7 +477,6 @@ class CarlaEnvironment(Environment):
                         ego_future_location_predicted[0, k],
                         ego_current_location=ego_current_location,
                     )
-
 
                     ego_future_location_pixel = world_2_pixel(
                         ego_future_location,
@@ -500,20 +513,24 @@ class CarlaEnvironment(Environment):
                             pos=render_position, color=COLORS.YELLOW
                         )
 
-        for k in range(self.render_dict["route"]["route_index"],
+        for k in range(
+            self.render_dict["route"]["route_index"],
             np.minimum(
                 self.render_dict["route"]["route_index"] + 10,
-                self.render_dict["route"]["route_length"],)
-
+                self.render_dict["route"]["route_length"],
+            ),
         ):
-            
+
             self.renderer_module.move_cursor("point", amount=(0, 0))
 
-            route_current_location = self.render_dict["route"]["route"][k][0].transform.location
-            route_current_location = postprocess_location(route_current_location, ego_current_location)
-            
+            route_current_location = self.render_dict["route"]["current_waypoint"]
+
+            route_current_location = postprocess_location(
+                route_current_location, ego_current_location
+            )
+
             route_current_location_pixel = world_2_pixel(
-                route_current_location, 
+                route_current_location,
                 world_2_camera_transformation,
                 h_image,
                 w_image,
@@ -523,13 +540,13 @@ class CarlaEnvironment(Environment):
             route_current_location_bev = world_2_bev(
                 route_current_location,
                 ego_current_location_,
-                ego_yaw,    
-                h_bev,  
-                w_bev,  
-                pixels_per_meter,       
+                ego_yaw,
+                h_bev,
+                w_bev,
+                pixels_per_meter,
             )
 
-            if route_current_location_pixel is not None:    
+            if route_current_location_pixel is not None:
                 render_position = (
                     route_current_location_pixel[0] + point_rgb_front_left_up[0],
                     route_current_location_pixel[1] + point_rgb_front_left_up[1],
@@ -537,8 +554,8 @@ class CarlaEnvironment(Environment):
                 self.renderer_module.render_point(
                     pos=render_position, color=COLORS.BLUE
                 )
-            
-            if route_current_location_bev is not None:    
+
+            if route_current_location_bev is not None:
                 render_position = (
                     route_current_location_bev[0] + point_bev_world_left_up[0],
                     route_current_location_bev[1] + point_bev_world_left_up[1],
@@ -547,8 +564,6 @@ class CarlaEnvironment(Environment):
                     pos=render_position, color=COLORS.BLUE
                 )
 
-
-            
         self.renderer_module.show()
 
         saved_image_path = self.renderer_module.save(info=f"step_{self.counter}")
@@ -596,7 +611,6 @@ class CarlaEnvironment(Environment):
     def get_counter(self):
         """Get the counter of the environment"""
         return self.counter
-    
 
     def generate_sensor_dict(self):
         """Generate a sensor dict from the sensor config"""

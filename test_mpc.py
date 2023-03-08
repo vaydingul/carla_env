@@ -189,7 +189,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path",
         type=str,
-        default="/home/vaydingul/Documents/Codes/carla_env/configs/mpc/testing/config_bev.yml",
+        default="/home/volkan/Documents/Codes/carla_env/configs/mpc/testing/config_extended_bev_20Hz_action_repeat_4_policy_cost.yml",
         help="Path to config file",
     )
 

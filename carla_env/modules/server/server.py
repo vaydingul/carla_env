@@ -100,7 +100,7 @@ class ServerModule(module.Module):
     def render(self):
         """Render the module"""
         self.render_dict["is_running"] = self.is_running
-
+        self.render_dict["port"] = self.config["port"]
         return self.render_dict
 
     def close(self):

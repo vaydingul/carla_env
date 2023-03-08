@@ -62,7 +62,7 @@ wandb:
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"
-  group: "train-ego-forward-model-multi-step-20Hz"
+  group: "train-ego-forward-model-multi-step"
   name: "1-10-20Hz-new_dataset-action_repeat_4"
   id: ~
   notes: "Ego forward model with 20Hz data and 10 time steps in the future. It can work with every model that works in 20Hz. Dataset is consisted of action repeat 4."

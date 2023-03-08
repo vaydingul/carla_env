@@ -92,8 +92,8 @@ class Cost(nn.Module):
                 "road_off_cost": cost[2],
                 "road_red_yellow_cost": cost[3],
                 "road_green_cost": cost[4],
-                "vehicle_cost": cost[5],
-                "lane_cost": cost[6],
+                "lane_cost": cost[5],
+                "vehicle_cost": cost[6],
                 "offroad_cost": cost[7],
             }
         elif self.reduction == "none":
@@ -106,8 +106,8 @@ class Cost(nn.Module):
                 "road_off_cost": cost[:, :, 2],
                 "road_red_yellow_cost": cost[:, :, 3],
                 "road_green_cost": cost[:, :, 4],
-                "vehicle_cost": cost[:, :, 5],
-                "lane_cost": cost[:, :, 6],
+                "lane_cost": cost[:, :, 5],
+                "vehicle_cost": cost[:, :, 6],
                 "offroad_cost": cost[:, :, 7],
             }
 

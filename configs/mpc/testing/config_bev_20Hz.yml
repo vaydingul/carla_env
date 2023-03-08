@@ -133,7 +133,7 @@ tester:
     yellow_light_cost: 0.0
     offroad_cost: 0.0
     acceleration_jerk: 1.0
-    steer_jerk: 10.0
+    steer_jerk: 100.0
     ego_location_l1: 10.0
     ego_yaw_l1: 1.0
     ego_speed_l1: 0.0
