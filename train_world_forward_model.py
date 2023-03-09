@@ -229,6 +229,7 @@ def main(rank, world_size, config):
         rank=device,
         lr_scheduler=scheduler,
         reconstruction_loss=loss_criterion,
+        sigmoid_before_loss=config["training"]["sigmoid_before_loss"],
         save_interval=config["training"]["save_interval"],
         val_interval=config["training"]["val_interval"],
         num_time_step_previous=config["num_time_step_previous"],

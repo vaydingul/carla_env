@@ -225,15 +225,6 @@ class CarlaEnvironment(Environment):
                 }
             )
 
-        # self.bev_module_ego = BirdViewProducer(
-        #     client=self.client,
-        #     target_size=PixelDimensions(192, 192),
-        #     render_lanes_on_junctions=False,
-        #     pixels_per_meter=20,
-        #     crop_type=BirdViewCropType.FRONT_AND_REAR_AREA,
-        #     light_circle=True,
-        # )
-
         time.sleep(1.0)
         logger.info("Everything is set!")
 

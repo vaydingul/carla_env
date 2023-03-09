@@ -1,0 +1,115 @@
+# TODO: Make it distributed with creating four different config files.
+
+experiment_type: collect_data_driving
+log_path: ~
+data_save_path: data/driving_model_data_20Hz_action_repeat_1_1/
+num_episodes: 20
+port: &port_var 2000
+tm_port: &tm_port_var 8000
+environment:
+  name: carla_env_data_collect
+  random: false
+  action_repeat: 1
+  fixed_delta_seconds: &dt 0.05
+  port: *port_var
+  tm_port: *tm_port_var
+  tasks:
+    - world: Town02
+      num_vehicles: [90, 120]
+    # - world: Town03
+    #   num_vehicles: [60, 90]
+    # - world: Town04
+    #   num_vehicles: [120, 180]
+    # - world: Town06
+    #   num_vehicles: [150, 300]
+
+  renderer:
+    width: 1300
+    height: 1000
+    channel: 3
+    background_color: [0, 0, 0]
+    font_scale: 0.5
+    font_color: [255, 255, 255]
+    font_thickness: 1
+    cursor: [0, 0]
+    name: Random Data Collection
+    show: false
+    save: false
+    create_date_time_path: true
+    save_path: figures/env_debug/data_collect_driving/
+
+  sensors:
+    - id: rgb_front
+      type: RGBSensor
+      config:
+        x: 1.5
+        y: 0.0
+        z: 2.4
+        roll: 0.0
+        pitch: 0.0
+        yaw: 0.0
+        width: 900
+        height: 256
+        fov: 100
+
+    - id: ego
+      type: VehicleSensor
+      config: {}
+
+    - id: occ
+      type: OccupancySensor
+      config:
+        threshold: 3
+        number_of_radars: 8
+        horizontal_fov: 5
+        vertical_fov: 5
+        range: 10
+        points_per_second: 100
+
+    #! It is a must. NEVER DISCARD IT.
+    - id: col
+      type: CollisionSensor
+      config: {}
+
+  bevs:
+    - id: "bev_world"
+      config:
+        width: 192
+        height: 192
+        render_lanes_on_junctions: false
+        pixels_per_meter: 5
+        crop_type: "FRONT_AREA_ONLY"
+        road_on_off: true
+        road_light: true
+        light_circle: true
+        lane_marking_thickness: 2
+
+writer:
+  keys:
+    - key: rgb_front
+      value: rgb_front
+      type: rgb_image
+    - key: ego
+      value: ego
+      type: json
+    - key: occ
+      value: occ
+      type: json
+    - key: bev_world
+      value: bev_world
+      type: bev_image
+    - key: navigation
+      value: navigation
+      type: json
+
+  # TODO: Add navigation key
+
+wandb:
+  enable: true
+  resume: false
+  resume_checkpoint_number: 0
+  project: "mbl-refactored"
+  group: "collect-data"
+  name: "20Hz-1-repeat-driving"
+  id: ~
+  notes: "A data collected in 20Hz with AutoPilot of CARLA."

@@ -95,7 +95,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path",
         type=str,
-        default="/home/volkan/Documents/Codes/carla_env/configs/collect_data/random/config.yml",
+        default="/home/volkan/Documents/Codes/carla_env/configs/collect_data/driving/config1.yml",
         help="Path to config file",
     )
 
