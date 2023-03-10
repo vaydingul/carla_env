@@ -275,12 +275,12 @@ class Trainer(object):
 
     def learn(self, run=None):
 
-        loss_dict = self.validate(0, run)
-        logger.info(f"{'*' * 10} Initial Validation {'*' * 10}")
-        logger.info(f"Epoch: Start")
-        for key, value in loss_dict.items():
-            logger.info(f"{key}: {value}")
-        logger.info(f"{'*' * 10} Initial Validation {'*' * 10}")
+        # loss_dict = self.validate(0, run)
+        # logger.info(f"{'*' * 10} Initial Validation {'*' * 10}")
+        # logger.info(f"Epoch: Start")
+        # for key, value in loss_dict.items():
+        #     logger.info(f"{key}: {value}")
+        # logger.info(f"{'*' * 10} Initial Validation {'*' * 10}")
 
         for epoch in range(self.current_epoch, self.num_epochs):
 
