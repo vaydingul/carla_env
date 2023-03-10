@@ -6,7 +6,7 @@ log_path: ~ #"logs/"
 num_time_step_previous: &previous 20
 num_time_step_future: &future 10
 sequence_length: &sequence_length 30
-num_workers: &num_workers 8
+num_workers: &num_workers 12
 num_gpu: &num_gpu 4
 read_keys: &read_keys ["bev_world"]
 dilation: &dilation 1
