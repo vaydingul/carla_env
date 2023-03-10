@@ -57,7 +57,7 @@ dataloader_val:
 training:
   num_epochs: 50
   num_gpu: *num_gpu
-  master_port: "98765"
+  master_port: "33333"
   weighted_sampling: false
   sigmoid_before_loss: false
   optimizer:
