@@ -6,7 +6,7 @@ log_path: ~ #"logs/"
 num_time_step_previous: &previous 20
 num_time_step_future: &future 10
 sequence_length: &sequence_length 30
-num_workers: &num_workers 12
+num_workers: &num_workers 0
 num_gpu: &num_gpu 4
 read_keys: &read_keys ["bev_world"]
 dilation: &dilation 1
@@ -19,8 +19,7 @@ bev_calculate_offroad: &bev_calculate_offroad false
 dataset_train:
   data_path: "/kuacc/users/vaydingul20/hpc_run/ground_truth_bev_model_train_data_20Hz_multichannel_bev_dense_traffic/"
   sequence_length: *sequence_length
-  read_keys:
-    - "bev_world"
+  read_keys: *read_keys
   dilation: *dilation
   bev_agent_channel: *bev_agent_channel
   bev_vehicle_channel: *bev_vehicle_channel
@@ -38,8 +37,7 @@ dataloader_train:
 dataset_val:
   data_path: "/kuacc/users/vaydingul20/hpc_run/ground_truth_bev_model_val_data_20Hz_multichannel_bev_dense_traffic/"
   sequence_length: *sequence_length
-  read_keys:
-    - "bev_world"
+  read_keys: *read_keys
   dilation: *dilation
   bev_agent_channel: *bev_agent_channel
   bev_vehicle_channel: *bev_vehicle_channel
