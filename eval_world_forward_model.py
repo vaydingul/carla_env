@@ -102,7 +102,7 @@ def main(config):
 
     # Create and initialize the model with pretrained weights and biases
     model = model_class.load_model_from_wandb_run(
-        config=run.config["world_forward_model"],
+        config=run.config["world_forward_model"]["config"],
         checkpoint_path=checkpoint_path,
         device=device,
     )
@@ -154,7 +154,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     config = parse_yml(args.config_path)
-    config["save_path"] = create_date_time_path(config["save_path"])
+    # config["save_path"] = create_date_time_path(config["save_path"])
     config["config_path"] = args.config_path
 
     assert (

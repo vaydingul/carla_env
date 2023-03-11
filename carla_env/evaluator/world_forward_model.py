@@ -97,7 +97,10 @@ class Evaluator(object):
             renderer["width"] = (self.W + 10) * self.S
             renderer["height"] = (self.H + 20) * 2
             renderer["save_path"] = self.save_path
+            
             renderer = Renderer(config=renderer)
+            
+            self.save_path = renderer.save_path
 
             self.renderer_list = [renderer] * self.B
 
@@ -133,7 +136,7 @@ class Evaluator(object):
                 for k in range(self.num_time_step_predict):
 
                     # Predict the future bev
-                    world_future_bev_predicted = self.model(
+                    (_, world_future_bev_predicted) = self.model(
                         world_previous_bev, sample_latent=True
                     )
 

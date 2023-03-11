@@ -4,38 +4,81 @@ import os
 import sys
 import time
 from pathlib import Path
-
+import tqdm
 import cv2
 import numpy as np
 
-from carla_env import carla_env_playground
+from utils.path_utils import check_latest_episode
+from utils.factory import *
+from utils.wandb_utils import create_wandb_run
+from utils.config_utils import parse_yml
+from utils.log_utils import get_logger, configure_logger, pretty_print_config
 
-# Save the log to a file name with the current date
-# logging.basicConfig(filename=f"logs/sim_log_debug",level=logging.DEBUG)
 
-logger = logging.getLogger(__name__)
+def callback(hero_actor, world_snapshot):
+    logger = get_logger(__name__)
+    logger.info("Callback is called!")
+    logger.info(hero_actor.attributes)
+    # Get control from hero actor
+    hero_actor.set_autopilot(False)
+    logger.info(hero_actor.attributes)
+    action = hero_actor.get_control()
+    logger.info(f"Throttle: {action.throttle}")
+    logger.info(f"Steer: {action.steer}")
+    logger.info(f"Brake: {action.brake}")
+    action.throttle = 0.5
+    action.steer = 0.0
+    action.brake = 0.0
+    hero_actor.apply_control(action)
 
 
 def main(config):
-    c = carla_env_playground.CarlaEnvironment(
-        config={"render": True, "save": True, "save_video": True, "max_steps": 10000}
+
+    # ---------------------------------------------------------------------------- #
+    #                                    LOGGER                                    #
+    # ---------------------------------------------------------------------------- #
+    logger = get_logger(__name__)
+    configure_logger(__name__, log_path=config["log_path"], log_level=logging.INFO)
+    pretty_print_config(logger, config)
+
+    # ---------------------------------------------------------------------------- #
+    #                                   WANDB RUN                                  #
+    # ---------------------------------------------------------------------------- #
+    run = create_wandb_run(config)
+
+    # ---------------------------------------------------------------------------- #
+    #                                    SENSORS                                   #
+    # ---------------------------------------------------------------------------- #
+
+    sensor_class_list = sensor_factory(config)
+    config["environment"].update({"sensors": sensor_class_list})
+    # ---------------------------------------------------------------------------- #
+    #                                  ENVIRONMENT                                 #
+    # ---------------------------------------------------------------------------- #
+
+    env_class = environment_factory(config)
+    env = env_class(config=config["environment"])
+
+    env.get_world().on_tick(
+        lambda world_snapshot: callback(env.get_hero_actor(), world_snapshot)
     )
+    while not env.is_done:
 
-    for k in range(config.num_episodes):
+        tic = time.time()
 
-        while not c.is_done:
+        env.step()
 
-            c.step()
+        toc = time.time()
 
-            data_ = c.get_data()
+        data_ = env.get_data()
 
-            c.render(bev_list=[data_[f"bev_{k}"] for k in range(3)])
+        env.render()
 
-            time.sleep(0.1)
+        run.log({"sim/step_time": 1 / (toc - tic)})
+        run.log({"sim/num_frames": env.get_counter()})
+        time.sleep(0.1)
 
-        c.reset()
-
-    c.close()
+    env.close()
 
     return True
 
@@ -46,17 +89,15 @@ if __name__ == "__main__":
         description="Collect data from the CARLA simulator"
     )
     parser.add_argument(
-        "--data_save_path",
+        "--config_path",
         type=str,
-        default="./data/ground_truth_bev_model_test_data_2",
-        help="Path to save the data",
+        default="/home/volkan/Documents/Codes/carla_env/configs/play/config.yml",
+        help="Path to config file",
     )
-    parser.add_argument(
-        "--num_episodes",
-        type=int,
-        default=10,
-        help="Number of episodes to collect data from",
-    )
-    config = parser.parse_args()
+
+    args = parser.parse_args()
+
+    config = parse_yml(args.config_path)
+    config["config_path"] = args.config_path
 
     main(config)

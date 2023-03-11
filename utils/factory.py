@@ -452,6 +452,12 @@ def environment_factory(config):
 
         return CarlaEnvironment
 
+    elif config["experiment_type"] == "play_carla":
+
+        from carla_env.carla_env_playground import CarlaEnvironment
+
+        return CarlaEnvironment
+
     else:
 
         raise ValueError("Invalid experiment type")
@@ -464,6 +470,7 @@ def sensor_factory(config):
         or (config["experiment_type"] == "collect_data_driving")
         or (config["experiment_type"] == "test_mpc")
         or (config["experiment_type"] == "test_policy_model")
+        or (config["experiment_type"] == "play_carla")
     ):
 
         sensors = config["environment"]["sensors"]

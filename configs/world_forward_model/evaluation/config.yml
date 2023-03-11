@@ -7,7 +7,7 @@ save_path: &save_path "figures/world_forward_model_detailed_evaluation/"
 num_time_step_previous: &previous 20
 num_time_step_future: &future 10
 sequence_length: &sequence_length 30
-num_workers: &num_workers 8
+num_workers: &num_workers 0
 num_gpu: &num_gpu 1
 read_keys: &read_keys ["bev_world"]
 dilation: &dilation 1
@@ -19,30 +19,23 @@ bev_calculate_offroad: &bev_calculate_offroad false
 # Dataset related parameters for training
 
 dataset_test:
+  data_path: "data/ground_truth_bev_model_test_data_20Hz_multichannel_bev_dense_traffic/"
+  sequence_length: *sequence_length
+  read_keys: *read_keys
   dilation: *dilation
+  bev_agent_channel: *bev_agent_channel
+  bev_vehicle_channel: *bev_vehicle_channel
+  bev_selected_channels: *bev_selected_channels
+  bev_calculate_offroad: *bev_calculate_offroad
 
 # Dataloader related parameters for validation
-dataloader_val:
-  batch_size: 5000
+dataloader_test:
+  batch_size: 100
   shuffle: false
   num_workers: *num_workers
-
-# Training related parameters
-training:
-  num_epochs: 1000
-  optimizer:
-    type: "Adam"
-    config:
-      lr: 0.01
-      weight_decay: 0.0001
-  loss:
-    criterion: "L1Loss"
-  batch_size: 5
-  shuffle: false
-  num_workers: 0
   drop_last: true
 
-# Training related parameters
+# Evaluation related parameters
 evaluation:
   num_time_step_previous: *previous
   num_time_step_predict: *future
@@ -69,8 +62,8 @@ evaluation:
 
 # Wandb related parameters
 wandb:
-  link: "vaydingul/mbl-refactored/gp4uxsmj"
-  checkpoint_number: 5
+  link: "vaydingul/mbl-refactored/27x4xxmw"
+  checkpoint_number: 17
 
   enable: true
   resume: false
