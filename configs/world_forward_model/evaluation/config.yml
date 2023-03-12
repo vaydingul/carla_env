@@ -63,7 +63,7 @@ evaluation:
 # Wandb related parameters
 wandb:
   link: "vaydingul/mbl-refactored/27x4xxmw"
-  checkpoint_number: 17
+  checkpoint_number: 47
 
   enable: true
   resume: false

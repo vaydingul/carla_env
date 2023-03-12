@@ -1,14 +1,8 @@
 import argparse
 import logging
-import os
-import sys
 import time
-from pathlib import Path
-import tqdm
-import cv2
 import numpy as np
 
-from utils.path_utils import check_latest_episode
 from utils.factory import *
 from utils.wandb_utils import create_wandb_run
 from utils.config_utils import parse_yml
@@ -18,18 +12,25 @@ from utils.log_utils import get_logger, configure_logger, pretty_print_config
 def callback(hero_actor, world_snapshot):
     logger = get_logger(__name__)
     logger.info("Callback is called!")
-    logger.info(hero_actor.attributes)
-    # Get control from hero actor
-    hero_actor.set_autopilot(False)
-    logger.info(hero_actor.attributes)
-    action = hero_actor.get_control()
-    logger.info(f"Throttle: {action.throttle}")
-    logger.info(f"Steer: {action.steer}")
-    logger.info(f"Brake: {action.brake}")
-    action.throttle = 0.5
-    action.steer = 0.0
-    action.brake = 0.0
-    hero_actor.apply_control(action)
+
+
+    if np.random.rand() < 0.05:
+        
+        # Get control from hero actor
+        hero_actor.set_autopilot(False)
+        logger.info(hero_actor.attributes)
+        action = hero_actor.get_control()
+        logger.info(f"Throttle: {action.throttle}")
+        logger.info(f"Steer: {action.steer}")
+        logger.info(f"Brake: {action.brake}")
+        action.throttle = 0.5
+        action.steer = 0.0
+        action.brake = 0.0
+        hero_actor.apply_control(action)
+
+    else:
+
+        hero_actor.set_autopilot(False)
 
 
 def main(config):

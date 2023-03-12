@@ -53,7 +53,7 @@ dataloader_val:
 
 # Training related parameters
 training:
-  num_epochs: 50
+  num_epochs: 48
   num_gpu: *num_gpu
   master_port: "33333"
   weighted_sampling: false
@@ -68,7 +68,7 @@ training:
     criterion: "BCEWithLogitsLoss"
     config:
       reduction: "mean"
-      pos_weight: [1, 1, 1, 1, 1, 1, 1, 1]
+      pos_weight: [1, 1, 1, 1, 1, 5, 5, 1]
 
   save_interval: 6
   val_interval: 3

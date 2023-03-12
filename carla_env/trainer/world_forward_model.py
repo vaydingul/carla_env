@@ -212,7 +212,7 @@ class Trainer(object):
                 world_previous_bev, world_future_bev[:, k]
             )
 
-            world_future_bev_predicted = world_future_bev_predicted.clamp(-10, 10)
+            # world_future_bev_predicted = world_future_bev_predicted.clamp(-10, 10)
 
             # Append the predicted bev
             world_future_bev_predicted_list.append(world_future_bev_predicted)
