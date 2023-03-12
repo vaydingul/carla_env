@@ -37,25 +37,25 @@ def postprocess_action(action, val=50):
     return action
 
 
-def postprocess_location(location, ego_current_location = None):
+def postprocess_location(location, ego_current_location=None):
 
     if isinstance(location, torch.Tensor):
 
-        location_ = np.zeros((3, ))
+        location_ = np.zeros((3,))
 
         location = location.clone().detach().cpu().numpy()
 
         location = np.reshape(location, (np.prod(location.shape),))
 
-        location_[:location.shape[0]] = location
+        location_[: location.shape[0]] = location
 
         if ego_current_location is not None:
 
             location_[-1] = ego_current_location.z
-        
-        location  = location_
 
-    elif isinstance(location, carla.Location):
+        location = location_
+
+    else:
 
         location = np.array([location.x, location.y, location.z])
 
@@ -79,7 +79,7 @@ def world_2_pixel(world_point, world_2_camera, height, width, fov):
     K[1, 2] = HEIGHTH / 2.0
 
     world_point_ = np.ones((4,))
-    world_point_[:world_point.shape[0]] = world_point
+    world_point_[: world_point.shape[0]] = world_point
 
     # Transform the points from world space to camera space.
     sensor_points = np.dot(world_2_camera, world_point_)
