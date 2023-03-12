@@ -537,27 +537,29 @@ class Trainer(object):
 
     def learn(self, run=None):
 
-        self.epoch = -1
-        loss_dict = self.validate(-1, run)
-        logger.info(f"{'='*10} Initial Validation {'='*10}")
-        logger.info(f"Epoch: Start")
-        for (k, v) in loss_dict.items():
-            logger.info(f"{k}: {v}")
-        logger.info(f"{'='*10} Initial Validation {'='*10}")
+        # self.epoch = -1
+        # loss_dict = self.validate(-1, run)
+        # logger.info(f"{'='*10} Initial Validation {'='*10}")
+        # logger.info(f"Epoch: Start")
+        # for (k, v) in loss_dict.items():
+        #     logger.info(f"{k}: {v}")
+        # logger.info(f"{'='*10} Initial Validation {'='*10}")
 
         for epoch in range(self.current_epoch, self.num_epochs):
             self.epoch = epoch
             self.train(epoch, run)
-            loss_dict = self.validate(epoch, run)
 
-            logger.info(f"{'='*10} Validation {'='*10}")
-            logger.info(f"Epoch: {epoch}")
-            for (k, v) in loss_dict.items():
-                logger.info(f"{k}: {v}")
-            logger.info(f"{'='*10} Validation {'='*10}")
+            if (epoch + 1) % self.val_interval == 0:
+                
+                loss_dict = self.validate(epoch, run)
+                logger.info(f"{'='*10} Validation {'='*10}")
+                logger.info(f"Epoch: {epoch}")
+                for (k, v) in loss_dict.items():
+                    logger.info(f"{k}: {v}")
+                logger.info(f"{'='*10} Validation {'='*10}")
 
-            if self.lr_scheduler is not None:
-                self.lr_scheduler.step()
+                if self.lr_scheduler is not None:
+                    self.lr_scheduler.step()
 
             if ((epoch + 1) % self.save_interval == 0) and self.save_path is not None:
 
@@ -592,7 +594,10 @@ class Trainer(object):
 
                     for m in range(self.num_time_step_future - 1):
 
-                        bev = postprocess_bev(world_future_bev_predicted[k][m + 1])
+                        bev = postprocess_bev(
+                            world_future_bev_predicted[k][m + 1],
+                            self.dataloader_train.dataset.bev_selected_channels,
+                        )
                         mask_ = postprocess_mask(mask[k][m])
                         action_gt_ = postprocess_action(action_gt[k][m + 1])
                         action_pred_ = postprocess_action(action_pred[k][m + 1])

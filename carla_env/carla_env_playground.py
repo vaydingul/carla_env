@@ -275,6 +275,7 @@ class CarlaEnvironment(Environment):
 
                     transform = current_transform
                     transform.location.z += 2.0
+                    
 
                 if k == "col":
 

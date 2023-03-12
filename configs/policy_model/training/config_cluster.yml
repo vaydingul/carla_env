@@ -6,8 +6,8 @@ log_path: ~ #"logs/"
 num_time_step_previous: &previous 20
 num_time_step_future: &future 10
 sequence_length: &sequence_length 30
-num_workers: &num_workers 1
-num_gpu: &num_gpu 1
+num_workers: &num_workers 7
+num_gpu: &num_gpu 2
 read_keys: &read_keys ["bev_world", "occ", "navigation_downsampled", "ego"]
 dilation: &dilation 1
 bev_agent_channel: &bev_agent_channel 7
@@ -17,7 +17,7 @@ bev_calculate_offroad: &bev_calculate_offroad false
 
 # Dataset related parameters for training
 dataset_train:
-  data_path: "/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_dummy_data_20Hz_multichannel_bev_dense_traffic"
+  data_path: "/kuacc/users/vaydingul20/hpc_run/ground_truth_bev_model_train_data_20Hz_multichannel_bev_dense_traffic/"
   sequence_length: *sequence_length
   read_keys: *read_keys
   dilation: *dilation
@@ -28,14 +28,14 @@ dataset_train:
 
 # Dataloader related parameters for training
 dataloader_train:
-  batch_size: 40
+  batch_size: 100
   shuffle: true
   num_workers: *num_workers
   drop_last: true
 
 # Dataset related parameters for validation
 dataset_val:
-  data_path: "/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_dummy_data_20Hz_multichannel_bev_dense_traffic"
+  data_path: "/kuacc/users/vaydingul20/hpc_run/ground_truth_bev_model_val_data_20Hz_multichannel_bev_dense_traffic/"
   sequence_length: *sequence_length
   read_keys: *read_keys
   dilation: *dilation
@@ -46,7 +46,7 @@ dataset_val:
 
 # Dataloader related parameters for validation
 dataloader_val:
-  batch_size: 40
+  batch_size: 100
   shuffle: false
   num_workers: *num_workers
   drop_last: true
@@ -71,7 +71,7 @@ cost:
 
 # Training related parameters
 training:
-  num_epochs: 100
+  num_epochs: 48
   num_gpu: *num_gpu
   master_port: "12345"
   weighted_sampling: false
@@ -83,8 +83,8 @@ training:
       lr: 0.0001
       # weight_decay: 0.0001
 
-  save_interval: 100
-  val_interval: 5
+  save_interval: 6
+  val_interval: 3
   num_time_step_future: *future
   num_time_step_previous: *previous
   gradient_clip:

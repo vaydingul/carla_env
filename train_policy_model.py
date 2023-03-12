@@ -143,7 +143,7 @@ def main(rank, world_size, config):
 
         # Create and initialize the model with pretrained weights and biases
         policy_model = policy_model_class.load_model_from_wandb_run(
-            config=run.config["policy_model"]["config"],
+            config=policy_model_run.config["policy_model"]["config"],
             checkpoint_path=policy_model_checkpoint_path,
             device=device,
         )
@@ -376,7 +376,7 @@ if __name__ == "__main__":
 
     config = parse_yml(args.config_path)
     config["checkpoint_path"] = create_date_time_path(config["checkpoint_path"])
-    
+
     config["config_path"] = args.config_path
 
     mp.spawn(

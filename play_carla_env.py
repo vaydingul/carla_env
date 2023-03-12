@@ -2,20 +2,20 @@ import argparse
 import logging
 import time
 import numpy as np
-
+import carla
 from utils.factory import *
 from utils.wandb_utils import create_wandb_run
 from utils.config_utils import parse_yml
 from utils.log_utils import get_logger, configure_logger, pretty_print_config
 
 
+
 def callback(hero_actor, world_snapshot):
     logger = get_logger(__name__)
     logger.info("Callback is called!")
 
-
     if np.random.rand() < 0.05:
-        
+
         # Get control from hero actor
         hero_actor.set_autopilot(False)
         logger.info(hero_actor.attributes)
@@ -27,10 +27,11 @@ def callback(hero_actor, world_snapshot):
         action.steer = 0.0
         action.brake = 0.0
         hero_actor.apply_control(action)
+        hero_actor.add_impulse(carla.Vector3D(0, 0, 10000))
 
     else:
 
-        hero_actor.set_autopilot(False)
+        hero_actor.set_autopilot(True)
 
 
 def main(config):

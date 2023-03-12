@@ -96,7 +96,9 @@ class Policy(nn.Module):
         # Dropout rate
         self.dropout = self.config["dropout"]
 
-    def forward(self, ego_state, world_state, command, target_location, occupancy=None):
+    def forward(
+        self, ego_state, world_state, command=None, target_location=None, occupancy=None
+    ):
 
         # Encode the world state
         world_state = world_state.view(

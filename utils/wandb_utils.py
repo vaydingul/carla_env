@@ -1,8 +1,20 @@
 import wandb
 
 
+class DummyConfig:
+    """Dummy class for wandb when it is not enabled."""
+
+    def __init__(self) -> None:
+        pass
+
+    def update(self, *args, **kwargs):
+        pass
+
+
 class DummyWandb:
     """Dummy class for wandb when it is not enabled."""
+
+    config: DummyConfig = DummyConfig()
 
     def __init__(self) -> None:
         pass
