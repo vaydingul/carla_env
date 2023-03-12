@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import carla
 import torch
 
 from carla_env.bev import BirdViewProducer
