@@ -28,7 +28,7 @@ dataset_train:
 
 # Dataloader related parameters for training
 dataloader_train:
-  batch_size: 80
+  batch_size: 70
   shuffle: true
   num_workers: *num_workers
   drop_last: true
@@ -46,7 +46,7 @@ dataset_val:
 
 # Dataloader related parameters for validation
 dataloader_val:
-  batch_size: 80
+  batch_size: 70
   shuffle: false
   num_workers: *num_workers
   drop_last: true
