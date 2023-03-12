@@ -1,16 +1,18 @@
 import logging
 import numpy as np
 import torch
-import cv2
 from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
 from carla_env.sampler.distributed_weighted_sampler import DistributedWeightedSampler
 
-from datetime import datetime
 from pathlib import Path
 from carla_env.renderer.renderer import Renderer, COLORS
-from utils.render_utils import *
+from utils.render_utils import (
+    postprocess_bev,
+    postprocess_mask,
+    postprocess_action,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -550,7 +552,7 @@ class Trainer(object):
             self.train(epoch, run)
 
             if (epoch + 1) % self.val_interval == 0:
-                
+
                 loss_dict = self.validate(epoch, run)
                 logger.info(f"{'='*10} Validation {'='*10}")
                 logger.info(f"Epoch: {epoch}")

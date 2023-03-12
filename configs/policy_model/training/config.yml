@@ -106,7 +106,7 @@ training:
     threshold: 5.0
 
   use_world_forward_model_encoder_output_as_world_state: true
-  use_ground_truth: true
+  use_ground_truth: false
   debug_render: true
 
   renderer:
