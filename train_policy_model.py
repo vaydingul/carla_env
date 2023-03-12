@@ -51,7 +51,7 @@ def main(rank, world_size, config):
     # ---------------------------------------------------------------------------- #
     #                                   WANDB RUN                                  #
     # ---------------------------------------------------------------------------- #
-    policy_model_run = create_wandb_run(config) if rank == 0 else None
+    policy_model_run = create_wandb_run(config)
 
     if config["wandb"]["resume"]:
         # Fetch the specific checkpoint from wandb cloud storage
