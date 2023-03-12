@@ -46,7 +46,7 @@ dataset_val:
 
 # Dataloader related parameters for validation
 dataloader_val:
-  batch_size: 100
+  batch_size: 80
   shuffle: false
   num_workers: *num_workers
   drop_last: true
