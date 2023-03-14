@@ -120,6 +120,10 @@ class ActorModule(module.Module):
         """Set the actor to autopilot"""
         self.actor.set_autopilot(autopilot, port)
 
+    def set_actor(self, actor: carla.Actor):
+        """Set the actor"""
+        self.actor = actor
+
     def _set_default_config(self):
         """Set the default config of actor manager"""
         self.config = {

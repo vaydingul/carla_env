@@ -8,6 +8,7 @@ from carla_env.modules.vehicle import vehicle as v
 from carla_env.modules.sensor import vehicle_sensor as vs
 from carla_env.modules.sensor import rgb_sensor as rgbs
 from carla_env.modules.sensor import collision_sensor as cs
+
 # Import utils
 import carla
 import time
@@ -52,20 +53,23 @@ class CarlaEnvironment(Environment):
 
         # Let's initialize a vehicle
         self.vehicle = v.VehicleModule(
-            {"vehicle_model": "lincoln.mkz2017"}, self.client.client)
+            {"vehicle_model": "lincoln.mkz_2017"}, self.client.client
+        )
 
         # Make this vehicle actor
         self.actor = a.ActorModule(
-            {"actor": self.vehicle, "hero": True}, self.client.client)
+            {"actor": self.vehicle, "hero": True}, self.client.client
+        )
 
         self.vehicle_sensor = vs.VehicleSensorModule(
-            None, self.client.client, self.actor)
+            None, self.client.client, self.actor
+        )
 
         self.collision_sensor = cs.CollisionSensorModule(
-            None, self.client.client, self.actor)
+            None, self.client.client, self.actor
+        )
 
-        self.rgb_sensor = rgbs.RGBSensorModule(
-            None, self.client.client, self.actor)
+        self.rgb_sensor = rgbs.RGBSensorModule(None, self.client.client, self.actor)
 
         time.sleep(1.0)
         logger.info("Everything is set!")
@@ -101,8 +105,7 @@ class CarlaEnvironment(Environment):
                         data_ = v.get_queue().get(True, 10)
 
                         # , f"Frame number mismatch: {data_['frame']} != {snapshot.frame} \n Current Sensor: {k} \n Current Data Queue Size {self.data.qsize()}"
-                        equivalent_frame_fetched = data_[
-                            "frame"] == snapshot.frame
+                        equivalent_frame_fetched = data_["frame"] == snapshot.frame
 
                 except Empty:
 

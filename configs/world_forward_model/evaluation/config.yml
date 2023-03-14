@@ -30,7 +30,7 @@ dataset_test:
 
 # Dataloader related parameters for validation
 dataloader_test:
-  batch_size: 100
+  batch_size: 50
   shuffle: false
   num_workers: *num_workers
   drop_last: true
@@ -57,12 +57,12 @@ evaluation:
     name: World Model Evaluation
     show: false
     save: true
-    create_date_time_path: true
+    create_date_time_path: false
     save_path: *save_path
 
 # Wandb related parameters
 wandb:
-  link: "vaydingul/mbl-refactored/27x4xxmw"
+  link: "vaydingul/mbl-refactored/1qr51yeg"
   checkpoint_number: 47
 
   enable: true

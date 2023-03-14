@@ -1,0 +1,23 @@
+# wandb_ego_forward_model:
+#   link: ""
+#   checkpoint_number: 0
+
+# wandb_world_forward_model:
+#   link: ""
+#   checkpoint_number: 0
+
+wandb_policy_model:
+  link: vaydingul/mbl-refactored/2h77me8w
+  checkpoint_number: 5
+
+bev:
+  config:
+    width: 192
+    height: 192
+    render_lanes_on_junctions: false
+    pixels_per_meter: 5
+    crop_type: "FRONT_AREA_ONLY"
+    road_on_off: true
+    road_light: true
+    light_circle: true
+    lane_marking_thickness: 2

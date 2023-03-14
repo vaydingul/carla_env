@@ -443,7 +443,6 @@ class CarlaEnvironment(Environment):
                     self.renderer_module.render_overlay_image(
                         bev, mask, 0.5, 0.5, move_cursor="right"
                     )
-                    
 
                     self.renderer_module.move_cursor("right", amount=(0, 10))
 

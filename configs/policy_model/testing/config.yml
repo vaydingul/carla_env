@@ -1,10 +1,10 @@
 experiment_type: test_policy_model
 log_path: ~
-seed: 42
+seed: 16541515
 port: &port_var 2000
 tm_port: &tm_port_var 8000
 num_time_step_previous: &previous 20
-num_time_step_future: &future 10
+num_time_step_future: &future 2
 
 environment:
   name: carla_env_testing_traffic
@@ -15,7 +15,7 @@ environment:
   port: *port_var
   tm_port: *tm_port_var
   tasks:
-    - world: Town01
+    - world: Town02
       num_vehicles: [60, 90]
     # - world: Town03
     #   num_vehicles: [60, 90]
@@ -26,10 +26,10 @@ environment:
 
   renderer:
     width: 2800
-    height: 1200
+    height: 1400
     channel: 3
     background_color: [0, 0, 0]
-    font_scale: 0.5
+    font_scale: 0.25
     font_color: [255, 255, 255]
     font_thickness: 1
     cursor: [0, 0]
@@ -87,14 +87,14 @@ environment:
 
   route:
     config:
-      sampling_resolution: 30
+      sampling_resolution: 5
       debug: true
 
 tester:
   skip_frames: 1
   repeat_frames: 1
   rollout_length: *future
-  log_video: true
+  log_video: false
   log_video_scale: 0.1
 
 # wandb_ego_forward_model:
@@ -106,8 +106,8 @@ tester:
 #   checkpoint_number: 0
 
 wandb_policy_model:
-  link: vaydingul/mbl-refactored/blokaisv
-  checkpoint_number: 1
+  link: vaydingul/mbl-refactored/2h77me8w
+  checkpoint_number: 5
 
 wandb:
   enable: true

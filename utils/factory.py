@@ -6,6 +6,7 @@ def ego_forward_model_factory(config):
         or (config["experiment_type"] == "train_policy_model")
         or (config["experiment_type"] == "test_dfm_km_cp")
         or (config["experiment_type"] == "test_mpc")
+
     ):
 
         if config["ego_forward_model"]["type"] == "KinematicBicycleModel":
@@ -156,6 +157,12 @@ def evaluator_factory(config):
     elif config["experiment_type"] == "eval_world_forward_model":
 
         from carla_env.evaluator.world_forward_model import Evaluator
+
+        return Evaluator
+    
+    elif config["experiment_type"] == "eval_policy_model_leaderboard":
+
+        from carla_env.evaluator.policy_model_leaderboard import Evaluator
 
         return Evaluator
 
@@ -451,6 +458,12 @@ def environment_factory(config):
         from carla_env.carla_env_testing_traffic import CarlaEnvironment
 
         return CarlaEnvironment
+    
+    elif config["experiment_type"] == "eval_policy_model_leaderboard":
+
+        from carla_env.carla_env_leaderboard_headless import CarlaEnvironment
+
+        return CarlaEnvironment
 
     elif config["experiment_type"] == "play_carla":
 
@@ -471,6 +484,7 @@ def sensor_factory(config):
         or (config["experiment_type"] == "test_mpc")
         or (config["experiment_type"] == "test_policy_model")
         or (config["experiment_type"] == "play_carla")
+        or (config["experiment_type"] == "eval_policy_model_leaderboard")
     ):
 
         sensors = config["environment"]["sensors"]
