@@ -23,7 +23,7 @@ class Evaluator:
     def evaluate(self, run):
 
         leaderboard_evaluator_main(
-            self.leaderboard, self.device, self.environment.get_client()
+            self.leaderboard, self.device, self.environment
         )
 
     #     data = self.environment.get_data()

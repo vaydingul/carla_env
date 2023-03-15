@@ -101,6 +101,7 @@ class CarlaEnvironment(Environment):
             self.renderer_module = Renderer(config=self.renderer)
 
         self.data = Queue()
+        self.data_dict = {}
 
         self.reset()
 
@@ -199,7 +200,7 @@ class CarlaEnvironment(Environment):
 
         # # Sensor suite
 
-        # self.sensor_modules = []
+        self.sensor_modules = []
         # for sensor in self.sensors:
 
         #     self.sensor_modules.append(
@@ -215,7 +216,7 @@ class CarlaEnvironment(Environment):
         #     )
 
         # # Bird's eye view
-        # self.bev_modules = []
+        self.bev_modules = []
         # for bev in self.bevs:
 
         #     self.bev_modules.append(
@@ -326,243 +327,246 @@ class CarlaEnvironment(Environment):
 
         return self.is_done
 
-    def render(self, *args, **kwargs):
+    def render(self, **kwargs):
         """Render the environment"""
 
-        # self.renderer_module.reset()
+        self.renderer_module.reset()
 
-        # self.generate_sensor_dict()
+        self.generate_sensor_dict()
 
-        # world_2_camera_transformation = self.render_dict["rgb_front"][
-        #     "image_transform"
-        # ].get_inverse_matrix()
-        # fov = self.render_dict["rgb_front"]["image_fov"]
-        # ego_current_location = self.render_dict["hero_actor_module"]["location"]
-        # ego_current_location_ = postprocess_location(ego_current_location)
-        # ego_yaw = self.render_dict["hero_actor_module"]["rotation"].yaw
-        # pixels_per_meter = self.render_dict["bev_world"]["pixels_per_meter"]
+        if "rgb_front" in self.render_dict.keys():
+            world_2_camera_transformation = self.render_dict["rgb_front"][
+                "image_transform"
+            ].get_inverse_matrix()
+            fov = self.render_dict["rgb_front"]["image_fov"]
+            ego_current_location = self.render_dict["hero_actor_module"]["location"]
+            ego_current_location_ = postprocess_location(ego_current_location)
+            ego_yaw = self.render_dict["hero_actor_module"]["rotation"].yaw
+            pixels_per_meter = self.render_dict["bev_world"]["pixels_per_meter"]
 
-        # # Put all of the rgb cameras as a 2x3 grid
-        # if "rgb_front" in self.data_dict.keys():
-        #     rgb_image_front = self.data_dict["rgb_front"]["data"]
-        #     rgb_image_front = cv2.cvtColor(rgb_image_front, cv2.COLOR_BGR2RGB)
-        #     (h_image, w_image, c_image) = rgb_image_front.shape
+        # Put all of the rgb cameras as a 2x3 grid
+        if "rgb_front" in self.data_dict.keys():
+            rgb_image_front = self.data_dict["rgb_front"]["data"]
+            rgb_image_front = cv2.cvtColor(rgb_image_front, cv2.COLOR_BGR2RGB)
+            (h_image, w_image, c_image) = rgb_image_front.shape
 
-        #     point_rgb_front_left_up = tuple(reversed(self.renderer_module.get_cursor()))
+            point_rgb_front_left_up = tuple(reversed(self.renderer_module.get_cursor()))
 
-        #     self.renderer_module.render_image(rgb_image_front, move_cursor="down")
+            self.renderer_module.render_image(rgb_image_front, move_cursor="down")
 
-        #     if "bev_world" in self.data_dict.keys():
-        #         bev = self.data_dict["bev_world"]
-        #         bev = self.bev_modules[0]["module"].as_rgb(bev)
-        #         bev = cv2.cvtColor(bev, cv2.COLOR_BGR2RGB)
-        #         (h_bev, w_bev, c_bev) = bev.shape
-        #         # Put image into canvas
+            if "bev_world" in self.data_dict.keys():
+                bev = self.data_dict["bev_world"]
+                bev = self.bev_modules[0]["module"].as_rgb(bev)
+                bev = cv2.cvtColor(bev, cv2.COLOR_BGR2RGB)
+                (h_bev, w_bev, c_bev) = bev.shape
+                # Put image into canvas
 
-        #         point_bev_world_left_up = tuple(
-        #             reversed(self.renderer_module.get_cursor())
-        #         )
+                point_bev_world_left_up = tuple(
+                    reversed(self.renderer_module.get_cursor())
+                )
 
-        #         self.renderer_module.render_image(bev, move_cursor="down")
+                self.renderer_module.render_image(bev, move_cursor="down")
 
-        #     self.renderer_module.move_cursor(
-        #         direction="right-up", amount=(h_image + h_bev, w_image + 20)
-        #     )
+            self.renderer_module.move_cursor(
+                direction="right-up", amount=(h_image + h_bev, w_image + 20)
+            )
 
-        # self.renderer_module.render_text("", move_cursor="down", font_color=COLORS.RED)
+        self.renderer_module.render_text("", move_cursor="down", font_color=COLORS.RED)
 
-        # for (module, render_dict) in self.render_dict.items():
+        for (module, render_dict) in self.render_dict.items():
 
-        #     if "rgb" not in module:
+            if "rgb" not in module:
 
-        #         if bool(render_dict):
+                if bool(render_dict):
 
-        #             self.renderer_module.render_text(
-        #                 f"{module.capitalize()}",
-        #                 move_cursor="down",
-        #                 font_color=COLORS.RED,
-        #                 font_thickness=1,
-        #             )
+                    self.renderer_module.render_text(
+                        f"{module.capitalize()}",
+                        move_cursor="down",
+                        font_color=COLORS.RED,
+                        font_thickness=1,
+                    )
 
-        #             for (k, v) in render_dict.items():
+                    for (k, v) in render_dict.items():
 
-        #                 self.renderer_module.render_text(
-        #                     f"{k}: {v}",
-        #                     move_cursor="down",
-        #                     font_color=COLORS.YELLOW,
-        #                 )
+                        self.renderer_module.render_text(
+                            f"{k}: {v}",
+                            move_cursor="down",
+                            font_color=COLORS.YELLOW,
+                        )
 
-        #             self.renderer_module.move_cursor(direction="down", amount=(10, 0))
+                    self.renderer_module.move_cursor(direction="down", amount=(10, 0))
 
-        # if bool(kwargs):
+        if bool(kwargs):
 
-        #     self.renderer_module.render_text(
-        #         f"ADDITIONAL ARGUMENTS",
-        #         move_cursor="down",
-        #         font_color=COLORS.PURPLE,
-        #         font_thickness=1,
-        #     )
+            self.renderer_module.render_text(
+                f"ADDITIONAL ARGUMENTS",
+                move_cursor="down",
+                font_color=COLORS.PURPLE,
+                font_thickness=1,
+            )
 
-        #     for (k, v) in kwargs.items():
+            for (k, v) in kwargs.items():
 
-        #         if not isinstance(v, dict):
+                if not isinstance(v, dict):
 
-        #             self.renderer_module.render_text(
-        #                 f"{k}: {v}",
-        #                 move_cursor="down",
-        #                 font_color=COLORS.BLUE,
-        #             )
+                    self.renderer_module.render_text(
+                        f"{k}: {v}",
+                        move_cursor="down",
+                        font_color=COLORS.BLUE,
+                    )
 
-        # if "cost_viz" in kwargs.keys():
-        #     world_future_bev_predicted = kwargs["cost_viz"][
-        #         "world_future_bev_predicted"
-        #     ]
-        #     mask_dict = kwargs["cost_viz"]["mask_dict"]
-        #     bev_selected_channels = kwargs["cost_viz"]["bev_selected_channels"]
+        if "cost_viz" in kwargs.keys():
+            world_future_bev_predicted = kwargs["cost_viz"][
+                "world_future_bev_predicted"
+            ]
+            mask_dict = kwargs["cost_viz"]["mask_dict"]
+            bev_selected_channels = kwargs["cost_viz"]["bev_selected_channels"]
 
-        #     _, S, _, H, W = world_future_bev_predicted.shape
+            _, S, _, H, W = world_future_bev_predicted.shape
 
-        #     cursor_master = self.renderer_module.get_cursor()
+            cursor_master = self.renderer_module.get_cursor()
 
-        #     for (mask_key, mask_value) in mask_dict.items():
+            for (mask_key, mask_value) in mask_dict.items():
 
-        #         for s in range(S - 1):
+                for s in range(S - 1):
 
-        #             bev = postprocess_bev(
-        #                 world_future_bev_predicted[0, s + 1],
-        #                 bev_selected_channels=bev_selected_channels,
-        #             )
+                    bev = postprocess_bev(
+                        world_future_bev_predicted[0, s + 1],
+                        bev_selected_channels=bev_selected_channels,
+                    )
 
-        #             mask = postprocess_mask(mask_value[0, s])
+                    mask = postprocess_mask(mask_value[0, s])
 
-        #             self.renderer_module.render_overlay_image(
-        #                 bev, mask, 0.5, 0.5, move_cursor="right"
-        #             )
+                    self.renderer_module.render_overlay_image(
+                        bev, mask, 0.5, 0.5, move_cursor="right"
+                    )
 
-        #             self.renderer_module.move_cursor("right", amount=(0, 10))
+                    self.renderer_module.move_cursor("right", amount=(0, 10))
 
-        #         self.renderer_module.render_text(
-        #             f"{mask_key}",
-        #             move_cursor="down",
-        #             font_color=COLORS.WHITE,
-        #         )
+                self.renderer_module.render_text(
+                    f"{mask_key}",
+                    move_cursor="down",
+                    font_color=COLORS.WHITE,
+                )
 
-        #         self.renderer_module.move_cursor("point", amount=cursor_master)
-        #         self.renderer_module.move_cursor("down", amount=(H + 10, 0))
+                self.renderer_module.move_cursor("point", amount=cursor_master)
+                self.renderer_module.move_cursor("down", amount=(H + 10, 0))
 
-        # if "ego_viz" in kwargs.keys():
-        #     ego_viz = kwargs["ego_viz"]
-        #     ego_future_location_predicted = ego_viz["ego_future_location_predicted"]
-        #     control_selected = ego_viz["control_selected"]
+        if "ego_viz" in kwargs.keys():
+            ego_viz = kwargs["ego_viz"]
+            ego_future_location_predicted = ego_viz["ego_future_location_predicted"]
+            control_selected = ego_viz["control_selected"]
 
-        #     _, S, _ = ego_future_location_predicted.shape
+            _, S, _ = ego_future_location_predicted.shape
 
-        #     self.renderer_module.move_cursor("point", amount=(0, 0))
+            self.renderer_module.move_cursor("point", amount=(0, 0))
 
-        #     if ("rgb_front" in self.data_dict.keys()) and (
-        #         "bev_world" in self.data_dict.keys()
-        #     ):
+            if ("rgb_front" in self.data_dict.keys()) and (
+                "bev_world" in self.data_dict.keys()
+            ):
 
-        #         for k in range(S):
+                for k in range(S):
 
-        #             self.renderer_module.move_cursor("point", amount=(0, 0))
+                    self.renderer_module.move_cursor("point", amount=(0, 0))
 
-        #             ego_future_location = postprocess_location(
-        #                 ego_future_location_predicted[0, k],
-        #                 ego_current_location=ego_current_location,
-        #             )
+                    ego_future_location = postprocess_location(
+                        ego_future_location_predicted[0, k],
+                        ego_current_location=ego_current_location,
+                    )
 
-        #             ego_future_location_pixel = world_2_pixel(
-        #                 ego_future_location,
-        #                 world_2_camera_transformation,
-        #                 h_image,
-        #                 w_image,
-        #                 fov,
-        #             )
+                    ego_future_location_pixel = world_2_pixel(
+                        ego_future_location,
+                        world_2_camera_transformation,
+                        h_image,
+                        w_image,
+                        fov,
+                    )
 
-        #             ego_future_location_bev = world_2_bev(
-        #                 ego_future_location,
-        #                 ego_current_location_,
-        #                 ego_yaw,
-        #                 h_bev,
-        #                 w_bev,
-        #                 pixels_per_meter,
-        #             )
+                    ego_future_location_bev = world_2_bev(
+                        ego_future_location,
+                        ego_current_location_,
+                        ego_yaw,
+                        h_bev,
+                        w_bev,
+                        pixels_per_meter,
+                    )
 
-        #             if ego_future_location_pixel is not None:
-        #                 render_position = (
-        #                     ego_future_location_pixel[0] + point_rgb_front_left_up[0],
-        #                     ego_future_location_pixel[1] + point_rgb_front_left_up[1],
-        #                 )
-        #                 self.renderer_module.render_point(
-        #                     pos=render_position, color=COLORS.YELLOW
-        #                 )
+                    if ego_future_location_pixel is not None:
+                        render_position = (
+                            ego_future_location_pixel[0] + point_rgb_front_left_up[0],
+                            ego_future_location_pixel[1] + point_rgb_front_left_up[1],
+                        )
+                        self.renderer_module.render_point(
+                            pos=render_position, color=COLORS.YELLOW
+                        )
 
-        #             if ego_future_location_bev is not None:
-        #                 render_position = (
-        #                     ego_future_location_bev[0] + point_bev_world_left_up[0],
-        #                     ego_future_location_bev[1] + point_bev_world_left_up[1],
-        #                 )
-        #                 self.renderer_module.render_point(
-        #                     pos=render_position, color=COLORS.YELLOW
-        #                 )
+                    if ego_future_location_bev is not None:
+                        render_position = (
+                            ego_future_location_bev[0] + point_bev_world_left_up[0],
+                            ego_future_location_bev[1] + point_bev_world_left_up[1],
+                        )
+                        self.renderer_module.render_point(
+                            pos=render_position, color=COLORS.YELLOW
+                        )
 
-        # for k in range(
-        #     self.render_dict["route"]["route_index"],
-        #     np.minimum(
-        #         self.render_dict["route"]["route_index"] + 10,
-        #         self.render_dict["route"]["route_length"],
-        #     ),
-        # ):
+        if "route" in self.render_dict.keys():
 
-        #     self.renderer_module.move_cursor("point", amount=(0, 0))
+            for k in range(
+                self.render_dict["route"]["route_index"],
+                np.minimum(
+                    self.render_dict["route"]["route_index"] + 10,
+                    self.render_dict["route"]["route_length"],
+                ),
+            ):
 
-        #     route_current_location = self.render_dict["route"]["current_waypoint"]
+                self.renderer_module.move_cursor("point", amount=(0, 0))
 
-        #     route_current_location = postprocess_location(
-        #         route_current_location, ego_current_location
-        #     )
+                route_current_location = self.render_dict["route"]["current_waypoint"]
 
-        #     route_current_location_pixel = world_2_pixel(
-        #         route_current_location,
-        #         world_2_camera_transformation,
-        #         h_image,
-        #         w_image,
-        #         fov,
-        #     )
+                route_current_location = postprocess_location(
+                    route_current_location, ego_current_location
+                )
 
-        #     route_current_location_bev = world_2_bev(
-        #         route_current_location,
-        #         ego_current_location_,
-        #         ego_yaw,
-        #         h_bev,
-        #         w_bev,
-        #         pixels_per_meter,
-        #     )
+                route_current_location_pixel = world_2_pixel(
+                    route_current_location,
+                    world_2_camera_transformation,
+                    h_image,
+                    w_image,
+                    fov,
+                )
 
-        #     if route_current_location_pixel is not None:
-        #         render_position = (
-        #             route_current_location_pixel[0] + point_rgb_front_left_up[0],
-        #             route_current_location_pixel[1] + point_rgb_front_left_up[1],
-        #         )
-        #         self.renderer_module.render_point(
-        #             pos=render_position, color=COLORS.BLUE
-        #         )
+                route_current_location_bev = world_2_bev(
+                    route_current_location,
+                    ego_current_location_,
+                    ego_yaw,
+                    h_bev,
+                    w_bev,
+                    pixels_per_meter,
+                )
 
-        #     if route_current_location_bev is not None:
-        #         render_position = (
-        #             route_current_location_bev[0] + point_bev_world_left_up[0],
-        #             route_current_location_bev[1] + point_bev_world_left_up[1],
-        #         )
-        #         self.renderer_module.render_point(
-        #             pos=render_position, color=COLORS.BLUE
-        #         )
+                if route_current_location_pixel is not None:
+                    render_position = (
+                        route_current_location_pixel[0] + point_rgb_front_left_up[0],
+                        route_current_location_pixel[1] + point_rgb_front_left_up[1],
+                    )
+                    self.renderer_module.render_point(
+                        pos=render_position, color=COLORS.BLUE
+                    )
 
-        # self.renderer_module.show()
+                if route_current_location_bev is not None:
+                    render_position = (
+                        route_current_location_bev[0] + point_bev_world_left_up[0],
+                        route_current_location_bev[1] + point_bev_world_left_up[1],
+                    )
+                    self.renderer_module.render_point(
+                        pos=render_position, color=COLORS.BLUE
+                    )
 
-        # saved_image_path = self.renderer_module.save(info=f"step_{self.counter}")
+        self.renderer_module.show()
 
-        # return saved_image_path
+        saved_image_path = self.renderer_module.save(info=f"step_{self.counter}")
+
+        return saved_image_path
 
     def close(self):
         """Close the environment"""

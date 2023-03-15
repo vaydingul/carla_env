@@ -6,8 +6,8 @@ log_path: ~ #"logs/"
 num_time_step_previous: &previous 20
 num_time_step_future: &future 10
 sequence_length: &sequence_length 30
-num_workers: &num_workers 7
-num_gpu: &num_gpu 2
+num_workers: &num_workers 5
+num_gpu: &num_gpu 8
 read_keys: &read_keys ["bev_world", "occ", "navigation_downsampled", "ego"]
 dilation: &dilation 1
 bev_agent_channel: &bev_agent_channel 7
@@ -28,7 +28,7 @@ dataset_train:
 
 # Dataloader related parameters for training
 dataloader_train:
-  batch_size: 70
+  batch_size: 25
   shuffle: true
   num_workers: *num_workers
   drop_last: true
@@ -46,7 +46,7 @@ dataset_val:
 
 # Dataloader related parameters for validation
 dataloader_val:
-  batch_size: 70
+  batch_size: 25
   shuffle: false
   num_workers: *num_workers
   drop_last: true
@@ -193,10 +193,10 @@ wandb_world_forward_model:
 # Wandb related parameters
 wandb:
   enable: true
-  resume: false
-  resume_checkpoint_number: 0
+  resume: true
+  resume_checkpoint_number: 5
   project: "mbl-refactored"
   group: "train-policy-model-multi-step-20Hz"
   name: "20-10-20Hz"
-  id: ~
+  id: 2h77me8w
   notes: "Policy model with 20Hz data and 20 time steps in the past and 10 time step in the future. It can work with every model that works in 20Hz."
