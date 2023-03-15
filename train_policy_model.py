@@ -60,7 +60,7 @@ def main(rank, world_size, config):
     if config["wandb"]["resume"]:
         # Fetch the specific checkpoint from wandb cloud storage
         policy_model_checkpoint_object = fetch_checkpoint_from_wandb_link(
-            link=config["wandb"]["link"],
+            wandb_link=config["wandb"]["link"],
             checkpoint_number=config["wandb"]["resume_checkpoint_number"]
         )
         policy_model_checkpoint_path = policy_model_checkpoint_object.name
