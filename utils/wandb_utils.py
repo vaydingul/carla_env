@@ -104,19 +104,22 @@ def create_wandb_run(config=None, dummy=False):
 
         if config["wandb"]["enable"]:
 
-            if not dummy:
+            if not config["wandb"]["resume"]:
 
-                if not config["wandb"]["resume"]:
-
-                    run = create_initial_run(config=config)
-
-                else:
-
-                    run = create_resumed_run(config=config)
+                run_ = create_initial_run(config=config)
 
             else:
 
-                run = DummyWandb(config=config)
+                run_ = create_resumed_run(config=config)
+
+            if dummy:
+
+                run = DummyWandb(config=run_.config)
+                run_.close()
+
+            else:
+
+                run = run_
 
         else:
 
