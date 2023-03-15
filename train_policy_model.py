@@ -55,7 +55,7 @@ def main(rank, world_size, config):
     # ---------------------------------------------------------------------------- #
     #                                   WANDB RUN                                  #
     # ---------------------------------------------------------------------------- #
-    policy_model_run = create_wandb_run(config)
+    policy_model_run = create_wandb_run(config if rank == 0 else None)
 
     if config["wandb"]["resume"]:
         # Fetch the specific checkpoint from wandb cloud storage
@@ -67,6 +67,8 @@ def main(rank, world_size, config):
         policy_model_checkpoint = torch.load(
             f=policy_model_checkpoint_path, map_location=organize_device(device)
         )
+
+        policy_model_run_ = fetch_run_from_wandb_link(config["wandb"]["link"])
 
     # ---------------------------------------------------------------------------- #
     #                    EGO FORWARD MODEL WANDB RUN CHECKPOINT                    #
@@ -144,11 +146,11 @@ def main(rank, world_size, config):
 
     if config["wandb"]["resume"]:
 
-        policy_model_class = policy_model_factory(policy_model_run.config)
+        policy_model_class = policy_model_factory(policy_model_run_.config)
 
         # Create and initialize the model with pretrained weights and biases
         policy_model = policy_model_class.load_model_from_wandb_run(
-            config=policy_model_run.config["policy_model"]["config"],
+            config=policy_model_run_.config["policy_model"]["config"],
             checkpoint_path=policy_model_checkpoint_path,
             device=device,
         )
@@ -260,18 +262,18 @@ def main(rank, world_size, config):
 
     if config["wandb"]["resume"]:
 
-        optimizer_class = optimizer_factory(policy_model_run.config)
+        optimizer_class = optimizer_factory(policy_model_run_.config)
         optimizer = optimizer_class(
-            optimization_parameters, **policy_model_run.config["optimizer"]["config"]
+            optimization_parameters, **policy_model_run_.config["optimizer"]["config"]
         )
         # Load the optimizer state dictionary
         optimizer.load_state_dict(policy_model_checkpoint["optimizer_state_dict"])
 
-        if policy_model_run.config["training"]["scheduler"]["enable"]:
-            scheduler_class = scheduler_factory(policy_model_run.config)
+        if policy_model_run_.config["training"]["scheduler"]["enable"]:
+            scheduler_class = scheduler_factory(policy_model_run_.config)
             scheduler = scheduler_class(
                 optimizer,
-                **policy_model_run.config["training"]["scheduler"]["config"],
+                **policy_model_run_.config["training"]["scheduler"]["config"],
             )
 
             # Load the scheduler state dictionary
@@ -299,9 +301,8 @@ def main(rank, world_size, config):
 
             scheduler = None
 
-    if policy_model_run is not None:
-        policy_model_run.save(config["config_path"])
-        policy_model_run.watch(policy_model, log="all")
+    policy_model_run.save(config["config_path"])
+    policy_model_run.watch(policy_model, log="all")
 
     # ------------------- Log information about the model ------------------------ #
     logger.info(
@@ -359,14 +360,11 @@ def main(rank, world_size, config):
     )
 
     logger.info("Training started!")
-    if rank != 0:
-        policy_model_run = create_wandb_run(None)
     trainer.learn(policy_model_run)
     logger.info("Training finished!")
 
     destroy_process_group()
 
-    
     policy_model_run.finish()
 
 
