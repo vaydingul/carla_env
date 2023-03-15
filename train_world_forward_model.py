@@ -52,7 +52,8 @@ def main(rank, world_size, config):
     # ---------------------------------------------------------------------------- #
     #                                   WANDB RUN                                  #
     # ---------------------------------------------------------------------------- #
-    run = create_wandb_run(config if rank == 0 else None)
+    run = create_wandb_run(config)
+
     if config["wandb"]["resume"]:
         # Fetch the specific checkpoint from wandb cloud storage
         checkpoint_object = fetch_checkpoint_from_wandb_run(
@@ -248,6 +249,8 @@ def main(rank, world_size, config):
     )
 
     logger.info("Training started!")
+    if rank != 0:
+        run = create_wandb_run(None)
     trainer.learn(run)
     logger.info("Training finished!")
 

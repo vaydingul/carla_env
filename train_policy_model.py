@@ -55,7 +55,7 @@ def main(rank, world_size, config):
     # ---------------------------------------------------------------------------- #
     #                                   WANDB RUN                                  #
     # ---------------------------------------------------------------------------- #
-    policy_model_run = create_wandb_run(config, dummy=rank != 0)
+    policy_model_run = create_wandb_run(config)
 
     if config["wandb"]["resume"]:
         # Fetch the specific checkpoint from wandb cloud storage
@@ -359,13 +359,15 @@ def main(rank, world_size, config):
     )
 
     logger.info("Training started!")
+    if rank != 0:
+        policy_model_run = create_wandb_run(None)
     trainer.learn(policy_model_run)
     logger.info("Training finished!")
 
     destroy_process_group()
 
-    if policy_model_run is not None:
-        policy_model_run.finish()
+    
+    policy_model_run.finish()
 
 
 if __name__ == "__main__":
