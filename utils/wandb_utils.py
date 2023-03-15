@@ -14,9 +14,8 @@ class DummyConfig:
 class DummyWandb:
     """Dummy class for wandb when it is not enabled."""
 
-    config: DummyConfig = DummyConfig()
-
-    def __init__(self) -> None:
+    def __init__(self, config=DummyConfig()) -> None:
+        self.config = config
         pass
 
     def log(self, *args, **kwargs):
@@ -99,9 +98,11 @@ def create_resumed_run(config):
     return run
 
 
-def create_wandb_run(config=None):
+def create_wandb_run(config=None, dummy=False):
     # Setup the wandb
     if config is not None:
+
+
         if config["wandb"]["enable"]:
 
             if not config["wandb"]["resume"]:
@@ -112,9 +113,10 @@ def create_wandb_run(config=None):
 
                 run = create_resumed_run(config=config)
 
-        else:
+            if dummy:
 
-            run = DummyWandb()
+                run = DummyWandb(config=run.config)
+
 
     else:
 
