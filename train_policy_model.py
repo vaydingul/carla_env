@@ -9,7 +9,7 @@ from torch.utils.data.distributed import DistributedSampler
 from torch.distributed import init_process_group, destroy_process_group
 
 
-from utils.train_utils import seed_everything
+from utils.train_utils import seed_everything, organize_device
 from utils.wandb_utils import create_wandb_run
 from utils.model_utils import (
     fetch_checkpoint_from_wandb_run,
@@ -65,7 +65,7 @@ def main(rank, world_size, config):
         )
         policy_model_checkpoint_path = policy_model_checkpoint_object.name
         policy_model_checkpoint = torch.load(
-            f=policy_model_checkpoint_path, map_location=device
+            f=policy_model_checkpoint_path, map_location=organize_device(device)
         )
 
     # ---------------------------------------------------------------------------- #
