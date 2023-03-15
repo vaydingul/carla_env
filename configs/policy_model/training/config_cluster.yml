@@ -198,5 +198,6 @@ wandb:
   project: "mbl-refactored"
   group: "train-policy-model-multi-step-20Hz"
   name: "20-10-20Hz"
+  id: ~
   link: vaydingul/mbl-refactored/2h77me8w
   notes: "Policy model with 20Hz data and 20 time steps in the past and 10 time step in the future. It can work with every model that works in 20Hz."
