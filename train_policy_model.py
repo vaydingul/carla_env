@@ -55,13 +55,13 @@ def main(rank, world_size, config):
     # ---------------------------------------------------------------------------- #
     #                                   WANDB RUN                                  #
     # ---------------------------------------------------------------------------- #
-    policy_model_run = create_wandb_run(config if rank == 0 else None)
+    policy_model_run = create_wandb_run(config, dummy=rank != 0)
 
     if config["wandb"]["resume"]:
         # Fetch the specific checkpoint from wandb cloud storage
         policy_model_checkpoint_object = fetch_checkpoint_from_wandb_link(
             wandb_link=config["wandb"]["link"],
-            checkpoint_number=config["wandb"]["resume_checkpoint_number"]
+            checkpoint_number=config["wandb"]["resume_checkpoint_number"],
         )
         policy_model_checkpoint_path = policy_model_checkpoint_object.name
         policy_model_checkpoint = torch.load(
