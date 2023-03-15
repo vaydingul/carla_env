@@ -11,7 +11,11 @@ from torch.distributed import init_process_group, destroy_process_group
 
 from utils.train_utils import seed_everything
 from utils.wandb_utils import create_wandb_run
-from utils.model_utils import fetch_checkpoint_from_wandb_run, fetch_run_from_wandb_link
+from utils.model_utils import (
+    fetch_checkpoint_from_wandb_run,
+    fetch_run_from_wandb_link,
+    fetch_checkpoint_from_wandb_link,
+)
 from utils.path_utils import create_date_time_path
 from utils.config_utils import parse_yml
 from utils.log_utils import get_logger, configure_logger, pretty_print_config
@@ -55,9 +59,9 @@ def main(rank, world_size, config):
 
     if config["wandb"]["resume"]:
         # Fetch the specific checkpoint from wandb cloud storage
-        policy_model_checkpoint_object = fetch_checkpoint_from_wandb_run(
-            run=policy_model_run,
-            checkpoint_number=config["wandb"]["resume_checkpoint_number"],
+        policy_model_checkpoint_object = fetch_checkpoint_from_wandb_link(
+            link=config["wandb"]["link"],
+            checkpoint_number=config["wandb"]["resume_checkpoint_number"]
         )
         policy_model_checkpoint_path = policy_model_checkpoint_object.name
         policy_model_checkpoint = torch.load(
