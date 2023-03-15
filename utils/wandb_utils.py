@@ -59,12 +59,42 @@ def create_initial_run(config):
 
 def create_resumed_run(config):
 
+    if config["wandb"]["id"] is None:
+
+        if config["wandb"]["link"] is not None:
+
+            config["wandb"]["id"] = config["wandb"]["link"].split("/")[-1]
+
+        else:
+
+            raise ValueError(
+                "wandb id or wandb link must be specified when resuming a run"
+            )
+
+    else:
+
+        if config["wandb"]["link"] is None:
+
+            config["wandb"][
+                "link"
+            ] = f"vaydingul/{config['wandb']['project']}/{config['wandb']['id']}"
+
+        else:
+
+            if config["wandb"]["link"].split("/")[-1] != config["wandb"]["id"]:
+
+                raise ValueError(
+                    "wandb id and wandb link do not match, please check the values"
+                )
+
     run = wandb.init(
         project=config["wandb"]["project"],
         group=config["wandb"]["group"],
         id=config["wandb"]["id"],
         resume="allow",
     )
+
+    run.config.update(config, allow_val_change=True)
 
     return run
 
