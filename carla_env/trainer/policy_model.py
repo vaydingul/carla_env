@@ -355,19 +355,19 @@ class Trainer(object):
 
         for k in range(self.num_time_step_future):
 
+            (
+                world_previous_bev_encoded,
+                world_future_bev_predicted,
+            ) = self.world_forward_model(world_previous_bev, sample_latent=True)
+
             if self.use_world_forward_model_encoder_output_as_world_state:
 
-                world_previous_bev_feature = self.world_forward_model(
-                    world_previous_bev, sample_latent=True, encoded=True
-                )
+                world_previous_bev_feature = world_previous_bev_encoded
 
             else:
 
                 world_previous_bev_feature = world_previous_bev
 
-            world_future_bev_predicted = self.world_forward_model(
-                world_previous_bev, sample_latent=True
-            )
             world_future_bev_predicted = torch.sigmoid(world_future_bev_predicted)
 
             action = self.policy_model(
