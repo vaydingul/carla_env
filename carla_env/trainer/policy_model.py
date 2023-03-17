@@ -86,15 +86,15 @@ class Trainer(object):
         self.world_forward_model.to(self.rank)
         self.policy_model.to(self.rank)
         self.ego_forward_model = DDP(
-            self.ego_forward_model, device_ids=[self.rank], find_unused_parameters=True
+            self.ego_forward_model, device_ids=[self.rank], find_unused_parameters=False
         )
         self.world_forward_model = DDP(
             self.world_forward_model,
             device_ids=[self.rank],
-            find_unused_parameters=True,
+            find_unused_parameters=False,
         )
         self.policy_model = DDP(
-            self.policy_model, device_ids=[self.rank], find_unused_parameters=True
+            self.policy_model, device_ids=[self.rank], find_unused_parameters=False
         )
 
         # ----------------------- Save same values know a prior ---------------------- #
