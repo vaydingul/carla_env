@@ -72,7 +72,13 @@ class WorldBEVModel(nn.Module):
 
         self.dropout = self.config["dropout"]
 
-    def forward(self, world_previous_bev, world_future_bev=None, sample_latent=False):
+    def forward(
+        self,
+        world_previous_bev,
+        world_future_bev=None,
+        sample_latent=False,
+        encoded=False,
+    ):
 
         world_previous_bev = world_previous_bev.view(
             world_previous_bev.shape[0],
@@ -113,23 +119,53 @@ class WorldBEVModel(nn.Module):
 
         else:
 
-            world_previous_bev_encoded = self.world_previous_bev_encoder(
-                world_previous_bev
-            )
+            if encoded:
 
-            latent_representation = torch.randn(
-                world_previous_bev_encoded.shape[0], self.latent_size
-            ).to(world_previous_bev.device)
+                world_previous_bev_encoded = self.sample_encoded(world_previous_bev)
+                return world_previous_bev_encoded
 
-            h = self.latent_expander(
-                latent_representation
-            ) + world_previous_bev_encoded.flatten(start_dim=1)
+            else:
+                
+                world_future_bev_predicted = self.sample(world_previous_bev)
+                return world_future_bev_predicted
 
-            world_future_bev_predicted = self.world_bev_decoder(
-                h.view(world_previous_bev_encoded.shape)
-            )
+    def sample(self, world_previous_bev):
 
-            return (world_previous_bev_encoded, world_future_bev_predicted)
+        world_previous_bev = world_previous_bev.view(
+            world_previous_bev.shape[0],
+            -1,
+            world_previous_bev.shape[-2],
+            world_previous_bev.shape[-1],
+        )
+
+        world_previous_bev_encoded = self.world_previous_bev_encoder(world_previous_bev)
+
+        latent_representation = torch.randn(
+            world_previous_bev_encoded.shape[0], self.latent_size
+        ).to(world_previous_bev.device)
+
+        h = self.latent_expander(
+            latent_representation
+        ) + world_previous_bev_encoded.flatten(start_dim=1)
+
+        world_future_bev_predicted = self.world_bev_decoder(
+            h.view(world_previous_bev_encoded.shape)
+        )
+
+        return world_future_bev_predicted
+
+    def sample_encoded(self, world_previous_bev):
+
+        world_previous_bev = world_previous_bev.view(
+            world_previous_bev.shape[0],
+            -1,
+            world_previous_bev.shape[-2],
+            world_previous_bev.shape[-1],
+        )
+
+        world_previous_bev_encoded = self.world_previous_bev_encoder(world_previous_bev)
+
+        return world_previous_bev_encoded
 
     def get_input_shape_previous(self):
 

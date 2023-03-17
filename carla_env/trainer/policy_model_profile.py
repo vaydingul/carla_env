@@ -4,6 +4,7 @@ import torch
 from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
+from torch.profiler import profile, record_function, ProfilerActivity
 from carla_env.sampler.distributed_weighted_sampler import DistributedWeightedSampler
 
 from pathlib import Path
@@ -15,6 +16,17 @@ from utils.render_utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def trace_handler(p):
+
+    output = p.key_averages().table(sort_by="self_cuda_time_total", row_limit=100)
+
+    # Write output to a file
+    with open("stats_no_parameter_find_2" + str(p.step_num) + ".txt", "w") as f:
+        f.write(output)
+
+    p.export_chrome_trace("/tmp/no_parameter_find_2_trace_" + str(p.step_num) + ".json")
 
 
 class Trainer(object):
@@ -86,15 +98,15 @@ class Trainer(object):
         self.world_forward_model.to(self.rank)
         self.policy_model.to(self.rank)
         self.ego_forward_model = DDP(
-            self.ego_forward_model, device_ids=[self.rank], find_unused_parameters=True
+            self.ego_forward_model, device_ids=[self.rank], find_unused_parameters=False
         )
         self.world_forward_model = DDP(
             self.world_forward_model,
             device_ids=[self.rank],
-            find_unused_parameters=True,
+            find_unused_parameters=False,
         )
         self.policy_model = DDP(
-            self.policy_model, device_ids=[self.rank], find_unused_parameters=True
+            self.policy_model, device_ids=[self.rank], find_unused_parameters=False
         )
 
         # ----------------------- Save same values know a prior ---------------------- #
@@ -205,6 +217,7 @@ class Trainer(object):
         loss_dict_list = []
 
         with torch.no_grad():
+
             for i, (data) in enumerate(self.dataloader_val):
 
                 loss_dict = self.shared_step(i, data)
@@ -249,8 +262,6 @@ class Trainer(object):
             + self.num_time_step_future,
         ].to(self.rank)
         world_future_bev_predicted_list = []
-
-        world_future_bev_ = world_future_bev.clone()
 
         # Ego previous location
         ego_previous_location = data["ego"]["location_array"][
@@ -531,62 +542,36 @@ class Trainer(object):
             "loss": loss,
         }
 
-        self.render(
-            i,
-            world_future_bev.requires_grad_(False)
-            if self.use_ground_truth
-            else world_future_bev_predicted,
-            cost,
-            ego_future_action_predicted,
-            ego_future_action,
-        )
+        # self.render(
+        #     i,
+        #     world_future_bev.requires_grad_(False)
+        #     if self.use_ground_truth
+        #     else world_future_bev_predicted,
+        #     cost,
+        #     ego_future_action_predicted,
+        #     ego_future_action,
+        # )
 
         return loss_dict
 
     def learn(self, run=None):
 
-        # self.epoch = -1
-        # loss_dict = self.validate(-1, run)
-        # logger.info(f"{'='*10} Initial Validation {'='*10}")
-        # logger.info(f"Epoch: Start")
-        # for (k, v) in loss_dict.items():
-        #     logger.info(f"{k}: {v}")
-        # logger.info(f"{'='*10} Initial Validation {'='*10}")
+        with profile(
+            activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+            schedule=torch.profiler.schedule(
+                skip_first=1,
+                wait=1,
+                warmup=1,
+                active=3,
+                repeat=2,
+            ),
+            on_trace_ready=trace_handler,
+        ) as p:
 
-        for epoch in range(self.current_epoch, self.num_epochs):
-            self.epoch = epoch
-            self.train(epoch, run)
-
-            if (epoch + 1) % self.val_interval == 0:
-
-                loss_dict = self.validate(epoch, run)
-                logger.info(f"{'='*10} Validation {'='*10}")
-                logger.info(f"Epoch: {epoch}")
-                for (k, v) in loss_dict.items():
-                    logger.info(f"{k}: {v}")
-                logger.info(f"{'='*10} Validation {'='*10}")
-
-                if self.lr_scheduler is not None:
-                    self.lr_scheduler.step()
-
-            if ((epoch + 1) % self.save_interval == 0) and self.save_path is not None:
-
-                torch.save(
-                    {
-                        "model_state_dict": self.policy_model.module.state_dict(),
-                        "optimizer_state_dict": self.optimizer.state_dict(),
-                        "scheduler_state_dict": self.lr_scheduler.state_dict()
-                        if self.lr_scheduler
-                        else None,
-                        "epoch": epoch,
-                        "train_step": self.train_step,
-                        "val_step": self.val_step,
-                    },
-                    self.save_path / Path(f"checkpoint_{epoch}.pt"),
-                )
-
-                if run is not None:
-                    run.save(str(self.save_path / Path(f"checkpoint_{epoch}.pt")))
+            for epoch in range(self.current_epoch, self.num_epochs):
+                self.epoch = epoch
+                self.train(epoch, run)
+                p.step()
 
     def render(self, i, world_future_bev_predicted, cost, action_pred, action_gt):
 
