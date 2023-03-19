@@ -19,7 +19,7 @@ bev_calculate_offroad: &bev_calculate_offroad false
 dataset_train:
   type: "InstanceDatasetRAM"
   config:
-    data_path: "/kuacc/users/vaydingul20/ground_truth_bev_model_dummy_data_20Hz_multichannel_bev_dense_traffic/"
+    data_path: "/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_20Hz_multichannel_bev_dense_traffic/"
     sequence_length: *sequence_length
     read_keys: *read_keys
     dilation: *dilation
@@ -39,7 +39,7 @@ dataloader_train:
 dataset_val:
   type: "InstanceDatasetRAM"
   config:
-    data_path: "/kuacc/users/vaydingul20/ground_truth_bev_model_dummy_data_20Hz_multichannel_bev_dense_traffic/"
+    data_path: "/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_20Hz_multichannel_bev_dense_traffic/"
     sequence_length: *sequence_length
     read_keys: *read_keys
     dilation: *dilation
