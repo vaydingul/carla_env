@@ -129,8 +129,10 @@ class Cost(nn.Module):
     def create_masks(self, x, y, yaw, speed):
 
         # Repeat the coordinate mask for each time step and batch
-        coordinate_mask = self.coordinate_mask.clone().repeat(
-            x.shape[0], x.shape[1], 1, 1, 1
+        coordinate_mask = (
+            self.coordinate_mask.clone()
+            .detach()
+            .repeat(x.shape[0], x.shape[1], 1, 1, 1)
         )
 
         # Align the coordinate mask with the ego vehicle

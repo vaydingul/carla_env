@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import torch
+import time
 from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
@@ -16,17 +17,6 @@ from utils.render_utils import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-def trace_handler(p):
-
-    output = p.key_averages().table(sort_by="self_cuda_time_total", row_limit=100)
-
-    # Write output to a file
-    with open("stats_no_parameter_find_2" + str(p.step_num) + ".txt", "w") as f:
-        f.write(output)
-
-    p.export_chrome_trace("/tmp/no_parameter_find_2_trace_" + str(p.step_num) + ".json")
 
 
 class Trainer(object):
@@ -97,17 +87,17 @@ class Trainer(object):
         self.ego_forward_model.to(self.rank)
         self.world_forward_model.to(self.rank)
         self.policy_model.to(self.rank)
-        self.ego_forward_model = DDP(
-            self.ego_forward_model, device_ids=[self.rank], find_unused_parameters=False
-        )
-        self.world_forward_model = DDP(
-            self.world_forward_model,
-            device_ids=[self.rank],
-            find_unused_parameters=False,
-        )
-        self.policy_model = DDP(
-            self.policy_model, device_ids=[self.rank], find_unused_parameters=False
-        )
+        # self.ego_forward_model = DDP(
+        #     self.ego_forward_model, device_ids=[self.rank], find_unused_parameters=False
+        # )
+        # self.world_forward_model = DDP(
+        #     self.world_forward_model,
+        #     device_ids=[self.rank],
+        #     find_unused_parameters=False,
+        # )
+        # self.policy_model = DDP(
+        #     self.policy_model, device_ids=[self.rank], find_unused_parameters=False
+        # )
 
         # ----------------------- Save same values know a prior ---------------------- #
 
@@ -146,10 +136,20 @@ class Trainer(object):
         ):
             self.dataloader_train.sampler.set_epoch(epoch)
 
-        for i, (data) in enumerate(self.dataloader_train):
+        for i in range(len(self.dataloader_train)):
 
+            start_time_data = time.time()
+            data = next(iter(self.dataloader_train))
+            end_time_data = time.time()
+
+            start_time_step = time.time()
             loss_dict = self.shared_step(i, data)
+            end_time_step = time.time()
 
+            print(f"Data time: {end_time_data - start_time_data}")
+            print(f"Step time: {end_time_step - start_time_step}")
+            # if i == 1:
+            #     break
             loss = loss_dict["loss"]
 
             # Backward pass
@@ -251,296 +251,337 @@ class Trainer(object):
 
         # ------------------------------ Data Setup ------------------------------- #
         # World previous BEV
-        world_previous_bev = data["bev_world"]["bev"][
-            :, : self.num_time_step_previous
-        ].to(self.rank)
+        with torch.profiler.record_function("DATA LOAD"):
 
-        # World future BEV
-        world_future_bev = data["bev_world"]["bev"][
-            :,
-            self.num_time_step_previous : self.num_time_step_previous
-            + self.num_time_step_future,
-        ].to(self.rank)
-        world_future_bev_predicted_list = []
+            world_previous_bev = data["bev_world"]["bev"][
+                :, : self.num_time_step_previous
+            ].to(self.rank)
 
-        # Ego previous location
-        ego_previous_location = data["ego"]["location_array"][
-            :, self.num_time_step_previous - 1, 0:2
-        ].to(self.rank)
+            # World future BEV
+            world_future_bev = data["bev_world"]["bev"][
+                :,
+                self.num_time_step_previous : self.num_time_step_previous
+                + self.num_time_step_future,
+            ].to(self.rank)
+            world_future_bev_predicted_list = []
 
-        # Ego future location
-        ego_future_location = data["ego"]["location_array"][
-            :,
-            self.num_time_step_previous : self.num_time_step_previous
-            + self.num_time_step_future,
-            0:2,
-        ].to(self.rank)
-        ego_future_location_predicted_list = []
+            # Ego previous location
+            ego_previous_location = data["ego"]["location_array"][
+                :, self.num_time_step_previous - 1, 0:2
+            ].to(self.rank)
 
-        # Ego previous yaw
-        ego_previous_yaw = torch.deg2rad(
-            data["ego"]["rotation_array"][:, self.num_time_step_previous - 1, 2:].to(
+            # Ego future location
+            ego_future_location = data["ego"]["location_array"][
+                :,
+                self.num_time_step_previous : self.num_time_step_previous
+                + self.num_time_step_future,
+                0:2,
+            ].to(self.rank)
+            ego_future_location_predicted_list = []
+
+            # Ego previous yaw
+            ego_previous_yaw = torch.deg2rad(
+                data["ego"]["rotation_array"][
+                    :, self.num_time_step_previous - 1, 2:
+                ].to(self.rank)
+            )
+
+            # Ego future yaw
+            ego_future_yaw = torch.deg2rad(
+                data["ego"]["rotation_array"][
+                    :,
+                    self.num_time_step_previous : self.num_time_step_previous
+                    + self.num_time_step_future,
+                    2:,
+                ].to(self.rank)
+            )
+            ego_future_yaw_predicted_list = []
+
+            # Ego previous speed
+            ego_previous_speed = (
+                data["ego"]["velocity_array"][:, self.num_time_step_previous - 1]
+                .norm(2, -1, keepdim=True)
+                .to(self.rank)
+            )
+
+            # Ego future speed
+            ego_future_speed = (
+                data["ego"]["velocity_array"][
+                    :,
+                    self.num_time_step_previous : self.num_time_step_previous
+                    + self.num_time_step_future,
+                ]
+                .norm(2, -1, keepdim=True)
+                .to(self.rank)
+            )
+            ego_future_speed_predicted_list = []
+
+            # Ego future action
+            ego_future_action = data["ego"]["control_array"][
+                :,
+                self.num_time_step_previous : self.num_time_step_previous
+                + self.num_time_step_future,
+            ].to(self.rank)
+
+            # Ground-truth action has the form of (throttle, steer, brake)
+            # We convert it to (acceleration, brake) for the model
+            ego_future_action[..., 0] -= ego_future_action[..., -1]
+            ego_future_action = ego_future_action[..., :2]
+
+            ego_future_action_predicted_list = []
+
+            # High-level navigational command
+            command = (
+                data["navigation_downsampled"]["command"][
+                    :, self.num_time_step_previous - 1
+                ]
+                .long()
+                .to(self.rank)
+            )
+            command = F.one_hot(command - 1, num_classes=6).float()
+
+            # Target waypoint location
+            target_location = data["navigation_downsampled"]["waypoint"][
+                :, self.num_time_step_previous - 1, 0:2
+            ].to(self.rank)
+
+            # Occupancy data
+            occupancy = data["occ"]["occupancy"][:, self.num_time_step_previous - 1].to(
                 self.rank
             )
-        )
 
-        # Ego future yaw
-        ego_future_yaw = torch.deg2rad(
-            data["ego"]["rotation_array"][
-                :,
-                self.num_time_step_previous : self.num_time_step_previous
-                + self.num_time_step_future,
-                2:,
-            ].to(self.rank)
-        )
-        ego_future_yaw_predicted_list = []
+            if self.binary_occupancy:
+                occupancy[occupancy <= self.binary_occupancy_threshold] = 1.0
+                occupancy[occupancy > self.binary_occupancy_threshold] = 0.0
 
-        # Ego previous speed
-        ego_previous_speed = (
-            data["ego"]["velocity_array"][:, self.num_time_step_previous - 1]
-            .norm(2, -1, keepdim=True)
-            .to(self.rank)
-        )
+            # ------------------------------ Forward Pass ------------------------------ #
 
-        # Ego future speed
-        ego_future_speed = (
-            data["ego"]["velocity_array"][
-                :,
-                self.num_time_step_previous : self.num_time_step_previous
-                + self.num_time_step_future,
-            ]
-            .norm(2, -1, keepdim=True)
-            .to(self.rank)
-        )
-        ego_future_speed_predicted_list = []
+            B, S_previous, _, _, _ = world_previous_bev.shape
+            _, S_future, _, _, _ = world_future_bev.shape
 
-        # Ego future action
-        ego_future_action = data["ego"]["control_array"][
-            :,
-            self.num_time_step_previous : self.num_time_step_previous
-            + self.num_time_step_future,
-        ].to(self.rank)
+            # Initialize the ego state
+            ego_state_previous = {
+                "location": ego_previous_location,
+                "yaw": ego_previous_yaw,
+                "speed": ego_previous_speed,
+            }
 
-        # Ground-truth action has the form of (throttle, steer, brake)
-        # We convert it to (acceleration, brake) for the model
-        ego_future_action[..., 0] -= ego_future_action[..., -1]
-        ego_future_action = ego_future_action[..., :2]
+        with torch.profiler.record_function("ITERATION"):
 
-        ego_future_action_predicted_list = []
+            for k in range(self.num_time_step_future):
 
-        # High-level navigational command
-        command = (
-            data["navigation_downsampled"]["command"][
-                :, self.num_time_step_previous - 1
-            ]
-            .long()
-            .to(self.rank)
-        )
-        command = F.one_hot(command - 1, num_classes=6).float()
+                with torch.profiler.record_function(f"ITERATION {k}"):
 
-        # Target waypoint location
-        target_location = data["navigation_downsampled"]["waypoint"][
-            :, self.num_time_step_previous - 1, 0:2
-        ].to(self.rank)
+                    with torch.profiler.record_function(f"WORLD MODEL EXECUTION {k}"):
 
-        # Occupancy data
-        occupancy = data["occ"]["occupancy"][:, self.num_time_step_previous - 1].to(
-            self.rank
-        )
+                        (
+                            world_previous_bev_encoded,
+                            world_future_bev_predicted,
+                        ) = self.world_forward_model(
+                            world_previous_bev, sample_latent=True
+                        )
 
-        if self.binary_occupancy:
-            occupancy[occupancy <= self.binary_occupancy_threshold] = 1.0
-            occupancy[occupancy > self.binary_occupancy_threshold] = 0.0
+                        if self.use_world_forward_model_encoder_output_as_world_state:
 
-        # ------------------------------ Forward Pass ------------------------------ #
+                            world_previous_bev_feature = world_previous_bev_encoded
 
-        B, S_previous, _, _, _ = world_previous_bev.shape
-        _, S_future, _, _, _ = world_future_bev.shape
+                        else:
 
-        # Initialize the ego state
-        ego_state_previous = {
-            "location": ego_previous_location,
-            "yaw": ego_previous_yaw,
-            "speed": ego_previous_speed,
-        }
+                            world_previous_bev_feature = world_previous_bev
 
-        for k in range(self.num_time_step_future):
+                        world_future_bev_predicted = torch.sigmoid(
+                            world_future_bev_predicted
+                        )
 
-            if self.use_world_forward_model_encoder_output_as_world_state:
+                    with torch.profiler.record_function(f"POLICY MODEL EXECUTION {k}"):
 
-                world_previous_bev_feature = self.world_forward_model(
-                    world_previous_bev, sample_latent=True, encoded=True
+                        action = self.policy_model(
+                            ego_state=ego_state_previous,
+                            world_state=world_previous_bev_feature.detach(),
+                            command=command,
+                            target_location=target_location,
+                            occupancy=occupancy,
+                        )
+
+                    with torch.profiler.record_function(f"EGO MODEL EXECUTION {k}"):
+
+                        ego_state_next = self.ego_forward_model(
+                            ego_state_previous, action
+                        )
+
+                    with torch.profiler.record_function(f"DATA MANIPULATION {k}"):
+
+                        world_future_bev_predicted_list.append(
+                            world_future_bev_predicted
+                        )
+
+                        ego_future_location_predicted_list.append(
+                            ego_state_next["location"]
+                        )
+                        ego_future_yaw_predicted_list.append(ego_state_next["yaw"])
+                        ego_future_speed_predicted_list.append(ego_state_next["speed"])
+                        ego_future_action_predicted_list.append(action)
+
+                        # Update the previous bev
+                        world_previous_bev = torch.cat(
+                            (
+                                world_previous_bev[:, 1:],
+                                world_future_bev[:, k].unsqueeze(1)
+                                if self.use_ground_truth
+                                else world_future_bev_predicted.unsqueeze(1),
+                            ),
+                            dim=1,
+                        )
+
+                        ego_state_previous = ego_state_next
+
+        with torch.profiler.record_function("PREDICTION STACK"):
+
+            world_future_bev_predicted = torch.stack(
+                world_future_bev_predicted_list, dim=1
+            )
+
+            ego_future_location_predicted = torch.stack(
+                ego_future_location_predicted_list, dim=1
+            )
+
+            ego_future_yaw_predicted = torch.stack(ego_future_yaw_predicted_list, dim=1)
+
+            ego_future_speed_predicted = torch.stack(
+                ego_future_speed_predicted_list, dim=1
+            )
+
+            ego_future_action_predicted = torch.stack(
+                ego_future_action_predicted_list, dim=1
+            )
+
+        with torch.profiler.record_function("POLICY COST CALCULATION"):
+
+            if self.num_time_step_future > 1:
+
+                cost = self.cost(
+                    ego_future_location_predicted,
+                    ego_future_yaw_predicted,
+                    ego_future_speed_predicted,
+                    world_future_bev.requires_grad_(True)
+                    if self.use_ground_truth
+                    else world_future_bev_predicted,
                 )
 
-            else:
-
-                world_previous_bev_feature = world_previous_bev
-
-            world_future_bev_predicted = self.world_forward_model(
-                world_previous_bev, sample_latent=True
-            )
-            world_future_bev_predicted = torch.sigmoid(world_future_bev_predicted)
-
-            action = self.policy_model(
-                ego_state=ego_state_previous,
-                world_state=world_previous_bev_feature.detach(),
-                command=command,
-                target_location=target_location,
-                occupancy=occupancy,
-            )
-
-            ego_state_next = self.ego_forward_model(ego_state_previous, action)
-
-            world_future_bev_predicted_list.append(world_future_bev_predicted)
-
-            ego_future_location_predicted_list.append(ego_state_next["location"])
-            ego_future_yaw_predicted_list.append(ego_state_next["yaw"])
-            ego_future_speed_predicted_list.append(ego_state_next["speed"])
-            ego_future_action_predicted_list.append(action)
-
-            # Update the previous bev
-            world_previous_bev = torch.cat(
-                (
-                    world_previous_bev[:, 1:],
-                    world_future_bev[:, k].unsqueeze(1)
-                    if self.use_ground_truth
-                    else world_future_bev_predicted.unsqueeze(1),
-                ),
-                dim=1,
-            )
-
-            ego_state_previous = ego_state_next
-
-        world_future_bev_predicted = torch.stack(world_future_bev_predicted_list, dim=1)
-
-        ego_future_location_predicted = torch.stack(
-            ego_future_location_predicted_list, dim=1
-        )
-
-        ego_future_yaw_predicted = torch.stack(ego_future_yaw_predicted_list, dim=1)
-
-        ego_future_speed_predicted = torch.stack(ego_future_speed_predicted_list, dim=1)
-
-        ego_future_action_predicted = torch.stack(
-            ego_future_action_predicted_list, dim=1
-        )
-
-        if self.num_time_step_future > 1:
-
-            cost = self.cost(
-                ego_future_location_predicted,
-                ego_future_yaw_predicted,
-                ego_future_speed_predicted,
-                world_future_bev.requires_grad_(True)
-                if self.use_ground_truth
-                else world_future_bev_predicted,
-            )
-
-            cost_dict = {k: v / (B * S_future) for (k, v) in cost["cost_dict"].items()}
-
-        else:
-
-            cost_dict = {}
-
-        action_mse = F.mse_loss(
-            ego_future_action_predicted, ego_future_action, reduction="sum"
-        ) / (B * S_future)
-
-        action_l1 = F.l1_loss(
-            ego_future_action_predicted, ego_future_action, reduction="sum"
-        ) / (B * S_future)
-
-        action_jerk = torch.diff(ego_future_action_predicted, dim=1).square().sum() / (
-            B * S_future
-        )
-
-        d0 = (
-            F.l1_loss(
-                target_location, ego_future_location_predicted[:, 0], reduction="none"
-            )
-            .sum(1, keepdim=True)
-            .repeat(1, S_future - 1)
-        )  # B x 1
-
-        di = F.l1_loss(
-            ego_future_location_predicted[:, 1:],
-            ego_future_location_predicted[:, 0:1].repeat(1, S_future - 1, 1),
-            reduction="none",
-        ).sum(
-            2
-        )  # B x S
-
-        di_ = F.l1_loss(
-            target_location.unsqueeze(1).repeat(1, S_future - 1, 1),
-            ego_future_location_predicted[:, 1:],
-            reduction="none",
-        ).sum(
-            2
-        )  # B x S
-
-        target_progress = (di / d0).mean()
-
-        target_remainder = (di_ / d0).mean()
-
-        ego_state_mse = torch.tensor(0.0).to(self.rank)
-
-        for key in self.policy_model.module.get_keys():
-
-            if key == "location":
-                ego_state_mse += F.l1_loss(
-                    ego_future_location_predicted, ego_future_location, reduction="sum"
-                ) / (B * S_future)
-
-            elif key == "yaw":
-                ego_state_mse += F.l1_loss(
-                    torch.cos(ego_future_yaw_predicted),
-                    torch.cos(ego_future_yaw),
-                    reduction="sum",
-                ) / (B * S_future)
-                ego_state_mse += F.l1_loss(
-                    torch.sin(ego_future_yaw_predicted),
-                    torch.sin(ego_future_yaw),
-                    reduction="sum",
-                ) / (B * S_future)
-
-            elif key == "speed":
-                ego_state_mse = F.l1_loss(
-                    ego_future_speed_predicted, ego_future_speed, reduction="sum"
-                ) / (B * S_future)
+                cost_dict = {
+                    k: v / (B * S_future) for (k, v) in cost["cost_dict"].items()
+                }
 
             else:
 
-                raise NotImplementedError
+                cost_dict = {}
 
-        loss = torch.tensor(0.0).to(self.rank)
+        with torch.profiler.record_function("REGULAR LOSS CALCULATION"):
 
-        for cost_key in cost_dict.keys():
+            action_mse = F.mse_loss(
+                ego_future_action_predicted, ego_future_action, reduction="sum"
+            ) / (B * S_future)
 
-            assert (
-                cost_key in self.cost_weight.keys()
-            ), f"{cost_key} not in {self.cost_weight.keys()}"
+            action_l1 = F.l1_loss(
+                ego_future_action_predicted, ego_future_action, reduction="sum"
+            ) / (B * S_future)
 
-            loss += cost_dict[cost_key] * self.cost_weight[cost_key]
+            action_jerk = torch.diff(
+                ego_future_action_predicted, dim=1
+            ).square().sum() / (B * S_future)
 
-        loss += (
-            action_mse * self.cost_weight["action_mse"]
-            + action_l1 * self.cost_weight["action_l1"]
-            + action_jerk * self.cost_weight["action_jerk"]
-            + target_progress * self.cost_weight["target_progress"]
-            + target_remainder * self.cost_weight["target_remainder"]
-            + ego_state_mse * self.cost_weight["ego_state_mse"]
-        )
+            d0 = (
+                F.l1_loss(
+                    target_location,
+                    ego_future_location_predicted[:, 0],
+                    reduction="none",
+                )
+                .sum(1, keepdim=True)
+                .repeat(1, S_future - 1)
+            )  # B x 1
 
-        loss_dict = {
-            **cost_dict,
-            "action_mse": action_mse,
-            "action_l1": action_l1,
-            "action_jerk": action_jerk,
-            "target_progress": target_progress,
-            "target_remainder": target_remainder,
-            "ego_state_mse": ego_state_mse,
-            "loss": loss,
-        }
+            di = F.l1_loss(
+                ego_future_location_predicted[:, 1:],
+                ego_future_location_predicted[:, 0:1].repeat(1, S_future - 1, 1),
+                reduction="none",
+            ).sum(
+                2
+            )  # B x S
+
+            di_ = F.l1_loss(
+                target_location.unsqueeze(1).repeat(1, S_future - 1, 1),
+                ego_future_location_predicted[:, 1:],
+                reduction="none",
+            ).sum(
+                2
+            )  # B x S
+
+            target_progress = (di / d0).mean()
+
+            target_remainder = (di_ / d0).mean()
+
+            ego_state_mse = torch.tensor(0.0).to(self.rank)
+
+            for key in self.policy_model.get_keys():
+
+                if key == "location":
+                    ego_state_mse += F.l1_loss(
+                        ego_future_location_predicted,
+                        ego_future_location,
+                        reduction="sum",
+                    ) / (B * S_future)
+
+                elif key == "yaw":
+                    ego_state_mse += F.l1_loss(
+                        torch.cos(ego_future_yaw_predicted),
+                        torch.cos(ego_future_yaw),
+                        reduction="sum",
+                    ) / (B * S_future)
+                    ego_state_mse += F.l1_loss(
+                        torch.sin(ego_future_yaw_predicted),
+                        torch.sin(ego_future_yaw),
+                        reduction="sum",
+                    ) / (B * S_future)
+
+                elif key == "speed":
+                    ego_state_mse = F.l1_loss(
+                        ego_future_speed_predicted, ego_future_speed, reduction="sum"
+                    ) / (B * S_future)
+
+                else:
+
+                    raise NotImplementedError
+        with torch.profiler.record_function("TOTAL LOSS CALCULATION"):
+
+            loss = torch.tensor(0.0).to(self.rank)
+
+            for cost_key in cost_dict.keys():
+
+                assert (
+                    cost_key in self.cost_weight.keys()
+                ), f"{cost_key} not in {self.cost_weight.keys()}"
+
+                loss += cost_dict[cost_key] * self.cost_weight[cost_key]
+
+            loss += (
+                action_mse * self.cost_weight["action_mse"]
+                + action_l1 * self.cost_weight["action_l1"]
+                + action_jerk * self.cost_weight["action_jerk"]
+                + target_progress * self.cost_weight["target_progress"]
+                + target_remainder * self.cost_weight["target_remainder"]
+                + ego_state_mse * self.cost_weight["ego_state_mse"]
+            )
+
+            loss_dict = {
+                **cost_dict,
+                "action_mse": action_mse,
+                "action_l1": action_l1,
+                "action_jerk": action_jerk,
+                "target_progress": target_progress,
+                "target_remainder": target_remainder,
+                "ego_state_mse": ego_state_mse,
+                "loss": loss,
+            }
 
         # self.render(
         #     i,
@@ -556,22 +597,35 @@ class Trainer(object):
 
     def learn(self, run=None):
 
-        with profile(
-            activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
-            schedule=torch.profiler.schedule(
-                skip_first=1,
-                wait=1,
-                warmup=1,
-                active=3,
-                repeat=2,
-            ),
-            on_trace_ready=trace_handler,
-        ) as p:
+        # with profile(
+        #     activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+        #     schedule=torch.profiler.schedule(
+        #         skip_first=1,
+        #         wait=1,
+        #         warmup=1,
+        #         active=3,
+        #         repeat=2,
+        #     ),
+        #     on_trace_ready=trace_handler,
+        # ) as p:
+        self.train(0, run)
 
-            for epoch in range(self.current_epoch, self.num_epochs):
-                self.epoch = epoch
-                self.train(epoch, run)
-                p.step()
+        with torch.profiler.profile(
+            activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+            with_stack=True,
+            profile_memory=True,
+        ) as prof:
+
+            self.train(1, run)
+
+        stats = prof.key_averages(group_by_stack_n=10).table(
+            sort_by="self_cuda_time_total", row_limit=1000
+        )
+        print(stats)
+        with open("stats.txt", "w") as f:
+            f.write(stats)
+
+        prof.export_chrome_trace("trace.json")
 
     def render(self, i, world_future_bev_predicted, cost, action_pred, action_gt):
 

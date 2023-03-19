@@ -569,7 +569,7 @@ class Trainer(object):
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()
 
-            if ((epoch + 1) % self.save_interval == 0) and self.save_path is not None:
+            if ((epoch + 1) % self.save_interval == 0) and (self.save_path is not None):
 
                 torch.save(
                     {

@@ -4,12 +4,8 @@ import argparse
 
 import torch
 from torch.utils.data import DataLoader
-import torch.multiprocessing as mp
-from torch.utils.data.distributed import DistributedSampler
-from torch.distributed import init_process_group, destroy_process_group, barrier
 
-
-from utils.train_utils import seed_everything, organize_device
+from utils.train_utils import seed_everything, organize_device, get_device
 from utils.wandb_utils import create_wandb_run
 from utils.model_utils import (
     fetch_checkpoint_from_wandb_run,
@@ -22,20 +18,8 @@ from utils.log_utils import get_logger, configure_logger, pretty_print_config
 from utils.factory import *
 
 
-def ddp_setup(rank, world_size, master_port):
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = master_port
-    init_process_group(backend="nccl", rank=rank, world_size=world_size)
-
-
-def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val):
+def main(config):
     # ---------------------------- TORCH related stuff --------------------------- #
-    torch.cuda.set_device(rank)
-    torch.cuda.empty_cache()
-    # ---------------------------------------------------------------------------- #
-    #                                   DDP SETUP                                  #
-    # ---------------------------------------------------------------------------- #
-    ddp_setup(rank, world_size, config["training"]["master_port"])
 
     # ---------------------------------------------------------------------------- #
     #                                    LOGGER                                    #
@@ -52,12 +36,13 @@ def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val)
     # ---------------------------------------------------------------------------- #
     #                                    DEVICE                                    #
     # ---------------------------------------------------------------------------- #
-    device = rank  # get_device()
+    device = get_device()
+    torch.cuda.empty_cache()
 
     # ---------------------------------------------------------------------------- #
     #                                   WANDB RUN                                  #
     # ---------------------------------------------------------------------------- #
-    # policy_model_run = create_wandb_run(config if rank == 0 else None)
+    policy_model_run = create_wandb_run(config)
 
     if config["wandb"]["resume"]:
         # Fetch the specific checkpoint from wandb cloud storage
@@ -186,13 +171,13 @@ def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val)
     # ---------------------------------------------------------------------------- #
     #                                 DATASET CLASS                                #
     # ---------------------------------------------------------------------------- #
-    # dataset_class = dataset_factory(config)
+    dataset_class = dataset_factory(config)
 
     # ---------------------------------------------------------------------------- #
     #                         TRAIN AND VALIDATION DATASETS                        #
     # ---------------------------------------------------------------------------- #
-    # dataset_train = dataset_class(config["dataset_train"]["config"])
-    # dataset_val = dataset_class(config["dataset_val"]["config"])
+    dataset_train = dataset_class(config["dataset_train"]["config"])
+    dataset_val = dataset_class(config["dataset_val"]["config"])
 
     # --------------------- Log information about the dataset -------------------- #
     logger.info(f"Train dataset size: {len(dataset_train)}")
@@ -204,27 +189,11 @@ def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val)
     dataloader_train = DataLoader(
         dataset_train,
         **config["dataloader_train"],
-        sampler=DistributedSampler(
-            dataset_train,
-            num_replicas=world_size,
-            rank=rank,
-            shuffle=True,
-            seed=config["seed"],
-        )
-        if config["training"]["weighted_sampling"]
-        else None,
     )
 
     dataloader_val = DataLoader(
         dataset_val,
         **config["dataloader_val"],
-        sampler=DistributedSampler(
-            dataset_val,
-            num_replicas=world_size,
-            rank=rank,
-            shuffle=False,
-            seed=config["seed"],
-        ),
     )
 
     # ------------------- Log information about the dataloader -------------------- #
@@ -350,9 +319,9 @@ def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val)
         use_world_forward_model_encoder_output_as_world_state=config["training"][
             "use_world_forward_model_encoder_output_as_world_state"
         ],
-        debug_render=config["training"]["debug_render"] if rank == 0 else False,
+        debug_render=config["training"]["debug_render"],
         renderer=config["training"]["renderer"],
-        save_path=config["checkpoint_path"] if rank == 0 else None,
+        save_path=config["checkpoint_path"],
         train_step=policy_model_checkpoint["train_step"]
         if config["wandb"]["resume"]
         else 0,
@@ -365,8 +334,6 @@ def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val)
     trainer.learn(policy_model_run)
     logger.info("Training finished!")
 
-    destroy_process_group()
-
     policy_model_run.finish()
 
 
@@ -376,7 +343,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path",
         type=str,
-        default="/home/volkan/Documents/Codes/carla_env_modified/configs/policy_model/training/config_cluster.yml",
+        default="/home/volkan/Documents/Codes/carla_env_modified/configs/policy_model/training/config_profile.yml",
     )
 
     args = parser.parse_args()
@@ -386,30 +353,4 @@ if __name__ == "__main__":
 
     config["config_path"] = args.config_path
 
-    # ---------------------------------------------------------------------------- #
-    #                                   WANDB RUN                                  #
-    # ---------------------------------------------------------------------------- #
-    policy_model_run = create_wandb_run(config)
-
-    # ---------------------------------------------------------------------------- #
-    #                                 DATASET CLASS                                #
-    # ---------------------------------------------------------------------------- #
-    dataset_class = dataset_factory(config)
-
-    # ---------------------------------------------------------------------------- #
-    #                         TRAIN AND VALIDATION DATASETS                        #
-    # ---------------------------------------------------------------------------- #
-    dataset_train = dataset_class(config["dataset_train"]["config"])
-    dataset_val = dataset_class(config["dataset_val"]["config"])
-
-    mp.spawn(
-        main,
-        args=(
-            config["training"]["num_gpu"],
-            config,
-            policy_model_run,
-            dataset_train,
-            dataset_val,
-        ),
-        nprocs=config["training"]["num_gpu"],
-    )
+    main(config)

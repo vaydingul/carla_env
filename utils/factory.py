@@ -6,7 +6,6 @@ def ego_forward_model_factory(config):
         or (config["experiment_type"] == "train_policy_model")
         or (config["experiment_type"] == "test_dfm_km_cp")
         or (config["experiment_type"] == "test_mpc")
-
     ):
 
         if config["ego_forward_model"]["type"] == "KinematicBicycleModel":
@@ -159,7 +158,7 @@ def evaluator_factory(config):
         from carla_env.evaluator.world_forward_model import Evaluator
 
         return Evaluator
-    
+
     elif config["experiment_type"] == "eval_policy_model_leaderboard":
 
         from carla_env.evaluator.policy_model_leaderboard import Evaluator
@@ -371,21 +370,65 @@ def scheduler_factory(config):
 
 def dataset_factory(config):
 
-    if (
-        (config["experiment_type"] == "train_ego_forward_model")
-        or (config["experiment_type"] == "test_ego_forward_model")
-        or (config["experiment_type"] == "train_policy_model")
-        or (config["experiment_type"] == "train_world_forward_model")
-        or (config["experiment_type"] == "test_world_forward_model")
-    ):
+    if class_name is not None:
 
-        from carla_env.dataset.instance import InstanceDataset
+        if class_name == "InstanceDataset":
 
-        return InstanceDataset
+            from carla_env.dataset.instance import InstanceDataset
+
+            return InstanceDataset
+
+        elif class_name == "InstanceDatasetRAM":
+
+            from carla_env.dataset.instance import InstanceDatasetRAM
+
+            return InstanceDatasetRAM
+
+        elif class_name == "TorchDataset":
+
+            from carla_env.dataset.torch_dataset import TorchDataset
+
+            return TorchDataset
+
+        else:
+
+            raise ValueError("Invalid class_name")
 
     else:
 
-        raise ValueError("Invalid experiment type")
+        if (
+            (config["experiment_type"] == "train_ego_forward_model")
+            or (config["experiment_type"] == "test_ego_forward_model")
+            or (config["experiment_type"] == "train_policy_model")
+            or (config["experiment_type"] == "train_world_forward_model")
+            or (config["experiment_type"] == "test_world_forward_model")
+        ):
+
+            if config["dataset_train"]["type"] == "InstanceDataset":
+
+                from carla_env.dataset.instance import InstanceDataset
+
+                return InstanceDataset
+
+            elif config["dataset_train"]["type"] == "InstanceDatasetRAM":
+
+                from carla_env.dataset.instance import InstanceDatasetRAM
+
+                return InstanceDatasetRAM
+
+            elif config["dataset_train"]["type"] == "TorchDataset":
+
+                from carla_env.dataset.torch_dataset import TorchDataset
+
+                return TorchDataset
+
+            else:
+
+                raise ValueError("Invalid dataset_type")
+
+        else:
+
+            raise ValueError("Invalid experiment type")
 
 
 def writer_factory(config):
@@ -458,7 +501,7 @@ def environment_factory(config):
         from carla_env.carla_env_testing_traffic import CarlaEnvironment
 
         return CarlaEnvironment
-    
+
     elif config["experiment_type"] == "eval_policy_model_leaderboard":
 
         from carla_env.carla_env_leaderboard_headless import CarlaEnvironment

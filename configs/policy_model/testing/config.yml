@@ -1,6 +1,6 @@
 experiment_type: test_policy_model
 log_path: ~
-seed: 16541515
+seed: 7814
 port: &port_var 2000
 tm_port: &tm_port_var 8000
 num_time_step_previous: &previous 20
@@ -106,8 +106,8 @@ tester:
 #   checkpoint_number: 0
 
 wandb_policy_model:
-  link: vaydingul/mbl-refactored/2h77me8w
-  checkpoint_number: 5
+  link: vaydingul/mbl-refactored/1sk9m2y4
+  checkpoint_number: 17
 
 wandb:
   enable: true
