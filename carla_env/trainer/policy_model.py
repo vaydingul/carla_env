@@ -113,9 +113,9 @@ class Trainer(object):
 
         (self.B_VAL, _, _, _, _) = next(iter(dataloader_val))["bev_world"]["bev"].shape
 
-        assert self.debug_render and (
-            self.B_TRAIN == self.B_VAL
-        ), "Batch size must be same for train and val in DEBUG mode"
+        # assert self.debug_render and (
+        #     self.B_TRAIN == self.B_VAL
+        # ), "Batch size must be same for train and val in DEBUG mode"
         # ------------------------------ Debug Setup ------------------------------- #
 
         if self.debug_render:
