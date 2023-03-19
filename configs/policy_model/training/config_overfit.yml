@@ -7,50 +7,32 @@ num_time_step_previous: &previous 20
 num_time_step_future: &future 10
 sequence_length: &sequence_length 30
 num_workers: &num_workers 5
-num_gpu: &num_gpu 8
-read_keys: &read_keys ["bev_world", "occ", "navigation_downsampled", "ego"]
-dilation: &dilation 1
+num_gpu: &num_gpu 1
 bev_agent_channel: &bev_agent_channel 7
 bev_vehicle_channel: &bev_vehicle_channel 6
 bev_selected_channels: &bev_selected_channels [0, 1, 2, 3, 4, 5, 6, 11]
 bev_calculate_offroad: &bev_calculate_offroad false
-
 # Dataset related parameters for training
 dataset_train:
-  type: "InstanceDatasetRAM"
+  type: "TorchDataset"
   config:
-    data_path: "ground_truth_bev_model_train_data_20Hz_multichannel_bev_dense_traffic"
-    sequence_length: *sequence_length
-    read_keys: *read_keys
-    dilation: *dilation
-    bev_agent_channel: *bev_agent_channel
-    bev_vehicle_channel: *bev_vehicle_channel
-    bev_selected_channels: *bev_selected_channels
-    bev_calculate_offroad: *bev_calculate_offroad
-
+    data_path: "/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_dummy_data_20Hz_multichannel_bev_dense_traffic_converted"
 # Dataloader related parameters for training
 dataloader_train:
-  batch_size: 25
+  batch_size: 50
   shuffle: true
   num_workers: *num_workers
   drop_last: true
 
 # Dataset related parameters for validation
 dataset_val:
-  type: "InstanceDatasetRAM"
+  type: "TorchDataset"
   config:
-    data_path: "ground_truth_bev_model_val_data_20Hz_multichannel_bev_dense_traffic"
-    sequence_length: *sequence_length
-    read_keys: *read_keys
-    dilation: *dilation
-    bev_agent_channel: *bev_agent_channel
-    bev_vehicle_channel: *bev_vehicle_channel
-    bev_selected_channels: *bev_selected_channels
-    bev_calculate_offroad: *bev_calculate_offroad
+    data_path: "/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_dummy_data_20Hz_multichannel_bev_dense_traffic_converted"
 
 # Dataloader related parameters for validation
 dataloader_val:
-  batch_size: 25
+  batch_size: 50
   shuffle: false
   num_workers: *num_workers
   drop_last: true
@@ -75,7 +57,7 @@ cost:
 
 # Training related parameters
 training:
-  num_epochs: 48
+  num_epochs: 100
   num_gpu: *num_gpu
   master_port: "12345"
   weighted_sampling: false
@@ -87,8 +69,8 @@ training:
       lr: 0.0001
       # weight_decay: 0.0001
 
-  save_interval: 6
-  val_interval: 3
+  save_interval: 100
+  val_interval: 1
   num_time_step_future: *future
   num_time_step_previous: *previous
   gradient_clip:
@@ -182,21 +164,21 @@ policy_model:
     hidden_size: 256
     layers: 2
     delta_target: true
-    dropout: 0.1
+    dropout: 0.0
 
 wandb_ego_forward_model:
-  enable: true
+  enable: false
   link: vaydingul/mbl-refactored/3vfihnmu
   checkpoint_number: 99
 
 wandb_world_forward_model:
-  enable: true
+  enable: false
   link: vaydingul/mbl-refactored/1qa8f9wd
   checkpoint_number: 47
 
 # Wandb related parameters
 wandb:
-  enable: true
+  enable: false
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"

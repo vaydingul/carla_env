@@ -45,6 +45,10 @@ class Trainer(object):
         use_world_forward_model_encoder_output_as_world_state=False,
         debug_render=False,
         renderer=None,
+        bev_agent_channel=7,
+        bev_vehicle_channel=6,
+        bev_selected_channels=[0, 1, 2, 3, 4, 5, 6, 11],
+        bev_calculate_offroad=False,
         save_path=None,
         train_step=0,
         val_step=0,
@@ -77,6 +81,10 @@ class Trainer(object):
         )
         self.debug_render = debug_render
         self.renderer = renderer
+        self.bev_agent_channel = bev_agent_channel
+        self.bev_vehicle_channel = bev_vehicle_channel
+        self.bev_selected_channels = bev_selected_channels
+        self.bev_calculate_offroad = bev_calculate_offroad
         self.save_path = save_path
         self.train_step = train_step
         self.val_step = val_step
@@ -604,7 +612,7 @@ class Trainer(object):
 
                         bev = postprocess_bev(
                             world_future_bev_predicted[k][m + 1],
-                            self.dataloader_train.dataset.bev_selected_channels,
+                            self.bev_selected_channels,
                         )
                         mask_ = postprocess_mask(mask[k][m])
                         action_gt_ = postprocess_action(action_gt[k][m + 1])

@@ -352,6 +352,10 @@ def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val)
         ],
         debug_render=config["training"]["debug_render"] if rank == 0 else False,
         renderer=config["training"]["renderer"],
+        bev_agent_channel=config["bev_agent_channel"],
+        bev_vehicle_channel=config["bev_vehicle_channel"],
+        bev_selected_channels=config["bev_selected_channels"],
+        bev_calculate_offroad=config["bev_calculate_offroad"],
         save_path=config["checkpoint_path"] if rank == 0 else None,
         train_step=policy_model_checkpoint["train_step"]
         if config["wandb"]["resume"]
