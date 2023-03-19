@@ -17,7 +17,7 @@ bev_calculate_offroad: &bev_calculate_offroad false
 
 # Dataset related parameters for training
 dataset_train:
-  type: "InstanceDatasetRAM"
+  type: "InstanceDataset"
   config:
     data_path: "/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_20Hz_multichannel_bev_dense_traffic/"
     sequence_length: *sequence_length
@@ -37,7 +37,7 @@ dataloader_train:
 
 # Dataset related parameters for validation
 dataset_val:
-  type: "InstanceDatasetRAM"
+  type: "InstanceDataset"
   config:
     data_path: "/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_20Hz_multichannel_bev_dense_traffic/"
     sequence_length: *sequence_length
