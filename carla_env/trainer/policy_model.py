@@ -363,20 +363,38 @@ class Trainer(object):
 
         for k in range(self.num_time_step_future):
 
-            (
-                world_previous_bev_encoded,
-                world_future_bev_predicted,
-            ) = self.world_forward_model(world_previous_bev, sample_latent=True)
-
             if self.use_world_forward_model_encoder_output_as_world_state:
 
-                world_previous_bev_feature = world_previous_bev_encoded
+                if self.use_ground_truth:
+
+                    world_previous_bev_feature = self.world_forward_model(
+                        world_previous_bev, encoded=True
+                    )
+
+                    world_future_bev_feature = world_future_bev[:, k].unsqueeze(1)
+
+                else:
+
+                    (
+                        world_previous_bev_feature,
+                        world_future_bev_feature,
+                    ) = self.world_forward_model(world_previous_bev, sample_latent=True)
 
             else:
 
                 world_previous_bev_feature = world_previous_bev
 
-            world_future_bev_predicted = torch.sigmoid(world_future_bev_predicted)
+                if self.use_ground_truth:
+
+                    world_future_bev_feature = world_future_bev[:, k].unsqueeze(1)
+
+                else:
+
+                    (_, world_future_bev_feature) = self.world_forward_model(
+                        world_previous_bev, sample_latent=True
+                    )
+
+            world_future_bev_feature = torch.sigmoid(world_future_bev_feature)
 
             action = self.policy_model(
                 ego_state=ego_state_previous,
@@ -388,7 +406,7 @@ class Trainer(object):
 
             ego_state_next = self.ego_forward_model(ego_state_previous, action)
 
-            world_future_bev_predicted_list.append(world_future_bev_predicted)
+            world_future_bev_predicted_list.append(world_future_bev_feature)
 
             ego_future_location_predicted_list.append(ego_state_next["location"])
             ego_future_yaw_predicted_list.append(ego_state_next["yaw"])
@@ -399,16 +417,14 @@ class Trainer(object):
             world_previous_bev = torch.cat(
                 (
                     world_previous_bev[:, 1:],
-                    world_future_bev[:, k].unsqueeze(1)
-                    if self.use_ground_truth
-                    else world_future_bev_predicted.unsqueeze(1),
+                    world_future_bev_feature,
                 ),
                 dim=1,
             )
 
             ego_state_previous = ego_state_next
 
-        world_future_bev_predicted = torch.stack(world_future_bev_predicted_list, dim=1)
+        world_future_bev_predicted = torch.cat(world_future_bev_predicted_list, dim=1)
 
         ego_future_location_predicted = torch.stack(
             ego_future_location_predicted_list, dim=1
@@ -428,9 +444,7 @@ class Trainer(object):
                 ego_future_location_predicted,
                 ego_future_yaw_predicted,
                 ego_future_speed_predicted,
-                world_future_bev.requires_grad_(True)
-                if self.use_ground_truth
-                else world_future_bev_predicted,
+                world_future_bev_predicted,
             )
 
             cost_dict = {k: v / (B * S_future) for (k, v) in cost["cost_dict"].items()}
@@ -541,9 +555,7 @@ class Trainer(object):
 
         self.render(
             i,
-            world_future_bev.requires_grad_(False)
-            if self.use_ground_truth
-            else world_future_bev_predicted,
+            world_future_bev_predicted,
             cost,
             ego_future_action_predicted,
             ego_future_action,

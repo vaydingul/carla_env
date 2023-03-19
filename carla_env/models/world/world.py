@@ -77,6 +77,7 @@ class WorldBEVModel(nn.Module):
         world_previous_bev,
         world_future_bev=None,
         sample_latent=False,
+        encoded=False,
     ):
 
         world_previous_bev = world_previous_bev.view(
@@ -94,6 +95,13 @@ class WorldBEVModel(nn.Module):
                 world_future_bev.shape[-2],
                 world_future_bev.shape[-1],
             )
+
+        if encoded:
+            world_previous_bev_encoded = self.world_previous_bev_encoder(
+                world_previous_bev
+            )
+
+            return world_previous_bev_encoded
 
         if not sample_latent:
 
@@ -117,13 +125,6 @@ class WorldBEVModel(nn.Module):
             return (world_future_bev_predicted, mu, logvar)
 
         else:
-
-            world_previous_bev = world_previous_bev.view(
-                world_previous_bev.shape[0],
-                -1,
-                world_previous_bev.shape[-2],
-                world_previous_bev.shape[-1],
-            )
 
             world_previous_bev_encoded = self.world_previous_bev_encoder(
                 world_previous_bev

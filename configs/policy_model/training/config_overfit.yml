@@ -19,7 +19,7 @@ dataset_train:
     data_path: "/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_dummy_data_20Hz_multichannel_bev_dense_traffic_converted"
 # Dataloader related parameters for training
 dataloader_train:
-  batch_size: 50
+  batch_size: 120
   shuffle: true
   num_workers: *num_workers
   drop_last: true
@@ -32,7 +32,7 @@ dataset_val:
 
 # Dataloader related parameters for validation
 dataloader_val:
-  batch_size: 50
+  batch_size: 120
   shuffle: false
   num_workers: *num_workers
   drop_last: true
