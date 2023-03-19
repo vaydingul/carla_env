@@ -1,0 +1,37 @@
+experiment_type: "dataset_conversion"
+log_path: ~ #"logs/"
+
+num_time_step_previous: &previous 20
+num_time_step_future: &future 10
+sequence_length: &sequence_length 30
+read_keys: &read_keys ["bev_world", "occ", "navigation_downsampled", "ego"]
+dilation: &dilation 1
+bev_agent_channel: &bev_agent_channel 7
+bev_vehicle_channel: &bev_vehicle_channel 6
+bev_selected_channels: &bev_selected_channels [0, 1, 2, 3, 4, 5, 6, 11]
+bev_calculate_offroad: &bev_calculate_offroad false
+
+datasets:
+  - type: "InstanceDatasetRAM"
+    config:
+      data_path: "/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_20Hz_multichannel_bev_dense_traffic/"
+      sequence_length: *sequence_length
+      read_keys: *read_keys
+      dilation: *dilation
+      bev_agent_channel: *bev_agent_channel
+      bev_vehicle_channel: *bev_vehicle_channel
+      bev_selected_channels: *bev_selected_channels
+      bev_calculate_offroad: *bev_calculate_offroad
+    destination_path: "/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_20Hz_multichannel_bev_dense_traffic_converted/"
+
+  - type: "InstanceDatasetRAM"
+    config:
+      data_path: "/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_20Hz_multichannel_bev_dense_traffic/"
+      sequence_length: *sequence_length
+      read_keys: *read_keys
+      dilation: *dilation
+      bev_agent_channel: *bev_agent_channel
+      bev_vehicle_channel: *bev_vehicle_channel
+      bev_selected_channels: *bev_selected_channels
+      bev_calculate_offroad: *bev_calculate_offroad
+    destination_path: "/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_20Hz_multichannel_bev_dense_traffic_converted/"
