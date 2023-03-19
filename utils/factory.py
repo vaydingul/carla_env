@@ -368,7 +368,7 @@ def scheduler_factory(config):
         raise ValueError("Invalid experiment type")
 
 
-def dataset_factory(config):
+def dataset_factory(config, class_name=None):
 
     if class_name is not None:
 
