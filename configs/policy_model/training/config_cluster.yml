@@ -30,7 +30,7 @@ dataset_train:
 
 # Dataloader related parameters for training
 dataloader_train:
-  batch_size: 25
+  batch_size: 30
   shuffle: true
   num_workers: *num_workers
   drop_last: true
@@ -50,7 +50,7 @@ dataset_val:
 
 # Dataloader related parameters for validation
 dataloader_val:
-  batch_size: 25
+  batch_size: 30
   shuffle: false
   num_workers: *num_workers
   drop_last: true
@@ -177,7 +177,7 @@ policy_model:
     command_size: 6
     use_target: true
     target_location_size: 2
-    use_occupancy: false
+    use_occupancy: true
     occupancy_size: 8
     hidden_size: 256
     layers: 2
