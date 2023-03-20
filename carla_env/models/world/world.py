@@ -79,21 +79,22 @@ class WorldBEVModel(nn.Module):
         sample_latent=False,
         encoded=False,
     ):
-
+        (B_prev, S_prev, C_prev, H_prev, W_prev) = world_previous_bev.shape
         world_previous_bev = world_previous_bev.view(
-            world_previous_bev.shape[0],
+            B_prev,
             -1,
-            world_previous_bev.shape[-2],
-            world_previous_bev.shape[-1],
+            H_prev,
+            W_prev,
         )
 
         if world_future_bev is not None:
 
+            (B_future, S_future, C_future, H_future, W_future) = world_future_bev.shape
             world_future_bev = world_future_bev.view(
-                world_future_bev.shape[0],
+                B_future,
                 -1,
-                world_future_bev.shape[-2],
-                world_future_bev.shape[-1],
+                H_future,
+                W_future,
             )
 
         if encoded:

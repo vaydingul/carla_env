@@ -256,7 +256,7 @@ class Trainer(object):
         ].to(self.rank)
         world_future_bev_predicted_list = []
 
-        world_future_bev_ = world_future_bev.clone()
+        world_future_bev_ = world_future_bev.clone().detach()
 
         # Ego previous location
         ego_previous_location = data["ego"]["location_array"][
@@ -369,7 +369,7 @@ class Trainer(object):
                         world_previous_bev, encoded=True
                     )
 
-                    world_future_bev_feature = world_future_bev[:, k].unsqueeze(1)
+                    world_future_bev_feature = world_future_bev[:, k].clone().detach()
 
                 else:
 
@@ -377,22 +377,21 @@ class Trainer(object):
                         world_previous_bev_feature,
                         world_future_bev_feature,
                     ) = self.world_forward_model(world_previous_bev, sample_latent=True)
-
+                    world_future_bev_feature = torch.sigmoid(world_future_bev_feature)
             else:
 
                 world_previous_bev_feature = world_previous_bev
 
                 if self.use_ground_truth:
 
-                    world_future_bev_feature = world_future_bev[:, k].unsqueeze(1)
+                    world_future_bev_feature = world_future_bev[:, k].clone().detach()
 
                 else:
 
                     (_, world_future_bev_feature) = self.world_forward_model(
                         world_previous_bev, sample_latent=True
                     )
-
-            world_future_bev_feature = torch.sigmoid(world_future_bev_feature)
+                    world_future_bev_feature = torch.sigmoid(world_future_bev_feature)
 
             action = self.policy_model(
                 ego_state=ego_state_previous,
@@ -415,14 +414,14 @@ class Trainer(object):
             world_previous_bev = torch.cat(
                 (
                     world_previous_bev[:, 1:],
-                    world_future_bev_feature,
+                    world_future_bev_feature.unsqueeze(1),
                 ),
                 dim=1,
             )
 
             ego_state_previous = ego_state_next
 
-        world_future_bev_predicted = torch.cat(world_future_bev_predicted_list, dim=1)
+        world_future_bev_predicted = torch.stack(world_future_bev_predicted_list, dim=1)
 
         ego_future_location_predicted = torch.stack(
             ego_future_location_predicted_list, dim=1
