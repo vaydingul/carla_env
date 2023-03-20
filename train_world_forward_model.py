@@ -78,8 +78,8 @@ def main(rank, world_size, config):
     # ---------------------------------------------------------------------------- #
     #                         TRAIN AND VALIDATION DATASETS                        #
     # ---------------------------------------------------------------------------- #
-    dataset_train = dataset_class(config["dataset_train"])
-    dataset_val = dataset_class(config["dataset_val"])
+    dataset_train = dataset_class(config["dataset_train"]["config"])
+    dataset_val = dataset_class(config["dataset_val"]["config"])
 
     # --------------------- Log information about the dataset -------------------- #
     logger.info(f"Train dataset size: {len(dataset_train)}")
