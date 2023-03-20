@@ -34,6 +34,7 @@ dataloader_train:
   shuffle: false
   num_workers: *num_workers
   drop_last: true
+  pin_memory: true
 
 # Dataset related parameters for validation
 dataset_val:
@@ -54,6 +55,7 @@ dataloader_val:
   shuffle: false
   num_workers: *num_workers
   drop_last: true
+  pin_memory: true
 
 # Training related parameters
 training:
