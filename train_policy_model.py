@@ -35,7 +35,9 @@ def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val)
     # ---------------------------------------------------------------------------- #
     logger = get_logger(__name__)
     configure_logger(__name__, log_path=config["log_path"], log_level=logging.INFO)
-    pretty_print_config(logger, config)
+
+    if rank == 0:
+        pretty_print_config(logger, config)
 
     # ---------------------------------------------------------------------------- #
     #                                   DDP SETUP                                  #
