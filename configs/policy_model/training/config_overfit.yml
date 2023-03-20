@@ -8,15 +8,24 @@ num_time_step_future: &future 10
 sequence_length: &sequence_length 30
 num_workers: &num_workers 5
 num_gpu: &num_gpu 1
+read_keys: &read_keys ["bev_world", "occ", "navigation_downsampled", "ego"]
+dilation: &dilation 1
 bev_agent_channel: &bev_agent_channel 7
 bev_vehicle_channel: &bev_vehicle_channel 6
 bev_selected_channels: &bev_selected_channels [0, 1, 2, 3, 4, 5, 6, 11]
 bev_calculate_offroad: &bev_calculate_offroad false
 # Dataset related parameters for training
 dataset_train:
-  type: "TorchDataset"
+  type: "InstanceDataset"
   config:
-    data_path: "/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_dummy_data_20Hz_multichannel_bev_dense_traffic_converted"
+    data_path: "/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_dummy_data_20Hz_multichannel_bev_dense_traffic"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+    bev_agent_channel: *bev_agent_channel
+    bev_vehicle_channel: *bev_vehicle_channel
+    bev_selected_channels: *bev_selected_channels
+    bev_calculate_offroad: *bev_calculate_offroad
 # Dataloader related parameters for training
 dataloader_train:
   batch_size: 120
@@ -26,9 +35,16 @@ dataloader_train:
 
 # Dataset related parameters for validation
 dataset_val:
-  type: "TorchDataset"
+  type: "InstanceDataset"
   config:
-    data_path: "/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_dummy_data_20Hz_multichannel_bev_dense_traffic_converted"
+    data_path: "/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_dummy_data_20Hz_multichannel_bev_dense_traffic"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+    bev_agent_channel: *bev_agent_channel
+    bev_vehicle_channel: *bev_vehicle_channel
+    bev_selected_channels: *bev_selected_channels
+    bev_calculate_offroad: *bev_calculate_offroad
 
 # Dataloader related parameters for validation
 dataloader_val:

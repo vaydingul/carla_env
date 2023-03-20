@@ -39,14 +39,14 @@ def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val)
     if rank == 0:
         pretty_print_config(logger, config)
 
+    # ---------------------------- TORCH related stuff --------------------------- #
+    torch.cuda.set_device(rank)
+    torch.cuda.empty_cache()
+
     # ---------------------------------------------------------------------------- #
     #                                   DDP SETUP                                  #
     # ---------------------------------------------------------------------------- #
     ddp_setup(rank, world_size, config["training"]["master_port"])
-
-    # ---------------------------- TORCH related stuff --------------------------- #
-    torch.cuda.set_device(rank)
-    torch.cuda.empty_cache()
 
     # ---------------------------------------------------------------------------- #
     #                                     SEED                                     #
@@ -214,9 +214,7 @@ def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val)
             rank=rank,
             shuffle=True,
             seed=config["seed"],
-        )
-        if config["training"]["weighted_sampling"]
-        else None,
+        ),
     )
 
     dataloader_val = DataLoader(
@@ -384,7 +382,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path",
         type=str,
-        default="/home/volkan/Documents/Codes/carla_env_modified/configs/policy_model/training/config_cluster.yml",
+        default="/home/volkan/Documents/Codes/carla_env/configs/policy_model/training/config_overfit.yml",
     )
 
     args = parser.parse_args()

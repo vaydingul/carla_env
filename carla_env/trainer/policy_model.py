@@ -512,7 +512,7 @@ class Trainer(object):
                 ) / (B * S_future)
 
             elif key == "speed":
-                ego_state_mse = F.l1_loss(
+                ego_state_mse += F.l1_loss(
                     ego_future_speed_predicted, ego_future_speed, reduction="sum"
                 ) / (B * S_future)
 
