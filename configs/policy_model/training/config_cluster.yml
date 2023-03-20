@@ -111,7 +111,7 @@ training:
 
   use_world_forward_model_encoder_output_as_world_state: true
   use_ground_truth: true
-  debug_render: false
+  debug_render: true
 
   renderer:
     width: 1300
@@ -124,8 +124,8 @@ training:
     cursor: [0, 0]
     name: Policy Model Training
     show: false
-    save: false
-    create_date_time_path: false
+    save: true
+    create_date_time_path: true
     save_path: figures/env_debug/train_policy/
 
   cost_weight:
