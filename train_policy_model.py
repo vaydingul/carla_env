@@ -10,7 +10,7 @@ from torch.distributed import init_process_group, destroy_process_group, barrier
 
 
 from utils.train_utils import seed_everything, organize_device
-from utils.wandb_utils import create_wandb_run
+from utils.wandb_utils import create_wandb_run, DummyWandb
 from utils.model_utils import (
     fetch_checkpoint_from_wandb_run,
     fetch_run_from_wandb_link,
@@ -29,13 +29,6 @@ def ddp_setup(rank, world_size, master_port):
 
 
 def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val):
-    # ---------------------------- TORCH related stuff --------------------------- #
-    torch.cuda.set_device(rank)
-    torch.cuda.empty_cache()
-    # ---------------------------------------------------------------------------- #
-    #                                   DDP SETUP                                  #
-    # ---------------------------------------------------------------------------- #
-    ddp_setup(rank, world_size, config["training"]["master_port"])
 
     # ---------------------------------------------------------------------------- #
     #                                    LOGGER                                    #
@@ -43,6 +36,15 @@ def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val)
     logger = get_logger(__name__)
     configure_logger(__name__, log_path=config["log_path"], log_level=logging.INFO)
     pretty_print_config(logger, config)
+
+    # ---------------------------------------------------------------------------- #
+    #                                   DDP SETUP                                  #
+    # ---------------------------------------------------------------------------- #
+    ddp_setup(rank, world_size, config["training"]["master_port"])
+
+    # ---------------------------- TORCH related stuff --------------------------- #
+    torch.cuda.set_device(rank)
+    torch.cuda.empty_cache()
 
     # ---------------------------------------------------------------------------- #
     #                                     SEED                                     #
@@ -57,7 +59,7 @@ def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val)
     # ---------------------------------------------------------------------------- #
     #                                   WANDB RUN                                  #
     # ---------------------------------------------------------------------------- #
-    # policy_model_run = create_wandb_run(config if rank == 0 else None)
+    policy_model_run = policy_model_run if rank == 0 else create_wandb_run()
 
     if config["wandb"]["resume"]:
         # Fetch the specific checkpoint from wandb cloud storage
@@ -366,7 +368,7 @@ def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val)
     )
 
     logger.info("Training started!")
-    trainer.learn(policy_model_run)
+    trainer.learn(policy_model_run if rank == 0 else DummyWandb())
     logger.info("Training finished!")
 
     destroy_process_group()

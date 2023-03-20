@@ -186,13 +186,12 @@ class Trainer(object):
 
             self.train_step += self.B_TRAIN
 
-            if run is not None:
-                run.log(
-                    {
-                        "train/step": self.train_step,
-                        **{f"train/{key}": value for key, value in loss_dict.items()},
-                    }
-                )
+            run.log(
+                {
+                    "train/step": self.train_step,
+                    **{f"train/{key}": value for key, value in loss_dict.items()},
+                }
+            )
 
         logger.info("Training epoch {} done".format(epoch))
 
@@ -233,10 +232,9 @@ class Trainer(object):
                 **{f"val/{key}": value for key, value in loss_dict_mean.items()},
             }
 
-            if run is not None:
-                run.log(loss_dict)
-                if self.lr_scheduler is not None:
-                    run.log({"val/lr": self.lr_scheduler.get_last_lr()[0]})
+            run.log(loss_dict)
+            if self.lr_scheduler is not None:
+                run.log({"val/lr": self.lr_scheduler.get_last_lr()[0]})
 
         logger.info("Validating epoch {} done".format(epoch))
 

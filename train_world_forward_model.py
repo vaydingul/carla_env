@@ -28,16 +28,20 @@ def ddp_setup(rank, world_size, master_port):
 def main(rank, world_size, config):
 
     # ---------------------------------------------------------------------------- #
-    #                                   DDP SETUP                                  #
-    # ---------------------------------------------------------------------------- #
-    ddp_setup(rank, world_size, config["training"]["master_port"])
-
-    # ---------------------------------------------------------------------------- #
     #                                    LOGGER                                    #
     # ---------------------------------------------------------------------------- #
     logger = get_logger(__name__)
     configure_logger(__name__, log_path=config["log_path"], log_level=logging.INFO)
     pretty_print_config(logger, config)
+
+    # ---------------------------------------------------------------------------- #
+    #                                   DDP SETUP                                  #
+    # ---------------------------------------------------------------------------- #
+    ddp_setup(rank, world_size, config["training"]["master_port"])
+
+    # ---------------------------- TORCH related stuff --------------------------- #
+    torch.cuda.set_device(rank)
+    torch.cuda.empty_cache()
 
     # ---------------------------------------------------------------------------- #
     #                                     SEED                                     #
