@@ -17,14 +17,16 @@ bev_calculate_offroad: &bev_calculate_offroad false
 
 # Dataset related parameters for training
 dataset_train:
-  data_path: "/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_20Hz_multichannel_bev_dense_traffic/"
-  sequence_length: *sequence_length
-  read_keys: *read_keys
-  dilation: *dilation
-  bev_agent_channel: *bev_agent_channel
-  bev_vehicle_channel: *bev_vehicle_channel
-  bev_selected_channels: *bev_selected_channels
-  bev_calculate_offroad: *bev_calculate_offroad
+  type: "InstanceDataset"
+  config:
+    data_path: "/kuacc/users/vaydingul20/ground_truth_bev_model_train_data_20Hz_multichannel_bev_dense_traffic/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+    bev_agent_channel: *bev_agent_channel
+    bev_vehicle_channel: *bev_vehicle_channel
+    bev_selected_channels: *bev_selected_channels
+    bev_calculate_offroad: *bev_calculate_offroad
 
 # Dataloader related parameters for training
 dataloader_train:
@@ -35,14 +37,16 @@ dataloader_train:
 
 # Dataset related parameters for validation
 dataset_val:
-  data_path: "/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_20Hz_multichannel_bev_dense_traffic/"
-  sequence_length: *sequence_length
-  read_keys: *read_keys
-  dilation: *dilation
-  bev_agent_channel: *bev_agent_channel
-  bev_vehicle_channel: *bev_vehicle_channel
-  bev_selected_channels: *bev_selected_channels
-  bev_calculate_offroad: *bev_calculate_offroad
+  type: "InstanceDataset"
+  config:
+    data_path: "/kuacc/users/vaydingul20/ground_truth_bev_model_val_data_20Hz_multichannel_bev_dense_traffic/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+    bev_agent_channel: *bev_agent_channel
+    bev_vehicle_channel: *bev_vehicle_channel
+    bev_selected_channels: *bev_selected_channels
+    bev_calculate_offroad: *bev_calculate_offroad
 
 # Dataloader related parameters for validation
 dataloader_val:

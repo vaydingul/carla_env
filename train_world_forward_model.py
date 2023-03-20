@@ -12,7 +12,10 @@ from torch.utils.data import DataLoader
 from carla_env.sampler.distributed_weighted_sampler import DistributedWeightedSampler
 from utils.train_utils import seed_everything
 from utils.wandb_utils import create_wandb_run
-from utils.model_utils import fetch_checkpoint_from_wandb_run
+from utils.model_utils import (
+    fetch_checkpoint_from_wandb_run,
+    fetch_checkpoint_from_wandb_link,
+)
 from utils.path_utils import create_date_time_path
 from utils.config_utils import parse_yml
 from utils.log_utils import get_logger, configure_logger, pretty_print_config
@@ -32,16 +35,17 @@ def main(rank, world_size, config):
     # ---------------------------------------------------------------------------- #
     logger = get_logger(__name__)
     configure_logger(__name__, log_path=config["log_path"], log_level=logging.INFO)
-    pretty_print_config(logger, config)
+    if rank == 0:
+        pretty_print_config(logger, config)
+
+    # ---------------------------- TORCH related stuff --------------------------- #
+    torch.cuda.set_device(rank)
+    torch.cuda.empty_cache()
 
     # ---------------------------------------------------------------------------- #
     #                                   DDP SETUP                                  #
     # ---------------------------------------------------------------------------- #
     ddp_setup(rank, world_size, config["training"]["master_port"])
-
-    # ---------------------------- TORCH related stuff --------------------------- #
-    torch.cuda.set_device(rank)
-    torch.cuda.empty_cache()
 
     # ---------------------------------------------------------------------------- #
     #                                     SEED                                     #
@@ -56,12 +60,13 @@ def main(rank, world_size, config):
     # ---------------------------------------------------------------------------- #
     #                                   WANDB RUN                                  #
     # ---------------------------------------------------------------------------- #
-    run = create_wandb_run(config)
+    run = create_wandb_run(config if rank == 0 else None)
 
     if config["wandb"]["resume"]:
         # Fetch the specific checkpoint from wandb cloud storage
-        checkpoint_object = fetch_checkpoint_from_wandb_run(
-            run=run, checkpoint_number=config.resume_checkpoint_number
+        checkpoint_object = fetch_checkpoint_from_wandb_link(
+            wandb_link=config["wandb"]["link"],
+            checkpoint_number=config["wandb"]["resume_checkpoint_number"],
         )
         checkpoint_path = checkpoint_object.name
         checkpoint = torch.load(f=checkpoint_path, map_location=device)
