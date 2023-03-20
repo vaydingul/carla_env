@@ -17,15 +17,17 @@ bev_calculate_offroad: &bev_calculate_offroad false
 
 # Dataset related parameters for training
 dataset_train:
-  data_path: "/home/volkan/Documents/Codes/carla_env/data/driving_model_data_20Hz_action_repeat_1"
-  sequence_length: *sequence_length
-  read_keys:
-    - "bev_world"
-  dilation: *dilation
-  bev_agent_channel: *bev_agent_channel
-  bev_vehicle_channel: *bev_vehicle_channel
-  bev_selected_channels: *bev_selected_channels
-  bev_calculate_offroad: *bev_calculate_offroad
+  type: "InstanceDataset"
+  config:
+    data_path: "/home/volkan/Documents/Codes/carla_env/data/driving_model_data_20Hz_action_repeat_1"
+    sequence_length: *sequence_length
+    read_keys:
+      - "bev_world"
+    dilation: *dilation
+    bev_agent_channel: *bev_agent_channel
+    bev_vehicle_channel: *bev_vehicle_channel
+    bev_selected_channels: *bev_selected_channels
+    bev_calculate_offroad: *bev_calculate_offroad
 
 # Dataloader related parameters for training
 dataloader_train:
@@ -36,15 +38,17 @@ dataloader_train:
 
 # Dataset related parameters for validation
 dataset_val:
-  data_path: "/home/volkan/Documents/Codes/carla_env/data/driving_model_data_20Hz_action_repeat_1"
-  sequence_length: *sequence_length
-  read_keys:
-    - "bev_world"
-  dilation: *dilation
-  bev_agent_channel: *bev_agent_channel
-  bev_vehicle_channel: *bev_vehicle_channel
-  bev_selected_channels: *bev_selected_channels
-  bev_calculate_offroad: *bev_calculate_offroad
+  type: "InstanceDataset"
+  config:
+    data_path: "/home/volkan/Documents/Codes/carla_env/data/driving_model_data_20Hz_action_repeat_1"
+    sequence_length: *sequence_length
+    read_keys:
+      - "bev_world"
+    dilation: *dilation
+    bev_agent_channel: *bev_agent_channel
+    bev_vehicle_channel: *bev_vehicle_channel
+    bev_selected_channels: *bev_selected_channels
+    bev_calculate_offroad: *bev_calculate_offroad
 
 # Dataloader related parameters for validation
 dataloader_val:
@@ -111,7 +115,7 @@ world_forward_model:
 
 # Wandb related parameters
 wandb:
-  enable: true
+  enable: false
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"

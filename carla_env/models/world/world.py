@@ -89,7 +89,11 @@ class WorldBEVModel(nn.Module):
 
         if world_future_bev is not None:
 
-            (B_future, S_future, C_future, H_future, W_future) = world_future_bev.shape
+            B_future, H_future, W_future = (
+                world_future_bev.shape[0],
+                world_future_bev.shape[-2],
+                world_future_bev.shape[-1],
+            )
             world_future_bev = world_future_bev.view(
                 B_future,
                 -1,
