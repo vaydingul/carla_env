@@ -7,14 +7,16 @@ import logging
 import math
 import time
 import weakref
+
 logger = logging.getLogger(__name__)
 
 
 def rotate_z(x, y, theta):
     """Rotate a point (x, y) by theta degrees around the z-axis."""
     theta = math.radians(theta)
-    return x * math.cos(theta) - y * math.sin(theta), x * \
-        math.sin(theta) + y * math.cos(theta)
+    return x * math.cos(theta) - y * math.sin(theta), x * math.sin(
+        theta
+    ) + y * math.cos(theta)
 
 
 class OccupancySensorModule(sensor.SensorModule):
@@ -32,10 +34,9 @@ class OccupancySensorModule(sensor.SensorModule):
             self.attach_to_actor(actor, id)
 
         self.angle_list = [
-            np.rad2deg(2 * np.pi /
-                       (self.config["number_of_radars"])) *
-            k for k in range(
-                self.config['number_of_radars'])]
+            np.rad2deg(2 * np.pi / (self.config["number_of_radars"])) * k
+            for k in range(self.config["number_of_radars"])
+        ]
 
         self.occupancy = [0] * self.config["number_of_radars"]
 
@@ -53,34 +54,34 @@ class OccupancySensorModule(sensor.SensorModule):
         self.radar_sensor_list = []
         for (i, angle) in enumerate(self.angle_list):
 
-            radar_bp = self.world.get_blueprint_library().find('sensor.other.radar')
+            radar_bp = self.world.get_blueprint_library().find("sensor.other.radar")
+            radar_bp.set_attribute("horizontal_fov", str(self.config["horizontal_fov"]))
+            radar_bp.set_attribute("vertical_fov", str(self.config["vertical_fov"]))
+            radar_bp.set_attribute("range", str(self.config["range"]))
             radar_bp.set_attribute(
-                'horizontal_fov', str(
-                    self.config["horizontal_fov"]))
-            radar_bp.set_attribute(
-                'vertical_fov', str(
-                    self.config["vertical_fov"]))
-            radar_bp.set_attribute('range', str(self.config["range"]))
-            radar_bp.set_attribute(
-                'points_per_second', str(
-                    self.config["points_per_second"]))
+                "points_per_second", str(self.config["points_per_second"])
+            )
 
-            x, y = rotate_z(math.sqrt(math.pow(bound_x, 2) +
-                            math.pow(bound_y, 2)), 0, angle)
-            print(x, y)
+            x, y = rotate_z(
+                math.sqrt(math.pow(bound_x, 2) + math.pow(bound_y, 2)), 0, angle
+            )
+            print(x, y, angle)
 
-            self.radar_sensor_list.append(self.world.spawn_actor(
-                radar_bp,
-                carla.Transform(
-                    location=carla.Location(x=x, y=y, z=0.5),
-                    rotation=carla.Rotation(
-                        yaw=angle)),
-                attach_to=self.actor.get_actor()))
+            self.radar_sensor_list.append(
+                self.world.spawn_actor(
+                    radar_bp,
+                    carla.Transform(
+                        location=carla.Location(x=x, y=y, z=0.5),
+                        rotation=carla.Rotation(yaw=angle),
+                    ),
+                    attach_to=self.actor.get_actor(),
+                )
+            )
 
         for (i, radar_sensor) in enumerate(self.radar_sensor_list):
 
-            def callback(radar_data, i=i): return self._get_sensor_data(
-                radar_data, i)
+            def callback(radar_data, i=i):
+                return self._get_sensor_data(radar_data, i)
 
             radar_sensor.listen(callback)
 
@@ -103,23 +104,22 @@ class OccupancySensorModule(sensor.SensorModule):
         """Get the sensor data"""
         # To get a numpy [[vel, azimuth, altitude, depth],...[,,,]]:
 
-        points = np.frombuffer(radar_data.raw_data, dtype=np.dtype('f4'))
+        points = np.frombuffer(radar_data.raw_data, dtype=np.dtype("f4"))
         points = np.reshape(points, (len(radar_data), 4))
         depth = points[:, -1]
         # Take the minimum of depth and check whether it is NaN or not and then
         # if it is NaN, assign the radar range, else assign the minimum of
         # depth
         self.occupancy[i] = float(
-            np.nanmin(depth) if depth.shape[0] > 0 else self.config["range"])
+            np.nanmin(depth) if depth.shape[0] > 0 else self.config["range"]
+        )
 
         # if np.any(depth < self.config["threshold"]):
         #     self.occupancy[i] = 1
         # else:
         #     self.occupancy[i] = 0
 
-        data = {'frame': radar_data.frame,
-                'occupancy': self.occupancy
-                }
+        data = {"frame": radar_data.frame, "occupancy": self.occupancy}
 
         if self.save_to_queue:
             self._queue_operation(data)
@@ -136,7 +136,7 @@ class OccupancySensorModule(sensor.SensorModule):
     def render(self):
         """Render the sensor"""
 
-        self.render_dict['occupancy'] = self.occupancy
+        self.render_dict["occupancy"] = self.occupancy
 
         return self.render_dict
 
@@ -154,12 +154,14 @@ class OccupancySensorModule(sensor.SensorModule):
 
     def _set_default_config(self):
         """Set the default config of the sensor"""
-        self.config = {"threshold": 3.0,
-                       "number_of_radars": 8,
-                       "horizontal_fov": 5,
-                       "vertical_fov": 5,
-                       "range": 10,
-                       "points_per_second": 100}
+        self.config = {
+            "threshold": 3.0,
+            "number_of_radars": 8,
+            "horizontal_fov": 5,
+            "vertical_fov": 5,
+            "range": 10,
+            "points_per_second": 100,
+        }
 
     def _queue_operation(self, data):
         """Queue the sensor data and additional stuff"""

@@ -154,7 +154,9 @@ def main(config):
                 world_forward_model.get_input_shape_previous()
             )
 
-        policy_model_run.config.update(config, allow_val_change=True)
+        policy_model_run.config["policy_model"].update(
+            config["policy_model"], allow_val_change=True
+        )
 
         policy_model_class = policy_model_factory(config)
         # Create and initialize the model

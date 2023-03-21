@@ -93,7 +93,7 @@ def create_resumed_run(config):
         resume="allow",
     )
 
-    run.config.update(config, allow_val_change=True)
+    run.config["wandb"].update(config["wandb"], allow_val_change=True)
 
     return run
 

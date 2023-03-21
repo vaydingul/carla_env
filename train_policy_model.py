@@ -175,7 +175,9 @@ def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val)
                 world_forward_model.get_input_shape_previous()
             )
 
-        policy_model_run.config.update(config, allow_val_change=True)
+        policy_model_run.config["policy_model"].update(
+            config["policy_model"], allow_val_change=True
+        )
 
         policy_model_class = policy_model_factory(config)
         # Create and initialize the model
@@ -268,7 +270,8 @@ def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val)
 
         optimizer_class = optimizer_factory(policy_model_run_.config)
         optimizer = optimizer_class(
-            optimization_parameters, **policy_model_run_.config["optimizer"]["config"]
+            optimization_parameters,
+            **policy_model_run_.config["training"]["optimizer"]["config"],
         )
         # Load the optimizer state dictionary
         optimizer.load_state_dict(policy_model_checkpoint["optimizer_state_dict"])
