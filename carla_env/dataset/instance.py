@@ -111,28 +111,74 @@ class InstanceDataset(Dataset):
 
         data = {}
 
+        # for read_key in self.read_keys:
+
+        #     if read_key in ["bev", "bev_world", "bev_ego"]:
+
+        #         load_function = self._load_bev
+
+        #     if read_key in ["rgb_front", "rgb_left", "rgb_right"]:
+
+        #         load_function = self._load_rgb
+
+        #     if read_key in ["ego", "navigation", "occ", "navigation_downsampled"]:
+
+        #         load_function = self._load_json
+
+        #     data[read_key] = default_collate(
+        #         [
+        #             load_function(index + k, read_key)
+        #             for k in range(
+        #                 0, self.sequence_length * self.dilation, self.dilation
+        #             )
+        #         ]
+        #     )
+
         for read_key in self.read_keys:
 
             if read_key in ["bev", "bev_world", "bev_ego"]:
 
-                load_function = self._load_bev
-
-            if read_key in ["rgb_front", "rgb_left", "rgb_right"]:
-
-                load_function = self._load_rgb
-
-            if read_key in ["ego", "navigation", "occ", "navigation_downsampled"]:
-
-                load_function = self._load_json
-
-            data[read_key] = default_collate(
-                [
-                    load_function(index + k, read_key)
+                data_ = [
+                    self._load_bev(index + k, read_key)
                     for k in range(
                         0, self.sequence_length * self.dilation, self.dilation
                     )
                 ]
-            )
+
+            if read_key in ["rgb_front", "rgb_left", "rgb_right"]:
+
+                data_ = torch.stack(
+                    [
+                        self._load_rgb(index + k, read_key)
+                        for k in range(
+                            0, self.sequence_length * self.dilation, self.dilation
+                        )
+                    ],
+                    dim=0,
+                )
+
+            if read_key in ["ego", "navigation", "occ", "navigation_downsampled"]:
+
+                data_ = [
+                    self._load_json(index + k, read_key)
+                    for k in range(
+                        0, self.sequence_length * self.dilation, self.dilation
+                    )
+                ]
+
+            elem = data_[0]
+            if isinstance(elem, dict):
+
+                data_stacked = {}
+
+                for key in elem.keys():
+                    data_stacked[key] = torch.stack(
+                        [data_[k][key] for k in range(len(data_))], dim=0
+                    )
+
+                data_ = data_stacked
+
+            data[read_key] = data_
 
         return data
 

@@ -93,6 +93,7 @@ class Trainer(object):
         self.ego_forward_model.to(self.rank)
         self.world_forward_model.to(self.rank)
         self.policy_model.to(self.rank)
+
         self.ego_forward_model = DDP(
             self.ego_forward_model, device_ids=[self.rank], find_unused_parameters=False
         )
@@ -256,7 +257,7 @@ class Trainer(object):
         ].to(self.rank)
         world_future_bev_predicted_list = []
 
-        world_future_bev_ = world_future_bev.clone().detach()
+        # world_future_bev_ = world_future_bev.clone().detach()
 
         # Ego previous location
         ego_previous_location = data["ego"]["location_array"][
