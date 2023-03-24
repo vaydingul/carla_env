@@ -12,7 +12,7 @@ read_keys: &read_keys ["bev_world", "occ", "navigation_downsampled", "ego"]
 dilation: &dilation 1
 bev_agent_channel: &bev_agent_channel 7
 bev_vehicle_channel: &bev_vehicle_channel 6
-bev_selected_channels: &bev_selected_channels [0, 1, 2, 3, 4, 5, 6, 11]
+bev_selected_channels: &bev_selected_channels [0, 5, 6, 8, 9, 11]
 bev_calculate_offroad: &bev_calculate_offroad false
 
 # Dataset related parameters for training
@@ -30,7 +30,7 @@ dataset_train:
 
 # Dataloader related parameters for training
 dataloader_train:
-  batch_size: 85
+  batch_size: 170
   num_workers: *num_workers
   drop_last: true
   pin_memory: true
@@ -50,13 +50,13 @@ dataset_val:
 
 # Dataloader related parameters for validation
 dataloader_val:
-  batch_size: 85
+  batch_size: 170
   num_workers: *num_workers
   drop_last: true
   pin_memory: true
 
 cost:
-  type: "extended_bev"
+  type: "simple_bev"
   config:
     image_width: 192
     image_height: 192
@@ -78,8 +78,6 @@ training:
   num_epochs: 48
   num_gpu: *num_gpu
   master_port: "12345"
-  weighted_sampling: false
-  sigmoid_before_loss: false
   optimizer:
     type: "Adam"
     parameters: [policy]
@@ -129,13 +127,11 @@ training:
     save_path: figures/env_debug/train_policy/
 
   cost_weight:
-    road_cost: 0.0
-    road_on_cost: 0.0
-    road_off_cost: 0.1
-    road_red_yellow_cost: 0.1
-    road_green_cost: -0.1
+    road_cost: -0.1
     vehicle_cost: 0.1
     lane_cost: 0.1
+    green_light_cost: -0.1
+    red_yellow_light_cost: 0.1
     offroad_cost: 0.1
     action_mse: 10.0
     action_l1: 0.0
@@ -168,7 +164,7 @@ world_forward_model:
 policy_model:
   type: "FusedPolicyModel"
   config:
-    input_shape_world_state: [8, 192, 192]
+    input_shape_world_state: [6, 192, 192]
     input_ego_location: 0
     input_ego_yaw: 0
     input_ego_speed: 1
@@ -191,7 +187,7 @@ wandb_ego_forward_model:
 
 wandb_world_forward_model:
   enable: true
-  link: vaydingul/mbl-refactored/1qa8f9wd
+  link: vaydingul/mbl-refactored/3e2qnz9z
   checkpoint_number: 47
 
 # Wandb related parameters

@@ -106,8 +106,8 @@ tester:
 #   checkpoint_number: 0
 
 wandb_policy_model:
-  link: vaydingul/mbl-refactored/1sk9m2y4
-  checkpoint_number: 17
+  link: vaydingul/mbl-refactored/9uuk61tv
+  checkpoint_number: 47
 
 wandb:
   enable: true

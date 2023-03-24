@@ -28,7 +28,7 @@ def ddp_setup(rank, world_size, master_port):
     init_process_group(backend="nccl", rank=rank, world_size=world_size)
 
 
-def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val):
+def main(rank, world_size, config):
 
     # ---------------------------------------------------------------------------- #
     #                                    LOGGER                                    #
@@ -61,7 +61,7 @@ def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val)
     # ---------------------------------------------------------------------------- #
     #                                   WANDB RUN                                  #
     # ---------------------------------------------------------------------------- #
-    policy_model_run = policy_model_run if rank == 0 else create_wandb_run()
+    policy_model_run = create_wandb_run(config if rank == 0 else None)
 
     if config["wandb"]["resume"]:
         # Fetch the specific checkpoint from wandb cloud storage
@@ -192,13 +192,13 @@ def main(rank, world_size, config, policy_model_run, dataset_train, dataset_val)
     # ---------------------------------------------------------------------------- #
     #                                 DATASET CLASS                                #
     # ---------------------------------------------------------------------------- #
-    # dataset_class = dataset_factory(config)
+    dataset_class = dataset_factory(config)
 
     # ---------------------------------------------------------------------------- #
     #                         TRAIN AND VALIDATION DATASETS                        #
     # ---------------------------------------------------------------------------- #
-    # dataset_train = dataset_class(config["dataset_train"]["config"])
-    # dataset_val = dataset_class(config["dataset_val"]["config"])
+    dataset_train = dataset_class(config["dataset_train"]["config"])
+    dataset_val = dataset_class(config["dataset_val"]["config"])
 
     # --------------------- Log information about the dataset -------------------- #
     logger.info(f"Train dataset size: {len(dataset_train)}")
@@ -398,27 +398,27 @@ if __name__ == "__main__":
     # ---------------------------------------------------------------------------- #
     #                                   WANDB RUN                                  #
     # ---------------------------------------------------------------------------- #
-    policy_model_run = create_wandb_run(config)
+    # policy_model_run = create_wandb_run(config)
 
     # ---------------------------------------------------------------------------- #
     #                                 DATASET CLASS                                #
     # ---------------------------------------------------------------------------- #
-    dataset_class = dataset_factory(config)
+    # dataset_class = dataset_factory(config)
 
     # ---------------------------------------------------------------------------- #
     #                         TRAIN AND VALIDATION DATASETS                        #
     # ---------------------------------------------------------------------------- #
-    dataset_train = dataset_class(config["dataset_train"]["config"])
-    dataset_val = dataset_class(config["dataset_val"]["config"])
+    # dataset_train = dataset_class(config["dataset_train"]["config"])
+    # dataset_val = dataset_class(config["dataset_val"]["config"])
 
     mp.spawn(
         main,
         args=(
             config["training"]["num_gpu"],
             config,
-            policy_model_run,
-            dataset_train,
-            dataset_val,
+            # policy_model_run,
+            # dataset_train,
+            # dataset_val,
         ),
         nprocs=config["training"]["num_gpu"],
     )

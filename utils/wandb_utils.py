@@ -10,6 +10,8 @@ class DummyConfig:
     def update(self, *args, **kwargs):
         pass
 
+    def __getitem__(self, *args, **kwargs):
+        return DummyConfig()
 
 class DummyWandb:
     """Dummy class for wandb when it is not enabled."""
@@ -29,6 +31,8 @@ class DummyWandb:
 
     def save(self, *args, **kwargs):
         pass
+
+
 
 
 def create_initial_run(config):

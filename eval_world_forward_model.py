@@ -72,7 +72,7 @@ def main(config):
     # ---------------------------------------------------------------------------- #
     #                         TEST DATASET                                         #
     # ---------------------------------------------------------------------------- #
-    dataset_test = dataset_class(config["dataset_test"])
+    dataset_test = dataset_class(config["dataset_test"]["config"])
 
     # --------------------- Log information about the dataset -------------------- #
     logger.info(f"Test dataset size: {len(dataset_test)}")
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     config["config_path"] = args.config_path
 
     assert (
-        config["dataset_test"]["sequence_length"]
+        config["dataset_test"]["config"]["sequence_length"]
         == config["evaluation"]["sequence_length"]
     ), "Sequence length of the dataset and the evaluator should be the same"
 

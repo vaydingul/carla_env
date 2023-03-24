@@ -94,6 +94,12 @@ def cost_factory(config):
 
             return Cost
 
+        elif config["cost"]["type"] == "simple_bev":
+
+            from carla_env.cost.masked_cost_batched_simple_bev import Cost
+
+            return Cost
+
         else:
 
             raise ValueError("Invalid bev_type")
