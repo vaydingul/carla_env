@@ -175,9 +175,8 @@ def main(rank, world_size, config):
                 world_forward_model.get_input_shape_previous()
             )
 
-        policy_model_run.config["policy_model"].update(
-            config["policy_model"], allow_val_change=True
-        )
+        policy_model_run.config.update({"policy_model": config["policy_model"]}, allow_val_change=True)
+        
 
         policy_model_class = policy_model_factory(config)
         # Create and initialize the model
@@ -385,7 +384,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path",
         type=str,
-        default="/home/volkan/Documents/Codes/carla_env/configs/policy_model/training/config_overfit.yml",
+        default="/home/volkan/Documents/Codes/carla_env/configs/policy_model/training/config_overfit_simple_bev.yml",
     )
 
     args = parser.parse_args()

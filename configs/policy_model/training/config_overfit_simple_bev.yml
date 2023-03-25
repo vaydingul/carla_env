@@ -19,7 +19,7 @@ bev_calculate_offroad: &bev_calculate_offroad false
 dataset_train:
   type: "InstanceDataset"
   config:
-    data_path: "/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_test_data_20Hz_multichannel_bev_dense_traffic"
+    data_path: "/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_dummy_data_20Hz_multichannel_bev_dense_traffic"
     sequence_length: *sequence_length
     read_keys: *read_keys
     dilation: *dilation
@@ -39,7 +39,7 @@ dataloader_train:
 dataset_val:
   type: "InstanceDataset"
   config:
-    data_path: "/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_test_data_20Hz_multichannel_bev_dense_traffic"
+    data_path: "/home/volkan/Documents/Codes/carla_env/data/ground_truth_bev_model_dummy_data_20Hz_multichannel_bev_dense_traffic"
     sequence_length: *sequence_length
     read_keys: *read_keys
     dilation: *dilation
@@ -85,8 +85,8 @@ training:
       lr: 0.0001
       # weight_decay: 0.0001
 
-  save_interval: 6
-  val_interval: 3
+  save_interval: 1
+  val_interval: 100
   num_time_step_future: *future
   num_time_step_previous: *previous
   gradient_clip:
@@ -192,11 +192,12 @@ wandb_world_forward_model:
 
 # Wandb related parameters
 wandb:
-  enable: false
-  resume: false
+  enable: true
+  resume: true
   resume_checkpoint_number: 0
   project: "mbl-refactored"
-  group: "train-policy-model-multi-step-20Hz"
+  group: "train-policy-model-multi-step-20Hz-wandb-trial"
   name: "20-10-20Hz-simple-bev"
-  id: ~
+  id: 3timdn3k
+  link: ~
   notes: "Policy model with 20Hz data and 20 time steps in the past and 10 time step in the future. It can work with every model that works in 20Hz."

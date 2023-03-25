@@ -47,8 +47,17 @@ def create_initial_run(config):
     )
 
     if config["wandb"]["id"] is None:
+
         config["wandb"]["id"] = run.id
-        run.config.update(config, allow_val_change=True)
+
+    if config["wandb"]["link"] is None:
+
+        if isinstance(run.path, list):
+            config["wandb"]["link"] = "/".join(run.path)
+        else:
+            config["wandb"]["link"] = run.path
+
+    run.config.update({"wandb": config["wandb"]}, allow_val_change=True)
 
     run.define_metric("train/step")
     run.define_metric("val/step")
@@ -97,7 +106,8 @@ def create_resumed_run(config):
         resume="allow",
     )
 
-    run.config["wandb"].update(config["wandb"], allow_val_change=True)
+    run.config.update({"wandb": config["wandb"]}, allow_val_change=True)
+
 
     return run
 

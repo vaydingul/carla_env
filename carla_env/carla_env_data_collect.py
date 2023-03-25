@@ -12,7 +12,7 @@ from carla_env.modules.module import Module
 from carla_env.renderer.renderer import Renderer, COLORS
 from carla_env.bev import BirdViewProducer, BirdViewCropType, BIRDVIEW_CROP_TYPE
 from carla_env.bev.mask import PixelDimensions
-from utils.carla_utils import create_multiple_actors_for_traffic_manager
+from utils.carla_utils import create_multiple_vehicle_actors_for_traffic_manager
 
 # Import utils
 import time
@@ -171,7 +171,7 @@ class CarlaEnvironment(Environment):
             client=self.client,
         )
 
-        actor_list = create_multiple_actors_for_traffic_manager(
+        actor_list = create_multiple_vehicle_actors_for_traffic_manager(
             self.client, n=number_of_actors
         )
 

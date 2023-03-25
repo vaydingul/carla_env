@@ -1,3 +1,4 @@
+import random
 from carla_env.modules import module
 import carla
 import logging
@@ -39,6 +40,32 @@ class TrafficManagerModule(module.Module):
         if self.config["vehicle_list"]:
             for vehicle in self.config["vehicle_list"]:
                 vehicle.set_autopilot(True, self.traffic_manager.get_port())
+
+        if self.config["walker_list"]:
+
+            self.world.set_pedestrians_cross_factor(
+                self.config["pedestrians_cross_factor"]
+            )
+
+            walker_ai_controller_blueprint = self.world.get_blueprint_library().find(
+                "controller.ai.walker"
+            )
+
+            for walker in self.config["walker_list"]:
+                controller_actor = self.world.try_spawn_actor(
+                    walker_ai_controller_blueprint,
+                    carla.Transform(),
+                    attach_to=walker.get_actor(),
+                )
+
+
+                if controller_actor is not None:
+
+                    controller_actor.start()
+                    controller_actor.go_to_location(
+                        self.world.get_random_location_from_navigation()
+                    )
+                    controller_actor.set_max_speed(1 + random.random())
 
     def render(self):
         """Render the client"""
@@ -83,6 +110,8 @@ class TrafficManagerModule(module.Module):
             "synchronous_mode": True,
             "vehicle_list": [],
             "walker_list": [],
+            "pedestrians_cross_factor": 0.5,
+            "running_walker_ratio": 0.5,
         }
 
     @property

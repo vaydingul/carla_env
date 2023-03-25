@@ -1,6 +1,7 @@
 import carla
 from carla_env.modules.actor import actor
 from carla_env.modules.vehicle import vehicle
+from carla_env.modules.walker import walker
 import numpy as np
 
 
@@ -21,7 +22,7 @@ def fetch_all_vehicles(client, spawn_big_vehicle=False):
     return vehicles_
 
 
-def create_multiple_actors_for_traffic_manager(client, n=20):
+def create_multiple_vehicle_actors_for_traffic_manager(client, n=20):
     """Create multiple vehicles in the world"""
 
     vehicles = fetch_all_vehicles(client)
@@ -35,10 +36,33 @@ def create_multiple_actors_for_traffic_manager(client, n=20):
         actors.append(
             actor.ActorModule(
                 config={
-                    "vehicle": vehicle.VehicleModule(
+                    "child": vehicle.VehicleModule(
                         config={
                             "vehicle_model": vehicles[k],
                         },
+                        client=client,
+                    ),
+                    "hero": False,
+                },
+                client=client,
+            )
+        )
+
+    return actors
+
+
+def create_multiple_walker_actors_for_traffic_manager(client, n=20):
+    """Create multiple vehicles in the world"""
+
+    actors = []
+
+    for k in range(n):
+
+        actors.append(
+            actor.ActorModule(
+                config={
+                    "child": walker.WalkerModule(
+                        config={},
                         client=client,
                     ),
                     "hero": False,

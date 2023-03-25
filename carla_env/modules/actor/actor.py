@@ -1,6 +1,7 @@
 from asyncio.log import logger
 from carla_env.modules import module
 from carla_env.modules.vehicle import vehicle
+from carla_env.modules.walker import walker
 import carla
 import numpy as np
 import logging
@@ -20,7 +21,7 @@ class ActorModule(module.Module):
             for k in config.keys():
                 self.config[k] = config[k]
 
-        self.vehicle = self.config["vehicle"]
+        self.child = self.config["child"]
         self.world = self.client.get_world()
         self.hero = self.config["hero"]
         self.spawned = False
@@ -40,12 +41,28 @@ class ActorModule(module.Module):
 
             else:
 
-                selected_spawn_point = np.random.choice(
-                    self.world.get_map().get_spawn_points()
-                )
+                if isinstance(self.child, vehicle.VehicleModule):
+
+                    selected_spawn_point = np.random.choice(
+                        self.world.get_map().get_spawn_points()
+                    )
+
+                elif isinstance(self.child, walker.WalkerModule):
+                    selected_spawn_point = carla.Transform()
+
+                    selected_spawn_point.location = (
+                        self.world.get_random_location_from_navigation()
+                    )
+
+                    if self.child.blueprint.has_attribute("is_invincible"):
+                        self.child.blueprint.set_attribute("is_invincible", "false")
+
+                else:
+
+                    raise NotImplementedError
 
             self.actor = self.world.try_spawn_actor(
-                self.vehicle.blueprint, selected_spawn_point
+                self.child.blueprint, selected_spawn_point
             )
 
             self.spawned = self.actor is not None
@@ -55,16 +72,31 @@ class ActorModule(module.Module):
         # for sensor in self.sensor_dict.values():
         # 	sensor.step()
 
-        if self.hero and action is not None:
+        if isinstance(self.child, vehicle.VehicleModule):
+            if self.hero and (action is not None):
 
-            if isinstance(action, list):
+                if isinstance(action, list):
 
-                vehicle_control = carla.VehicleControl(
-                    throttle=float(action[0]),
-                    steer=float(action[1]),
-                    brake=float(action[2]),
-                )
-                self.actor.apply_control(vehicle_control)
+                    vehicle_control = carla.VehicleControl(
+                        throttle=float(action[0]),
+                        steer=float(action[1]),
+                        brake=float(action[2]),
+                    )
+                    self.actor.apply_control(vehicle_control)
+
+        elif isinstance(self.child, walker.WalkerModule):
+
+            if self.hero and (action is not None):
+
+                if isinstance(action, list):
+
+                    walker_control = carla.WalkerControl(
+                        speed=float(action[0]), direction=float(action[1])
+                    )
+                    self.actor.apply_control(walker_control)
+        else:
+
+            raise NotImplementedError
 
     def _stop(self):
         """Stop the actor manager"""
@@ -127,6 +159,6 @@ class ActorModule(module.Module):
     def _set_default_config(self):
         """Set the default config of actor manager"""
         self.config = {
-            "vehicle": vehicle.VehicleModule(None, self.client),
+            "child": vehicle.VehicleModule(None, self.client),
             "hero": True,
         }
