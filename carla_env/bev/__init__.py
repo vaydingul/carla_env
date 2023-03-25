@@ -64,7 +64,7 @@ class BirdViewMasks(IntEnum):
 
 
 RGB_BY_MASK = {
-    BirdViewMasks.PEDESTRIANS: RGB.VIOLET,
+    BirdViewMasks.PEDESTRIANS: RGB.ORANGE,
     BirdViewMasks.LANES: RGB.WHITE,
     # BirdViewMasks.RED_LIGHTS: RGB.RED,
     # BirdViewMasks.YELLOW_LIGHTS: RGB.YELLOW,

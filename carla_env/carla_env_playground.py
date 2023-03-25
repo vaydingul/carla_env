@@ -181,7 +181,7 @@ class CarlaEnvironment(Environment):
         self.client_module.step()
 
         walker_actor_list = create_multiple_walker_actors_for_traffic_manager(
-            self.client, n=1
+            self.client, n=50
         )
 
         self.client_module.step()
@@ -303,11 +303,11 @@ class CarlaEnvironment(Environment):
 
         self.spectator.set_transform(transform)
 
-        # for bev_module in self.bev_modules:
-        #     bev_output = bev_module["module"].step(
-        #         agent_vehicle=self.hero_actor_module.get_actor()
-        #     )
-        #     self.data_dict[bev_module["id"]] = bev_output
+        for bev_module in self.bev_modules:
+            bev_output = bev_module["module"].step(
+                agent_vehicle=self.hero_actor_module.get_actor()
+            )
+            self.data_dict[bev_module["id"]] = bev_output
 
         if not self.config["random"]:
             self._next_agent_command = RoadOption.VOID.value
@@ -377,9 +377,9 @@ class CarlaEnvironment(Environment):
                 # Put image into canvas
                 self.renderer_module.render_image(bev, move_cursor="down")
 
-            self.renderer_module.move_cursor(
-                direction="right-up", amount=(h_image + h_bev, w_image + 20)
-            )
+                self.renderer_module.move_cursor(
+                    direction="right-up", amount=(h_image + h_bev, w_image + 20)
+                )
 
         self.renderer_module.render_text("", move_cursor="down", font_color=COLORS.RED)
 
@@ -405,7 +405,7 @@ class CarlaEnvironment(Environment):
 
         self.renderer_module.show()
 
-        self.renderer_module.save()
+        self.renderer_module.save(info = self.counter)
 
     def close(self):
         """Close the environment"""

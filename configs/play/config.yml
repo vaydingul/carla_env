@@ -2,15 +2,17 @@
 
 experiment_type: play_carla
 log_path: ~
-data_save_path: data/driving_model_data_20Hz_action_repeat_1_1/
-num_episodes: 20
+
+
 port: &port_var 2000
 tm_port: &tm_port_var 8000
+
 environment:
   name: carla_env_playground
   random: false
   action_repeat: 1
   fixed_delta_seconds: &dt 0.05
+  max_steps: 50000
   port: *port_var
   tm_port: *tm_port_var
   tasks:
@@ -28,7 +30,7 @@ environment:
     cursor: [0, 0]
     name: Play CARLA
     show: true
-    save: false
+    save: true
     create_date_time_path: true
     save_path: figures/env_debug/play_carla/
 
@@ -68,8 +70,8 @@ environment:
   bevs:
     - id: "bev_world"
       config:
-        width: 192
-        height: 192
+        width: 400
+        height: 400
         render_lanes_on_junctions: false
         pixels_per_meter: 5
         crop_type: "FRONT_AREA_ONLY"

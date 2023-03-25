@@ -3,7 +3,7 @@ from typing import NamedTuple, List
 
 
 def is_vehicle(actor): return "vehicle" in actor.type_id
-def is_pedestrian(actor): return "walker" in actor.type_id
+def is_pedestrian(actor): return ("walker" in actor.type_id) and ("controller.ai" not in actor.type_id)
 def is_traffic_light(actor): return "traffic_light" in actor.type_id
 
 

@@ -418,7 +418,7 @@ class MapMaskGenerator:
             cv.fillPoly(img=canvas, pts=np.int32([corners]), color=color)
         return canvas
 
-    def pedestrians_mask(self, pedestrians: List[carla.Actor]) -> Mask:
+    def pedestrians_mask(self, pedestrians: List[carla.Actor], scale = 5.0) -> Mask:
         canvas = self.make_empty_mask()
         for ped in pedestrians:
             if not hasattr(ped, "bounding_box"):
@@ -426,10 +426,10 @@ class MapMaskGenerator:
 
             bb = ped.bounding_box.extent
             corners = [
-                carla.Location(x=-bb.x, y=-bb.y),
-                carla.Location(x=bb.x, y=-bb.y),
-                carla.Location(x=bb.x, y=bb.y),
-                carla.Location(x=-bb.x, y=bb.y),
+                carla.Location(x=-bb.x * scale, y=-bb.y * scale),
+                carla.Location(x=bb.x * scale, y=-bb.y * scale),
+                carla.Location(x=bb.x * scale, y=bb.y * scale),
+                carla.Location(x=-bb.x * scale, y=bb.y * scale),
             ]
 
             ped.get_transform().transform(corners)

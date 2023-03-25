@@ -13,10 +13,9 @@ from utils.log_utils import get_logger, configure_logger, pretty_print_config
 def callback(hero_actor, world_snapshot):
     logger = get_logger(__name__)
     logger.info("Callback is called!")
+    pass
+    # if np.random.rand() < 0.05:
 
-    if np.random.rand() < 0.05:
-
-        pass
 
         # Get control from hero actor
         # hero_actor.set_autopilot(False)
@@ -31,9 +30,9 @@ def callback(hero_actor, world_snapshot):
         # hero_actor.apply_control(action)
         # hero_actor.add_impulse(carla.Vector3D(0, 0, 10000))
 
-    else:
+    # else:
 
-        hero_actor.set_autopilot(True)
+        # hero_actor.set_autopilot(True)
 
 
 def main(config):
