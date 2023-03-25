@@ -14,24 +14,23 @@ def DEFAULT_JSON(o):
 
 class InstanceWriterType(Enum):
     """Type of instance writer."""
+
     JSON = auto()
     RGB_IMAGE = auto()
     BEV_IMAGE = auto()
+    RADAR = auto()
 
 
 class InstanceWriter:
-
     def __init__(self, path):
 
         self.path = Path(path)
         self.data_dict = {}
 
     def add_key(
-            self,
-            key: str,
-            value: str,
-            type: InstanceWriterType = InstanceWriterType.JSON):
-        """ Add a key to the data dict """
+        self, key: str, value: str, type: InstanceWriterType = InstanceWriterType.JSON
+    ):
+        """Add a key to the data dict"""
         os.makedirs(self.path / key, exist_ok=True)
 
         self.data_dict[key] = (value, type)
@@ -49,13 +48,11 @@ class InstanceWriter:
 
                 if type == InstanceWriterType.JSON:
 
-                    with open(self.path / key / f"{count}.json", 'w') as f:
+                    with open(self.path / key / f"{count}.json", "w") as f:
 
                         json.dump(
-                            obj=data[value],
-                            fp=f,
-                            indent=10,
-                            default=DEFAULT_JSON)
+                            obj=data[value], fp=f, indent=10, default=DEFAULT_JSON
+                        )
 
                 elif type == InstanceWriterType.RGB_IMAGE:
 
@@ -75,3 +72,11 @@ class InstanceWriter:
 
                     # Save the BEV
                     np.savez(str(self.path / key / f"{count}.npz"), bev=bev)
+
+                elif type == InstanceWriterType.RADAR:
+
+                    # Take the radar data
+                    radar = data["value"]["data"]
+
+                    # Save the radar data
+                    np.savez(str(self.path / key / f"{count}.npz"), radar=radar)

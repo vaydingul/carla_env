@@ -12,7 +12,10 @@ from carla_env.modules.module import Module
 from carla_env.renderer.renderer import Renderer, COLORS
 from carla_env.bev import BirdViewProducer, BirdViewCropType, BIRDVIEW_CROP_TYPE
 from carla_env.bev.mask import PixelDimensions
-from utils.carla_utils import create_multiple_vehicle_actors_for_traffic_manager
+from utils.carla_utils import (
+    create_multiple_vehicle_actors_for_traffic_manager,
+    create_multiple_walker_actors_for_traffic_manager,
+)
 
 # Import utils
 import time
@@ -113,6 +116,7 @@ class CarlaEnvironment(Environment):
         self.tm_port = self.config["tm_port"]
         self.tasks = self.config["tasks"]
         self.sensors = self.config["sensors"]
+        self.noiser = self.config["noiser"]
         self.bevs = self.config["bevs"]
         self.renderer = self.config["renderer"]
 
@@ -144,12 +148,19 @@ class CarlaEnvironment(Environment):
         self.spectator = self.world.get_spectator()
 
         # Make this vehicle actor
-        number_of_actors = (
+        number_of_vehicle_actors = (
             np.random.randint(*selected_task["num_vehicles"])
             if isinstance(selected_task["num_vehicles"], list)
             else selected_task["num_vehicles"]
         )
-        logger.info(f"Number of actors: {number_of_actors}")
+        logger.info(f"Number of actors: {number_of_vehicle_actors}")
+
+        number_of_walker_actors = (
+            np.random.randint(*selected_task["num_walkers"])
+            if isinstance(selected_task["num_walkers"], list)
+            else selected_task["num_walkers"]
+        )
+        logger.info(f"Number of walkers: {number_of_walker_actors}")
 
         # Fetch all spawn points
         spawn_points = self.map.get_spawn_points()
@@ -171,15 +182,27 @@ class CarlaEnvironment(Environment):
             client=self.client,
         )
 
-        actor_list = create_multiple_vehicle_actors_for_traffic_manager(
-            self.client, n=number_of_actors
+        vehicle_actor_list = create_multiple_vehicle_actors_for_traffic_manager(
+            self.client, n=number_of_vehicle_actors
         )
 
-        actor_list.append(self.hero_actor_module)
+        self.client_module.step()
+
+        walker_actor_list = create_multiple_walker_actors_for_traffic_manager(
+            self.client, n=number_of_walker_actors
+        )
+
+        self.client_module.step()
+
+        vehicle_actor_list.append(self.hero_actor_module)
 
         if not self.random:
             self.traffic_manager_module = traffic_manager.TrafficManagerModule(
-                config={"vehicle_list": actor_list, "port": self.tm_port},
+                config={
+                    "vehicle_list": vehicle_actor_list,
+                    "walker_list": walker_actor_list,
+                    "port": self.tm_port,
+                },
                 client=self.client,
             )
 
@@ -199,6 +222,14 @@ class CarlaEnvironment(Environment):
                     ),
                 }
             )
+
+        # Noiser
+
+        self.noiser_module = self.noiser["class"](
+            config=self.noiser["config"],
+            client=self.client,
+            actor=self.hero_actor_module.get_actor(),
+        )
 
         # Bird's eye view
         self.bev_modules = []
@@ -443,8 +474,9 @@ class CarlaEnvironment(Environment):
             "port": 2000,
             "tm_port": 8000,
             "max_steps": 1000,
-            "tasks": [{"world": "Town02", "num_vehicles": 80}],
+            "tasks": [{"world": "Town02", "num_vehicles": 80, "num_walkers": 50}],
             "sensors": [],
+            "noiser": None,
             "bevs": [],
             "renderer": None,
         }

@@ -123,6 +123,7 @@ class ActorModule(module.Module):
             self.render_dict["control"] = self.actor.get_control()
             self.render_dict["x_extent_meters"] = self.actor.bounding_box.extent.x * 2
             self.render_dict["y_extent_meters"] = self.actor.bounding_box.extent.y * 2
+            self.render_dict["z_extent_meters"] = self.actor.bounding_box.extent.z * 2
             self.render_dict["hero"] = self.hero
             self.render_dict["spawned"] = self.spawned
         return self.render_dict

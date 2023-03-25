@@ -9,7 +9,7 @@ import time
 logger = logging.getLogger(__name__)
 
 
-class RGBSensorModule(sensor.SensorModule):
+class RadarSensorModule(sensor.SensorModule):
     """Concrete implementation of SensorModule abstract base class for rgb sensor management"""
 
     def __init__(self, config, client, actor=None, id=None) -> None:
@@ -20,7 +20,8 @@ class RGBSensorModule(sensor.SensorModule):
             for k in config.keys():
                 self.config[k] = config[k]
 
-        self.image_data = None
+        self.radar_data = None
+        self.render_dict = {}
 
         if actor is not None:
             self.attach_to_actor(actor, id)
@@ -30,11 +31,15 @@ class RGBSensorModule(sensor.SensorModule):
     def _start(self):
         """Start the sensor module"""
 
-        rgb_bp = self.world.get_blueprint_library().find("sensor.camera.rgb")
-        rgb_bp.set_attribute("image_size_x", str(self.config["width"]))
-        rgb_bp.set_attribute("image_size_y", str(self.config["height"]))
-        rgb_bp.set_attribute("fov", str(self.config["fov"]))
-        self.camera_transform = carla.Transform(
+        radar_bp = self.world.get_blueprint_library().find("sensor.other.radar")
+        radar_bp.set_attribute("horizontal_fov", str(self.config["horizontal_fov"]))
+        radar_bp.set_attribute("vertical_fov", str(self.config["vertical_fov"]))
+        radar_bp.set_attribute(
+            "points_per_second", str(self.config["points_per_second"])
+        )
+        radar_bp.set_attribute("range", str(self.config["range"]))
+
+        self.radar_transform = carla.Transform(
             carla.Location(x=self.config["x"], y=self.config["y"], z=self.config["z"]),
             carla.Rotation(
                 roll=self.config["roll"],
@@ -43,11 +48,13 @@ class RGBSensorModule(sensor.SensorModule):
             ),
         )
 
-        self.camera = self.world.spawn_actor(
-            rgb_bp, self.camera_transform, attach_to=self.actor.get_actor()
+        self.radar = self.world.spawn_actor(
+            radar_bp,
+            self.radar_transform,
+            attach_to=self.actor.get_actor(),
         )
 
-        self.camera.listen(lambda image: self._get_sensor_data(image))
+        self.radar.listen(lambda radar_data: self._get_sensor_data(radar_data))
 
         self.is_attached = True
 
@@ -56,7 +63,7 @@ class RGBSensorModule(sensor.SensorModule):
 
         if self.is_attached:
 
-            self.camera.destroy()
+            self.radar.destroy()
 
         self.is_attached = False
 
@@ -64,21 +71,22 @@ class RGBSensorModule(sensor.SensorModule):
         """Tick the sensor"""
         pass
 
-    def _get_sensor_data(self, image_data):
+    def _get_sensor_data(self, radar_data):
         """Get the sensor data"""
 
-        # logger.info("Received an image of frame: " + str(image.frame))
+        radar_data_ = np.frombuffer(radar_data.raw_data, dtype=np.dtype("f4"))
+        radar_data_ = copy.deepcopy(radar_data_)
+        radar_data_ = np.reshape(radar_data_, (int(radar_data_.shape[0] / 4), 4))
 
-        image_data_ = np.frombuffer(image_data.raw_data, dtype=np.dtype("uint8"))
-        image_data_ = copy.deepcopy(image_data_)
-        image_data_ = np.reshape(image_data_, (image_data.height, image_data.width, 4))
-        image_data_ = image_data_[:, :, :3]
-        image_data_ = image_data_[:, :, ::-1]
+        # To get a numpy [[vel, azimuth, altitude, depth],...[,,,]]:
 
-        self.image_data = image_data_
-        self.image_transform = image_data.transform
+        self.radar_data = radar_data_
 
-        data = {"frame": image_data.frame, "transform": image_data.transform, "data": image_data_}
+        data = {
+            "frame": radar_data.frame,
+            "transform": radar_data.transform,
+            "data": radar_data_,
+        }
 
         if self.save_to_queue:
             self._queue_operation(data)
@@ -94,12 +102,8 @@ class RGBSensorModule(sensor.SensorModule):
 
     def render(self):
         """Render the sensor"""
-        if self.image_data is not None:
-            self.render_dict["image_data"] = self.image_data
-            self.render_dict["image_transform"] = self.image_transform
-            self.render_dict["image_height"] = self.config["height"]
-            self.render_dict["image_width"] = self.config["width"]
-            self.render_dict["image_fov"] = self.config["fov"]
+        if self.radar_data_ is not None:
+            self.render_dict["depth_min"] = np.min(self.radar_data_[:, -1])
 
         return self.render_dict
 
@@ -118,15 +122,16 @@ class RGBSensorModule(sensor.SensorModule):
     def _set_default_config(self):
         """Set the default config of the sensor"""
         self.config = {
-            "x": 1.5,
+            "x": 0.0,
             "y": 0.0,
-            "z": 2.4,
+            "z": 0.0,
             "roll": 0.0,
             "pitch": 0.0,
             "yaw": 0.0,
-            "width": 800,
-            "height": 600,
-            "fov": 100,
+            "horizontal_fov": 0.0,
+            "vertical_fov": 0.0,
+            "points_per_second": 0.0,
+            "range": 0.0,
         }
 
     def _queue_operation(self, data):

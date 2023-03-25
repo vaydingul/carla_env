@@ -35,6 +35,14 @@ def main(config):
 
     sensor_class_list = sensor_factory(config)
     config["environment"].update({"sensors": sensor_class_list})
+
+    # ---------------------------------------------------------------------------- #
+    #                                    NOISER                                    #
+    # ---------------------------------------------------------------------------- #
+
+    noiser_class = noiser_factory(config)
+    config["environment"].update({"noiser": noiser_class})
+
     # ---------------------------------------------------------------------------- #
     #                                  ENVIRONMENT                                 #
     # ---------------------------------------------------------------------------- #

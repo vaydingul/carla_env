@@ -475,6 +475,10 @@ def writer_key_factory(config):
 
                 type_ = InstanceWriterType.JSON
 
+            elif key_["type"] == "radar":
+
+                type_ = InstanceWriterType.RADAR
+
             else:
 
                 raise ValueError("Invalid writer_type")
@@ -576,6 +580,18 @@ def sensor_factory(config):
 
                 cls = OccupancySensorModule
 
+            elif sensor["type"] == "GNSSSensor":
+
+                from carla_env.modules.sensor.gnss_sensor import GNSSSensorModule
+
+                cls = GNSSSensorModule
+
+            elif sensor["type"] == "IMUSensor":
+
+                from carla_env.modules.sensor.imu_sensor import IMUSensorModule
+
+                cls = IMUSensorModule
+
             else:
 
                 raise ValueError("Invalid sensor_type")
@@ -585,6 +601,42 @@ def sensor_factory(config):
             )
 
         return sensor_list
+
+    else:
+
+        raise ValueError("Invalid experiment type")
+
+
+def noiser_factory(config):
+
+    if (
+        (config["experiment_type"] == "collect_data_random")
+        or (config["experiment_type"] == "collect_data_driving")
+        or (config["experiment_type"] == "test_mpc")
+        or (config["experiment_type"] == "test_policy_model")
+        or (config["experiment_type"] == "play_carla")
+        or (config["experiment_type"] == "eval_policy_model_leaderboard")
+    ):
+
+        noiser = config["environment"]["noiser"]
+
+        if noiser is None:
+
+            from carla_env.modules.noiser.dummy import DummyNoiser
+
+            return {"class": DummyNoiser, "config": {}}
+
+        else:
+
+            if noiser["type"] == "GaussianNoiser":
+
+                from carla_env.modules.noiser.gaussian import GaussianNoiser
+
+                return {"class": GaussianNoiser, "config": noiser["config"]}
+
+            else:
+
+                raise ValueError("Invalid noiser_type")
 
     else:
 

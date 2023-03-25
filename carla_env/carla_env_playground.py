@@ -116,6 +116,7 @@ class CarlaEnvironment(Environment):
         self.tm_port = self.config["tm_port"]
         self.tasks = self.config["tasks"]
         self.sensors = self.config["sensors"]
+        self.noiser = self.config["noiser"]
         self.bevs = self.config["bevs"]
         self.renderer = self.config["renderer"]
 
@@ -146,13 +147,19 @@ class CarlaEnvironment(Environment):
 
         self.spectator = self.world.get_spectator()
 
-        # Make this vehicle actor
-        number_of_actors = (
+        number_of_vehicle_actors = (
             np.random.randint(*selected_task["num_vehicles"])
             if isinstance(selected_task["num_vehicles"], list)
             else selected_task["num_vehicles"]
         )
-        logger.info(f"Number of actors: {number_of_actors}")
+        logger.info(f"Number of actors: {number_of_vehicle_actors}")
+
+        number_of_walker_actors = (
+            np.random.randint(*selected_task["num_walkers"])
+            if isinstance(selected_task["num_walkers"], list)
+            else selected_task["num_walkers"]
+        )
+        logger.info(f"Number of walkers: {number_of_walker_actors}")
 
         # Fetch all spawn points
         spawn_points = self.map.get_spawn_points()
@@ -175,13 +182,13 @@ class CarlaEnvironment(Environment):
         )
 
         vehicle_actor_list = create_multiple_vehicle_actors_for_traffic_manager(
-            self.client, n=number_of_actors
+            self.client, n=number_of_vehicle_actors
         )
 
         self.client_module.step()
 
         walker_actor_list = create_multiple_walker_actors_for_traffic_manager(
-            self.client, n=50
+            self.client, n=number_of_walker_actors
         )
 
         self.client_module.step()
@@ -214,6 +221,14 @@ class CarlaEnvironment(Environment):
                     ),
                 }
             )
+
+        # Noiser
+
+        self.noiser_module = self.noiser["class"](
+            config=self.noiser["config"],
+            client=self.client,
+            actor=self.hero_actor_module.get_actor(),
+        )
 
         # Bird's eye view
         self.bev_modules = []
@@ -405,7 +420,7 @@ class CarlaEnvironment(Environment):
 
         self.renderer_module.show()
 
-        self.renderer_module.save(info = self.counter)
+        self.renderer_module.save(info=self.counter)
 
     def close(self):
         """Close the environment"""

@@ -166,6 +166,14 @@ class InstanceDataset(Dataset):
                     )
                 ]
 
+            if read_key in ["radar_front_left", "radar_front_right"]:
+                data_ = [
+                    self._load_radar(index + k, read_key)
+                    for k in range(
+                        0, self.sequence_length * self.dilation, self.dilation
+                    )
+                ]
+
             elem = data_[0]
             if isinstance(elem, dict):
 
@@ -237,6 +245,24 @@ class InstanceDataset(Dataset):
             bev = torch.cat([bev, offroad_mask.unsqueeze(0)], dim=0)
 
         return {"bev": bev, "agent_mask": agent_mask}
+
+    def _load_radar(self, index, read_key):
+        load_path = self.data[index][0] / read_key / f"{self.data[index][1]}.npz"
+        data = np.load(load_path)
+        radar_ = data["radar"]
+        radar_ = torch.from_numpy(radar_).float()
+        # Permute the dimensions such that the channel dim is the first one
+        velocity = radar_[..., 0]
+        azimuth = radar_[..., 1]
+        altitude = radar_[..., 2]
+        depth = radar_[..., 3]
+
+        return {
+            "velocity": velocity,
+            "azimuth": azimuth,
+            "altitude": altitude,
+            "depth": depth,
+        }
 
     def _load_rgb(self, index, read_key):
         load_path = self.data[index][0] / read_key / f"{self.data[index][1]}.png"

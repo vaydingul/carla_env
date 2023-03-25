@@ -3,7 +3,6 @@
 experiment_type: play_carla
 log_path: ~
 
-
 port: &port_var 2000
 tm_port: &tm_port_var 8000
 
@@ -18,6 +17,7 @@ environment:
   tasks:
     - world: Town02
       num_vehicles: [90, 100]
+      num_walkers: [50, 100]
 
   renderer:
     width: 1800
@@ -80,6 +80,11 @@ environment:
         light_circle: true
         lane_marking_thickness: 2
 
+  noiser:
+    type: GaussianNoiser
+    config:
+      mean: 0.0
+      std: 0.1
 wandb:
   enable: false
   resume: false
