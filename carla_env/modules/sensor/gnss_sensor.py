@@ -83,10 +83,10 @@ class GNSSSensorModule(sensor.SensorModule):
 
     def render(self):
         """Render the sensor"""
-        if self.gnss_data_ is not None:
-            self.render_dict["latitude"] = self.gnss_data_[0]
-            self.render_dict["longitude"] = self.gnss_data_[1]
-            self.render_dict["altitude"] = self.gnss_data_[2]
+        if self.gnss_data is not None:
+            self.render_dict["latitude"] = self.gnss_data[0]
+            self.render_dict["longitude"] = self.gnss_data[1]
+            self.render_dict["altitude"] = self.gnss_data[2]
 
         return self.render_dict
 

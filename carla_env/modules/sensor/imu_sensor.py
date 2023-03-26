@@ -103,14 +103,14 @@ class IMUSensorModule(sensor.SensorModule):
 
     def render(self):
         """Render the sensor"""
-        if self.imu_data_ is not None:
-            self.render_dict["accelerometer_x"] = self.imu_data_[0]
-            self.render_dict["accelerometer_y"] = self.imu_data_[1]
-            self.render_dict["accelerometer_z"] = self.imu_data_[2]
-            self.render_dict["gyroscope_x"] = self.imu_data_[3]
-            self.render_dict["gyroscope_y"] = self.imu_data_[4]
-            self.render_dict["gyroscope_z"] = self.imu_data_[5]
-            self.render_dict["compass"] = self.imu_data_[6]
+        if self.imu_data is not None:
+            self.render_dict["accelerometer_x"] = self.imu_data[0]
+            self.render_dict["accelerometer_y"] = self.imu_data[1]
+            self.render_dict["accelerometer_z"] = self.imu_data[2]
+            self.render_dict["gyroscope_x"] = self.imu_data[3]
+            self.render_dict["gyroscope_y"] = self.imu_data[4]
+            self.render_dict["gyroscope_z"] = self.imu_data[5]
+            self.render_dict["compass"] = self.imu_data[6]
 
         return self.render_dict
 

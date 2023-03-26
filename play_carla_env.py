@@ -9,30 +9,6 @@ from utils.config_utils import parse_yml
 from utils.log_utils import get_logger, configure_logger, pretty_print_config
 
 
-def callback(hero_actor, world_snapshot):
-    logger = get_logger(__name__)
-    logger.info("Callback is called!")
-    pass
-    # if np.random.rand() < 0.05:
-
-    # Get control from hero actor
-    # hero_actor.set_autopilot(False)
-    # logger.info(hero_actor.attributes)
-    # action = hero_actor.get_control()
-    # logger.info(f"Throttle: {action.throttle}")
-    # logger.info(f"Steer: {action.steer}")
-    # logger.info(f"Brake: {action.brake}")
-    # action.throttle = 0.5
-    # action.steer = 0.0
-    # action.brake = 0.0
-    # hero_actor.apply_control(action)
-    # hero_actor.add_impulse(carla.Vector3D(0, 0, 10000))
-
-    # else:
-
-    # hero_actor.set_autopilot(True)
-
-
 def main(config):
 
     # ---------------------------------------------------------------------------- #
@@ -68,9 +44,7 @@ def main(config):
     env_class = environment_factory(config)
     env = env_class(config=config["environment"])
 
-    env.get_world().on_tick(
-        lambda world_snapshot: callback(env.get_hero_actor(), world_snapshot)
-    )
+    
     while not env.is_done:
 
         tic = time.time()

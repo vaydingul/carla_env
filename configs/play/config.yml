@@ -48,6 +48,32 @@ environment:
         height: 256
         fov: 100
 
+    - id: rgb_left
+      type: RGBSensor
+      config:
+        x: 1.5
+        y: 0.0
+        z: 2.4
+        roll: 0.0
+        pitch: 0.0
+        yaw: 60.0
+        width: 900
+        height: 256
+        fov: 100
+
+    - id: rgb_right
+      type: RGBSensor
+      config:
+        x: 1.5
+        y: 0.0
+        z: 2.4
+        roll: 0.0
+        pitch: 0.0
+        yaw: -60.0
+        width: 900
+        height: 256
+        fov: 100
+
     - id: ego
       type: VehicleSensor
       config: {}
@@ -60,6 +86,42 @@ environment:
         horizontal_fov: 5
         vertical_fov: 5
         range: 10
+        points_per_second: 100
+
+    - id: imu
+      type: IMUSensor
+      config: {}
+
+    - id: gnss
+      type: GNSSSensor
+      config: {}
+
+    - id: radar_front_left
+      type: RadarSensor
+      config:
+        x: 2.55
+        y: 0.0
+        z: 0.8
+        roll: 0.0
+        pitch: -5.0
+        yaw: 60.0
+        horizontal_fov: 35
+        vertical_fov: 20
+        range: 20
+        points_per_second: 100
+
+    - id: radar_front_right
+      type: RadarSensor
+      config:
+        x: 2.55
+        y: 0.0
+        z: 0.8
+        roll: 0.0
+        pitch: -5.0
+        yaw: -60.0
+        horizontal_fov: 35
+        vertical_fov: 20
+        range: 20
         points_per_second: 100
 
     #! It is a must. NEVER DISCARD IT.

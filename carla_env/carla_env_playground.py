@@ -365,16 +365,8 @@ class CarlaEnvironment(Environment):
         """Render the environment"""
 
         self.renderer_module.reset()
-
-        self.render_dict = {}
-        for (k, v) in self.__dict__.items():
-            if isinstance(v, Module):
-                self.render_dict[k] = v.render()
-            elif isinstance(v, list):
-                if len(v) > 0:
-                    if isinstance(v[0], Module):
-                        for item in v:
-                            self.render_dict[k] = item.render()
+        
+        self.generate_sensor_dict()
 
         # Put all of the rgb cameras as a 2x3 grid
         if "rgb_front" in self.data_dict.keys():
@@ -463,6 +455,18 @@ class CarlaEnvironment(Environment):
     def get_counter(self):
         """Get the counter of the environment"""
         return self.counter
+
+    def generate_sensor_dict(self):
+        """Generate a sensor dict from the sensor config"""
+        self.render_dict = {}
+        for (k, v) in self.__dict__.items():
+            if isinstance(v, Module):
+                self.render_dict[k] = v.render()
+        for item in self.sensor_modules:
+            self.render_dict[item["id"]] = item["module"].render()
+
+        for item in self.bevs:
+            self.render_dict[item["id"]] = item["config"]
 
     def _set_default_config(self):
         """Set the default config of the environment"""

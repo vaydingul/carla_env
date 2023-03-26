@@ -102,8 +102,16 @@ class RadarSensorModule(sensor.SensorModule):
 
     def render(self):
         """Render the sensor"""
-        if self.radar_data_ is not None:
-            self.render_dict["depth_min"] = np.min(self.radar_data_[:, -1])
+        if self.radar_data is not None:
+            if self.radar_data.shape[0] > 0:
+                self.render_dict["vel_max"] = np.max(self.radar_data[:, 0])
+                self.render_dict["vel_min"] = np.min(self.radar_data[:, 0])
+                self.render_dict["azimuth_max"] = np.max(self.radar_data[:, 1])
+                self.render_dict["azimuth_min"] = np.min(self.radar_data[:, 1])
+                self.render_dict["altitude_max"] = np.max(self.radar_data[:, 2])
+                self.render_dict["altitude_min"] = np.min(self.radar_data[:, 2])
+                self.render_dict["depth_max"] = np.max(self.radar_data[:, -1])  
+                self.render_dict["depth_min"] = np.min(self.radar_data[:, -1])
 
         return self.render_dict
 

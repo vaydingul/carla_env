@@ -592,6 +592,12 @@ def sensor_factory(config):
 
                 cls = IMUSensorModule
 
+            elif sensor["type"] == "RadarSensor":
+
+                from carla_env.modules.sensor.radar_sensor import RadarSensorModule
+
+                cls = RadarSensorModule
+
             else:
 
                 raise ValueError("Invalid sensor_type")

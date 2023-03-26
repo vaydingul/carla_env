@@ -76,7 +76,7 @@ class InstanceWriter:
                 elif type == InstanceWriterType.RADAR:
 
                     # Take the radar data
-                    radar = data["value"]["data"]
+                    radar = data[value]["data"]
 
                     # Save the radar data
                     np.savez(str(self.path / key / f"{count}.npz"), radar=radar)

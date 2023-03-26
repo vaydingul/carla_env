@@ -79,6 +79,9 @@ class TrafficManagerModule(module.Module):
         for vehicle in self.config["vehicle_list"]:
             vehicle.close()
 
+        for walker in self.config["walker_list"]:
+            walker.close()
+
     def seed(self):
         """Seed the client"""
         pass
@@ -110,7 +113,7 @@ class TrafficManagerModule(module.Module):
             "synchronous_mode": True,
             "vehicle_list": [],
             "walker_list": [],
-            "pedestrians_cross_factor": 0.5,
+            "pedestrians_cross_factor": 0.3,
             "running_walker_ratio": 0.5,
         }
 

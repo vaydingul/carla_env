@@ -27,6 +27,7 @@ class GaussianNoiser(Noiser):
 		self.std_acceleration = self.config["std_acceleration"]
 		self.mean_steer = self.config["mean_steer"]
 		self.std_steer = self.config["std_steer"]
+		self.port = self.config["port"]
 
 		self.world.on_tick(lambda snapshot: self.callback(self.actor, snapshot))
 
@@ -35,7 +36,7 @@ class GaussianNoiser(Noiser):
 		if np.random.rand() < self.probability:
 
 			# Get control from hero actor
-			actor.set_autopilot(False)
+			actor.set_autopilot(False, self.port)
 
 			logger.debug(actor.attributes)
 
@@ -74,7 +75,7 @@ class GaussianNoiser(Noiser):
 
 		else:
 
-			actor.set_autopilot(True)
+			actor.set_autopilot(True, self.port)
 
 	def _set_default_config(self):
 		"""Set the default config of the noiser"""
@@ -84,7 +85,7 @@ class GaussianNoiser(Noiser):
 			"std_acceleration": 0.1,
 			"mean_steer": 0,
 			"std_steer": 0.1,
-			"seed": 0,
+			"port": 8000,
 		}
 
 	def get_config(self):
