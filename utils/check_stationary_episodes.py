@@ -6,11 +6,11 @@ from pathlib import Path
 
 
 def main(config):
-    data_path = Path(config.data_path)
-    for item in os.listdir(config.data_path):
+    dataset_path = Path(config.dataset_path)
+    for item in os.listdir(config.dataset_path):
         if item.startswith("episode"):
 
-            episode_path = data_path / item
+            episode_path = dataset_path / item
             ego_path = episode_path / "ego"
 
             step_list = sorted([int(x.split(".")[0]) for x in os.listdir(ego_path)])
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--data_path",
+        "--dataset_path",
         type=str,
         default="/home/vaydingul/Documents/Codes/carla_env/data/ground_truth_bev_model_train_data_2/",
     )

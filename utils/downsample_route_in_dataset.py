@@ -53,11 +53,13 @@ def downsample_route(route, sample_factor=30):
 
         prev_option = curr_option
 
+    ids_to_sample.append(len(route) - 1)
+
     route_downsampled = []
     last_id = 0
     for i in ids_to_sample:
 
-        for k in range(last_id, i + 1):
+        for k in range(last_id, i+1):
 
             route_downsampled.append(route[i])
 
@@ -125,7 +127,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset_path",
         type=str,
-        default="/home/vaydingul/Documents/Codes/carla_env/data/ground_truth_bev_model_train_data_3_town_02",
+        default="/home/volkan/Documents/Codes/carla_env/data/driving_model_data_20Hz_action_repeat_1_4",
     )
     config = parser.parse_args()
 

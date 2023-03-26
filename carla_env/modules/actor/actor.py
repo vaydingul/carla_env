@@ -103,6 +103,7 @@ class ActorModule(module.Module):
         if self.spawned and self.actor.is_alive:
 
             self.actor.destroy()
+            logger.info(f"Actor {self.actor.id} - {self.child.blueprint} destroyed")
             self.spawned = False
             for sensor in self.sensor_dict.values():
                 sensor.close()

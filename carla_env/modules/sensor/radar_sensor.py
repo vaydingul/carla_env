@@ -111,7 +111,7 @@ class RadarSensorModule(sensor.SensorModule):
                 self.render_dict["altitude_max"] = np.max(self.radar_data[:, 2])
                 self.render_dict["altitude_min"] = np.min(self.radar_data[:, 2])
                 self.render_dict["depth_max"] = np.max(self.radar_data[:, -1])  
-                self.render_dict["depth_min"] = np.min(self.radar_data[:, -1])
+            self.render_dict["depth_min"] = np.min(self.radar_data[:, -1])
 
         return self.render_dict
 

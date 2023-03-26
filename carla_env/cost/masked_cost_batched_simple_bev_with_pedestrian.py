@@ -79,14 +79,13 @@ class Cost(nn.Module):
         bev[bev > 0.5] = 1
         bev[bev <= 0.5] = 0
 
-        # road_channel = bev[:, :, 0]
+        road_channel = bev[:, :, 0]
         lane_channel = bev[:, :, 1]
         vehicle_channel = bev[:, :, 2]
         green_light_channel = bev[:, :, 3]
-        yellow_light_channel = bev[:, :, 4]
-        red_light_channel = bev[:, :, 5]
-        pedestrian_channel = bev[:, :, 6]
-        offroad_channel = bev[:, :, 7]
+        red_yellow_light_channel = bev[:, :, 4]
+        pedestrian_channel = bev[:, :, 5]
+        offroad_channel = bev[:, :, 6]
 
         # vehicle_channel -= agent_channel
 
@@ -101,40 +100,38 @@ class Cost(nn.Module):
             .repeat(speed_.shape[0], 1, 1, 1)
         )
 
-        # road_cost_tensor = road_channel * mask_car * decay_weight
+        road_cost_tensor = road_channel * mask_car * decay_weight
         lane_cost_tensor = lane_channel * mask_side * decay_weight
         vehicle_cost_tensor = vehicle_channel * mask_car * decay_weight
-        # agent_cost_tensor = agent_channel * mask_car * decay_weight
         green_light_cost_tensor = green_light_channel * mask_light * decay_weight
-        yellow_light_cost_tensor = yellow_light_channel * mask_light * decay_weight
-        red_light_cost_tensor = red_light_channel * mask_light * decay_weight
+        red_yellow_light_cost_tensor = red_yellow_light_channel * mask_light * decay_weight
         pedestrian_cost_tensor = pedestrian_channel * mask_car * decay_weight
         offroad_cost_tensor = offroad_channel * mask_side * decay_weight
 
         if self.reduction == "sum":
+            road_cost = torch.sum(road_cost_tensor)
             lane_cost = torch.sum(lane_cost_tensor)
             vehicle_cost = torch.sum(vehicle_cost_tensor)
             green_light_cost = torch.sum(green_light_cost_tensor)
-            yellow_light_cost = torch.sum(yellow_light_cost_tensor)
-            red_light_cost = torch.sum(red_light_cost_tensor)
+            red_yellow_light_cost = torch.sum(red_yellow_light_cost_tensor)
             pedestrian_cost = torch.sum(pedestrian_cost_tensor)
             offroad_cost = torch.sum(offroad_cost_tensor)
 
         elif self.reduction == "mean":
+            road_cost = torch.mean(road_cost_tensor)
             lane_cost = torch.mean(lane_cost_tensor)
             vehicle_cost = torch.mean(vehicle_cost_tensor)
             green_light_cost = torch.mean(green_light_cost_tensor)
-            yellow_light_cost = torch.mean(yellow_light_cost_tensor)
-            red_light_cost = torch.mean(red_light_cost_tensor)
+            red_yellow_light_cost = torch.mean(red_yellow_light_cost_tensor)
             pedestrian_cost = torch.mean(pedestrian_cost_tensor)
             offroad_cost = torch.mean(offroad_cost_tensor)
 
         elif self.reduction == "none":
+            road_cost = road_cost_tensor
             lane_cost = lane_cost_tensor
             vehicle_cost = vehicle_cost_tensor
             green_light_cost = green_light_cost_tensor
-            yellow_light_cost = yellow_light_cost_tensor
-            red_light_cost = red_light_cost_tensor
+            red_yellow_light_cost = red_yellow_light_cost_tensor
             pedestrian_cost = pedestrian_cost_tensor
             offroad_cost = offroad_cost_tensor
 
@@ -145,11 +142,11 @@ class Cost(nn.Module):
             )
 
         cost_dict = {
+            "road_cost": road_cost,
             "lane_cost": lane_cost,
             "vehicle_cost": vehicle_cost,
             "green_light_cost": green_light_cost,
-            "yellow_light_cost": yellow_light_cost,
-            "red_light_cost": red_light_cost,
+            "red_yellow_light_cost": red_yellow_light_cost,
             "pedestrian_cost": pedestrian_cost,
             "offroad_cost": offroad_cost,
         }

@@ -29,7 +29,7 @@ class GaussianNoiser(Noiser):
 		self.std_steer = self.config["std_steer"]
 		self.port = self.config["port"]
 
-		self.world.on_tick(lambda snapshot: self.callback(self.actor, snapshot))
+		self.callback_id = self.world.on_tick(lambda snapshot: self.callback(self.actor, snapshot))
 
 	def callback(self, actor, snapshot):
 
@@ -76,6 +76,10 @@ class GaussianNoiser(Noiser):
 		else:
 
 			actor.set_autopilot(True, self.port)
+
+	def close(self):
+		"""Close the noiser"""
+		self.world.remove_on_tick(self.callback_id)
 
 	def _set_default_config(self):
 		"""Set the default config of the noiser"""

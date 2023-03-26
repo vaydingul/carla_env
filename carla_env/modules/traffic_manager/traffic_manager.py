@@ -51,6 +51,8 @@ class TrafficManagerModule(module.Module):
                 "controller.ai.walker"
             )
 
+            self.controller_actor_list = []
+
             for walker in self.config["walker_list"]:
                 controller_actor = self.world.try_spawn_actor(
                     walker_ai_controller_blueprint,
@@ -60,6 +62,8 @@ class TrafficManagerModule(module.Module):
 
 
                 if controller_actor is not None:
+
+                    self.controller_actor_list.append(controller_actor)
 
                     controller_actor.start()
                     controller_actor.go_to_location(
@@ -81,6 +85,11 @@ class TrafficManagerModule(module.Module):
 
         for walker in self.config["walker_list"]:
             walker.close()
+
+        # if controller_actor_list exists, destroy them
+        if hasattr(self, "controller_actor_list"):
+            for controller_actor in self.controller_actor_list:
+                controller_actor.destroy()
 
     def seed(self):
         """Seed the client"""

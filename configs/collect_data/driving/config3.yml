@@ -20,7 +20,7 @@ environment:
     # - world: Town03
     #   num_vehicles: [60, 90]
     - world: Town04
-      num_vehicles: [180, 300]
+      num_vehicles: [250, 350]
       num_walkers: [100, 150]
     # - world: Town06
     #   num_vehicles: [150, 300]

@@ -127,9 +127,14 @@ class CarlaEnvironment(Environment):
             self.is_first_reset = False
         else:
             if not self.config["random"]:
+                self.noiser_module.close()
+                del self.noiser_module
                 self.traffic_manager_module.close()
+                del self.traffic_manager_module
+                self.client_module.step()
             else:
                 self.hero_actor_module.close()
+                del self.hero_actor_module
 
         # Select a random task
         selected_task = np.random.choice(self.tasks)
@@ -182,6 +187,14 @@ class CarlaEnvironment(Environment):
             client=self.client,
         )
 
+        # Noiser
+
+        self.noiser_module = self.noiser["class"](
+            config=self.noiser["config"],
+            client=self.client,
+            actor=self.hero_actor_module.get_actor(),
+        )
+
         vehicle_actor_list = create_multiple_vehicle_actors_for_traffic_manager(
             self.client, n=number_of_vehicle_actors
         )
@@ -223,14 +236,7 @@ class CarlaEnvironment(Environment):
                 }
             )
 
-        # Noiser
-
-        self.noiser_module = self.noiser["class"](
-            config=self.noiser["config"],
-            client=self.client,
-            actor=self.hero_actor_module.get_actor(),
-        )
-
+        
         # Bird's eye view
         self.bev_modules = []
         for bev in self.bevs:
@@ -427,6 +433,7 @@ class CarlaEnvironment(Environment):
         """Close the environment"""
         if not self.config["random"]:
             self.traffic_manager_module.close()
+            self.noiser.close()
         else:
             self.hero_actor_module.close()
         self.client_module.close()

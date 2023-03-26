@@ -1,13 +1,13 @@
 experiment_type: test_mpc
 log_path: ~
-seed: 999
-port: &port_var 2000
-tm_port: &tm_port_var 8000
+seed: 42
+port: &port_var 1324
+tm_port: &tm_port_var 4786
 num_time_step_previous: &previous 20
-num_time_step_future: &future 10
+num_time_step_future: &future 1
 
 cost:
-  type: "extended_bev"
+  type: "simple_bev"
   config:
     image_width: 192
     image_height: 192
@@ -17,12 +17,12 @@ cost:
     vehicle_width: 2.1
     vehicle_length: 4.9
     pixels_per_meter: 5
-    longitudinal_offset: 0.0
+    longitudinal_offset: 0.125
     longitudinal_scaler: 1
-    longitudinal_speed_offset: 0.0
+    longitudinal_speed_offset: 0.125
     longitudinal_speed_scaler: 2.0
     lateral_offset: 1.0
-    lateral_scaler: 0.75
+    lateral_scaler: 0.5
 
 environment:
   name: carla_env_testing_traffic
@@ -34,7 +34,8 @@ environment:
   tm_port: *tm_port_var
   tasks:
     - world: Town02
-      num_vehicles: [60, 90]
+      num_vehicles: 0
+      num_walkers: 0
     # - world: Town03
     #   num_vehicles: [60, 90]
     # - world: Town04
@@ -105,9 +106,9 @@ environment:
 
   route:
     config:
-      sampling_resolution: 20
+      sampling_resolution: 1
       debug: true
-      distance_threshold: 5
+      distance_threshold: 10
 
 tester:
   batch_size: 1
@@ -121,22 +122,20 @@ tester:
   log_video_scale: 0.1
   bev_agent_channel: 7
   bev_vehicle_channel: 6
-  bev_selected_channels: [0, 1, 2, 3, 4, 5, 6, 11]
+  bev_selected_channels: [0, 5, 6, 8, 9, 9, 10, 11]
   bev_calculate_offroad: false
 
   cost_weight:
-    road_cost: -0.01 # -0.01
-    road_on_cost: -0.01 # -0.01
-    road_off_cost: 0.05 # 0.005
-    road_red_yellow_cost: 0.1 # 0.1
-    road_green_cost: -0.1 # -0.1
-    vehicle_cost: 1 # 1
-    lane_cost: 0.05 # 0.05
-    offroad_cost: 0.05 # 0.005
-    acceleration_jerk: 100.0
-    steer_jerk: 1000.0
-    ego_location_l1: 300.0
-    ego_yaw_l1: 100.0
+    road_cost: 0.0
+    vehicle_cost: 0.0
+    lane_cost: 0.0
+    green_light_cost: 0.0
+    red_yellow_light_cost: 0.0
+    offroad_cost: 0.0
+    acceleration_jerk: 1.0
+    steer_jerk: 50.0
+    ego_location_l1: 10.0
+    ego_yaw_l1: 1.0
     ego_speed_l1: 0.0
 
 # MPC is a kind of RL training.
@@ -169,7 +168,7 @@ wandb:
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"
-  group: "test-mpc"
-  name: "1-10-20Hz-policy_cost"
+  group: "test-mpc-20Hz"
+  name: "20-10-20Hz"
   id: ~
   notes: ""

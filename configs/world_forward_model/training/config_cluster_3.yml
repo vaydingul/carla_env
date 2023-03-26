@@ -1,0 +1,124 @@
+experiment_type: "train_world_forward_model"
+seed: 42
+checkpoint_path: "pretrained_models/"
+log_path: ~ #"logs/"
+
+num_time_step_previous: &previous 20
+num_time_step_future: &future 10
+sequence_length: &sequence_length 30
+num_workers: &num_workers 10
+num_gpu: &num_gpu 4
+read_keys: &read_keys ["bev_world"]
+dilation: &dilation 1
+bev_agent_channel: &bev_agent_channel 7
+bev_vehicle_channel: &bev_vehicle_channel 6
+bev_selected_channels: &bev_selected_channels [0, 1, 2, 3, 4, 5, 6, 10, 11]
+bev_calculate_offroad: &bev_calculate_offroad false
+
+# Dataset related parameters for training
+dataset_train:
+  type: InstanceDataset
+  config:
+    data_path: "/kuacc/users/vaydingul20/driving_model_data_20Hz_action_repeat_1/train/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+    bev_agent_channel: *bev_agent_channel
+    bev_vehicle_channel: *bev_vehicle_channel
+    bev_selected_channels: *bev_selected_channels
+    bev_calculate_offroad: *bev_calculate_offroad
+
+# Dataloader related parameters for training
+dataloader_train:
+  batch_size: 100
+  shuffle: false
+  num_workers: *num_workers
+  drop_last: true
+  pin_memory: true
+
+# Dataset related parameters for validation
+dataset_val:
+  type: InstanceDataset
+  config:
+    data_path: "/kuacc/users/vaydingul20/driving_model_data_20Hz_action_repeat_1/val/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+    bev_agent_channel: *bev_agent_channel
+    bev_vehicle_channel: *bev_vehicle_channel
+    bev_selected_channels: *bev_selected_channels
+    bev_calculate_offroad: *bev_calculate_offroad
+
+# Dataloader related parameters for validation
+dataloader_val:
+  batch_size: 150
+  shuffle: false
+  num_workers: *num_workers
+  drop_last: true
+  pin_memory: true
+
+# Training related parameters
+training:
+  num_epochs: 48
+  num_gpu: *num_gpu
+  master_port: "33333"
+  weighted_sampling: false
+  sigmoid_before_loss: false
+  optimizer:
+    type: "Adam"
+    config:
+      lr: 0.0001
+      # weight_decay: 0.0001
+
+  loss:
+    criterion: "BCEWithLogitsLoss"
+    config:
+      reduction: "mean"
+      pos_weight: [1, 1, 1, 1, 1, 1, 5, 5, 1]
+
+  save_interval: 6
+  val_interval: 3
+
+  logvar_clip:
+    enable: false
+    min: -10
+    max: 10
+
+  gradient_clip:
+    enable: true
+    type: "norm"
+    value: 0.3
+
+  # Scheduler related parameters
+  scheduler:
+    enable: false
+    type: "ReduceLROnPlateau"
+    config:
+      patience: 10
+      factor: 0.5
+      min_lr: 0.0000001
+
+# Ego forward model related parameters
+world_forward_model:
+  type: "WorldBEVModel"
+  config:
+    input_shape: [9, 192, 192]
+    latent_size: 128
+    hidden_channel: 256
+    output_channel: 512
+    num_encoder_layer: 4
+    num_probabilistic_encoder_layer: 2
+    dropout: 0.1
+    num_time_step_previous: *previous
+    num_time_step_future: 1 #*future
+
+# Wandb related parameters
+wandb:
+  enable: true
+  resume: false
+  resume_checkpoint_number: 0
+  project: "mbl-refactored"
+  group: "train-world-forward-model-multi-step-20Hz"
+  name: "20-10-20Hz-extended_bev_with_pedestrian"
+  id: ~
+  notes: "World forward model with 20Hz data and 20 time steps in the past and 10 time step in the future. It can work with every model that works in 20Hz."

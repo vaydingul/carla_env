@@ -22,7 +22,7 @@ environment:
     # - world: Town04
     #   num_vehicles: [120, 180]
     - world: Town06
-      num_vehicles: [250, 400]
+      num_vehicles: [250, 350]
       num_walkers: [120, 160]
 
   renderer:

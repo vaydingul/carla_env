@@ -88,18 +88,24 @@ def cost_factory(config):
 
             return Cost
 
-        elif config["cost"]["type"] == "bev":
-
-            from carla_env.cost.masked_cost_batched_bev import Cost
-
-            return Cost
-
         elif config["cost"]["type"] == "simple_bev":
 
             from carla_env.cost.masked_cost_batched_simple_bev import Cost
 
             return Cost
 
+        elif config["cost"]["type"] == "extended_bev_with_pedestrian":
+
+            from carla_env.cost.masked_cost_batched_extended_bev_with_pedestrian import Cost
+
+            return Cost
+
+        elif config["cost"]["type"] == "simple_bev_with_pedestrian":
+
+            from carla_env.cost.masked_cost_batched_simple_bev_with_pedestrian import Cost
+
+            return Cost
+    
         else:
 
             raise ValueError("Invalid bev_type")
