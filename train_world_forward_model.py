@@ -124,8 +124,6 @@ def main(rank, world_size, config):
         ),
     )
 
-    dataloader_val = DataLoader(dataset_val, **config["dataloader_val"])
-
     # ------------------- Log information about the dataloader -------------------- #
     logger.info(f"Train dataloader size: {len(dataloader_train)}")
     logger.info(f"Validation dataloader size: {len(dataloader_val)}")
