@@ -7,8 +7,8 @@
 #   checkpoint_number: 0
 
 wandb_policy_model:
-  link: vaydingul/mbl-refactored/1sk9m2y4
-  checkpoint_number: 5
+  link: vaydingul/mbl-refactored/3en566xr
+  checkpoint_number: 47
 
 bev:
   config:

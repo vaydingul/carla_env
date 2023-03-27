@@ -80,7 +80,7 @@ class GaussianNoiser(Noiser):
 	def close(self):
 		"""Close the noiser"""
 		self.world.remove_on_tick(self.callback_id)
-
+	
 	def _set_default_config(self):
 		"""Set the default config of the noiser"""
 		self.config = {

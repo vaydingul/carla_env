@@ -1,0 +1,202 @@
+# TODO: Make it distributed with creating four different config files.
+
+experiment_type: collect_data_driving
+log_path: ~
+data_save_path: data/driving_model_data_20Hz_action_repeat_1_2/
+num_episodes: 10
+port: &port_var 3000
+tm_port: &tm_port_var 8001
+environment:
+  name: carla_env_data_collect
+  random: false
+  action_repeat: 1
+  fixed_delta_seconds: &dt 0.05
+  port: *port_var
+  tm_port: *tm_port_var
+  tasks:
+    # - world: Town02
+    #   num_vehicles: [90, 100]
+    # num_walkers: [50, 100]
+    - world: Town05
+      num_vehicles: [120, 180]
+      num_walkers: [100, 150]
+    # - world: Town04
+    #   num_vehicles: [120, 180]
+    # - world: Town06
+    #   num_vehicles: [150, 300]
+
+  renderer:
+    width: 1300
+    height: 1000
+    channel: 3
+    background_color: [0, 0, 0]
+    font_scale: 0.5
+    font_color: [255, 255, 255]
+    font_thickness: 1
+    cursor: [0, 0]
+    name: Random Data Collection
+    show: false
+    save: false
+    create_date_time_path: true
+    save_path: figures/env_debug/data_collect_driving/
+
+  sensors:
+    - id: rgb_front
+      type: RGBSensor
+      config:
+        x: 1.5
+        y: 0.0
+        z: 2.4
+        roll: 0.0
+        pitch: 0.0
+        yaw: 0.0
+        width: 900
+        height: 256
+        fov: 100
+
+    - id: rgb_left
+      type: RGBSensor
+      config:
+        x: 1.5
+        y: 0.0
+        z: 2.4
+        roll: 0.0
+        pitch: 0.0
+        yaw: 60.0
+        width: 900
+        height: 256
+        fov: 100
+
+    - id: rgb_right
+      type: RGBSensor
+      config:
+        x: 1.5
+        y: 0.0
+        z: 2.4
+        roll: 0.0
+        pitch: 0.0
+        yaw: -60.0
+        width: 900
+        height: 256
+        fov: 100
+
+    - id: ego
+      type: VehicleSensor
+      config: {}
+
+    - id: occ
+      type: OccupancySensor
+      config:
+        threshold: 3
+        number_of_radars: 8
+        horizontal_fov: 5
+        vertical_fov: 5
+        range: 10
+        points_per_second: 100
+
+    - id: imu
+      type: IMUSensor
+      config: {}
+
+    - id: gnss
+      type: GNSSSensor
+      config: {}
+
+    - id: radar_front_left
+      type: RadarSensor
+      config:
+        x: 2.55
+        y: 0.0
+        z: 0.8
+        roll: 0.0
+        pitch: -5.0
+        yaw: 15.0
+        horizontal_fov: 35
+        vertical_fov: 20
+        range: 30
+        points_per_second: 100
+
+    - id: radar_front_right
+      type: RadarSensor
+      config:
+        x: 2.55
+        y: 0.0
+        z: 0.8
+        roll: 0.0
+        pitch: -5.0
+        yaw: -15.0
+        horizontal_fov: 90
+        vertical_fov: 45
+        range: 30
+        points_per_second: 100
+
+    #! It is a must. NEVER DISCARD IT.
+    - id: col
+      type: CollisionSensor
+      config: {}
+
+  bevs:
+    - id: "bev_world"
+      config:
+        width: 192
+        height: 192
+        render_lanes_on_junctions: false
+        pixels_per_meter: 5
+        crop_type: "FRONT_AREA_ONLY"
+        road_on_off: true
+        road_light: true
+        light_circle: true
+        lane_marking_thickness: 2
+
+  noiser:
+    type: DummyNoiser
+    config: {}
+
+writer:
+  keys:
+    - key: rgb_front
+      value: rgb_front
+      type: rgb_image
+    - key: rgb_left
+      value: rgb_left
+      type: rgb_image
+    - key: rgb_right
+      value: rgb_right
+      type: rgb_image
+    - key: ego
+      value: ego
+      type: json
+    - key: occ
+      value: occ
+      type: json
+    - key: bev_world
+      value: bev_world
+      type: bev_image
+    - key: navigation
+      value: navigation
+      type: json
+    - key: imu
+      value: imu
+      type: json
+    - key: gnss
+      value: gnss
+      type: json
+    - key: radar_front_left
+      value: radar_front_left
+      type: radar
+    - key: radar_front_right
+      value: radar_front_right
+      type: radar
+
+  # TODO: Add navigation key
+
+wandb:
+  enable: true
+  resume: false
+  resume_checkpoint_number: 0
+  project: "mbl-refactored"
+  group: "collect-data"
+  name: "20Hz-1-repeat-driving"
+  id: ~
+  link: ~
+  notes: "A data collected in 20Hz with AutoPilot of CARLA."
