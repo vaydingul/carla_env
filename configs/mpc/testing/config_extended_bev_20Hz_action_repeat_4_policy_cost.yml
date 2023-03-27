@@ -34,7 +34,7 @@ environment:
   tm_port: *tm_port_var
   tasks:
     - world: Town02
-      num_vehicles: [60, 90]
+      num_vehicles: [60, 80]
     # - world: Town03
     #   num_vehicles: [60, 90]
     # - world: Town04
