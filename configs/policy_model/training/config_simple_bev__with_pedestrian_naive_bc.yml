@@ -7,7 +7,7 @@ num_time_step_previous: &previous 20
 num_time_step_future: &future 1
 sequence_length: &sequence_length 21
 num_workers: &num_workers 5
-num_gpu: &num_gpu 4
+num_gpu: &num_gpu 1
 read_keys: &read_keys ["bev_world", "occ", "navigation_downsampled", "ego"]
 dilation: &dilation 1
 bev_agent_channel: &bev_agent_channel 7
@@ -19,7 +19,7 @@ bev_calculate_offroad: &bev_calculate_offroad false
 dataset_train:
   type: "InstanceDataset"
   config:
-    data_path: "/kuacc/users/vaydingul20/driving_model_data_20Hz_action_repeat_1/train/"
+    data_path: "data/driving_model_data_20Hz_action_repeat_1/test/"
     sequence_length: *sequence_length
     read_keys: *read_keys
     dilation: *dilation
@@ -30,7 +30,7 @@ dataset_train:
 
 # Dataloader related parameters for training
 dataloader_train:
-  batch_size: 150
+  batch_size: 30
   num_workers: *num_workers
   drop_last: true
   pin_memory: true
@@ -39,7 +39,7 @@ dataloader_train:
 dataset_val:
   type: "InstanceDataset"
   config:
-    data_path: "/kuacc/users/vaydingul20/driving_model_data_20Hz_action_repeat_1/val/"
+    data_path: "data/driving_model_data_20Hz_action_repeat_1/test/"
     sequence_length: *sequence_length
     read_keys: *read_keys
     dilation: *dilation
@@ -50,7 +50,7 @@ dataset_val:
 
 # Dataloader related parameters for validation
 dataloader_val:
-  batch_size: 150
+  batch_size: 30
   num_workers: *num_workers
   drop_last: true
   pin_memory: true
