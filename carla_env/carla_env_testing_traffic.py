@@ -338,6 +338,9 @@ class CarlaEnvironment(Environment):
 
         self.generate_sensor_dict()
 
+        rgb_valid = "rgb_front" in self.data_dict.keys()
+        bev_valid = "bev_world" in self.data_dict.keys()
+
         world_2_camera_transformation = self.render_dict["rgb_front"][
             "image_transform"
         ].get_inverse_matrix()
@@ -348,7 +351,7 @@ class CarlaEnvironment(Environment):
         pixels_per_meter = self.render_dict["bev_world"]["pixels_per_meter"]
 
         # Put all of the rgb cameras as a 2x3 grid
-        if "rgb_front" in self.data_dict.keys():
+        if rgb_valid:
             rgb_image_front = self.data_dict["rgb_front"]["data"]
             rgb_image_front = cv2.cvtColor(rgb_image_front, cv2.COLOR_BGR2RGB)
             (h_image, w_image, c_image) = rgb_image_front.shape
@@ -357,7 +360,7 @@ class CarlaEnvironment(Environment):
 
             self.renderer_module.render_image(rgb_image_front, move_cursor="down")
 
-            if "bev_world" in self.data_dict.keys():
+            if bev_valid:
                 bev = self.data_dict["bev_world"]
                 bev = self.bev_modules[0]["module"].as_rgb(bev)
                 bev = cv2.cvtColor(bev, cv2.COLOR_BGR2RGB)
@@ -477,40 +480,44 @@ class CarlaEnvironment(Environment):
                         ego_current_location=ego_current_location,
                     )
 
-                    ego_future_location_pixel = world_2_pixel(
-                        ego_future_location,
-                        world_2_camera_transformation,
-                        h_image,
-                        w_image,
-                        fov,
-                    )
-
-                    ego_future_location_bev = world_2_bev(
-                        ego_future_location,
-                        ego_current_location_,
-                        ego_yaw,
-                        h_bev,
-                        w_bev,
-                        pixels_per_meter,
-                    )
-
-                    if ego_future_location_pixel is not None:
-                        render_position = (
-                            ego_future_location_pixel[0] + point_rgb_front_left_up[0],
-                            ego_future_location_pixel[1] + point_rgb_front_left_up[1],
-                        )
-                        self.renderer_module.render_point(
-                            pos=render_position, color=COLORS.YELLOW
+                    if rgb_valid:
+                        ego_future_location_pixel = world_2_pixel(
+                            ego_future_location,
+                            world_2_camera_transformation,
+                            h_image,
+                            w_image,
+                            fov,
                         )
 
-                    if ego_future_location_bev is not None:
-                        render_position = (
-                            ego_future_location_bev[0] + point_bev_world_left_up[0],
-                            ego_future_location_bev[1] + point_bev_world_left_up[1],
+                        if ego_future_location_pixel is not None:
+                            render_position = (
+                                ego_future_location_pixel[0]
+                                + point_rgb_front_left_up[0],
+                                ego_future_location_pixel[1]
+                                + point_rgb_front_left_up[1],
+                            )
+                            self.renderer_module.render_point(
+                                pos=render_position, color=COLORS.YELLOW
+                            )
+
+                    if bev_valid:
+                        ego_future_location_bev = world_2_bev(
+                            ego_future_location,
+                            ego_current_location_,
+                            ego_yaw,
+                            h_bev,
+                            w_bev,
+                            pixels_per_meter,
                         )
-                        self.renderer_module.render_point(
-                            pos=render_position, color=COLORS.YELLOW
-                        )
+
+                        if ego_future_location_bev is not None:
+                            render_position = (
+                                ego_future_location_bev[0] + point_bev_world_left_up[0],
+                                ego_future_location_bev[1] + point_bev_world_left_up[1],
+                            )
+                            self.renderer_module.render_point(
+                                pos=render_position, color=COLORS.YELLOW
+                            )
 
         for k in range(
             self.render_dict["route"]["route_index"],
@@ -528,40 +535,42 @@ class CarlaEnvironment(Environment):
                 route_current_location, ego_current_location
             )
 
-            route_current_location_pixel = world_2_pixel(
-                route_current_location,
-                world_2_camera_transformation,
-                h_image,
-                w_image,
-                fov,
-            )
-
-            route_current_location_bev = world_2_bev(
-                route_current_location,
-                ego_current_location_,
-                ego_yaw,
-                h_bev,
-                w_bev,
-                pixels_per_meter,
-            )
-
-            if route_current_location_pixel is not None:
-                render_position = (
-                    route_current_location_pixel[0] + point_rgb_front_left_up[0],
-                    route_current_location_pixel[1] + point_rgb_front_left_up[1],
-                )
-                self.renderer_module.render_point(
-                    pos=render_position, color=COLORS.BLUE
+            if rgb_valid:
+                route_current_location_pixel = world_2_pixel(
+                    route_current_location,
+                    world_2_camera_transformation,
+                    h_image,
+                    w_image,
+                    fov,
                 )
 
-            if route_current_location_bev is not None:
-                render_position = (
-                    route_current_location_bev[0] + point_bev_world_left_up[0],
-                    route_current_location_bev[1] + point_bev_world_left_up[1],
+                if route_current_location_pixel is not None:
+                    render_position = (
+                        route_current_location_pixel[0] + point_rgb_front_left_up[0],
+                        route_current_location_pixel[1] + point_rgb_front_left_up[1],
+                    )
+                    self.renderer_module.render_point(
+                        pos=render_position, color=COLORS.BLUE
+                    )
+
+            if bev_valid:
+                route_current_location_bev = world_2_bev(
+                    route_current_location,
+                    ego_current_location_,
+                    ego_yaw,
+                    h_bev,
+                    w_bev,
+                    pixels_per_meter,
                 )
-                self.renderer_module.render_point(
-                    pos=render_position, color=COLORS.BLUE
-                )
+
+                if route_current_location_bev is not None:
+                    render_position = (
+                        route_current_location_bev[0] + point_bev_world_left_up[0],
+                        route_current_location_bev[1] + point_bev_world_left_up[1],
+                    )
+                    self.renderer_module.render_point(
+                        pos=render_position, color=COLORS.BLUE
+                    )
 
         self.renderer_module.show()
 

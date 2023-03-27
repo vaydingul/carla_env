@@ -165,11 +165,12 @@ wandb_world_forward_model:
   # checkpoint_number: 0
 
 wandb:
-  enable: false
+  enable: true
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"
   group: "test-mpc"
-  name: "1-10-20Hz-policy_cost"
+  name: "1-10-20Hz-policy_cost-working-example"
   id: ~
+  link: ~
   notes: ""
