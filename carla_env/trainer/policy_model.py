@@ -332,6 +332,8 @@ class Trainer(object):
             .long()
             .to(self.rank)
         )
+
+        command[command == -1] = 3  # -1 is for VOID, make it STRAIGHT
         command = F.one_hot(command - 1, num_classes=6).float()
 
         # Target waypoint location
