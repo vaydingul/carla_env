@@ -31,7 +31,7 @@ class Noiser(object):
 
 		return callback
 	
-
+	
 	def _set_default_config(self):
 		"""Set the default config of the noiser"""
 		self.config = {}

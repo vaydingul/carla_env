@@ -632,7 +632,7 @@ def noiser_factory(config):
 
         noiser = config["environment"]["noiser"]
 
-        if noiser is None:
+        if noiser["type"] == "DummyNoiser":
 
             from carla_env.modules.noiser.dummy import DummyNoiser
 

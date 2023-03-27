@@ -1,6 +1,6 @@
-config_path: "configs/world_forward_model/evaluation/config_2.yml"
+config_path: "configs/world_forward_model/evaluation/config_4.yml"
 save_path: &save_path "figures/world_forward_model_detailed_evaluation/"
 
 wandbs:
-  - link: vaydingul/mbl-refactored/3e2qnz9z
-    checkpoint_numbers: [47, 41, 35, 29, 23, 17, 11, 5]
+  - link: vaydingul/mbl-refactored/2rd7fcpl
+    checkpoint_numbers: [47, 41, 35, 29, 23]

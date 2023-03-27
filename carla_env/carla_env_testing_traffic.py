@@ -339,7 +339,7 @@ class CarlaEnvironment(Environment):
         self.generate_sensor_dict()
 
         rgb_valid = "rgb_front" in self.data_dict.keys()
-        bev_valid = "bev_world" in self.data_dict.keys()
+        bev_valid = rgb_valid and ("bev_world" in self.data_dict.keys())
 
         world_2_camera_transformation = self.render_dict["rgb_front"][
             "image_transform"

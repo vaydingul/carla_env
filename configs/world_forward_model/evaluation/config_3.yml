@@ -1,0 +1,78 @@
+experiment_type: "eval_world_forward_model"
+seed: 42
+log_path: ~ #"/home/volkan/Documents/Codes/carla_env/logs/"
+
+save_path: &save_path "figures/world_forward_model_detailed_evaluation/"
+
+num_time_step_previous: &previous 20
+num_time_step_future: &future 10
+sequence_length: &sequence_length 30
+num_workers: &num_workers 5
+num_gpu: &num_gpu 1
+read_keys: &read_keys ["bev_world"]
+dilation: &dilation 1
+bev_agent_channel: &bev_agent_channel 7
+bev_vehicle_channel: &bev_vehicle_channel 6
+bev_selected_channels: &bev_selected_channels [0, 1, 2, 3, 4, 5, 6, 10, 11]
+bev_calculate_offroad: &bev_calculate_offroad false
+
+# Dataset related parameters for training
+
+dataset_test:
+  type: "InstanceDataset"
+  config:
+    data_path: "data/driving_model_data_20Hz_action_repeat_1/test/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+    bev_agent_channel: *bev_agent_channel
+    bev_vehicle_channel: *bev_vehicle_channel
+    bev_selected_channels: *bev_selected_channels
+    bev_calculate_offroad: *bev_calculate_offroad
+
+# Dataloader related parameters for validation
+dataloader_test:
+  batch_size: 50
+  shuffle: false
+  num_workers: *num_workers
+  drop_last: true
+
+# Evaluation related parameters
+evaluation:
+  num_time_step_previous: *previous
+  num_time_step_predict: *future
+  sequence_length: *sequence_length
+  metrics: [iou, accuracy, precision, recall, f1]
+  test_step: 10
+  thresholds: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+  wandb_log_interval: 1
+
+  renderer:
+    width: 1300
+    height: 1000
+    channel: 3
+    background_color: [0, 0, 0]
+    font_scale: 0.5
+    font_color: [255, 255, 255]
+    font_thickness: 1
+    cursor: [0, 0]
+    name: World Model Evaluation
+    show: false
+    save: true
+    create_date_time_path: false
+    save_path: *save_path
+
+# Wandb related parameters
+wandb:
+  link: "vaydingul/mbl-refactored/1qr51yeg"
+  checkpoint_number: 47
+
+  enable: true
+  resume: false
+  resume_checkpoint_number: 0
+  project: "mbl-refactored"
+  group: "eval-world-forward-model-multi-step-20Hz"
+  name: "20-10-20Hz-extended_bev_with_pedestrian"
+  id: ~
+  link: ~
+  notes: "20 Hz world forward model evaluation plots"
