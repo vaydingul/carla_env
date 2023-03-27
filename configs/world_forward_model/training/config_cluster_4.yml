@@ -6,7 +6,7 @@ log_path: ~ #"logs/"
 num_time_step_previous: &previous 20
 num_time_step_future: &future 10
 sequence_length: &sequence_length 30
-num_workers: &num_workers 10
+num_workers: &num_workers 5
 num_gpu: &num_gpu 4
 read_keys: &read_keys ["bev_world"]
 dilation: &dilation 1
@@ -30,7 +30,7 @@ dataset_train:
 
 # Dataloader related parameters for training
 dataloader_train:
-  batch_size: 85
+  batch_size: 95
   shuffle: false
   num_workers: *num_workers
   drop_last: true
@@ -51,7 +51,7 @@ dataset_val:
 
 # Dataloader related parameters for validation
 dataloader_val:
-  batch_size: 85
+  batch_size: 95
   shuffle: false
   num_workers: *num_workers
   drop_last: true

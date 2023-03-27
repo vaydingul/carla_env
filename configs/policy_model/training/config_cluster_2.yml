@@ -198,7 +198,7 @@ wandb:
   resume: true
   id: 9uuk61tv
   link: ~
-  resume_checkpoint_number: 11
+  resume_checkpoint_number: 35
   project: "mbl-refactored"
   group: "train-policy-model-multi-step-20Hz"
   name: "20-10-20Hz"
