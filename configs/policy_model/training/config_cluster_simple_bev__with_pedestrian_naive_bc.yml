@@ -200,4 +200,5 @@ wandb:
   group: "train-policy-model-multi-step-20Hz"
   name: "20-10-20Hz-simple-bev"
   id: ~
+  link: ~
   notes: "Policy model with 20Hz data and 20 time steps in the past and 1 time step in the future. Full behavior cloning."
