@@ -448,7 +448,7 @@ class Trainer(object):
             cost_dict = {k: v / (B * S_future) for (k, v) in cost["cost_dict"].items()}
 
         else:
-
+            cost = {}
             cost_dict = {}
 
         action_mse = F.mse_loss(
