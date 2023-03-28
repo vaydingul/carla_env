@@ -74,5 +74,4 @@ wandb:
   group: "eval-world-forward-model-multi-step-20Hz"
   name: "20-10-20Hz-extended_bev_with_pedestrian"
   id: ~
-  link: ~
   notes: "20 Hz world forward model evaluation plots"

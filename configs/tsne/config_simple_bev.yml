@@ -1,0 +1,62 @@
+experiment_type: "eval_world_forward_model"
+seed: &seed 42
+log_path: ~ #"/home/volkan/Documents/Codes/carla_env/logs/"
+
+save_path: &save_path "figures/world_forward_model_tsne_analysis/"
+
+num_time_step_previous: &previous 20
+num_time_step_future: &future 10
+sequence_length: &sequence_length 30
+num_workers: &num_workers 5
+num_gpu: &num_gpu 1
+read_keys: &read_keys ["bev_world", "ego"]
+dilation: &dilation 1
+bev_agent_channel: &bev_agent_channel 7
+bev_vehicle_channel: &bev_vehicle_channel 6
+bev_selected_channels: &bev_selected_channels [0, 5, 6, 8, 9, 10, 11]
+bev_calculate_offroad: &bev_calculate_offroad false
+
+# Dataset related parameters for training
+
+dataset_test:
+  type: "InstanceDataset"
+  config:
+    data_path: "data/driving_model_data_20Hz_action_repeat_1/test/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+    bev_agent_channel: *bev_agent_channel
+    bev_vehicle_channel: *bev_vehicle_channel
+    bev_selected_channels: *bev_selected_channels
+    bev_calculate_offroad: *bev_calculate_offroad
+
+# Dataloader related parameters for validation
+dataloader_test:
+  batch_size: 100
+  shuffle: false
+  num_workers: *num_workers
+  drop_last: true
+
+tsne:
+  n_components: 2
+  perplexity: 50.0
+  early_exaggeration: 12.0
+  learning_rate: auto
+  n_iter: 1000
+  n_iter_without_progress: 300
+  min_grad_norm: 0.0000001
+  metric: euclidean
+  init: pca
+  verbose: 1
+  random_state: *seed
+  method: exact
+  angle: 0.5
+  n_jobs: -1 #*num_workers
+
+analysis:
+  name: tsne_analysis_pca_init
+  test_step: 5
+
+wandb_world_forward_model:
+  link: vaydingul/mbl-refactored/2rd7fcpl
+  checkpoint_number: 47

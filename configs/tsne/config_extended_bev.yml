@@ -9,7 +9,7 @@ num_time_step_future: &future 10
 sequence_length: &sequence_length 30
 num_workers: &num_workers 5
 num_gpu: &num_gpu 1
-read_keys: &read_keys ["bev_world"]
+read_keys: &read_keys ["bev_world", "ego"]
 dilation: &dilation 1
 bev_agent_channel: &bev_agent_channel 7
 bev_vehicle_channel: &bev_vehicle_channel 6
@@ -32,30 +32,31 @@ dataset_test:
 
 # Dataloader related parameters for validation
 dataloader_test:
-  batch_size: 50
+  batch_size: 100
   shuffle: false
   num_workers: *num_workers
   drop_last: true
 
 tsne:
   n_components: 2
-  perplexity: 30.0
+  perplexity: 50.0
   early_exaggeration: 12.0
   learning_rate: auto
   n_iter: 1000
   n_iter_without_progress: 300
-  min_grad_norm: 1e-07
+  min_grad_norm: 0.0000001
   metric: euclidean
-  init: random
+  init: pca
   verbose: 1
   random_state: *seed
-  method: barnes_hut
+  method: exact
   angle: 0.5
   n_jobs: -1 #*num_workers
 
 analysis:
-  test_step: 1
+  name: tsne_analysis_pca_init_extended_bev
+  test_step: 7
 
 wandb_world_forward_model:
-  link: vaydingul/mbl-refactored/2rd7fcpl
+  link: vaydingul/mbl-refactored/2dq567ke
   checkpoint_number: 47
