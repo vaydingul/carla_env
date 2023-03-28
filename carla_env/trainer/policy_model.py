@@ -449,9 +449,41 @@ class Trainer(object):
 
             cost_dict = {k: v / (B * S_future) for (k, v) in cost["cost_dict"].items()}
 
+            d0 = (
+                F.l1_loss(
+                    target_location,
+                    ego_future_location_predicted[:, 0],
+                    reduction="none",
+                )
+                .sum(1, keepdim=True)
+                .repeat(1, S_future - 1)
+            )  # B x 1
+
+            di = F.l1_loss(
+                ego_future_location_predicted[:, 1:],
+                ego_future_location_predicted[:, 0:1].repeat(1, S_future - 1, 1),
+                reduction="none",
+            ).sum(
+                2
+            )  # B x S
+
+            di_ = F.l1_loss(
+                target_location.unsqueeze(1).repeat(1, S_future - 1, 1),
+                ego_future_location_predicted[:, 1:],
+                reduction="none",
+            ).sum(
+                2
+            )  # B x S
+
+            target_progress = (di / d0).mean()
+
+            target_remainder = (di_ / d0).mean()
+
         else:
             cost = {}
             cost_dict = {}
+            target_progress = torch.tensor(0.0).to(self.rank)
+            target_remainder = torch.tensor(0.0).to(self.rank)
 
         action_mse = F.mse_loss(
             ego_future_action_predicted, ego_future_action, reduction="sum"
@@ -464,34 +496,6 @@ class Trainer(object):
         action_jerk = torch.diff(ego_future_action_predicted, dim=1).square().sum() / (
             B * S_future
         )
-
-        d0 = (
-            F.l1_loss(
-                target_location, ego_future_location_predicted[:, 0], reduction="none"
-            )
-            .sum(1, keepdim=True)
-            .repeat(1, S_future - 1)
-        )  # B x 1
-
-        di = F.l1_loss(
-            ego_future_location_predicted[:, 1:],
-            ego_future_location_predicted[:, 0:1].repeat(1, S_future - 1, 1),
-            reduction="none",
-        ).sum(
-            2
-        )  # B x S
-
-        di_ = F.l1_loss(
-            target_location.unsqueeze(1).repeat(1, S_future - 1, 1),
-            ego_future_location_predicted[:, 1:],
-            reduction="none",
-        ).sum(
-            2
-        )  # B x S
-
-        target_progress = (di / d0).mean()
-
-        target_remainder = (di_ / d0).mean()
 
         ego_state_mse = torch.tensor(0.0).to(self.rank)
 

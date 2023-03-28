@@ -30,7 +30,7 @@ dataset_train:
 
 # Dataloader related parameters for training
 dataloader_train:
-  batch_size: 30
+  batch_size: 100
   num_workers: *num_workers
   drop_last: true
   pin_memory: true
@@ -50,7 +50,7 @@ dataset_val:
 
 # Dataloader related parameters for validation
 dataloader_val:
-  batch_size: 30
+  batch_size: 100
   num_workers: *num_workers
   drop_last: true
   pin_memory: true
@@ -127,18 +127,18 @@ training:
     save_path: figures/env_debug/train_policy/
 
   cost_weight:
-    road_cost: -0.1
-    pedestrian_cost: 0.1
-    vehicle_cost: 0.1
-    lane_cost: 0.1
-    green_light_cost: -0.1
-    red_yellow_light_cost: 0.1
-    offroad_cost: 0.1
-    action_mse: 10.0
+    road_cost: -0.0
+    pedestrian_cost: 0.0
+    vehicle_cost: 0.0
+    lane_cost: 0.0
+    green_light_cost: -0.0
+    red_yellow_light_cost: 0.0
+    offroad_cost: 0.0
+    action_mse: 1.0
     action_l1: 0.0
     action_jerk: 0.0
-    target_progress: -10.0
-    target_remainder: 10.0
+    target_progress: 0.0
+    target_remainder: 0.0
     ego_state_mse: 0.0
     world_state_mse: 0.0
 

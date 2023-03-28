@@ -384,7 +384,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path",
         type=str,
-        default="/home/volkan/Documents/Codes/carla_env/configs/policy_model/training/config_overfit_simple_bev.yml",
+        default="configs/policy_model/training/config_simple_bev_with_pedestrian_naive_bc.yml",
     )
 
     args = parser.parse_args()
