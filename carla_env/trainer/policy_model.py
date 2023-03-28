@@ -506,7 +506,7 @@ class Trainer(object):
                     ego_future_location_predicted, ego_future_location, reduction="sum"
                 )
                 / (B * S_future)
-            ) * key == "location"
+            ) * (key == "location")
 
             ego_state_mse += (
                 F.l1_loss(
@@ -515,7 +515,7 @@ class Trainer(object):
                     reduction="sum",
                 )
                 / (B * S_future)
-            ) * key == "location"
+            ) * (key == "yaw")
             ego_state_mse += (
                 F.l1_loss(
                     torch.sin(ego_future_yaw_predicted),
@@ -523,12 +523,12 @@ class Trainer(object):
                     reduction="sum",
                 )
                 / (B * S_future)
-            ) * key == "location"
+            ) * (key == "yaw")
 
             ego_state_mse += (
                 F.l1_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum")
                 / (B * S_future)
-            ) * key == "speed"
+            ) * (key == "speed")
 
         loss = torch.tensor(0.0).to(self.rank)
 
