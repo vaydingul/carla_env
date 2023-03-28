@@ -501,31 +501,34 @@ class Trainer(object):
 
         for key in self.policy_model.module.get_keys():
 
-            if key == "location":
-                ego_state_mse += F.l1_loss(
+            ego_state_mse += (
+                F.l1_loss(
                     ego_future_location_predicted, ego_future_location, reduction="sum"
-                ) / (B * S_future)
+                )
+                / (B * S_future)
+            ) * key == "location"
 
-            elif key == "yaw":
-                ego_state_mse += F.l1_loss(
+            ego_state_mse += (
+                F.l1_loss(
                     torch.cos(ego_future_yaw_predicted),
                     torch.cos(ego_future_yaw),
                     reduction="sum",
-                ) / (B * S_future)
-                ego_state_mse += F.l1_loss(
+                )
+                / (B * S_future)
+            ) * key == "location"
+            ego_state_mse += (
+                F.l1_loss(
                     torch.sin(ego_future_yaw_predicted),
                     torch.sin(ego_future_yaw),
                     reduction="sum",
-                ) / (B * S_future)
+                )
+                / (B * S_future)
+            ) * key == "location"
 
-            elif key == "speed":
-                ego_state_mse += F.l1_loss(
-                    ego_future_speed_predicted, ego_future_speed, reduction="sum"
-                ) / (B * S_future)
-
-            else:
-
-                raise NotImplementedError
+            ego_state_mse += (
+                F.l1_loss(ego_future_speed_predicted, ego_future_speed, reduction="sum")
+                / (B * S_future)
+            ) * key == "speed"
 
         loss = torch.tensor(0.0).to(self.rank)
 
