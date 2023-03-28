@@ -1,10 +1,10 @@
 experiment_type: test_policy_model
 log_path: ~
-seed: 333
-port: &port_var 6000
-tm_port: &tm_port_var 9000
+seed: 35
+port: &port_var 2000
+tm_port: &tm_port_var 8000
 num_time_step_previous: &previous 20
-num_time_step_future: &future 2
+num_time_step_future: &future 10
 
 environment:
   name: carla_env_testing_traffic
@@ -87,7 +87,7 @@ environment:
 
   route:
     config:
-      sampling_resolution: 5
+      sampling_resolution: 30
       debug: true
 
 tester:
@@ -107,7 +107,7 @@ tester:
 
 wandb_policy_model:
   link: vaydingul/mbl-refactored/3en566xr
-  checkpoint_number: 29
+  checkpoint_number: 23
 
 wandb:
   enable: false
