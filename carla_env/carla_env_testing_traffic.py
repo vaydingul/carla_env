@@ -12,7 +12,7 @@ from carla_env.modules.module import Module
 from carla_env.renderer.renderer import Renderer, COLORS
 from carla_env.bev import BirdViewProducer, BIRDVIEW_CROP_TYPE
 from carla_env.bev.mask import PixelDimensions
-from utils.carla_utils import create_multiple_vehicle_actors_for_traffic_manager
+from utils.carla_utils import create_multiple_vehicle_actors_for_traffic_manager, create_multiple_walker_actors_for_traffic_manager
 from utils.render_utils import *
 
 # Import utils
@@ -181,20 +181,40 @@ class CarlaEnvironment(Environment):
             client=self.client,
         )
 
-        # Let's initialize a traffic manager
-        number_of_actors = (
+        # Make this vehicle actor
+        number_of_vehicle_actors = (
             np.random.randint(*selected_task["num_vehicles"])
             if isinstance(selected_task["num_vehicles"], list)
             else selected_task["num_vehicles"]
         )
-        logger.info(f"Number of actors: {number_of_actors}")
-        actor_list = create_multiple_vehicle_actors_for_traffic_manager(
-            self.client, n=number_of_actors
+        logger.info(f"Number of actors: {number_of_vehicle_actors}")
+
+        number_of_walker_actors = (
+            np.random.randint(*selected_task["num_walkers"])
+            if isinstance(selected_task["num_walkers"], list)
+            else selected_task["num_walkers"]
+        )
+        logger.info(f"Number of walkers: {number_of_walker_actors}")
+
+
+        vehicle_actor_list = create_multiple_vehicle_actors_for_traffic_manager(
+            self.client, n=number_of_vehicle_actors
         )
 
-        # Traffic manager
+        self.client_module.step()
+
+        walker_actor_list = create_multiple_walker_actors_for_traffic_manager(
+            self.client, n=number_of_walker_actors
+        )
+
+        self.client_module.step()
+
         self.traffic_manager_module = traffic_manager.TrafficManagerModule(
-            config={"vehicle_list": actor_list, "port": self.tm_port},
+            config={
+                "vehicle_list": vehicle_actor_list,
+                "walker_list": walker_actor_list,
+                "port": self.tm_port,
+            },
             client=self.client,
         )
 
@@ -297,8 +317,8 @@ class CarlaEnvironment(Environment):
                     impulse = self.data_dict[k]["impulse"]
                     impulse_amplitude = np.linalg.norm(impulse)
                     logger.debug(f"Collision impulse: {impulse_amplitude}")
-                    if impulse_amplitude > 1:
-                        self.is_collided = True
+                    # if impulse_amplitude > 1:
+                    #     self.is_collided = True
 
         self.data_dict["snapshot"] = snapshot
 
@@ -422,102 +442,104 @@ class CarlaEnvironment(Environment):
                     )
 
         if "cost_viz" in kwargs.keys():
-            world_future_bev_predicted = kwargs["cost_viz"][
-                "world_future_bev_predicted"
-            ]
-            mask_dict = kwargs["cost_viz"]["mask_dict"]
-            bev_selected_channels = kwargs["cost_viz"]["bev_selected_channels"]
+            if bool(kwargs["cost_viz"]):
+                world_future_bev_predicted = kwargs["cost_viz"][
+                    "world_future_bev_predicted"
+                ]
+                mask_dict = kwargs["cost_viz"]["mask_dict"]
+                bev_selected_channels = kwargs["cost_viz"]["bev_selected_channels"]
 
-            _, S, _, H, W = world_future_bev_predicted.shape
+                _, S, _, H, W = world_future_bev_predicted.shape
 
-            cursor_master = self.renderer_module.get_cursor()
+                cursor_master = self.renderer_module.get_cursor()
 
-            for (mask_key, mask_value) in mask_dict.items():
+                for (mask_key, mask_value) in mask_dict.items():
 
-                for s in range(S - 1):
+                    for s in range(S - 1):
 
-                    bev = postprocess_bev(
-                        world_future_bev_predicted[0, s + 1],
-                        bev_selected_channels=bev_selected_channels,
+                        bev = postprocess_bev(
+                            world_future_bev_predicted[0, s + 1],
+                            bev_selected_channels=bev_selected_channels,
+                        )
+
+                        mask = postprocess_mask(mask_value[0, s])
+
+                        self.renderer_module.render_overlay_image(
+                            bev, mask, 0.5, 0.5, move_cursor="right"
+                        )
+
+                        self.renderer_module.move_cursor("right", amount=(0, 10))
+
+                    self.renderer_module.render_text(
+                        f"{mask_key}",
+                        move_cursor="down",
+                        font_color=COLORS.WHITE,
                     )
 
-                    mask = postprocess_mask(mask_value[0, s])
-
-                    self.renderer_module.render_overlay_image(
-                        bev, mask, 0.5, 0.5, move_cursor="right"
-                    )
-
-                    self.renderer_module.move_cursor("right", amount=(0, 10))
-
-                self.renderer_module.render_text(
-                    f"{mask_key}",
-                    move_cursor="down",
-                    font_color=COLORS.WHITE,
-                )
-
-                self.renderer_module.move_cursor("point", amount=cursor_master)
-                self.renderer_module.move_cursor("down", amount=(H + 10, 0))
+                    self.renderer_module.move_cursor("point", amount=cursor_master)
+                    self.renderer_module.move_cursor("down", amount=(H + 10, 0))
 
         if "ego_viz" in kwargs.keys():
-            ego_viz = kwargs["ego_viz"]
-            ego_future_location_predicted = ego_viz["ego_future_location_predicted"]
-            control_selected = ego_viz["control_selected"]
+            if bool(kwargs["ego_viz"]):
+                ego_viz = kwargs["ego_viz"]
+                ego_future_location_predicted = ego_viz["ego_future_location_predicted"]
+                control_selected = ego_viz["control_selected"]
 
-            _, S, _ = ego_future_location_predicted.shape
+                _, S, _ = ego_future_location_predicted.shape
 
-            self.renderer_module.move_cursor("point", amount=(0, 0))
+                self.renderer_module.move_cursor("point", amount=(0, 0))
 
-            if ("rgb_front" in self.data_dict.keys()) and (
-                "bev_world" in self.data_dict.keys()
-            ):
+                if ("rgb_front" in self.data_dict.keys()) and (
+                    "bev_world" in self.data_dict.keys()
+                ):
 
-                for k in range(S):
+                    for k in range(S):
 
-                    self.renderer_module.move_cursor("point", amount=(0, 0))
+                        self.renderer_module.move_cursor("point", amount=(0, 0))
 
-                    ego_future_location = postprocess_location(
-                        ego_future_location_predicted[0, k],
-                        ego_current_location=ego_current_location,
-                    )
-
-                    if rgb_valid:
-                        ego_future_location_pixel = world_2_pixel(
-                            ego_future_location,
-                            world_2_camera_transformation,
-                            h_image,
-                            w_image,
-                            fov,
+                        ego_future_location = postprocess_location(
+                            ego_future_location_predicted[0, k],
+                            ego_current_location=ego_current_location,
                         )
 
-                        if ego_future_location_pixel is not None:
-                            render_position = (
-                                ego_future_location_pixel[0]
-                                + point_rgb_front_left_up[0],
-                                ego_future_location_pixel[1]
-                                + point_rgb_front_left_up[1],
-                            )
-                            self.renderer_module.render_point(
-                                pos=render_position, color=COLORS.YELLOW
+                        if rgb_valid:
+                            ego_future_location_pixel = world_2_pixel(
+                                ego_future_location,
+                                world_2_camera_transformation,
+                                h_image,
+                                w_image,
+                                fov,
                             )
 
-                    if bev_valid:
-                        ego_future_location_bev = world_2_bev(
-                            ego_future_location,
-                            ego_current_location_,
-                            ego_yaw,
-                            h_bev,
-                            w_bev,
-                            pixels_per_meter,
-                        )
+                            if ego_future_location_pixel is not None:
+                                render_position = (
+                                    ego_future_location_pixel[0]
+                                    + point_rgb_front_left_up[0],
+                                    ego_future_location_pixel[1]
+                                    + point_rgb_front_left_up[1],
+                                )
+                                self.renderer_module.render_point(
+                                    pos=render_position, color=COLORS.YELLOW
+                                )
 
-                        if ego_future_location_bev is not None:
-                            render_position = (
-                                ego_future_location_bev[0] + point_bev_world_left_up[0],
-                                ego_future_location_bev[1] + point_bev_world_left_up[1],
+                        if bev_valid:
+                            ego_future_location_bev = world_2_bev(
+                                ego_future_location,
+                                ego_current_location_,
+                                ego_yaw,
+                                h_bev,
+                                w_bev,
+                                pixels_per_meter,
                             )
-                            self.renderer_module.render_point(
-                                pos=render_position, color=COLORS.YELLOW
-                            )
+
+                            if ego_future_location_bev is not None:
+                                render_position = (
+                                    ego_future_location_bev[0] + point_bev_world_left_up[0],
+                                    ego_future_location_bev[1] + point_bev_world_left_up[1],
+                                )
+                                self.renderer_module.render_point(
+                                    pos=render_position, color=COLORS.YELLOW
+                                )
 
         for k in range(
             self.render_dict["route"]["route_index"],

@@ -184,7 +184,8 @@ class Tester:
                         cost_dict = {k: v for (k, v) in cost["cost_dict"].items()}
 
                     else:
-
+                        
+                        cost = {}
                         cost_dict = {}
 
                 # Fetch predicted action
@@ -218,12 +219,12 @@ class Tester:
                     frame_counter=self.frame_counter,
                     skip_counter=self.skip_counter,
                     repeat_counter=self.repeat_counter,
-                    **cost["cost_dict"],
+                    **cost["cost_dict"] if self.num_time_step_future > 1 else {},
                     cost_viz={  # Some dummy arguments for visualization
                         "world_future_bev_predicted": world_future_bev_predicted,
                         "mask_dict": cost["mask_dict"],
                         "bev_selected_channels": self.bev_selected_channels,
-                    },  # It looks like there is not any other way
+                    } if self.num_time_step_future > 1 else {},  # It looks like there is not any other way
                     ego_viz={
                         "ego_future_location_predicted": ego_future_location_predicted,
                         "control_selected": control_selected,
