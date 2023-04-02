@@ -51,7 +51,7 @@ python3 train_dfm_km_cp_bev_gt_bev_encoded_policy_fused.py \
 	--ego_state_mse_weight=0.0 \
 	--wandb=true \
 	--wandb_project="mbl" \
-	--wandb_group="dfm-km-cp-bev" \
+	--wandb_group="dfm-km-cp-20Hz-bev" \
 	--wandb_name="policy+bc+target(bev_encoded_policy_fused)" \
 	--ego_forward_model_path="pretrained_models/2022-09-30/17-49-06/ego_model_new.pt" \
 	--world_forward_model_wandb_link="vaydingul/mbl/1gftiw9w" \
