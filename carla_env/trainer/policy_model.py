@@ -145,7 +145,7 @@ class Trainer(object):
 
         for i, (data) in enumerate(self.dataloader_train):
 
-            loss_dict = self.shared_step(i, data)
+            loss_dict, B = self.shared_step(i, data)
 
             loss = loss_dict["loss"]
 
@@ -185,7 +185,7 @@ class Trainer(object):
 
             self.optimizer.step()
 
-            self.train_step += self.B_TRAIN
+            self.train_step += B
 
             run.log(
                 {
@@ -215,11 +215,11 @@ class Trainer(object):
         with torch.no_grad():
             for i, (data) in enumerate(self.dataloader_val):
 
-                loss_dict = self.shared_step(i, data)
+                loss_dict, B = self.shared_step(i, data)
 
                 loss_dict_list.append(loss_dict)
 
-                self.val_step += self.B_VAL
+                self.val_step += B
 
             loss_dict_mean = {}
 
@@ -352,8 +352,8 @@ class Trainer(object):
 
         # ------------------------------ Forward Pass ------------------------------ #
 
-        B, S_previous, _, _, _ = world_previous_bev.shape
-        _, S_future, _, _, _ = world_future_bev.shape
+        B = world_previous_bev.shape[0]
+        S_future = world_future_bev.shape[1]
 
         # Initialize the ego state
         ego_state_previous = {
@@ -568,7 +568,7 @@ class Trainer(object):
             ego_future_action,
         )
 
-        return loss_dict
+        return loss_dict, B
 
     def learn(self, run=None):
 
@@ -623,7 +623,9 @@ class Trainer(object):
 
                 self.renderer.reset()
 
-                for k in range(self.B_TRAIN):
+                batch_size = world_future_bev_predicted.shape[0]
+
+                for k in range(batch_size):
 
                     cursor_row = self.renderer.get_cursor()
 
