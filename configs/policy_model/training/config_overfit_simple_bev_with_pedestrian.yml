@@ -20,7 +20,7 @@ bev_calculate_offroad: &bev_calculate_offroad false
 dataset_train:
   type: "InstanceDataset"
   config:
-    data_path: "data/driving_model_data_20Hz_action_repeat_1/test/"
+    data_path: "data/driving_model_data_20Hz_action_repeat_1/dummy/"
     sequence_length: *sequence_length
     read_keys: *read_keys
     dilation: *dilation

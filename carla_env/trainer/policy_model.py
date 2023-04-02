@@ -100,7 +100,7 @@ class Trainer(object):
         self.world_forward_model = DDP(
             self.world_forward_model,
             device_ids=[self.rank],
-            find_unused_parameters=False,
+            find_unused_parameters=True,
         )
         self.policy_model = DDP(
             self.policy_model, device_ids=[self.rank], find_unused_parameters=False
@@ -374,7 +374,9 @@ class Trainer(object):
                         world_previous_bev, encoded=True
                     )
 
-                    world_future_bev_feature = world_future_bev[:, k].clone().detach()
+                    world_future_bev_feature = world_future_bev[
+                        :, k
+                    ].clone()  # .detach()
 
                 else:
 
@@ -389,7 +391,9 @@ class Trainer(object):
 
                 if self.use_ground_truth:
 
-                    world_future_bev_feature = world_future_bev[:, k].clone().detach()
+                    world_future_bev_feature = world_future_bev[
+                        :, k
+                    ].clone()  # .detach()
 
                 else:
 
@@ -400,7 +404,7 @@ class Trainer(object):
 
             action = self.policy_model(
                 ego_state=ego_state_previous,
-                world_state=world_previous_bev_feature.detach(),
+                world_state=world_previous_bev_feature,  # .detach(),
                 command=command,
                 target_location=target_location,
                 occupancy=occupancy,
