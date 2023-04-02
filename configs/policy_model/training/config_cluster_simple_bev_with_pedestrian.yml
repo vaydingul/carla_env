@@ -128,18 +128,18 @@ training:
     save_path: figures/env_debug/train_policy/
 
   cost_weight:
-    road_cost: -0.1
-    pedestrian_cost: 0.1
-    vehicle_cost: 0.1
-    lane_cost: 0.1
-    green_light_cost: -0.1
-    red_yellow_light_cost: 0.1
-    offroad_cost: 0.1
+    road_cost: -0.00
+    pedestrian_cost: 0.01
+    vehicle_cost: 0.01
+    lane_cost: 0.01
+    green_light_cost: -0.01
+    red_yellow_light_cost: 0.01
+    offroad_cost: 0.01
     action_mse: 10.0
     action_l1: 0.0
     action_jerk: 0.0
-    target_progress: -10.0
-    target_remainder: 10.0
+    target_progress: -1.0
+    target_remainder: 1.0
     ego_state_mse: 0.0
     world_state_mse: 0.0
 
