@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 import logging
 from tqdm import tqdm
-import os 
+import os
 import torch
 from torch.utils.data import DataLoader, Subset
 
@@ -35,12 +35,10 @@ def plot_embeddings(embeddings, labels, name):
     ax.set_title("TSNE Embeddings")
     # Add the colorbar
     cbar = fig.colorbar(ax.collections[0])
-    
+
     # Save the figure
     fig.savefig(f"{name}.png")
 
-
-    
 
 def fit_tsne(
     model,
@@ -50,7 +48,7 @@ def fit_tsne(
     device="cpu",
     num_time_step_previous=20,
     num_time_step_future=10,
-    path = None, 
+    path=None,
 ):
 
     # ---------------------------------------------------------------------------- #
@@ -65,9 +63,7 @@ def fit_tsne(
     bev_channel_counts = []
     for batch in tqdm(dataloader_test):
         bev = batch["bev_world"]["bev"][:, :num_time_step_previous].to(device)
-        latent_vectors.append(
-            model(bev, encoded = True)
-        )
+        latent_vectors.append(model(bev, encoded=True))
         speeds.append(
             batch["ego"]["velocity_array"][:, :num_time_step_previous]
             .norm(2, -1, keepdim=False)
@@ -79,12 +75,8 @@ def fit_tsne(
             .mean(1)
             .to(device)
         )
-            
-        bev_channel_counts.append(
-            bev.sum([3, 4])
-            .mean(1)
-            .to(device)
-        )
+
+        bev_channel_counts.append(bev.sum([3, 4]).mean(1).to(device))
 
     latent_vectors = torch.cat(latent_vectors, dim=0)
     speeds = torch.cat(speeds, dim=0).cpu().detach().numpy()
@@ -100,12 +92,15 @@ def fit_tsne(
     embedded_latent_vectors = tsne.fit_transform(latent_vectors.cpu().detach().numpy())
 
     # Plot the embeddings
-    fig = plot_embeddings(embedded_latent_vectors, speeds, os.path.join(path, "speed.png"))
-    fig = plot_embeddings(embedded_latent_vectors, yaws, os.path.join(path, "yaw.png"))
+    fig = plot_embeddings(embedded_latent_vectors, speeds, os.path.join(path, "speed"))
+    fig = plot_embeddings(embedded_latent_vectors, yaws, os.path.join(path, "yaw"))
     for k in range(bev.shape[2]):
-        fig = plot_embeddings(embedded_latent_vectors, bev_channel_counts[:, k], os.path.join(path, f"bev_channel_{k}"))
+        fig = plot_embeddings(
+            embedded_latent_vectors,
+            bev_channel_counts[:, k],
+            os.path.join(path, f"bev_channel_{k}"),
+        )
 
-    
 
 def main(config):
 
@@ -197,9 +192,11 @@ def main(config):
         **config["tsne"],
     )
 
-    path = os.path.join(config["save_path"], config["analysis"]["name"])
+    path = os.path.join(
+        config["save_path"], "-".join(f"{k}_{v}" for k, v in config["tsne"].items())
+    )
     os.makedirs(path, exist_ok=True)
-    
+
     fit_tsne(
         model,
         dataloader_test,
@@ -208,10 +205,9 @@ def main(config):
         device=device,
         num_time_step_previous=config["num_time_step_previous"],
         num_time_step_future=config["num_time_step_future"],
-        path = path,
+        path=path,
     )
 
-   
 
 if __name__ == "__main__":
 

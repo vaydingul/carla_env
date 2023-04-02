@@ -2,7 +2,7 @@ experiment_type: "eval_world_forward_model"
 seed: 42
 log_path: ~ #"/home/volkan/Documents/Codes/carla_env/logs/"
 
-save_path: &save_path "figures/world_forward_model_detailed_evaluation/"
+save_path: &save_path "figures/world_forward_model_detailed_evaluation_new_model_old_dataset/"
 
 num_time_step_previous: &previous 20
 num_time_step_future: &future 10
@@ -21,7 +21,7 @@ bev_calculate_offroad: &bev_calculate_offroad false
 dataset_test:
   type: "InstanceDataset"
   config:
-    data_path: "data/driving_model_data_20Hz_action_repeat_1/test/"
+    data_path: "data/ground_truth_bev_model_test_data_20Hz_multichannel_bev_dense_traffic"
     sequence_length: *sequence_length
     read_keys: *read_keys
     dilation: *dilation
@@ -67,7 +67,7 @@ wandb:
   link: "vaydingul/mbl-refactored/1qr51yeg"
   checkpoint_number: 47
 
-  enable: true
+  enable: false
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"

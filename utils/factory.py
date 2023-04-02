@@ -2,7 +2,7 @@ def ego_forward_model_factory(config):
 
     if (
         (config["experiment_type"] == "train_ego_forward_model")
-        or (config["experiment_type"] == "test_ego_forward_model")
+        or (config["experiment_type"] == "eval_ego_forward_model")
         or (config["experiment_type"] == "train_policy_model")
         or (config["experiment_type"] == "test_dfm_km_cp")
         or (config["experiment_type"] == "test_mpc")
@@ -27,7 +27,8 @@ def world_forward_model_factory(config):
 
     if (
         (config["experiment_type"] == "train_world_forward_model")
-        or (config["experiment_type"] == "test_world_forward_model")
+        or (config["experiment_type"] == "eval_world_forward_model")
+        or (config["experiment_type"] == "eval_world_forward_model_last_frame_repeated")
         or (config["experiment_type"] == "train_policy_model")
         or (config["experiment_type"] == "test_policy_model")
         or (config["experiment_type"] == "test_mpc")
@@ -96,16 +97,20 @@ def cost_factory(config):
 
         elif config["cost"]["type"] == "extended_bev_with_pedestrian":
 
-            from carla_env.cost.masked_cost_batched_extended_bev_with_pedestrian import Cost
+            from carla_env.cost.masked_cost_batched_extended_bev_with_pedestrian import (
+                Cost,
+            )
 
             return Cost
 
         elif config["cost"]["type"] == "simple_bev_with_pedestrian":
 
-            from carla_env.cost.masked_cost_batched_simple_bev_with_pedestrian import Cost
+            from carla_env.cost.masked_cost_batched_simple_bev_with_pedestrian import (
+                Cost,
+            )
 
             return Cost
-    
+
         else:
 
             raise ValueError("Invalid bev_type")
@@ -168,6 +173,14 @@ def evaluator_factory(config):
     elif config["experiment_type"] == "eval_world_forward_model":
 
         from carla_env.evaluator.world_forward_model import Evaluator
+
+        return Evaluator
+
+    elif config["experiment_type"] == "eval_world_forward_model_last_frame_repeated":
+
+        from carla_env.evaluator.world_forward_model_last_frame_repeated import (
+            Evaluator,
+        )
 
         return Evaluator
 
@@ -292,8 +305,10 @@ def loss_criterion_factory(config):
 
 def metric_factory(config):
 
-    if (config["experiment_type"] == "eval_world_forward_model") or (
-        config["experiment_type"] == "eval_ego_forward_model"
+    if (
+        (config["experiment_type"] == "eval_world_forward_model")
+        or (config["experiment_type"] == "eval_world_forward_model_last_frame_repeated")
+        or (config["experiment_type"] == "eval_ego_forward_model")
     ):
 
         if config["evaluation"]["metric"]["type"] == "MSE":
@@ -410,25 +425,31 @@ def dataset_factory(config, class_name=None):
 
         if (
             (config["experiment_type"] == "train_ego_forward_model")
-            or (config["experiment_type"] == "test_ego_forward_model")
+            or (config["experiment_type"] == "eval_ego_forward_model")
             or (config["experiment_type"] == "train_policy_model")
             or (config["experiment_type"] == "train_world_forward_model")
-            or (config["experiment_type"] == "test_world_forward_model")
+            or (config["experiment_type"] == "eval_world_forward_model")
+            or (
+                config["experiment_type"]
+                == "eval_world_forward_model_last_frame_repeated"
+            )
         ):
 
-            if config["dataset_train"]["type"] == "InstanceDataset":
+            dataset_key = [key for key in config.keys() if "dataset" in key][0]
+
+            if config[dataset_key]["type"] == "InstanceDataset":
 
                 from carla_env.dataset.instance import InstanceDataset
 
                 return InstanceDataset
 
-            elif config["dataset_train"]["type"] == "InstanceDatasetRAM":
+            elif config[dataset_key]["type"] == "InstanceDatasetRAM":
 
                 from carla_env.dataset.instance import InstanceDatasetRAM
 
                 return InstanceDatasetRAM
 
-            elif config["dataset_train"]["type"] == "TorchDataset":
+            elif config[dataset_key]["type"] == "TorchDataset":
 
                 from carla_env.dataset.torch_dataset import TorchDataset
 

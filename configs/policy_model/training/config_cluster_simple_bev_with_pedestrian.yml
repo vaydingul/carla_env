@@ -6,9 +6,9 @@ log_path: ~ #"logs/"
 num_time_step_previous: &previous 20
 num_time_step_future: &future 10
 sequence_length: &sequence_length 30
-num_workers: &num_workers 3
+num_workers: &num_workers 4
 num_gpu: &num_gpu 8
-batch_size: &batch_size 90
+batch_size: &batch_size 110
 read_keys: &read_keys ["bev_world", "occ", "navigation_downsampled", "ego"]
 dilation: &dilation 1
 bev_agent_channel: &bev_agent_channel 7

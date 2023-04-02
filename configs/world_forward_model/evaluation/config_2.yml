@@ -67,7 +67,7 @@ wandb:
   link: "vaydingul/mbl-refactored/1qr51yeg"
   checkpoint_number: 47
 
-  enable: true
+  enable: false
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"

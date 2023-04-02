@@ -150,7 +150,7 @@ environment:
   noiser:
     type: GaussianNoiser
     config:
-      probabiility: 0.05
+      probability: 0.05
       mean_acceleration: 0.0
       std_acceleration: 0.1
       mean_steer: 0.0

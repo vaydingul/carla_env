@@ -1,6 +1,6 @@
 experiment_type: test_policy_model
 log_path: ~
-seed: 35
+seed: 999
 port: &port_var 2000
 tm_port: &tm_port_var 8000
 num_time_step_previous: &previous 20
@@ -16,7 +16,8 @@ environment:
   tm_port: *tm_port_var
   tasks:
     - world: Town02
-      num_vehicles: [60, 90]
+      num_vehicles: 50
+      num_walkers: 50
     # - world: Town03
     #   num_vehicles: [60, 90]
     # - world: Town04
@@ -87,7 +88,7 @@ environment:
 
   route:
     config:
-      sampling_resolution: 30
+      sampling_resolution: 20
       debug: true
 
 tester:
@@ -106,15 +107,16 @@ tester:
 #   checkpoint_number: 0
 
 wandb_policy_model:
-  link: vaydingul/mbl-refactored/3en566xr
-  checkpoint_number: 23
+  link: vaydingul/mbl-refactored/1w7jsf5g
+  checkpoint_number: 47
 
 wandb:
-  enable: false
+  enable: true
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"
   group: "test-policy-model-20Hz"
   name: "20-10-20Hz"
   id: ~
+  link: ~
   notes: ""

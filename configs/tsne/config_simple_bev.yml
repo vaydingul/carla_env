@@ -2,7 +2,7 @@ experiment_type: "eval_world_forward_model"
 seed: &seed 42
 log_path: ~ #"/home/volkan/Documents/Codes/carla_env/logs/"
 
-save_path: &save_path "figures/world_forward_model_tsne_analysis/"
+save_path: &save_path "figures/world_forward_model_tsne_analysis_old_world_model/"
 
 num_time_step_previous: &previous 20
 num_time_step_future: &future 10
@@ -13,7 +13,7 @@ read_keys: &read_keys ["bev_world", "ego"]
 dilation: &dilation 1
 bev_agent_channel: &bev_agent_channel 7
 bev_vehicle_channel: &bev_vehicle_channel 6
-bev_selected_channels: &bev_selected_channels [0, 5, 6, 8, 9, 10, 11]
+bev_selected_channels: &bev_selected_channels [0, 5, 6, 8, 9, 11]
 bev_calculate_offroad: &bev_calculate_offroad false
 
 # Dataset related parameters for training
@@ -21,7 +21,7 @@ bev_calculate_offroad: &bev_calculate_offroad false
 dataset_test:
   type: "InstanceDataset"
   config:
-    data_path: "data/driving_model_data_20Hz_action_repeat_1/test/"
+    data_path: "data/ground_truth_bev_model_test_data_20Hz_multichannel_bev_dense_traffic/"
     sequence_length: *sequence_length
     read_keys: *read_keys
     dilation: *dilation
@@ -39,10 +39,10 @@ dataloader_test:
 
 tsne:
   n_components: 2
-  perplexity: 50.0
+  perplexity: 10.0
   early_exaggeration: 12.0
   learning_rate: auto
-  n_iter: 1000
+  n_iter: 5000
   n_iter_without_progress: 300
   min_grad_norm: 0.0000001
   metric: euclidean
@@ -55,8 +55,8 @@ tsne:
 
 analysis:
   name: tsne_analysis_pca_init
-  test_step: 5
+  test_step: 10
 
 wandb_world_forward_model:
-  link: vaydingul/mbl-refactored/2rd7fcpl
+  link: vaydingul/mbl-refactored/3e2qnz9z
   checkpoint_number: 47

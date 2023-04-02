@@ -25,6 +25,9 @@ class Renderer:
 
         if self.create_date_time_path:
             self.save_path = create_date_time_path(self.save_path)
+        else:
+            self.save_path = Path(self.save_path)
+            self.save_path.mkdir(parents=True, exist_ok=True)
 
         self.reset()
 
@@ -118,14 +121,15 @@ class Renderer:
 
         self._move_cursor(direction=move_cursor, amount=(TEXT_H + BASELINE, TEXT_W))
 
-    def render_point(self, pos=None, color=None, radius=5, thickness=-1, move_cursor="none"):
+    def render_point(
+        self, pos=None, color=None, radius=5, thickness=-1, move_cursor="none"
+    ):
 
         if color is None:
             color = self.font_color
 
         if pos is None:
             pos = tuple(reversed(self.cursor))
-
 
         cv2.circle(
             self.canvas,
