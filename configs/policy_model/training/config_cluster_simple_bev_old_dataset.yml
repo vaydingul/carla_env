@@ -1,0 +1,204 @@
+experiment_type: "train_policy_model"
+seed: 42
+checkpoint_path: "pretrained_models/"
+log_path: ~ #"logs/"
+
+num_time_step_previous: &previous 20
+num_time_step_future: &future 10
+sequence_length: &sequence_length 30
+num_workers: &num_workers 2
+num_gpu: &num_gpu 4
+batch_size: &batch_size 120
+read_keys: &read_keys ["bev_world", "occ", "navigation_downsampled", "ego"]
+dilation: &dilation 1
+bev_agent_channel: &bev_agent_channel 3
+bev_vehicle_channel: &bev_vehicle_channel 2
+bev_selected_channels: &bev_selected_channels [0, 1, 2, 4, 6]
+bev_calculate_offroad: &bev_calculate_offroad true
+
+# Dataset related parameters for training
+dataset_train:
+  type: "InstanceDataset"
+  config:
+    data_path: "/userfiles/vaydingul20/ground_truth_bev_model_train_data_4_town_02/ground_truth_bev_model_train_data_4_town_02/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+    bev_agent_channel: *bev_agent_channel
+    bev_vehicle_channel: *bev_vehicle_channel
+    bev_selected_channels: *bev_selected_channels
+    bev_calculate_offroad: *bev_calculate_offroad
+
+# Dataloader related parameters for training
+dataloader_train:
+  batch_size: *batch_size
+  num_workers: *num_workers
+  drop_last: true
+  pin_memory: true
+
+# Dataset related parameters for validation
+dataset_val:
+  type: "InstanceDataset"
+  config:
+    data_path: "/userfiles/vaydingul20/ground_truth_bev_model_val_data_4_town_02/ground_truth_bev_model_val_data_4_town_02/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+    bev_agent_channel: *bev_agent_channel
+    bev_vehicle_channel: *bev_vehicle_channel
+    bev_selected_channels: *bev_selected_channels
+    bev_calculate_offroad: *bev_calculate_offroad
+
+# Dataloader related parameters for validation
+dataloader_val:
+  batch_size: *batch_size
+  num_workers: *num_workers
+  drop_last: true
+  pin_memory: true
+
+cost:
+  type: "simple_bev"
+  config:
+    image_width: 192
+    image_height: 192
+    reduction: "sum"
+    mask_alpha: 1.1
+    decay_factor: 0.99
+    vehicle_width: 2.1
+    vehicle_length: 4.9
+    pixels_per_meter: 5
+    longitudinal_offset: 0.125
+    longitudinal_scaler: 1
+    longitudinal_speed_offset: 0.125
+    longitudinal_speed_scaler: 2.0
+    lateral_offset: 1.0
+    lateral_scaler: 0.5
+
+# Training related parameters
+training:
+  num_epochs: 48
+  num_gpu: *num_gpu
+  master_port: "12345"
+  optimizer:
+    type: "Adam"
+    parameters: [policy]
+    config:
+      lr: 0.0001
+      # weight_decay: 0.0001
+
+  save_interval: 6
+  val_interval: 3
+  num_time_step_future: *future
+  num_time_step_previous: *previous
+  gradient_clip:
+    enable: true
+    type: "norm"
+    value: 1
+
+  # Scheduler related parameters
+  scheduler:
+    enable: false
+    type: "ReduceLROnPlateau"
+    config:
+      patience: 10
+      factor: 0.5
+      min_lr: 0.0000001
+
+  binary_occupancy:
+    enable: false
+    threshold: 5.0
+
+  use_world_forward_model_encoder_output_as_world_state: true
+  use_ground_truth: true
+  debug_render: true
+
+  renderer:
+    width: 1300
+    height: 1000
+    channel: 3
+    background_color: [0, 0, 0]
+    font_scale: 0.5
+    font_color: [255, 255, 255]
+    font_thickness: 1
+    cursor: [0, 0]
+    name: Policy Model Training
+    show: false
+    save: true
+    create_date_time_path: true
+    save_path: figures/env_debug/train_policy/
+
+  cost_weight:
+    road_cost: -0.0
+    vehicle_cost: 0.01
+    lane_cost: 0.01
+    green_light_cost: -0.01
+    red_yellow_light_cost: 0.01
+    offroad_cost: 0.01
+    action_mse: 10.0
+    action_l1: 0.0
+    action_jerk: 0.0
+    target_progress: -1.0
+    target_remainder: 1.0
+    ego_state_mse: 0.0
+    world_state_mse: 0.0
+
+ego_forward_model:
+  type: "KinematicBicycleModel"
+  config:
+    dt: 0.05
+
+# World forward model related parameters
+world_forward_model:
+  type: "WorldBEVModel"
+  config:
+    input_shape: [8, 192, 192]
+    latent_size: 128
+    hidden_channel: 256
+    output_channel: 512
+    num_encoder_layer: 4
+    num_probabilistic_encoder_layer: 2
+    dropout: 0.1
+    num_time_step_previous: *previous
+    num_time_step_future: 1 #*future
+
+# Policy model related parameters
+policy_model:
+  type: "FusedPolicyModel"
+  config:
+    input_shape_world_state: [6, 192, 192]
+    input_ego_location: 0
+    input_ego_yaw: 0
+    input_ego_speed: 1
+    action_size: 2
+    use_command: true
+    command_size: 6
+    use_target: true
+    target_location_size: 2
+    use_occupancy: true
+    occupancy_size: 8
+    hidden_size: 256
+    layers: 2
+    delta_target: true
+    dropout: 0.1
+
+wandb_ego_forward_model:
+  enable: true
+  link: vaydingul/mbl-refactored/3vfihnmu
+  checkpoint_number: 99
+
+wandb_world_forward_model:
+  enable: true
+  link: vaydingul/mbl-refactored/3e2qnz9z
+  checkpoint_number: 47
+
+# Wandb related parameters
+wandb:
+  enable: true
+  resume: false
+  resume_checkpoint_number: ~
+  project: "mbl-refactored"
+  group: "train-policy-model-multi-step-20Hz"
+  name: "20-10-20Hz-simple-bev-old-dataset"
+  id: ~
+  link: ~
+  notes: "Policy model with 20Hz data and 20 time steps in the past and 10 time step in the future. It can work with every model that works in 20Hz."

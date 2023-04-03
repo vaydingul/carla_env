@@ -15,7 +15,7 @@ environment:
   port: *port_var
   tm_port: *tm_port_var
   tasks:
-    - world: Town02
+    - world: Town01
       num_vehicles: 50
       num_walkers: 50
     # - world: Town03
@@ -107,7 +107,7 @@ tester:
 #   checkpoint_number: 0
 
 wandb_policy_model:
-  link: vaydingul/mbl-refactored/1w7jsf5g
+  link: vaydingul/mbl-refactored/29rdtoea
   checkpoint_number: 47
 
 wandb:
