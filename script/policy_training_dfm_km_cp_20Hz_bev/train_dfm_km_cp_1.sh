@@ -51,6 +51,7 @@ python3 train_dfm_km_cp_bev_gt_bev_encoded_policy_fused.py \
 	--target_remainder_weight=1.0 \
 	--ego_state_mse_weight=0.0 \
 	--wandb=true \
+	--wandb_id="2cywhqqk" \
 	--wandb_project="mbl" \
 	--wandb_group="dfm-km-cp-20Hz-bev" \
 	--wandb_name="policy+bc+target(bev_encoded_policy_fused)" \
