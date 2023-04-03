@@ -71,6 +71,10 @@ def create_wandb_run(config):
 
 def main(rank, world_size, run, config):
 
+    # ---------------------------- TORCH related stuff --------------------------- #
+    torch.cuda.set_device(rank)
+    torch.cuda.empty_cache()
+
     ddp_setup(rank, world_size, config.master_port)
 
     seed_everything(seed=config.seed)
