@@ -14,7 +14,7 @@ def postprocess_bev(bev, bev_selected_channels, bev_calculate_offroad):
     print(bev.shape)
     if bev_calculate_offroad:
         bev_selected_channels.append(11)
-
+    print(bev_selected_channels)
     bev = BirdViewProducer.as_rgb_with_indices(bev, bev_selected_channels)
     bev = cv2.cvtColor(bev, cv2.COLOR_BGR2RGB)
 
