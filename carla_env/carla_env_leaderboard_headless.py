@@ -433,6 +433,7 @@ class CarlaEnvironment(Environment):
                     bev = postprocess_bev(
                         world_future_bev_predicted[0, s + 1],
                         bev_selected_channels=bev_selected_channels,
+                        bev_calculate_offroad=bev_calculate_offroad,
                     )
 
                     mask = postprocess_mask(mask_value[0, s])

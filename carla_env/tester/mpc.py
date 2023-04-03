@@ -158,6 +158,7 @@ class Tester:
                     "world_future_bev_predicted": world_future_bev_predicted,
                     "mask_dict": mask_dict,
                     "bev_selected_channels": self.bev_selected_channels,
+                    "bev_calculate_offroad": self.bev_calculate_offroad,
                 },  # It looks like there is not any other way
                 ego_viz={
                     "ego_future_location_predicted": ego_future_location_predicted,
@@ -229,8 +230,8 @@ class Tester:
             ego_previous_yaw[..., 0] = (
                 data["ego"]["rotation_array"][-1] * torch.pi / 180
             )
-            ego_previous_speed[..., 0] = (
-                torch.norm(torch.Tensor(data["ego"]["velocity_array"]))
+            ego_previous_speed[..., 0] = torch.norm(
+                torch.Tensor(data["ego"]["velocity_array"])
             )
 
             ego_previous_location.requires_grad_(True)

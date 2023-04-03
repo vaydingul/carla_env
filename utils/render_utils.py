@@ -5,12 +5,16 @@ import torch
 from carla_env.bev import BirdViewProducer
 
 
-def postprocess_bev(bev, bev_selected_channels):
+def postprocess_bev(bev, bev_selected_channels, bev_calculate_offroad):
 
     bev[bev > 0.5] = 1
     bev[bev <= 0.5] = 0
     bev = bev.clone().detach().cpu().numpy()
     bev = np.transpose(bev, (1, 2, 0))
+
+    if bev_calculate_offroad:
+        bev_selected_channels.append(11)
+
     bev = BirdViewProducer.as_rgb_with_indices(bev, bev_selected_channels)
     bev = cv2.cvtColor(bev, cv2.COLOR_BGR2RGB)
 

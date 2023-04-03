@@ -644,6 +644,7 @@ class Trainer(object):
                         bev = postprocess_bev(
                             world_future_bev_predicted[k][m + 1],
                             self.dataloader_train.dataset.bev_selected_channels,
+                            self.dataloader_train.dataset.bev_calculate_offroad,
                         )
                         mask_ = postprocess_mask(mask[k][m])
                         action_gt_ = postprocess_action(action_gt[k][m + 1])

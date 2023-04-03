@@ -184,7 +184,7 @@ class Tester:
                         cost_dict = {k: v for (k, v) in cost["cost_dict"].items()}
 
                     else:
-                        
+
                         cost = {}
                         cost_dict = {}
 
@@ -224,7 +224,10 @@ class Tester:
                         "world_future_bev_predicted": world_future_bev_predicted,
                         "mask_dict": cost["mask_dict"],
                         "bev_selected_channels": self.bev_selected_channels,
-                    } if self.num_time_step_future > 1 else {},  # It looks like there is not any other way
+                        "bev_calculate_offroad": self.bev_calculate_offroad,
+                    }
+                    if self.num_time_step_future > 1
+                    else {},  # It looks like there is not any other way
                     ego_viz={
                         "ego_future_location_predicted": ego_future_location_predicted,
                         "control_selected": control_selected,
