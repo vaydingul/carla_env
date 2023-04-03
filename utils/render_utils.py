@@ -7,14 +7,17 @@ from carla_env.bev import BirdViewProducer
 
 def postprocess_bev(bev, bev_selected_channels, bev_calculate_offroad):
 
+    # Copy the list of bev_selected_channels to avoid modifying the original list
+    bev_selected_channels = bev_selected_channels.copy()
+
     bev[bev > 0.5] = 1
     bev[bev <= 0.5] = 0
     bev = bev.clone().detach().cpu().numpy()
     bev = np.transpose(bev, (1, 2, 0))
-    print(bev.shape)
+
     if bev_calculate_offroad:
         bev_selected_channels.append(11)
-    print(bev_selected_channels)
+
     bev = BirdViewProducer.as_rgb_with_indices(bev, bev_selected_channels)
     bev = cv2.cvtColor(bev, cv2.COLOR_BGR2RGB)
 
