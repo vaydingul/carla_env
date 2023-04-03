@@ -11,7 +11,7 @@ def postprocess_bev(bev, bev_selected_channels, bev_calculate_offroad):
     bev[bev <= 0.5] = 0
     bev = bev.clone().detach().cpu().numpy()
     bev = np.transpose(bev, (1, 2, 0))
-
+    print(bev.shape)
     if bev_calculate_offroad:
         bev_selected_channels.append(11)
 
