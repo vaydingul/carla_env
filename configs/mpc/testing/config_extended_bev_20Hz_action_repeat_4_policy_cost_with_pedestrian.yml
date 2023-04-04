@@ -1,13 +1,13 @@
 experiment_type: test_mpc
 log_path: ~
-seed: 333
+seed: 265
 port: &port_var 2000
 tm_port: &tm_port_var 8000
 num_time_step_previous: &previous 20
 num_time_step_future: &future 10
 
 cost:
-  type: "extended_bev"
+  type: "extended_bev_with_pedestrian"
   config:
     image_width: 192
     image_height: 192
@@ -34,8 +34,8 @@ environment:
   tm_port: *tm_port_var
   tasks:
     - world: Town02
-      num_vehicles: 0
-      num_walkers: 0
+      num_vehicles: [60, 80]
+      num_walkers: 250
     # - world: Town03
     #   num_vehicles: [60, 90]
     # - world: Town04
@@ -122,7 +122,7 @@ tester:
   log_video_scale: 0.1
   bev_agent_channel: 7
   bev_vehicle_channel: 6
-  bev_selected_channels: [0, 1, 2, 3, 4, 5, 6, 11]
+  bev_selected_channels: [0, 1, 2, 3, 4, 5, 6, 10, 11]
   bev_calculate_offroad: false
 
   cost_weight:
@@ -133,6 +133,7 @@ tester:
     road_green_cost: -0.1 # -0.1
     vehicle_cost: 1 # 1
     lane_cost: 0.05 # 0.05
+    pedestrian_cost: 0.05
     offroad_cost: 0.05 # 0.005
     acceleration_jerk: 100.0
     steer_jerk: 1000.0

@@ -77,7 +77,7 @@ def main(config):
     )
 
     # ---------------------------------------------------------------------------- #
-    #                    WORLD FORWARD MODEL WANDB RUN CHECKPOINT                    #
+    #                    WORLD FORWARD MODEL WANDB RUN CHECKPOINT                  #
     # ---------------------------------------------------------------------------- #
     if config["wandb_world_forward_model"] is not None:
 

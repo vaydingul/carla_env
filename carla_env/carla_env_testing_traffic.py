@@ -12,7 +12,10 @@ from carla_env.modules.module import Module
 from carla_env.renderer.renderer import Renderer, COLORS
 from carla_env.bev import BirdViewProducer, BIRDVIEW_CROP_TYPE
 from carla_env.bev.mask import PixelDimensions
-from utils.carla_utils import create_multiple_vehicle_actors_for_traffic_manager, create_multiple_walker_actors_for_traffic_manager
+from utils.carla_utils import (
+    create_multiple_vehicle_actors_for_traffic_manager,
+    create_multiple_walker_actors_for_traffic_manager,
+)
 from utils.render_utils import *
 
 # Import utils
@@ -174,7 +177,7 @@ class CarlaEnvironment(Environment):
         # Make this vehicle actor
         self.hero_actor_module = actor.ActorModule(
             config={
-                "actor": self.vehicle_module,
+                "child": self.vehicle_module,
                 "hero": True,  # self.random,
                 "selected_spawn_point": start,
             },
@@ -188,14 +191,13 @@ class CarlaEnvironment(Environment):
             else selected_task["num_vehicles"]
         )
         logger.info(f"Number of actors: {number_of_vehicle_actors}")
-
+        
         number_of_walker_actors = (
             np.random.randint(*selected_task["num_walkers"])
             if isinstance(selected_task["num_walkers"], list)
             else selected_task["num_walkers"]
         )
         logger.info(f"Number of walkers: {number_of_walker_actors}")
-
 
         vehicle_actor_list = create_multiple_vehicle_actors_for_traffic_manager(
             self.client, n=number_of_vehicle_actors
@@ -448,7 +450,7 @@ class CarlaEnvironment(Environment):
                 ]
                 mask_dict = kwargs["cost_viz"]["mask_dict"]
                 bev_selected_channels = kwargs["cost_viz"]["bev_selected_channels"]
-
+                bev_calculate_offroad = kwargs["cost_viz"]["bev_calculate_offroad"]
                 _, S, _, H, W = world_future_bev_predicted.shape
 
                 cursor_master = self.renderer_module.get_cursor()
@@ -460,6 +462,7 @@ class CarlaEnvironment(Environment):
                         bev = postprocess_bev(
                             world_future_bev_predicted[0, s + 1],
                             bev_selected_channels=bev_selected_channels,
+                            bev_calculate_offroad=bev_calculate_offroad,
                         )
 
                         mask = postprocess_mask(mask_value[0, s])
@@ -534,8 +537,10 @@ class CarlaEnvironment(Environment):
 
                             if ego_future_location_bev is not None:
                                 render_position = (
-                                    ego_future_location_bev[0] + point_bev_world_left_up[0],
-                                    ego_future_location_bev[1] + point_bev_world_left_up[1],
+                                    ego_future_location_bev[0]
+                                    + point_bev_world_left_up[0],
+                                    ego_future_location_bev[1]
+                                    + point_bev_world_left_up[1],
                                 )
                                 self.renderer_module.render_point(
                                     pos=render_position, color=COLORS.YELLOW
@@ -663,7 +668,7 @@ class CarlaEnvironment(Environment):
             "port": 2000,
             "tm_port": 8000,
             "max_steps": 1000,
-            "tasks": [{"world": "Town02", "num_vehicles": 80}],
+            "tasks": [{"world": "Town02", "num_vehicles": 80, "num_walkers": 0}],
             "sensors": [],
             "bevs": [],
             "route": None,

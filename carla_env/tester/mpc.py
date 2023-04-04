@@ -133,6 +133,8 @@ class Tester:
                 acceleration=acceleration,
             )
 
+            if self.frame_counter <= 2:
+                throttle = 1.0
             env_control = [throttle, steer, brake]
 
             # Step environment
@@ -454,6 +456,9 @@ class Tester:
             loss = cost["loss"]
 
             loss.backward(retain_graph=True)
+
+            # print(self.action.grad.sum())
+            # print(self.action.sum())
 
             if self.gradient_clip:
                 if self.gradient_clip_type == "value":

@@ -10,157 +10,162 @@ logger = logging.getLogger(__name__)
 
 
 class ActorModule(module.Module):
-    """Concrete implementation of Module abstract base class for actor management"""
+	"""Concrete implementation of Module abstract base class for actor management"""
 
-    def __init__(self, config, client) -> None:
-        super().__init__()
-        self.client = client
+	def __init__(self, config, client) -> None:
+		super().__init__()
+		self.client = client
 
-        self._set_default_config()
-        if config is not None:
-            for k in config.keys():
-                self.config[k] = config[k]
+		self._set_default_config()
+		if config is not None:
+			for k in config.keys():
+				self.config[k] = config[k]
 
-        self.child = self.config["child"]
-        self.world = self.client.get_world()
-        self.hero = self.config["hero"]
-        self.spawned = False
-        self.render_dict = {}
-        self.sensor_dict = {}
+		self.child = self.config["child"]
+		self.world = self.client.get_world()
+		self.hero = self.config["hero"]
+		self.spawned = False
+		self.render_dict = {}
+		self.sensor_dict = {}
 
-        self.reset()
+		self.reset()
 
-    def _start(self):
-        """Start the actor manager"""
+	def _start(self):
+		"""Start the actor manager"""
 
-        while not self.spawned:
+		while not self.spawned:
 
-            if "selected_spawn_point" in self.config.keys():
+			if isinstance(self.child, vehicle.VehicleModule):
+				
+				if self.child.blueprint.has_attribute("role_name"):
+					if self.hero:
+						self.child.blueprint.set_attribute("role_name", "hero")
 
-                selected_spawn_point = self.config["selected_spawn_point"]
+				if "selected_spawn_point" in self.config.keys():
 
-            else:
+					selected_spawn_point = self.config["selected_spawn_point"]
 
-                if isinstance(self.child, vehicle.VehicleModule):
+				else:
 
-                    selected_spawn_point = np.random.choice(
-                        self.world.get_map().get_spawn_points()
-                    )
+					selected_spawn_point = np.random.choice(
+						self.world.get_map().get_spawn_points()
+					)
 
-                elif isinstance(self.child, walker.WalkerModule):
-                    selected_spawn_point = carla.Transform()
+			elif isinstance(self.child, walker.WalkerModule):
 
-                    selected_spawn_point.location = (
-                        self.world.get_random_location_from_navigation()
-                    )
+				selected_spawn_point = carla.Transform()
 
-                    if self.child.blueprint.has_attribute("is_invincible"):
-                        self.child.blueprint.set_attribute("is_invincible", "false")
+				selected_spawn_point.location = (
+					self.world.get_random_location_from_navigation()
+				)
 
-                else:
+				if self.child.blueprint.has_attribute("is_invincible"):
+					self.child.blueprint.set_attribute("is_invincible", "false")
 
-                    raise NotImplementedError
+			else:
 
-            self.actor = self.world.try_spawn_actor(
-                self.child.blueprint, selected_spawn_point
-            )
+				raise NotImplementedError
 
-            self.spawned = self.actor is not None
+			self.actor = self.world.try_spawn_actor(
+				self.child.blueprint, selected_spawn_point
+			)
 
-    def step(self, action=None):
-        """Step the actor manager"""
-        # for sensor in self.sensor_dict.values():
-        # 	sensor.step()
+			self.spawned = self.actor is not None
 
-        if isinstance(self.child, vehicle.VehicleModule):
-            if self.hero and (action is not None):
+	def step(self, action=None):
+		"""Step the actor manager"""
+		# for sensor in self.sensor_dict.values():
+		# 	sensor.step()
 
-                if isinstance(action, list):
+		if isinstance(self.child, vehicle.VehicleModule):
+			if self.hero and (action is not None):
 
-                    vehicle_control = carla.VehicleControl(
-                        throttle=float(action[0]),
-                        steer=float(action[1]),
-                        brake=float(action[2]),
-                    )
-                    self.actor.apply_control(vehicle_control)
+				if isinstance(action, list):
 
-        elif isinstance(self.child, walker.WalkerModule):
+					vehicle_control = carla.VehicleControl(
+						throttle=float(action[0]),
+						steer=float(action[1]),
+						brake=float(action[2]),
+					)
+					self.actor.apply_control(vehicle_control)
 
-            if self.hero and (action is not None):
+		elif isinstance(self.child, walker.WalkerModule):
 
-                if isinstance(action, list):
+			if self.hero and (action is not None):
 
-                    walker_control = carla.WalkerControl(
-                        speed=float(action[0]), direction=float(action[1])
-                    )
-                    self.actor.apply_control(walker_control)
-        else:
+				if isinstance(action, list):
 
-            raise NotImplementedError
+					walker_control = carla.WalkerControl(
+						speed=float(action[0]), direction=float(action[1])
+					)
+					self.actor.apply_control(walker_control)
+		else:
 
-    def _stop(self):
-        """Stop the actor manager"""
-        if self.spawned and self.actor.is_alive:
+			raise NotImplementedError
 
-            self.actor.destroy()
-            logger.info(f"Actor {self.actor.id} - {self.child.blueprint} destroyed")
-            self.spawned = False
-            for sensor in self.sensor_dict.values():
-                sensor.close()
+	def _stop(self):
+		"""Stop the actor manager"""
+		if self.spawned and self.actor.is_alive:
 
-    def reset(self):
-        """Reset the actor manager"""
-        self._stop()
-        self._start()
+			self.actor.destroy()
+			logger.info(f"Actor {self.actor.id} - {self.child.blueprint} destroyed")
+			self.spawned = False
+			for sensor in self.sensor_dict.values():
+				sensor.close()
 
-    def render(self):
-        """Render the actor manager"""
-        if self.spawned:
-            self.render_dict["velocity"] = self.actor.get_velocity()
-            self.render_dict["speed"] = self.actor.get_velocity().length()
-            self.render_dict["location"] = self.actor.get_location()
-            self.render_dict["rotation"] = self.actor.get_transform().rotation
-            self.render_dict["acceleration"] = self.actor.get_acceleration()
-            self.render_dict["control"] = self.actor.get_control()
-            self.render_dict["x_extent_meters"] = self.actor.bounding_box.extent.x * 2
-            self.render_dict["y_extent_meters"] = self.actor.bounding_box.extent.y * 2
-            self.render_dict["z_extent_meters"] = self.actor.bounding_box.extent.z * 2
-            self.render_dict["hero"] = self.hero
-            self.render_dict["spawned"] = self.spawned
-        return self.render_dict
+	def reset(self):
+		"""Reset the actor manager"""
+		self._stop()
+		self._start()
 
-    def close(self):
-        """Close the actor manager"""
-        self._stop()
-        logger.info("Actor manager closed")
+	def render(self):
+		"""Render the actor manager"""
+		if self.spawned:
+			self.render_dict["velocity"] = self.actor.get_velocity()
+			self.render_dict["speed"] = self.actor.get_velocity().length()
+			self.render_dict["location"] = self.actor.get_location()
+			self.render_dict["rotation"] = self.actor.get_transform().rotation
+			self.render_dict["acceleration"] = self.actor.get_acceleration()
+			self.render_dict["control"] = self.actor.get_control()
+			self.render_dict["x_extent_meters"] = self.actor.bounding_box.extent.x * 2
+			self.render_dict["y_extent_meters"] = self.actor.bounding_box.extent.y * 2
+			self.render_dict["z_extent_meters"] = self.actor.bounding_box.extent.z * 2
+			self.render_dict["hero"] = self.hero
+			self.render_dict["spawned"] = self.spawned
+		return self.render_dict
 
-    def seed(self):
-        """Seed the actor manager"""
-        pass
+	def close(self):
+		"""Close the actor manager"""
+		self._stop()
+		logger.info("Actor manager closed")
 
-    def get_config(self):
-        """Get the config of the actor manager"""
-        return self.config
+	def seed(self):
+		"""Seed the actor manager"""
+		pass
 
-    def get_actor(self):
-        """Get the actor"""
-        return self.actor
+	def get_config(self):
+		"""Get the config of the actor manager"""
+		return self.config
 
-    def get_sensor_dict(self):
-        """Get the sensor dictionary"""
-        return self.sensor_dict
+	def get_actor(self):
+		"""Get the actor"""
+		return self.actor
 
-    def set_autopilot(self, autopilot, port=8000):
-        """Set the actor to autopilot"""
-        self.actor.set_autopilot(autopilot, port)
+	def get_sensor_dict(self):
+		"""Get the sensor dictionary"""
+		return self.sensor_dict
 
-    def set_actor(self, actor: carla.Actor):
-        """Set the actor"""
-        self.actor = actor
+	def set_autopilot(self, autopilot, port=8000):
+		"""Set the actor to autopilot"""
+		self.actor.set_autopilot(autopilot, port)
 
-    def _set_default_config(self):
-        """Set the default config of actor manager"""
-        self.config = {
-            "child": vehicle.VehicleModule(None, self.client),
-            "hero": True,
-        }
+	def set_actor(self, actor: carla.Actor):
+		"""Set the actor"""
+		self.actor = actor
+
+	def _set_default_config(self):
+		"""Set the default config of actor manager"""
+		self.config = {
+			"child": vehicle.VehicleModule(None, self.client),
+			"hero": True,
+		}
