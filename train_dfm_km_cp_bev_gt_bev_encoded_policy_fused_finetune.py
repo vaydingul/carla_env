@@ -399,6 +399,12 @@ if __name__ == "__main__":
 
     parser.add_argument("--world_forward_model_checkpoint_number", type=int, default=47)
 
+    parser.add_argument(
+        "--policy_model_wandb_link", type=str, default="vaydingul/mbl/31mxv8ub"
+    )
+
+    parser.add_argument("--policy_model_checkpoint_number", type=int, default=47)
+
     config = parser.parse_args()
 
     config.cost_weight = {k: v for (k, v) in vars(config).items() if "weight" in k}
