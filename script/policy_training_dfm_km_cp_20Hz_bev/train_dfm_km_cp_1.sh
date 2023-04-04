@@ -13,13 +13,13 @@ python3 train_dfm_km_cp_bev_gt_bev_encoded_policy_fused.py \
 	--seed=2023 \
 	--lr=1e-4 \
 	--num_epochs=50 \
-	--batch_size=35 \
-	--num_workers=3 \
+	--batch_size=105 \
+	--num_workers=6 \
 	--data_path_train="/userfiles/vaydingul20/ground_truth_bev_model_train_data_4_town_02/ground_truth_bev_model_train_data_4_town_02/" \
 	--data_path_val="/userfiles/vaydingul20/ground_truth_bev_model_val_data_4_town_02/ground_truth_bev_model_val_data_4_town_02/" \
 	--resume=true \
-	--resume_checkpoint_number=9 \
-	--num_gpu=8 \
+	--resume_checkpoint_number=34 \
+	--num_gpu=4 \
 	--master_port="12355" \
 	--lr_schedule=false \
 	--gradient_clip_type="norm" \
