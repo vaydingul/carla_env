@@ -202,7 +202,9 @@ def main(rank, world_size, run, config):
         policy_model = Policy.load_model_from_wandb_run(
             run=run,
             checkpoint=checkpoint,
-            device={f"cuda:0": f"cuda:{rank}"} if config.num_gpu > 1 else rank,
+            device=lambda storage, loc: storage.cuda(rank)
+            if config.num_gpu > 1
+            else rank,
         )
     policy_model.to(device=rank)
     # ---------------------------------------------------------------------------- #
