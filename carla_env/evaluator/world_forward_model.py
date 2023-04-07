@@ -19,7 +19,7 @@ import pandas as pd
 from utils.plot_utils import plot_roc, plot_confusion_matrix
 import wandb
 
-NUM_LABELS = 7
+NUM_LABELS = 9
 THRESHOLD = 0.5
 NUM_THRESHOLD = 10
 AVERAGE = None

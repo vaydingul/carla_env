@@ -146,6 +146,27 @@ def main(config):
     cost_class = cost_factory(policy_model_run.config)
     cost = cost_class(device, policy_model_run.config["cost"]["config"])
 
+    # ------------------------------- BEV Handling ------------------------------- #
+    if "bev_agent_channel" in config["tester"]:
+        bev_agent_channel = config["tester"]["bev_agent_channel"]
+    else:
+        bev_agent_channel = policy_model_run.config["bev_agent_channel"]
+
+    if "bev_vehicle_channel" in config["tester"]:
+        bev_vehicle_channel = config["tester"]["bev_vehicle_channel"]
+    else:
+        bev_vehicle_channel = policy_model_run.config["bev_vehicle_channel"]
+
+    if "bev_selected_channels" in config["tester"]:
+        bev_selected_channels = config["tester"]["bev_selected_channels"]
+    else:
+        bev_selected_channels = policy_model_run.config["bev_selected_channels"]
+
+    if "bev_calculate_offroad" in config["tester"]:
+        bev_calculate_offroad = config["tester"]["bev_calculate_offroad"]
+    else:
+        bev_calculate_offroad = policy_model_run.config["bev_calculate_offroad"]
+
     # ---------------------------------------------------------------------------- #
     #                                    TESTER                                    #
     # ---------------------------------------------------------------------------- #
@@ -172,14 +193,13 @@ def main(config):
         use_world_forward_model_encoder_output_as_world_state=policy_model_run.config[
             "training"
         ]["use_world_forward_model_encoder_output_as_world_state"],
-        bev_agent_channel=policy_model_run.config["bev_agent_channel"],
-        bev_vehicle_channel=policy_model_run.config["bev_vehicle_channel"],
-        bev_selected_channels=policy_model_run.config["bev_selected_channels"],
-        bev_calculate_offroad=policy_model_run.config["bev_calculate_offroad"],
+        bev_agent_channel=bev_agent_channel,
+        bev_vehicle_channel=bev_vehicle_channel,
+        bev_selected_channels=bev_selected_channels,
+        bev_calculate_offroad=bev_calculate_offroad,
     )
 
     try:
-
         logger.info("Starting the tester")
 
         tester.test(run)
@@ -187,7 +207,6 @@ def main(config):
         logger.info("Tester finished")
 
     except Exception as e:
-
         logger.exception("Tester failed!", exc_info=e)
 
         logger.info("Closing the environment")
@@ -205,7 +224,6 @@ def main(config):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(
         description="Collect data from the CARLA simulator"
     )

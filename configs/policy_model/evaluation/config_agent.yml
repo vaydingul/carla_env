@@ -6,9 +6,20 @@
 #   link: ""
 #   checkpoint_number: 0
 
+bev_agent_channel: &bev_agent_channel 7
+bev_vehicle_channel: &bev_vehicle_channel 6
+bev_selected_channels: &bev_selected_channels [0, 5, 6, 8, 9, 11]
+bev_calculate_offroad: &bev_calculate_offroad false
+
 wandb_policy_model:
-  link: vaydingul/mbl-refactored/18g1o7pm
+  link: vaydingul/mbl-refactored/11vgz40s
   checkpoint_number: 47
+
+evaluator:
+  bev_agent_channel: *bev_agent_channel
+  bev_vehicle_channel: *bev_vehicle_channel
+  bev_selected_channels: *bev_selected_channels
+  bev_calculate_offroad: *bev_calculate_offroad
 
 bev:
   config:

@@ -1,6 +1,6 @@
 experiment_type: eval_policy_model_leaderboard
 log_path: ~
-seed: &seed_var 42
+seed: &seed_var 2023
 port: &port_var 2000
 tm_port: &tm_port_var 8000
 num_time_step_previous: &previous 20

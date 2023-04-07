@@ -1,10 +1,14 @@
 experiment_type: test_policy_model
 log_path: ~
-seed: 999
+seed: 4154345414
 port: &port_var 2000
 tm_port: &tm_port_var 8000
 num_time_step_previous: &previous 20
 num_time_step_future: &future 10
+bev_agent_channel: &bev_agent_channel 7
+bev_vehicle_channel: &bev_vehicle_channel 6
+bev_selected_channels: &bev_selected_channels [0, 5, 6, 8, 9, 11]
+bev_calculate_offroad: &bev_calculate_offroad false
 
 environment:
   name: carla_env_testing_traffic
@@ -15,9 +19,9 @@ environment:
   port: *port_var
   tm_port: *tm_port_var
   tasks:
-    - world: Town01
+    - world: Town02
       num_vehicles: 50
-      num_walkers: 50
+      num_walkers: 0
     # - world: Town03
     #   num_vehicles: [60, 90]
     # - world: Town04
@@ -97,6 +101,10 @@ tester:
   rollout_length: *future
   log_video: false
   log_video_scale: 0.1
+  bev_agent_channel: *bev_agent_channel
+  bev_vehicle_channel: *bev_vehicle_channel
+  bev_selected_channels: *bev_selected_channels
+  bev_calculate_offroad: *bev_calculate_offroad
 
 # wandb_ego_forward_model:
 #   link: ""
@@ -107,11 +115,11 @@ tester:
 #   checkpoint_number: 0
 
 wandb_policy_model:
-  link: vaydingul/mbl-refactored/29rdtoea
+  link: vaydingul/mbl-refactored/11vgz40s
   checkpoint_number: 47
 
 wandb:
-  enable: true
+  enable: false
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"
