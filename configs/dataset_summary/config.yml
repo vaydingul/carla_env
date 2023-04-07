@@ -1,0 +1,36 @@
+summary_path: "pretrained_models/"
+log_path: ~ #"logs/"
+
+num_time_step_previous: &previous 20
+num_time_step_future: &future 10
+sequence_length: &sequence_length 30
+num_workers: &num_workers 5
+num_gpu: &num_gpu 1
+batch_size: &batch_size 100
+read_keys:
+  &read_keys [
+    "bev_world",
+    "occ",
+    "navigation",
+    "navigation_downsampled",
+    "ego",
+    "occ",
+  ]
+dilation: &dilation 1
+bev_agent_channel: &bev_agent_channel 7
+bev_vehicle_channel: &bev_vehicle_channel 6
+bev_selected_channels:
+  &bev_selected_channels [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+bev_calculate_offroad: &bev_calculate_offroad false
+
+dataset:
+  type: "InstanceDataset"
+  config:
+    data_path: "/mnt/kuacc/scratch/users/vaydingul20/driving_model_data_20Hz_action_repeat_1/train/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+    bev_agent_channel: *bev_agent_channel
+    bev_vehicle_channel: *bev_vehicle_channel
+    bev_selected_channels: *bev_selected_channels
+    bev_calculate_offroad: *bev_calculate_offroad

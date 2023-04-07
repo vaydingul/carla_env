@@ -54,7 +54,13 @@ def policy_model_factory(config):
         config["experiment_type"] == "test_policy_model"
     ):
 
-        if config["policy_model"]["type"] == "FusedPolicyModel":
+        if config["policy_model"]["type"] == "CILRSPolicyModel":
+
+            from carla_env.models.policy.policy_cilrs import Policy
+
+            return Policy
+
+        elif config["policy_model"]["type"] == "FusedPolicyModel":
 
             from carla_env.models.policy.policy_fused import Policy
 

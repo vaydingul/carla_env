@@ -1,13 +1,10 @@
-from carla_env.dataset.instance import InstanceDataset
-import torch
-from torch.utils.data import DataLoader
 import logging
 import argparse
 import numpy as np
-import cv2
-from cv2 import VideoWriter, VideoWriter_fourcc
-from carla_env.bev import BirdViewProducer
-import os
+
+from utils.config_utils import parse_yml
+from utils.factory import *
+
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -19,12 +16,15 @@ logging.basicConfig(
 
 def main(config):
 
-    # Create dataset and its loader
-    data_path_test = config.dataset_path
-    dataset = InstanceDataset(
-        data_path=data_path_test, sequence_length=1, read_keys=["navigation"]
-    )
+    # ---------------------------------------------------------------------------- #
+    #                                 DATASET CLASS                                #
+    # ---------------------------------------------------------------------------- #
+    dataset_class = dataset_factory(config)
 
+    # ---------------------------------------------------------------------------- #
+    #                         TRAIN AND VALIDATION DATASETS                        #
+    # ---------------------------------------------------------------------------- #
+    dataset = dataset_class(config["dataset"]["config"])
     logger.info(f"Dataset size: {len(dataset)}")
 
     navigational_command_list = np.zeros((6,))
@@ -41,9 +41,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--dataset_path", type=str, default="data/ground_truth_bev_model_test_data/"
+        "--config_path", type=str, default="configs/dataset_summary/config.yml"
     )
 
     config = parser.parse_args()
+    args = parser.parse_args()
+
+    config = parse_yml(args.config_path)
+    config["config_path"] = args.config_path
 
     main(config)
