@@ -1,9 +1,9 @@
-summary_path: "pretrained_models/"
+experiment_type: dataset_summary
 log_path: ~ #"logs/"
 
-num_time_step_previous: &previous 20
-num_time_step_future: &future 10
-sequence_length: &sequence_length 30
+num_time_step_previous: &previous 0
+num_time_step_future: &future 1
+sequence_length: &sequence_length 1
 num_workers: &num_workers 5
 num_gpu: &num_gpu 1
 batch_size: &batch_size 100
@@ -26,7 +26,7 @@ bev_calculate_offroad: &bev_calculate_offroad false
 dataset:
   type: "InstanceDataset"
   config:
-    data_path: "/mnt/kuacc/scratch/users/vaydingul20/driving_model_data_20Hz_action_repeat_1/train/"
+    data_path: "/mnt/kuacc/scratch/users/vaydingul20/driving_model_data_20Hz_action_repeat_1/val/"
     sequence_length: *sequence_length
     read_keys: *read_keys
     dilation: *dilation
