@@ -14,7 +14,7 @@ environment:
   port: *port_var
   tm_port: *tm_port_var
   tasks:
-    - world: Town01
+    - world: Town02
       num_vehicles: [90, 100]
       num_walkers: [50, 100]
     # - world: Town03

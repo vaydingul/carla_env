@@ -16,7 +16,6 @@ from utils.log_utils import get_logger, configure_logger, pretty_print_config
 
 
 def main(config):
-
     # ---------------------------------------------------------------------------- #
     #                                    LOGGER                                    #
     # ---------------------------------------------------------------------------- #
@@ -51,7 +50,6 @@ def main(config):
     env = env_class(config=config["environment"])
 
     for k in tqdm.tqdm(range(config["num_episodes"])):
-
         latest_episode = check_latest_episode(config["data_save_path"])
         # Create the data writer
         data_save_path_ = Path(config["data_save_path"]) / f"episode_{latest_episode}"
@@ -71,7 +69,6 @@ def main(config):
             writer.add_key(**writer_key)
 
         while not env.is_done:
-
             tic = time.time()
 
             env.step()
@@ -86,7 +83,7 @@ def main(config):
 
             run.log({"sim/step_time": 1 / (toc - tic)})
             run.log({"sim/num_frames": env.get_counter()})
-            time.sleep(0.1)
+            time.sleep(0.01)
 
         env.reset()
 
@@ -96,14 +93,13 @@ def main(config):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(
         description="Collect data from the CARLA simulator"
     )
     parser.add_argument(
         "--config_path",
         type=str,
-        default="/home/volkan/Documents/Codes/carla_env/configs/collect_data/driving/config1.yml",
+        default="configs/collect_data/driving/config2_test.yml",
         help="Path to config file",
     )
 

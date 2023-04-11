@@ -10,7 +10,15 @@ import scipy.stats
 
 logger = logging.getLogger(__name__)
 
-BEV_SCORE_LIMIT = []
+NAVIGATION_DOWNSAMPLED_COMMAND_WEIGHTS = {
+    -1: 0.0,
+    1: 3,
+    2: 3,
+    3: 3,
+    4: 1,
+    5: 10,
+    6: 10,
+}
 
 
 class InstanceDataset(Dataset):
@@ -21,7 +29,6 @@ class InstanceDataset(Dataset):
         self,
         config: dict,
     ):
-
         self.set_default_config()
         self.append_config(config)
         self.build_from_config()
@@ -30,9 +37,7 @@ class InstanceDataset(Dataset):
         self.data = []
 
         for item in os.listdir(self.data_path):
-
             if item.startswith("episode"):
-
                 episode_path = self.data_path / item
 
                 key_lengths = np.array(
@@ -55,7 +60,6 @@ class InstanceDataset(Dataset):
 
                 counter = 0
                 for step in step_list:
-
                     self.data.append([episode_path, step])
                     counter += 1
 
@@ -67,7 +71,6 @@ class InstanceDataset(Dataset):
         self.count_array = np.array(self.count_array)
 
     def build_from_config(self):
-
         self.data_path = Path(self.config["data_path"])
         self.sequence_length = self.config["sequence_length"]
         self.read_keys = self.config["read_keys"]
@@ -86,7 +89,6 @@ class InstanceDataset(Dataset):
         )
 
     def __getitem__(self, index):
-
         (I,) = np.nonzero(
             np.logical_and(
                 (
@@ -135,9 +137,7 @@ class InstanceDataset(Dataset):
         #     )
 
         for read_key in self.read_keys:
-
             if read_key in ["bev", "bev_world", "bev_ego"]:
-
                 data_ = [
                     self._load_bev(index + k, read_key)
                     for k in range(
@@ -146,7 +146,6 @@ class InstanceDataset(Dataset):
                 ]
 
             if read_key in ["rgb_front", "rgb_left", "rgb_right"]:
-
                 data_ = torch.stack(
                     [
                         self._load_rgb(index + k, read_key)
@@ -158,7 +157,6 @@ class InstanceDataset(Dataset):
                 )
 
             if read_key in ["ego", "navigation", "occ", "navigation_downsampled"]:
-
                 data_ = [
                     self._load_json(index + k, read_key)
                     for k in range(
@@ -176,7 +174,6 @@ class InstanceDataset(Dataset):
 
             elem = data_[0]
             if isinstance(elem, dict):
-
                 data_stacked = {}
 
                 for key in elem.keys():
@@ -191,7 +188,6 @@ class InstanceDataset(Dataset):
         return data
 
     def __getweight__(self, index):
-
         assert "bev_world" in self.read_keys, "bev_world should be in read_keys"
         assert "ego" in self.read_keys, "ego should be in read_keys"
 
@@ -219,6 +215,22 @@ class InstanceDataset(Dataset):
         weight_yaw = scipy.stats.norm(0, 1).pdf(yaw) * 10  # 2
 
         return weight_vehicle * weight_road_red_yellow * weight_road_green * weight_yaw
+
+    def __get_weight_navigation_downsampled_command__(
+        self, index, navigation_downsampled_command_weight_coefficients
+    ):
+        assert (
+            "navigation_downsampled" in self.read_keys
+        ), "navigation_downsampled should be in read_keys"
+
+        weight = 1
+
+        for k in range(0, self.sequence_length * self.dilation, self.dilation):
+            navigation = self._load_json(index + k, "navigation_downsampled")
+            command = int(navigation["command"].item())
+            weight *= navigation_downsampled_command_weight_coefficients[command]
+
+        return weight
 
     def _load_bev(self, index, read_key):
         load_path = self.data[index][0] / read_key / f"{self.data[index][1]}.npz"
@@ -273,11 +285,10 @@ class InstanceDataset(Dataset):
         return image
 
     def _load_json(self, index, read_key):
-
         load_path = self.data[index][0] / read_key / f"{self.data[index][1]}.json"
         ego = json.load(open(load_path))
         ego_ = {}
-        for (key, value) in ego.items():
+        for key, value in ego.items():
             if value != "<<??>>" and not isinstance(value, str):
                 ego_[key] = torch.tensor(ego[key], dtype=torch.float32)
         return ego_
@@ -306,7 +317,6 @@ class InstanceDatasetRAM(Dataset):
         self,
         config: dict,
     ):
-
         self.set_default_config()
         self.append_config(config)
         self.build_from_config()
@@ -315,9 +325,7 @@ class InstanceDatasetRAM(Dataset):
         self.data = []
 
         for item in os.listdir(self.data_path):
-
             if item.startswith("episode"):
-
                 episode_path = self.data_path / item
 
                 print(f"Reading {episode_path} ...")
@@ -342,17 +350,13 @@ class InstanceDatasetRAM(Dataset):
 
                 counter = 0
                 for step in step_list:
-
                     data = {}
 
                     for read_key in self.read_keys:
-
                         if read_key in ["bev", "bev_world", "bev_ego"]:
-
                             data_ = self._load_bev(episode_path, step, read_key)
 
                         if read_key in ["rgb_front", "rgb_left", "rgb_right"]:
-
                             data_ = self._load_rgb(episode_path, step, read_key)
 
                         if read_key in [
@@ -361,7 +365,6 @@ class InstanceDatasetRAM(Dataset):
                             "occ",
                             "navigation_downsampled",
                         ]:
-
                             data_ = self._load_json(episode_path, step, read_key)
 
                         data[read_key] = data_
@@ -377,7 +380,6 @@ class InstanceDatasetRAM(Dataset):
         self.count_array = np.array(self.count_array)
 
     def build_from_config(self):
-
         self.data_path = Path(self.config["data_path"])
         self.sequence_length = self.config["sequence_length"]
         self.read_keys = self.config["read_keys"]
@@ -396,7 +398,6 @@ class InstanceDatasetRAM(Dataset):
         )
 
     def __getitem__(self, index):
-
         (I,) = np.nonzero(
             np.logical_and(
                 (
@@ -424,13 +425,10 @@ class InstanceDatasetRAM(Dataset):
         data = {}
 
         for read_key in self.read_keys:
-
             if isinstance(data_sample[read_key], dict):
-
                 data_ = {}
 
                 for key in data_sample[read_key].keys():
-
                     data_[key] = torch.stack(
                         [
                             self.data[index][2][read_key][key]
@@ -444,7 +442,6 @@ class InstanceDatasetRAM(Dataset):
                     )
 
             else:
-
                 data_ = torch.stack(
                     [
                         self.data[index][2][read_key]
@@ -473,7 +470,6 @@ class InstanceDatasetRAM(Dataset):
         return data
 
     def __getweight__(self, index):
-
         assert "bev_world" in self.read_keys, "bev_world should be in read_keys"
         assert "ego" in self.read_keys, "ego should be in read_keys"
 
@@ -537,11 +533,10 @@ class InstanceDatasetRAM(Dataset):
         return image
 
     def _load_json(self, episode_path, step, read_key):
-
         load_path = episode_path / read_key / f"{step}.json"
         ego = json.load(open(load_path))
         ego_ = {}
-        for (key, value) in ego.items():
+        for key, value in ego.items():
             if value != "<<??>>" and not isinstance(value, str):
                 ego_[key] = torch.tensor(ego[key], dtype=torch.float32)
         return ego_
@@ -563,7 +558,6 @@ class InstanceDatasetRAM(Dataset):
 
 
 if __name__ == "__main__":
-
     logging.basicConfig(level=logging.INFO)
 
     print("Testing InstanceDatasetRAM")

@@ -355,6 +355,7 @@ def dataset_factory(config, class_name=None):
                 == "eval_world_forward_model_last_frame_repeated"
             )
             or (config["experiment_type"] == "dataset_summary")
+            or (config["experiment_type"] == "dataset_weight")
         ):
             dataset_key = [key for key in config.keys() if "dataset" in key][0]
 

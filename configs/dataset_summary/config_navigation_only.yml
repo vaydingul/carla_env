@@ -7,15 +7,7 @@ sequence_length: &sequence_length 1
 num_workers: &num_workers 5
 num_gpu: &num_gpu 1
 batch_size: &batch_size 100
-read_keys:
-  &read_keys [
-    "bev_world",
-    "occ",
-    "navigation",
-    "navigation_downsampled",
-    "ego",
-    "occ",
-  ]
+read_keys: &read_keys ["navigation"]
 dilation: &dilation 1
 bev_agent_channel: &bev_agent_channel 7
 bev_vehicle_channel: &bev_vehicle_channel 6
@@ -26,7 +18,7 @@ bev_calculate_offroad: &bev_calculate_offroad false
 dataset:
   type: "InstanceDataset"
   config:
-    data_path: "/mnt/kuacc/scratch/users/vaydingul20/driving_model_data_20Hz_action_repeat_1/train/"
+    data_path: "/mnt/kuacc/scratch/users/vaydingul20/driving_model_data_20Hz_action_repeat_1/val/"
     sequence_length: *sequence_length
     read_keys: *read_keys
     dilation: *dilation

@@ -2,7 +2,7 @@
 
 experiment_type: collect_data_driving
 log_path: ~
-data_save_path: data/driving_model_data_20Hz_action_repeat_1_2/
+data_save_path: data/dummyyyyyyyy/
 num_episodes: 10
 port: &port_var 3000
 tm_port: &tm_port_var 8001
@@ -17,7 +17,7 @@ environment:
     # - world: Town02
     #   num_vehicles: [90, 100]
     # num_walkers: [50, 100]
-    - world: Town05
+    - world: Town01
       num_vehicles: [120, 180]
       num_walkers: [100, 150]
     # - world: Town04

@@ -150,7 +150,7 @@ class Policy(nn.Module):
 
         measurement_encoded = self.measurement_decoder(fused)
 
-        action = self.branch_network(measurement_encoded)
+        action = self.branch_network(measurement_encoded, command)
 
         return action
 

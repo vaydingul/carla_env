@@ -6,6 +6,9 @@ import torch
 from torch.utils.data import DataLoader
 import torch.multiprocessing as mp
 from torch.utils.data.distributed import DistributedSampler
+from carla_env.sampler.distributed_weighted_sampler import (
+    DistributedWeightedSampler,
+)
 from torch.distributed import init_process_group, destroy_process_group, barrier
 
 
@@ -29,7 +32,6 @@ def ddp_setup(rank, world_size, master_port):
 
 
 def main(rank, world_size, config):
-
     # ---------------------------------------------------------------------------- #
     #                                    LOGGER                                    #
     # ---------------------------------------------------------------------------- #
@@ -81,7 +83,6 @@ def main(rank, world_size, config):
     # ---------------------------------------------------------------------------- #
 
     if config["wandb_ego_forward_model"]["enable"] is not None:
-
         ego_forward_model_run = fetch_run_from_wandb_link(
             config["wandb_ego_forward_model"]["link"]
         )
@@ -103,7 +104,6 @@ def main(rank, world_size, config):
         )
 
     else:
-
         # Create the model
         ego_forward_model_class = ego_forward_model_factory(config)
         # Initialize the model
@@ -115,7 +115,6 @@ def main(rank, world_size, config):
     #                   WORLD FORWARD MODEL WANDB RUN CHECKPOINT                   #
     # ---------------------------------------------------------------------------- #
     if config["wandb_world_forward_model"]["enable"] is not None:
-
         world_forward_model_run = fetch_run_from_wandb_link(
             config["wandb_world_forward_model"]["link"]
         )
@@ -138,7 +137,6 @@ def main(rank, world_size, config):
         )
 
     else:
-
         # Create the model
         world_forward_model_class = world_forward_model_factory(config)
         # Initialize the model
@@ -151,7 +149,6 @@ def main(rank, world_size, config):
     # ---------------------------------------------------------------------------- #
 
     if config["wandb"]["resume"]:
-
         policy_model_class = policy_model_factory(policy_model_run_.config)
 
         # Create and initialize the model with pretrained weights and biases
@@ -162,21 +159,19 @@ def main(rank, world_size, config):
         )
 
     else:
-
         if config["training"]["use_world_forward_model_encoder_output_as_world_state"]:
-
             config["policy_model"]["config"]["input_shape_world_state"] = tuple(
                 world_forward_model.world_previous_bev_encoder.get_output_shape()
             )
 
         else:
-
             config["policy_model"]["config"]["input_shape_world_state"] = tuple(
                 world_forward_model.get_input_shape_previous()
             )
 
-        policy_model_run.config.update({"policy_model": config["policy_model"]}, allow_val_change=True)
-        
+        policy_model_run.config.update(
+            {"policy_model": config["policy_model"]}, allow_val_change=True
+        )
 
         policy_model_class = policy_model_factory(config)
         # Create and initialize the model
@@ -206,27 +201,32 @@ def main(rank, world_size, config):
     # ---------------------------------------------------------------------------- #
     #                       TRAIN AND VALIDATION DATALOADERS                       #
     # ---------------------------------------------------------------------------- #
+
+    if config["training"]["weighted_sampling"]["enable"]:
+        weights = torch.load(config["training"]["weighted_sampling"]["weight_path"])
+    else:
+        weights = None
+
     dataloader_train = DataLoader(
         dataset_train,
         **config["dataloader_train"],
-        sampler=DistributedSampler(
+        sampler=DistributedWeightedSampler(
             dataset_train,
             num_replicas=world_size,
             rank=rank,
             shuffle=True,
-            seed=config["seed"],
+            weights=weights,
         ),
     )
 
     dataloader_val = DataLoader(
         dataset_val,
         **config["dataloader_val"],
-        sampler=DistributedSampler(
+        sampler=DistributedWeightedSampler(
             dataset_val,
             num_replicas=world_size,
             rank=rank,
             shuffle=False,
-            seed=config["seed"],
         ),
     )
 
@@ -248,25 +248,19 @@ def main(rank, world_size, config):
     optimization_parameters = []
 
     for param in config["training"]["optimizer"]["parameters"]:
-
         if param == "ego":
-
             optimization_parameters.append({"params": ego_forward_model.parameters()})
 
         elif param == "world":
-
             optimization_parameters.append({"params": world_forward_model.parameters()})
 
         elif param == "policy":
-
             optimization_parameters.append({"params": policy_model.parameters()})
 
         else:
-
             raise ValueError(f"Optimizer parameter {param} not recognized")
 
     if config["wandb"]["resume"]:
-
         optimizer_class = optimizer_factory(policy_model_run_.config)
         optimizer = optimizer_class(
             optimization_parameters,
@@ -287,11 +281,9 @@ def main(rank, world_size, config):
             scheduler.load_state_dict(policy_model_checkpoint["scheduler_state_dict"])
 
         else:
-
             scheduler = None
 
     else:
-
         optimizer_class = optimizer_factory(config)
         optimizer = optimizer_class(
             optimization_parameters, **config["training"]["optimizer"]["config"]
@@ -304,7 +296,6 @@ def main(rank, world_size, config):
             )
 
         else:
-
             scheduler = None
 
     policy_model_run.save(config["config_path"])
@@ -379,7 +370,6 @@ def main(rank, world_size, config):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config_path",

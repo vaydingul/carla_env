@@ -2,7 +2,7 @@
 
 experiment_type: collect_data_driving
 log_path: ~
-data_save_path: data/driving_model_data_20Hz_action_repeat_1_1/
+data_save_path: /mnt/kuacc/userfiles/vaydingul20/data/driving_model_data_20Hz_action_repeat_1_1/
 num_episodes: 10
 port: &port_var 2000
 tm_port: &tm_port_var 8000
@@ -14,9 +14,9 @@ environment:
   port: *port_var
   tm_port: *tm_port_var
   tasks:
-    - world: Town02
-      num_vehicles: [90, 100]
-      num_walkers: [50, 100]
+    - world: Town01
+      num_vehicles: [120, 180]
+      num_walkers: [100, 150]
     # - world: Town03
     #   num_vehicles: [60, 90]
     # - world: Town04

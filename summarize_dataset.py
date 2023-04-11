@@ -5,17 +5,16 @@ from tqdm import tqdm
 import os
 from utils.config_utils import parse_yml
 from utils.factory import *
-
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    datefmt="%Y-%m-%d %H:%M:%S",
-    format="%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d ==> %(message)s",
-)
+from utils.log_utils import configure_logger, get_logger
 
 
 def main(config):
+    # ---------------------------------------------------------------------------- #
+    #                                    LOGGER                                    #
+    # ---------------------------------------------------------------------------- #
+    logger = get_logger(__name__)
+    configure_logger(__name__, log_path=config["log_path"], log_level=logging.INFO)
+
     # ---------------------------------------------------------------------------- #
     #                                 DATASET CLASS                                #
     # ---------------------------------------------------------------------------- #
@@ -28,7 +27,12 @@ def main(config):
     logger.info(f"Dataset size: {len(dataset)}")
 
     if "bev_world" in dataset.read_keys:
-        bev_information = np.zeros((len(dataset), len(dataset.bev_selected_channels)))
+        bev_information = np.zeros(
+            (
+                len(dataset),
+                len(dataset.bev_selected_channels) + dataset.bev_calculate_offroad,
+            )
+        )
 
     if "ego" in dataset.read_keys:
         ego_rotation_information = np.zeros((len(dataset),))

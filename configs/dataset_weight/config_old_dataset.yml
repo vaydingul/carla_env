@@ -1,0 +1,26 @@
+experiment_type: dataset_weight
+log_path: ~ #"logs/"
+
+num_time_step_previous: &previous 20
+num_time_step_future: &future 10
+sequence_length: &sequence_length 30
+num_workers: &num_workers 5
+num_gpu: &num_gpu 1
+batch_size: &batch_size 100
+read_keys: &read_keys ["navigation_downsampled"]
+dilation: &dilation 1
+
+dataset:
+  type: "InstanceDataset"
+  config:
+    data_path: "/mnt/kuacc/userfiles/vaydingul20/ground_truth_bev_model_train_data_4_town_02/ground_truth_bev_model_train_data_4_town_02/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+
+weight_coefficients:
+  -1: 0
+  1: 5
+  2: 5
+  3: 5
+  4: 1

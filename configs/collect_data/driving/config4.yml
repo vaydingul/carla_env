@@ -2,7 +2,7 @@
 
 experiment_type: collect_data_driving
 log_path: ~
-data_save_path: data/driving_model_data_20Hz_action_repeat_1_4/
+data_save_path: /mnt/kuacc/userfiles/vaydingul20/data/driving_model_data_20Hz_action_repeat_1_4/
 num_episodes: 10
 port: &port_var 5000
 tm_port: &tm_port_var 8003

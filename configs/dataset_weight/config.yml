@@ -1,21 +1,13 @@
-experiment_type: dataset_summary
+experiment_type: dataset_weight
 log_path: ~ #"logs/"
 
-num_time_step_previous: &previous 0
-num_time_step_future: &future 1
-sequence_length: &sequence_length 1
+num_time_step_previous: &previous 20
+num_time_step_future: &future 10
+sequence_length: &sequence_length 30
 num_workers: &num_workers 5
 num_gpu: &num_gpu 1
 batch_size: &batch_size 100
-read_keys:
-  &read_keys [
-    "bev_world",
-    "occ",
-    "navigation",
-    "navigation_downsampled",
-    "ego",
-    "occ",
-  ]
+read_keys: &read_keys ["navigation_downsampled"]
 dilation: &dilation 1
 bev_agent_channel: &bev_agent_channel 7
 bev_vehicle_channel: &bev_vehicle_channel 6

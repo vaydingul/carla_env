@@ -48,23 +48,19 @@ class RandomActionDesigner(object):
         self.action_repeat = action_repeat
 
     def step(self):
-
         if (self.previous_count < self.action_repeat) and self.previous_action:
-
             self.previous_count += 1
 
             return self.previous_action
 
         # Randomize control
         if np.random.random() < self.brake_probability:
-
             acceleration = np.random.uniform(-self.max_throttle, 0)
             steer = np.random.uniform(-self.max_steering_angle, self.max_steering_angle)
 
             action = [0, steer, -acceleration]
 
         else:
-
             acceleration = np.random.uniform(0, self.max_throttle)
             steer = np.random.uniform(-self.max_steering_angle, self.max_steering_angle)
 
@@ -107,7 +103,6 @@ class CarlaEnvironment(Environment):
         self.reset()
 
     def build_from_config(self):
-
         self.random = self.config["random"]
         self.action_repeat = self.config["action_repeat"]
         self.fixed_delta_seconds = self.config["fixed_delta_seconds"]
@@ -125,6 +120,10 @@ class CarlaEnvironment(Environment):
         # self.server_module.reset()
         if self.is_first_reset:
             self.is_first_reset = False
+
+            self._next_agent_command = RoadOption.VOID.value
+            self._next_agent_waypoint = [0, 0, 0]
+
         else:
             if not self.config["random"]:
                 self.noiser_module.close()
@@ -223,7 +222,6 @@ class CarlaEnvironment(Environment):
 
         self.sensor_modules = []
         for sensor in self.sensors:
-
             self.sensor_modules.append(
                 {
                     "id": sensor["id"],
@@ -236,11 +234,9 @@ class CarlaEnvironment(Environment):
                 }
             )
 
-        
         # Bird's eye view
         self.bev_modules = []
         for bev in self.bevs:
-
             self.bev_modules.append(
                 {
                     "id": bev["id"],
@@ -286,35 +282,28 @@ class CarlaEnvironment(Environment):
 
         self.data_dict = {}
 
-        for (k, v) in self.hero_actor_module.get_sensor_dict().items():
-
+        for k, v in self.hero_actor_module.get_sensor_dict().items():
             if v.get_queue().qsize() > 0:
-
                 try:
-
                     equivalent_frame_fetched = False
 
                     while not equivalent_frame_fetched:
-
                         data_ = v.get_queue().get(True, 10)
 
                         equivalent_frame_fetched = data_["frame"] == snapshot.frame
 
                 except Empty:
-
                     print("Empty")
 
                 self.data_dict[k] = data_
 
                 if k == "ego":
-
                     current_transform = self.data_dict[k]["transform"]
 
                     transform = current_transform
                     transform.location.z += 2.0
 
                 if k == "col":
-
                     impulse = self.data_dict[k]["impulse"]
                     impulse_amplitude = np.linalg.norm(impulse)
                     logger.debug(f"Collision impulse: {impulse_amplitude}")
@@ -332,8 +321,6 @@ class CarlaEnvironment(Environment):
             self.data_dict[bev_module["id"]] = bev_output
 
         if not self.config["random"]:
-            self._next_agent_command = RoadOption.VOID.value
-            self._next_agent_waypoint = [-1, -1, -1]
             try:
                 _next_agent_navigational_action = (
                     self.traffic_manager_module.get_next_action(
@@ -353,7 +340,8 @@ class CarlaEnvironment(Environment):
                     "command": self._next_agent_command,
                     "waypoint": self._next_agent_waypoint,
                 }
-            except BaseException:
+            except Exception as e:
+                logger.info(e)
                 self.data_dict["navigation"] = {
                     "command": self._next_agent_command,
                     "waypoint": self._next_agent_waypoint,
@@ -374,7 +362,7 @@ class CarlaEnvironment(Environment):
         self.renderer_module.reset()
 
         self.render_dict = {}
-        for (k, v) in self.__dict__.items():
+        for k, v in self.__dict__.items():
             if isinstance(v, Module):
                 self.render_dict[k] = v.render()
             elif isinstance(v, list):
@@ -405,20 +393,16 @@ class CarlaEnvironment(Environment):
 
         self.renderer_module.render_text("", move_cursor="down", font_color=COLORS.RED)
 
-        for (module, render_dict) in self.render_dict.items():
-
+        for module, render_dict in self.render_dict.items():
             if "rgb" not in module:
-
                 if bool(render_dict):
-
                     self.renderer_module.render_text(
                         f"{module.capitalize()}",
                         move_cursor="down",
                         font_color=COLORS.RED,
                     )
 
-                    for (k, v) in render_dict.items():
-
+                    for k, v in render_dict.items():
                         self.renderer_module.render_text(
                             f"{k}: {v}",
                             move_cursor="down",
