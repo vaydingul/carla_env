@@ -93,7 +93,7 @@ training:
 
   weighted_sampling:
     enable: true
-    weight_path: "/userfiles/vaydingul20/ground_truth_bev_model_val_data_4_town_02/ground_truth_bev_model_val_data_4_town_02/20-10-1-navigation_downsampled-weights.pt"
+    weight_path: "/userfiles/vaydingul20/ground_truth_bev_model_train_data_4_town_02/ground_truth_bev_model_train_data_4_town_02/20-10-1-navigation_downsampled-weights.pt"
 
   gradient_clip:
     enable: true
