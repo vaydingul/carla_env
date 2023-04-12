@@ -13,7 +13,7 @@ cost:
     image_height: 192
     reduction: "sum"
     mask_alpha: 1.1
-    decay_factor: 0.99
+    decay_factor: 0.95
     vehicle_width: 2.1
     vehicle_length: 4.9
     pixels_per_meter: 5
@@ -53,7 +53,7 @@ environment:
     cursor: [0, 0]
     name: MPC Leaderboard Evaluation
     show: true
-    save: false
+    save: true
     create_date_time_path: true
     save_path: figures/env_debug/eval_mpc_leaderboard/
 
@@ -119,22 +119,37 @@ evaluator:
   bev_selected_channels: [0, 1, 2, 3, 4, 5, 6, 10, 11]
   bev_calculate_offroad: false
 
+  # cost_weight:
+  #   road_cost: -0.1 # -0.01
+  #   road_on_cost: -0.1 # -0.01
+  #   road_off_cost: 0.01 # 0.005
+  #   road_red_yellow_cost: 0.5 # 0.1
+  #   road_green_cost: -0.5 # -0.1
+  #   vehicle_cost: 10 # 1
+  #   lane_cost: 0.05 # 0.05
+  #   pedestrian_cost: 10
+  #   offroad_cost: 1 # 0.005
+  #   acceleration_jerk: 100.0
+  #   steer_jerk: 500.0
+  #   ego_location_l1: 500.0
+  #   ego_yaw_l1: 100.0
+  #   ego_speed_l1: 0.0
+
   cost_weight:
     road_cost: -0.01 # -0.01
     road_on_cost: -0.01 # -0.01
-    road_off_cost: 0.05 # 0.005
-    road_red_yellow_cost: 0.1 # 0.1
-    road_green_cost: -0.1 # -0.1
-    vehicle_cost: 10 # 1
+    road_off_cost: 0.5 # 0.005
+    road_red_yellow_cost: 0.5 # 0.1
+    road_green_cost: -0.5 # -0.1
+    vehicle_cost: 100 # 1
     lane_cost: 0.05 # 0.05
     pedestrian_cost: 10
     offroad_cost: 0.5 # 0.005
     acceleration_jerk: 100.0
-    steer_jerk: 1000.0
-    ego_location_l1: 500.0
+    steer_jerk: 100.0
+    ego_location_l1: 1250.0
     ego_yaw_l1: 100.0
     ego_speed_l1: 0.0
-
   # MPC is a kind of RL training.
 training:
   gradient_clip:
@@ -168,14 +183,14 @@ leaderboard:
   debug: 1
   record: ""
   timeout: "60"
-  routes: /home/volkan/Documents/Codes/carla_env/leaderboard_0.9.13/data/routes_town_2_debug.xml
+  routes: /home/volkan/Documents/Codes/carla_env/leaderboard_0.9.13/data/routes_devtest.xml
   scenarios: /home/volkan/Documents/Codes/carla_env/leaderboard_0.9.13/data/all_towns_traffic_scenarios_public.json
   repetitions: 1
   agent: /home/volkan/Documents/Codes/carla_env/leaderboard_0.9.13/leaderboard/autoagents/mpc_agent.py
   agent_config: /home/volkan/Documents/Codes/carla_env/configs/policy_model/testing/config.yml
   track: MAP
   resume: false
-  checkpoint: "./results.json"
+  checkpoint: "./results_devtest_2.json"
 
 wandb:
   enable: false

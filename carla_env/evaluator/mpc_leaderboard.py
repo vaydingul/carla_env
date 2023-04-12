@@ -162,6 +162,7 @@ class Evaluator:
                     "ego_future_location_predicted": ego_future_location_predicted,
                     "control_selected": control_selected,
                 },
+               
             )
 
             if self.log_video:
