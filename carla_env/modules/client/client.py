@@ -70,7 +70,7 @@ class ClientModule(module.Module):
         """Render the client"""
         if self.is_connected:
             self.render_dict["is_connected"] = self.is_connected
-            self.render_dict["World"] = self.config["world"]
+            self.render_dict["world"] = self.map.name
             self.render_dict["port"] = self.config["port"]
             self.render_dict["fixed_delta_seconds"] = self.config["fixed_delta_seconds"]
         return self.render_dict

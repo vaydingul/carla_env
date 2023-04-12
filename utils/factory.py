@@ -70,6 +70,7 @@ def cost_factory(config):
         (config["experiment_type"] == "train_policy_model")
         or (config["experiment_type"] == "test_policy_model")
         or (config["experiment_type"] == "test_mpc")
+        or (config["experiment_type"] == "eval_mpc_leaderboard")
     ):
         if config["cost"]["type"] == "extended_bev":
             from carla_env.cost.masked_cost_batched_extended_bev import Cost
@@ -159,6 +160,11 @@ def evaluator_factory(config):
 
         return Evaluator
 
+    elif config["experiment_type"] == "eval_mpc_leaderboard":
+        from carla_env.evaluator.mpc_leaderboard import Evaluator
+
+        return Evaluator
+
     else:
         raise ValueError("Invalid experiment type")
 
@@ -184,6 +190,7 @@ def optimizer_factory(config):
         or (config["experiment_type"] == "train_world_forward_model")
         or (config["experiment_type"] == "train_ego_forward_model")
         or (config["experiment_type"] == "test_mpc")
+        or (config["experiment_type"] == "eval_mpc_leaderboard")
     ):
         if config["training"]["optimizer"]["type"] == "Adam":
             from torch.optim import Adam
@@ -443,12 +450,19 @@ def environment_factory(config):
         return CarlaEnvironment
 
     elif config["experiment_type"] == "eval_policy_model_leaderboard":
-        from carla_env.carla_env_leaderboard_headless import CarlaEnvironment
+        from carla_env.carla_env_leaderboard import CarlaEnvironment
 
         return CarlaEnvironment
 
     elif config["experiment_type"] == "play_carla":
         from carla_env.carla_env_playground import CarlaEnvironment
+
+        return CarlaEnvironment
+
+    elif (config["experiment_type"] == "eval_mpc_leaderboard") or (
+        config["experiment_type"] == "eval_policy_model_leaderboard"
+    ):
+        from carla_env.carla_env_leaderboard import CarlaEnvironment
 
         return CarlaEnvironment
 
@@ -464,6 +478,7 @@ def sensor_factory(config):
         or (config["experiment_type"] == "test_policy_model")
         or (config["experiment_type"] == "play_carla")
         or (config["experiment_type"] == "eval_policy_model_leaderboard")
+        or (config["experiment_type"] == "eval_mpc_leaderboard")
     ):
         sensors = config["environment"]["sensors"]
         sensor_list = []

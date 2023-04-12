@@ -100,9 +100,9 @@ class RGBSensorModule(sensor.SensorModule):
             self.render_dict["image_height"] = self.config["height"]
             self.render_dict["image_width"] = self.config["width"]
             self.render_dict["image_fov"] = self.config["fov"]
-
+        
         return self.render_dict
-
+        
     def close(self):
         """Close the sensor"""
         self._stop()
