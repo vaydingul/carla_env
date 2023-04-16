@@ -32,6 +32,11 @@ def world_forward_model_factory(config):
 
             return WorldBEVModel
 
+        elif config["world_forward_model"]["type"] == "WorldSVGLPModel":
+            from carla_env.models.world.world_svg import WorldSVGLPModel
+
+            return WorldSVGLPModel
+
         else:
             raise ValueError("Invalid world forward model type")
 
@@ -103,20 +108,6 @@ def cost_factory(config):
         raise ValueError("Invalid experiment type")
 
 
-def model_factory(config):
-    if (config["experiment_type"] == "train_policy_model") or (
-        config["experiment_type"] == "test_dfm_km_cp"
-    ):
-        from carla_env.models.dfm_km_cp import (
-            DecoupledForwardModelKinematicsCoupledPolicy,
-        )
-
-        return DecoupledForwardModelKinematicsCoupledPolicy
-
-    else:
-        raise ValueError("Invalid experiment type")
-
-
 def trainer_factory(config):
     if config["experiment_type"] == "train_ego_forward_model":
         from carla_env.trainer.ego_forward_model import Trainer
@@ -124,9 +115,15 @@ def trainer_factory(config):
         return Trainer
 
     elif config["experiment_type"] == "train_world_forward_model":
-        from carla_env.trainer.world_forward_model import Trainer
+        if config["world_forward_model"]["type"] == "WorldBEVModel":
+            from carla_env.trainer.world_forward_model import Trainer
 
-        return Trainer
+            return Trainer
+
+        else:
+            from carla_env.trainer.world_forward_model_svg import Trainer
+
+            return Trainer
 
     elif config["experiment_type"] == "train_policy_model":
         from carla_env.trainer.policy_model import Trainer

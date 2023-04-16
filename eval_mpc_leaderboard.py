@@ -1,4 +1,5 @@
 import logging
+import os
 import numpy as np
 import argparse
 from collections import deque
@@ -7,6 +8,7 @@ from utils.model_utils import (
     fetch_checkpoint_from_wandb_run,
     fetch_run_from_wandb_link,
 )
+from utils.path_utils import create_date_time_path
 from utils.train_utils import seed_everything, get_device
 
 from utils.factory import *
@@ -178,4 +180,17 @@ if __name__ == "__main__":
 
     config_leaderboard["config_path_leaderboard"] = args.config_path_leaderboard
     config_leaderboard["leaderboard"]["agent_config"] = None
+
+    # Create structured folder path for checkpoint path based on the
+    # experiment_name, checkpoint_name, and date time information
+    checkpoint_name = config_leaderboard["leaderboard"]["checkpoint"]
+    checkpoint_path = create_date_time_path(
+        os.path.join(
+            "leaderboard_results",
+            config_leaderboard["experiment_type"],
+        )
+    )
+    config_leaderboard["leaderboard"]["checkpoint"] = str(
+        checkpoint_path / checkpoint_name
+    )
     main(config_leaderboard)

@@ -7,6 +7,7 @@ import wandb
 from utils.kinematic_utils import acceleration_to_throttle_brake
 from utils.model_utils import convert_standard_bev_to_model_bev
 from utils.create_video_from_folder import create_video_from_images
+from utils.cost_utils import sample_coefficient
 
 
 class Evaluator:
@@ -162,7 +163,6 @@ class Evaluator:
                     "ego_future_location_predicted": ego_future_location_predicted,
                     "control_selected": control_selected,
                 },
-               
             )
 
             if self.log_video:
@@ -372,6 +372,16 @@ class Evaluator:
 
         loss = torch.tensor(0.0, device=self.device)
 
+        for cost_key in self.cost_weight.keys():
+            self.cost_weight[cost_key] = (
+                sample_coefficient(
+                    self.cost_weight[cost_key]["mean"],
+                    self.cost_weight[cost_key]["std"],
+                )
+                if isinstance(self.cost_weight[cost_key], dict)
+                else self.cost_weight[cost_key]
+            )
+
         for cost_key in cost["cost_dict"].keys():
             assert (
                 cost_key in self.cost_weight.keys()
@@ -485,11 +495,32 @@ class Evaluator:
                 )
 
             elif self.init_action == "random":
-                action = torch.randn(
-                    (self.batch_size, self.num_time_step_future, self.action_size),
-                    device=self.device,
-                    dtype=torch.float32,
+                # Generate random gaussian around 0 with 0.1 std
+                action = (
+                    torch.randn(
+                        (self.batch_size, self.num_time_step_future, self.action_size),
+                        device=self.device,
+                        dtype=torch.float32,
+                    )
+                    * 0.1
                 )
+
+                # Generate random number between -1 and 1, having the size of (B, T, A)
+                # action = (
+                #     torch.rand(
+                #         (self.batch_size, self.num_time_step_future, self.action_size),
+                #         device=self.device,
+                #         dtype=torch.float32,
+                #     )
+                #     * 2
+                #     - 1
+                # )
+
+                # action = torch.randn(
+                #     (self.batch_size, self.num_time_step_future, self.action_size),
+                #     device=self.device,
+                #     dtype=torch.float32,
+                # )
 
             elif self.init_action == "ones":
                 action = torch.ones(

@@ -1,6 +1,11 @@
 import torch
 
 
+def sample_coefficient(mu, std):
+    """Sample a coefficient from a normal distribution"""
+    return torch.normal(mu, std, ())
+
+
 def create_coordinate_mask(nx, ny, pixels_per_meter, device):
     """Create a matrix such that the value at each index is the distance from the center of the image"""
 
@@ -150,7 +155,6 @@ def create_2x2_rotation_tensor_from_angle_tensor(angle_tensor):
 
 
 if __name__ == "__main__":
-
     speed = 3
     vehicle_width = 2
     vehicle_length = 4
