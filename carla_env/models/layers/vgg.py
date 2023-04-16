@@ -140,16 +140,9 @@ class VGG128(nn.Module):
         # 8 x 8
         self.d_c2 = nn.Sequential(
             vgg_layer(512 * 2, 512),
-            vgg_layer(512, 512),
-            vgg_layer(512, 512),
-        )
-        # 16 x 16
-        self.d_c3 = nn.Sequential(
-            vgg_layer(512 * 2, 512), vgg_layer(512, 512), vgg_layer(512, 256)
-        )
-        # 32 x 32
-        self.d_c4 = nn.Sequential(
-            vgg_layer(256 * 2, 256), vgg_layer(256, 256), vgg_layer(256, 128)
+            world_forward_model,
+            vgg_layer(256, 256),
+            vgg_layer(256, 128),
         )
         # 64 x 64
         self.d_c5 = nn.Sequential(vgg_layer(128 * 2, 128), vgg_layer(128, 64))
@@ -260,7 +253,7 @@ class VGG192(nn.Module):
         self.d_c7 = nn.Sequential(
             vgg_layer(64 * 2, 64),
             nn.ConvTranspose2d(64, input_channel, 3, 1, 1),
-            nn.Sigmoid(),
+            # nn.Sigmoid(),
         )
         self.up = nn.UpsamplingNearest2d(scale_factor=2)
 

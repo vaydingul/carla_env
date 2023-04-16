@@ -53,6 +53,16 @@ def main(config):
     environment_class = environment_factory(config)
     environment = environment_class(config=config["environment"])
 
+    # Disgusting hardcoded config file copy
+    # Copy the current config file to environment's renderer's save path
+    # This is to make sure that the config file is saved with the video
+    import shutil
+
+    shutil.copyfile(
+        config["config_path_leaderboard"],
+        os.path.join(environment.renderer_module.save_path, "config.yml"),
+    )
+
     # ---------------------------------------------------------------------------- #
     #                    EGO FORWARD MODEL WANDB RUN CHECKPOINT                    #
     # ---------------------------------------------------------------------------- #

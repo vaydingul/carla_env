@@ -75,7 +75,6 @@ environment:
       type: VehicleSensor
       config: {}
 
-
     #     horizontal_fov: 5
     #     vertical_fov: 5
     #     range: 10
@@ -139,11 +138,11 @@ evaluator:
       mean: -0.01 # -0.01
       std: 0.001
     road_off_cost:
-      mean: 0.1 # 0.005
-      std: 0.05
+      mean: 1.0 # 0.005
+      std: 0.1
     road_red_yellow_cost:
-      mean: 0.1 # 0.1
-      std: 0.05
+      mean: 1.0 # 0.1
+      std: 0.1
     road_green_cost:
       mean: -0.5 # -0.1
       std: 0.05
@@ -157,13 +156,13 @@ evaluator:
       mean: 10
       std: 1.0
     offroad_cost:
-      mean: 0.1 # 0.005
-      std: 0.05
+      mean: 1.0 # 0.005
+      std: 0.1
     acceleration_jerk:
       mean: 100.0
       std: 10.0
     steer_jerk:
-      mean: 100.0
+      mean: 200.0
       std: 10.0
     ego_location_l1:
       mean: 2000.0

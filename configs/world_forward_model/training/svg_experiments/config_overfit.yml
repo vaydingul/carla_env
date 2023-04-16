@@ -7,7 +7,7 @@ num_time_step_previous: &previous 5
 num_time_step_future: &future 10
 sequence_length: &sequence_length 15
 num_workers: &num_workers 5
-batch_size: &batch_size 5
+batch_size: &batch_size 2
 num_gpu: &num_gpu 1
 read_keys: &read_keys ["bev_world"]
 dilation: &dilation 4
@@ -72,12 +72,12 @@ training:
       # weight_decay: 0.0001
 
   loss:
-    criterion: "MSELoss"
+    criterion: "BCEWithLogitsLoss"
     config:
       reduction: "mean"
-      # pos_weight: [1, 1, 1, 1, 1, 1, 1]
+      pos_weight: [1, 1, 1, 1, 1, 1, 1]
 
-  save_interval: 100
+  save_interval: 1
   val_interval: 1
 
   logvar_clip:

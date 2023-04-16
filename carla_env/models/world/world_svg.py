@@ -129,7 +129,7 @@ class WorldSVGLPModel(nn.Module):
 
         return output
 
-    def generate(self, world_previous_bev):
+    def generate(self, world_previous_bev, skip_feature=None):
         h_previous, skip_previous = self.encoder_decoder.encode(world_previous_bev)
         # h_future, _ = self.encoder_decoder.encode(world_future_bev)
 
@@ -138,8 +138,10 @@ class WorldSVGLPModel(nn.Module):
 
         h_predicted = self.frame_predictor(torch.cat([h_previous, z_prior], dim=1))
 
+        skip_feature = skip_previous if skip_feature is None else skip_feature
+
         world_future_bev_predicted = self.encoder_decoder.decode(
-            h_predicted, skip_previous
+            (h_predicted, skip_previous)
         )
 
         output = {

@@ -144,6 +144,10 @@ def evaluator_factory(config):
         from carla_env.evaluator.world_forward_model import Evaluator
 
         return Evaluator
+    elif config["experiment_type"] == "eval_world_forward_model_svg":
+        from carla_env.evaluator.world_forward_model_svg import Evaluator
+
+        return Evaluator
 
     elif config["experiment_type"] == "eval_world_forward_model_last_frame_repeated":
         from carla_env.evaluator.world_forward_model_last_frame_repeated import (

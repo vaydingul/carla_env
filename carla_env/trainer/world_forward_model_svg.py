@@ -203,11 +203,10 @@ class Trainer(object):
 
         for k in range(1, self.num_time_step_previous + self.num_time_step_future):
             # Predict the future bev
-            world_previous_bev_sample = world_bev[:, k - 1]
-            world_future_bev_sample = world_bev[:, k]
+
             output = self.model(
-                world_previous_bev_sample,
-                world_future_bev_sample,
+                world_bev[:, k - 1],
+                world_bev[:, k],
                 skip_feature=None if k < self.num_time_step_previous else skip_feature,
             )
 
