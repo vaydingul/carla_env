@@ -1,5 +1,5 @@
-config_path: "configs/world_forward_model/evaluation/config_4.yml"
+config_path: "configs/world_forward_model/evaluation/svg_experiments/config.yml"
 
 wandbs:
-  - link: vaydingul/mbl-refactored/2rd7fcpl
-    checkpoint_numbers: [47]
+  - link: vaydingul/mbl-refactored/3nsjdhqw
+    checkpoint_numbers: [1]

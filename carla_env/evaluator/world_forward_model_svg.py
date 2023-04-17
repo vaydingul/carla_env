@@ -144,14 +144,29 @@ class Evaluator(object):
                         )
 
                         skip_feature = output["skip_feature"]
-
+                        world_future_bev_predicted = output[
+                            "world_future_bev_predicted"
+                        ]
                     else:
                         # Predict the future bev
+                        bev_ = torch.sigmoid(world_future_bev_predicted).clone()
+
+                        for k in range(self.C):
+                            world_future_bev_predicted_ = bev_[:, k]
+                            world_future_bev_predicted_[
+                                world_future_bev_predicted_ > 0.5
+                            ] = 1
+                            world_future_bev_predicted_[
+                                world_future_bev_predicted_ <= 0.5
+                            ] = 0
+                            bev_[:, k] = world_future_bev_predicted_
+
                         output = self.model.generate(
-                            world_bev[:, k - 1],
+                            bev_,
                             skip_feature=skip_feature,
                         )
 
+                        # skip_feature = output["skip_feature"]
                         world_future_bev_predicted = output[
                             "world_future_bev_predicted"
                         ]

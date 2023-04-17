@@ -124,7 +124,7 @@ class WorldSVGLPModel(nn.Module):
             "z_prior": z_prior,
             "mu_prior": mu_prior,
             "logvar_prior": logvar_prior,
-            "skip_feature": skip_feature,
+            "skip_feature": skip_previous,
         }
 
         return output
@@ -149,6 +149,7 @@ class WorldSVGLPModel(nn.Module):
             "z_prior": z_prior,
             "mu_prior": mu_prior,
             "logvar_prior": logvar_prior,
+            "skip_feature": skip_previous,
         }
 
         return output

@@ -16,7 +16,6 @@ import wandb
 
 
 def main(config):
-
     # ---------------------------------------------------------------------------- #
     #                                    LOGGER                                    #
     # ---------------------------------------------------------------------------- #
@@ -130,12 +129,11 @@ def main(config):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config_path",
         type=str,
-        default="/home/vaydingul/Documents/Codes/carla_env/configs/world_forward_model/evaluation/config.yml",
+        default="configs/world_forward_model/evaluation/svg_experiments/config.yml",
     )
     args = parser.parse_args()
 
