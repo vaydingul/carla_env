@@ -6,6 +6,8 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
 from pathlib import Path
 
+from tqdm import tqdm
+
 from carla_env.sampler.distributed_weighted_sampler import DistributedWeightedSampler
 
 logger = logging.getLogger(__name__)
@@ -98,7 +100,13 @@ class Trainer(object):
 
         logger.info(f"Training {epoch} started!")
 
-        for i, (data) in enumerate(self.dataloader_train):
+        # Iterate over dataloader with a fancy progress bar
+
+        for i, data in tqdm(
+            enumerate(self.dataloader_train),
+            total=len(self.dataloader_train),
+            colour="red",
+        ):
             (loss_dict, B) = self.shared_step(i, data)
             loss = loss_dict["loss"]
             loss_kl_div = loss_dict["loss_kl_div"]
@@ -150,7 +158,11 @@ class Trainer(object):
         losses_reconstruction = []
 
         with torch.no_grad():
-            for i, (data) in enumerate(self.dataloader_val):
+            for i, data in tqdm(
+                enumerate(self.dataloader_val),
+                total=len(self.dataloader_val),
+                colour="green",
+            ):
                 (loss_dict, B) = self.shared_step(i, data)
 
                 loss = loss_dict["loss"]
