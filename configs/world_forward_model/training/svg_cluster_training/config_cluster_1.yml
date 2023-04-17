@@ -1,0 +1,128 @@
+experiment_type: "train_world_forward_model"
+seed: 42
+checkpoint_path: "pretrained_models/"
+log_path: ~ #"logs/"
+
+num_time_step_previous: &previous 5
+num_time_step_future: &future 10
+sequence_length: &sequence_length 15
+num_workers: &num_workers 8
+batch_size: &batch_size 10
+num_gpu: &num_gpu 4
+read_keys: &read_keys ["bev_world"]
+dilation: &dilation 4
+bev_agent_channel: &bev_agent_channel 7
+bev_vehicle_channel: &bev_vehicle_channel 6
+bev_selected_channels: &bev_selected_channels [0, 5, 6, 8, 9, 10, 11]
+bev_calculate_offroad: &bev_calculate_offroad false
+
+# Dataset related parameters for training
+dataset_train:
+  type: InstanceDataset
+  config:
+    data_path: "/kuacc/users/vaydingul20/driving_model_data_20Hz_action_repeat_1/train/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+    bev_agent_channel: *bev_agent_channel
+    bev_vehicle_channel: *bev_vehicle_channel
+    bev_selected_channels: *bev_selected_channels
+    bev_calculate_offroad: *bev_calculate_offroad
+
+# Dataloader related parameters for training
+dataloader_train:
+  batch_size: *batch_size
+  shuffle: false
+  num_workers: *num_workers
+  drop_last: true
+  pin_memory: true
+
+# Dataset related parameters for validation
+dataset_val:
+  type: InstanceDataset
+  config:
+    data_path: "/kuacc/users/vaydingul20/driving_model_data_20Hz_action_repeat_1/val/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+    bev_agent_channel: *bev_agent_channel
+    bev_vehicle_channel: *bev_vehicle_channel
+    bev_selected_channels: *bev_selected_channels
+    bev_calculate_offroad: *bev_calculate_offroad
+
+# Dataloader related parameters for validation
+dataloader_val:
+  batch_size: *batch_size
+  shuffle: false
+  num_workers: *num_workers
+  drop_last: true
+  pin_memory: true
+
+# Training related parameters
+training:
+  num_epochs: 50
+  num_gpu: *num_gpu
+  master_port: "33333"
+  weighted_sampling: false
+  sigmoid_before_loss: false
+  optimizer:
+    type: "Adam"
+    config:
+      lr: 0.0001
+      # weight_decay: 0.0001
+
+  loss:
+    criterion: "BCEWithLogitsLoss"
+    config:
+      reduction: "mean"
+      pos_weight: [1, 1, 1, 1, 1, 1, 1]
+
+  save_interval: 1
+  val_interval: 1
+
+  logvar_clip:
+    enable: false
+    min: -10
+    max: 10
+
+  gradient_clip:
+    enable: true
+    type: "norm"
+    value: 0.3
+
+  kl_divergence_beta: 0.0001
+  # Scheduler related parameters
+  scheduler:
+    enable: false
+    type: "ReduceLROnPlateau"
+    config:
+      patience: 10
+      factor: 0.5
+      min_lr: 0.0000001
+
+# Ego forward model related parameters
+world_forward_model:
+  type: "WorldSVGLPModel"
+  config:
+    input_shape: [7, 192, 192]
+    encoder_decoder_type: vgg192
+    num_time_step_previous: *previous
+    num_time_step_future: *future
+    latent_size: 64
+    hidden_size: 128
+    encoder_output_decoder_input_size: 128
+    frame_predictor_num_layer: 1
+    posterior_network_num_layer: 1
+    prior_network_num_layer: 1
+
+# Wandb related parameters
+wandb:
+  enable: true
+  resume: false
+  resume_checkpoint_number: 0
+  project: "mbl-refactored"
+  group: "train-world-forward-model-svg-multi-step-20Hz"
+  name: "vgg192"
+  id: ~
+  link: ~
+  notes: ""
