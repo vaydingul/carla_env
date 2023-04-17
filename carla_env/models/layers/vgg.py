@@ -140,7 +140,6 @@ class VGG128(nn.Module):
         # 8 x 8
         self.d_c2 = nn.Sequential(
             vgg_layer(512 * 2, 512),
-            world_forward_model,
             vgg_layer(256, 256),
             vgg_layer(256, 128),
         )
