@@ -12,17 +12,17 @@ cost:
     image_width: 192
     image_height: 192
     reduction: "sum"
-    mask_alpha: 1.2
+    mask_alpha: 1.1
     decay_factor: 0.99
     vehicle_width: 2.1
     vehicle_length: 4.9
     pixels_per_meter: 5
-    longitudinal_offset: 0.25
-    longitudinal_scaler: 0.5
+    longitudinal_offset: 0.0
+    longitudinal_scaler: 1
     longitudinal_speed_offset: 0.0
-    longitudinal_speed_scaler: 3.0
-    lateral_offset: 0.0
-    lateral_scaler: 1.0
+    longitudinal_speed_scaler: 2.0
+    lateral_offset: 1.0
+    lateral_scaler: 0.75
 
 environment:
   name: carla_env_leaderboard
@@ -135,11 +135,11 @@ evaluator:
       mean: -0.01 # -0.01
       std: 0.001
     road_on_cost:
-      mean: -0.1 # -0.01
-      std: 0.01
+      mean: -0.01 # -0.01
+      std: 0.001
     road_off_cost:
-      mean: 1.0 # 0.005
-      std: 0.1
+      mean: 0.5 # 0.005
+      std: 0.05
     road_red_yellow_cost:
       mean: 0.5 # 0.1
       std: 0.05
@@ -156,8 +156,8 @@ evaluator:
       mean: 10
       std: 1.0
     offroad_cost:
-      mean: 5.0 # 0.005
-      std: 0.5
+      mean: 0.5 # 0.005
+      std: 0.05
     acceleration_jerk:
       mean: 1000.0
       std: 100.0

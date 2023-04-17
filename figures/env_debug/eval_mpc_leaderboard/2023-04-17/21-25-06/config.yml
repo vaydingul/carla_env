@@ -17,7 +17,7 @@ cost:
     vehicle_width: 2.1
     vehicle_length: 4.9
     pixels_per_meter: 5
-    longitudinal_offset: 0.25
+    longitudinal_offset: 0.0
     longitudinal_scaler: 0.5
     longitudinal_speed_offset: 0.0
     longitudinal_speed_scaler: 3.0

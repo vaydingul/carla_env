@@ -68,7 +68,7 @@ training:
   optimizer:
     type: "Adam"
     config:
-      lr: 0.002
+      lr: 0.0001
       weight_decay: 0.0001
 
   loss:
@@ -108,9 +108,9 @@ world_forward_model:
     encoder_decoder_type: vgg192
     num_time_step_previous: *previous
     num_time_step_future: *future
-    latent_size: 32
-    hidden_size: 128
-    encoder_output_decoder_input_size: 128
+    latent_size: 64
+    hidden_size: 256
+    encoder_output_decoder_input_size: 256
     frame_predictor_num_layer: 1
     posterior_network_num_layer: 1
     prior_network_num_layer: 1
