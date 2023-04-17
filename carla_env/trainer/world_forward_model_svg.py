@@ -190,7 +190,7 @@ class Trainer(object):
 
     def shared_step(self, i, data):
         world_bev = data["bev_world"]["bev"].to(self.rank)
-        world_future_bev = world_bev[:, 1:].clone()
+        # world_future_bev = world_bev[:, 1:].clone()
         B, S, _, _, _ = world_bev.shape
 
         world_future_bev_predicted_list = []
@@ -228,18 +228,18 @@ class Trainer(object):
         mu_prior = torch.stack(mu_prior_list, dim=1)
         logvar_prior = torch.stack(logvar_prior_list, dim=1)
 
-        # # Clip the logvar
-        # if self.logvar_clip:
-        #     logvar_prior = torch.clamp(
-        #         logvar_prior, self.logvar_clip_min, self.logvar_clip_max
-        #     )
-        #     logvar_posterior = torch.clamp(
-        #         logvar_posterior, self.logvar_clip_min, self.logvar_clip_max
-        #     )
+        # Clip the logvar
+        if self.logvar_clip:
+            logvar_prior = torch.clamp(
+                logvar_prior, self.logvar_clip_min, self.logvar_clip_max
+            )
+            logvar_posterior = torch.clamp(
+                logvar_posterior, self.logvar_clip_min, self.logvar_clip_max
+            )
 
-        # # Compute the reconstruction loss
-        # if self.sigmoid_before_loss:
-        #     world_future_bev_predicted = torch.sigmoid(world_future_bev_predicted)
+        # Compute the reconstruction loss
+        if self.sigmoid_before_loss:
+            world_future_bev_predicted = torch.sigmoid(world_future_bev_predicted)
 
         if isinstance(
             self.reconstruction_loss,
@@ -248,7 +248,7 @@ class Trainer(object):
             world_future_bev_predicted = world_future_bev_predicted.permute(
                 0, 1, 3, 4, 2
             )
-            world_future_bev = world_future_bev.permute(0, 1, 3, 4, 2)
+            world_future_bev = world_bev[:, 1:].permute(0, 1, 3, 4, 2)
 
         loss_reconstruction = self.reconstruction_loss(
             input=world_future_bev_predicted, target=world_future_bev
