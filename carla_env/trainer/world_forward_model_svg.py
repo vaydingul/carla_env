@@ -216,13 +216,22 @@ class Trainer(object):
         for k in range(1, self.num_time_step_previous + self.num_time_step_future):
             # Predict the future bev
 
+            if k < self.num_time_step_previous:
+                skip_feature = None
+
+            elif k == self.num_time_step_previous:
+                skip_feature = output["skip_feature"]
+
+            else:
+                skip_feature = skip_feature
+
             output = self.model(
                 world_bev[:, k - 1],
                 world_bev[:, k],
-                skip_feature=None if k < self.num_time_step_previous else skip_feature,
+                skip_feature=skip_feature,
             )
 
-            skip_feature = output["skip_feature"]
+            # skip_feature = output["skip_feature"]
 
             # world_future_bev_predicted = world_future_bev_predicted.clamp(-10, 10)
 
