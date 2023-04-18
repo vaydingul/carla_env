@@ -23,8 +23,6 @@ cost:
     longitudinal_speed_scaler: 3.0
     lateral_offset: 0.5
     lateral_scaler: 1.0
-    lateral_speed_offset: 0.0
-    lateral_speed_scaler: 0.01
 
 environment:
   name: carla_env_leaderboard

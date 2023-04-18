@@ -12,7 +12,7 @@ cost:
     image_width: 192
     image_height: 192
     reduction: "sum"
-    mask_alpha: 1.5
+    mask_alpha: 2.0
     decay_factor: 0.99
     vehicle_width: 2.1
     vehicle_length: 4.9
@@ -21,10 +21,8 @@ cost:
     longitudinal_scaler: 0.5
     longitudinal_speed_offset: 0.0
     longitudinal_speed_scaler: 3.0
-    lateral_offset: 0.5
+    lateral_offset: 0.0
     lateral_scaler: 1.0
-    lateral_speed_offset: 0.0
-    lateral_speed_scaler: 0.01
 
 environment:
   name: carla_env_leaderboard

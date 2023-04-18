@@ -37,7 +37,6 @@ class Tester:
         bev_selected_channels=[0, 1, 2, 3, 4, 5, 6, 11],
         bev_calculate_offroad=False,
     ):
-
         self.environment = environment
         self.ego_forward_model = ego_forward_model
         self.world_forward_model = world_forward_model
@@ -80,17 +79,14 @@ class Tester:
         self._reset()
 
     def test(self, run):
-
         self.environment.step()
         data = self.environment.get_data()
         processed_data = self._process_data(data)
 
         for _ in range(self.num_time_step_previous):
-
             self.world_previous_bev_deque.append(processed_data["bev_tensor"])
 
         while not self.environment.is_done:
-
             t0 = time.time()
 
             # Get data
@@ -110,7 +106,6 @@ class Tester:
 
             # It is allowed to calculate a new action
             if (self.skip_counter == 0) and (self.repeat_counter == 0):
-
                 out = self._step(
                     ego_previous=ego_previous,
                     world_previous_bev=world_previous_bev,
@@ -155,6 +150,7 @@ class Tester:
                 frame_counter=self.frame_counter,
                 skip_counter=self.skip_counter,
                 repeat_counter=self.repeat_counter,
+                action=env_control,
                 **cost,
                 cost_viz={  # Some dummy arguments for visualization
                     "world_future_bev_predicted": world_future_bev_predicted,
@@ -219,7 +215,6 @@ class Tester:
         self.environment.close()
 
     def _process_data(self, data):
-
         processed_data = {}
 
         if "ego" in data.keys():
@@ -292,7 +287,6 @@ class Tester:
         return processed_data
 
     def _forward_ego_forward_model(self, ego_previous):
-
         location_predicted = []
         yaw_predicted = []
         speed_predicted = []
@@ -302,7 +296,6 @@ class Tester:
         # speed_predicted.append(ego_previous["speed"])
 
         for i in range(self.num_time_step_future):
-
             action_ = self.action[:, i : i + 1]  # .clone()
 
             ego_next = self.ego_forward_model(ego_previous, action_)
@@ -324,15 +317,12 @@ class Tester:
         )
 
     def _forward_world_forward_model(self, world_previous_bev):
-
         world_future_bev_predicted_list = []
 
         # world_future_bev_predicted.append(bev[:, -1].unsqueeze(1))
 
         for i in range(self.num_time_step_future):
-
             if self.world_forward_model is not None:
-
                 (_, world_future_bev_predicted) = self.world_forward_model(
                     bev, sample_latent=True
                 )
@@ -347,7 +337,6 @@ class Tester:
                 world_future_bev_predicted_list.append(world_future_bev_predicted)
 
             else:
-
                 world_future_bev_predicted_list.append(world_previous_bev[:, -1])
 
         world_future_bev_predicted = torch.stack(world_future_bev_predicted_list, dim=1)
@@ -362,7 +351,6 @@ class Tester:
         world_future_bev_predicted,
         target,
     ):
-
         target_location = target["location"]
         target_yaw = target["yaw"]
         target_speed = target["speed"]
@@ -380,7 +368,6 @@ class Tester:
         loss = torch.tensor(0.0, device=self.device)
 
         for cost_key in cost["cost_dict"].keys():
-
             assert (
                 cost_key in self.cost_weight.keys()
             ), f"{cost_key} not in {self.cost_weight.keys()}"
@@ -430,13 +417,11 @@ class Tester:
         }
 
     def _step(self, ego_previous, world_previous_bev, target):
-
         world_future_bev_predicted = self._forward_world_forward_model(
             world_previous_bev
         )
 
         for _ in range(self.num_optimization_iteration):
-
             self.optimizer.zero_grad()
 
             (
@@ -486,11 +471,8 @@ class Tester:
         }
 
     def _reset(self, initial_guess=None):
-
         if initial_guess is None:
-
             if self.init_action == "zeros":
-
                 action = torch.zeros(
                     (self.batch_size, self.num_time_step_future, self.action_size),
                     device=self.device,
@@ -498,7 +480,6 @@ class Tester:
                 )
 
             elif self.init_action == "random":
-
                 action = torch.randn(
                     (self.batch_size, self.num_time_step_future, self.action_size),
                     device=self.device,
@@ -506,7 +487,6 @@ class Tester:
                 )
 
             elif self.init_action == "ones":
-
                 action = torch.ones(
                     (self.batch_size, self.num_time_step_future, self.action_size),
                     device=self.device,
@@ -514,11 +494,9 @@ class Tester:
                 )
 
             else:
-
                 raise NotImplementedError
 
         else:
-
             action = torch.tensor(
                 initial_guess, device=self.device, dtype=torch.float32
             ).unsqueeze(0)

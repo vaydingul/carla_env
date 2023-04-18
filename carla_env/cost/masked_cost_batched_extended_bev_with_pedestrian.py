@@ -26,7 +26,6 @@ class Cost(nn.Module):
         )
 
     def build_from_config(self):
-
         self.image_width = self.config["image_width"]
         self.image_height = self.config["image_height"]
 
@@ -42,7 +41,8 @@ class Cost(nn.Module):
         self.longitudinal_offset = self.config["longitudinal_offset"]
         self.longitudinal_speed_scaler = self.config["longitudinal_speed_scaler"]
         self.longitudinal_speed_offset = self.config["longitudinal_speed_offset"]
-
+        self.lateral_speed_scaler = self.config["lateral_speed_scaler"]
+        self.lateral_speed_offset = self.config["lateral_speed_offset"]
         self.mask_alpha = self.config["mask_alpha"]
 
     def forward(
@@ -52,7 +52,6 @@ class Cost(nn.Module):
         speed,
         bev,
     ):
-
         # Create masks
         x, y, yaw_ = rotate_batched(location, yaw)
 
@@ -79,7 +78,6 @@ class Cost(nn.Module):
         cost_tensor = bev * mask_car * decay_weight
 
         if self.reduction == "sum" or self.reduction == "mean":
-
             if self.reduction == "sum":
                 cost = torch.sum(cost_tensor, dim=[0, 1, 3, 4])
 
@@ -98,7 +96,6 @@ class Cost(nn.Module):
                 "offroad_cost": cost[8],
             }
         elif self.reduction == "none":
-
             cost = cost_tensor
 
             cost_dict = {
@@ -114,7 +111,6 @@ class Cost(nn.Module):
             }
 
         else:
-
             raise ValueError(
                 f"Reduction {self.reduction} not supported. Supported reductions are 'sum', 'mean', 'none'"
             )
@@ -129,7 +125,6 @@ class Cost(nn.Module):
         }
 
     def create_masks(self, x, y, yaw, speed):
-
         # Repeat the coordinate mask for each time step and batch
         coordinate_mask = (
             self.coordinate_mask.clone()
@@ -143,7 +138,11 @@ class Cost(nn.Module):
         )
 
         # dx = (self.vehicle_width / 2) + 4
-        dx = self.vehicle_width * self.lateral_scaler + self.lateral_offset
+        dx = (speed * self.lateral_speed_scaler + self.lateral_speed_offset) + (
+            self.vehicle_width * self.lateral_scaler + self.lateral_offset
+        )
+
+        dx = dx.view(*dx.shape, 1, 1)
 
         # dy = 1.5 * (torch.maximum(torch.tensor(10), speed) + self.vehicle_length) + 1
         dy = (
@@ -165,7 +164,6 @@ class Cost(nn.Module):
         return mask_car
 
     def set_default_config(self):
-
         self.config = {
             "image_width": 192,
             "image_height": 192,
@@ -179,10 +177,11 @@ class Cost(nn.Module):
             "longitudinal_scaler": 1,
             "longitudinal_speed_offset": 0.125,
             "longitudinal_speed_scaler": 2.0,
+            "lateral_speed_offset": 0.0,
+            "lateral_speed_scaler": 0.01,
             "lateral_offset": 1.0,
             "lateral_scaler": 0.5,
         }
 
     def append_config(self, config):
-
         self.config.update(config)
