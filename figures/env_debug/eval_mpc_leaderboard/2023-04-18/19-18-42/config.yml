@@ -104,7 +104,7 @@ environment:
 evaluator:
   batch_size: 1
   action_size: 2
-  num_optimization_iteration: 80
+  num_optimization_iteration: 20
   init_action: "random"
   skip_frames: 1
   repeat_frames: 1

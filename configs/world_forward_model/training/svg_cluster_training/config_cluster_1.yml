@@ -86,7 +86,7 @@ training:
     max: 10
 
   gradient_clip:
-    enable: true
+    enable: false
     type: "norm"
     value: 0.3
 
