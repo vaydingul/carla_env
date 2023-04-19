@@ -215,7 +215,7 @@ leaderboard:
   agent_config: /home/volkan/Documents/Codes/carla_env/configs/policy_model/testing/config.yml
   track: MAP
   resume: false
-  checkpoint: "./results_town_2_debug_route_0.json"
+  checkpoint: "./results_town_2_debug_route_2.json"
 
 wandb:
   enable: false
