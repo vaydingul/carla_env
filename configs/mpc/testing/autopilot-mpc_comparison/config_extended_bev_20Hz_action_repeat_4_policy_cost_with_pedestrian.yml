@@ -1,6 +1,6 @@
 experiment_type: test_mpc
 log_path: ~
-seed: 6458
+seed: 23746
 port: &port_var 3000
 tm_port: &tm_port_var 9000
 num_time_step_previous: &previous 20
@@ -34,7 +34,7 @@ environment:
   tm_port: *tm_port_var
   tasks:
     - world: Town02
-      num_vehicles: [60, 80]
+      num_vehicles: 100
       num_walkers: 100
     # - world: Town03
     #   num_vehicles: [60, 90]
@@ -54,9 +54,9 @@ environment:
     cursor: [0, 0]
     name: MPC Testing
     show: true
-    save: false
+    save: true
     create_date_time_path: true
-    save_path: figures/env_debug/test_mpc/
+    save_path: figures/env_debug/test_mpc_autopilot_comparison/
 
   sensors:
     - id: rgb_front
