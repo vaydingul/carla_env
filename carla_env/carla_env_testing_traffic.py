@@ -23,7 +23,7 @@ import time
 import numpy as np
 import cv2
 from queue import Queue, Empty
-
+import carla
 import logging
 
 logger = logging.getLogger(__name__)
@@ -150,6 +150,8 @@ class CarlaEnvironment(Environment):
         start_end_spawn_point = np.random.choice(spawn_points, 2)
         start = start_end_spawn_point[0]
         end = start_end_spawn_point[1]
+        # start = self.map.get_waypoint(carla.Location(x=-3.69, y=179.06, z=0.0), True, carla.LaneType.Driving).transform
+        # end = self.map.get_waypoint(carla.Location(x=-3.74, y=139.95, z=0.0), True, carla.LaneType.Driving).transform
 
         self.route = route.RouteModule(
             config={"start": start, "end": end, **self.route["config"]},

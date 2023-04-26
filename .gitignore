@@ -142,6 +142,7 @@ wandb/
 pretrained_models/
 cache/Carla/Maps/
 data/
+figures/
 # 
 !cache/Carla/Maps/.gitkeep 
 
