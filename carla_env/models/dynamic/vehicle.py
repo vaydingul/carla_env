@@ -20,7 +20,6 @@ class KinematicBicycleModel(nn.Module):
         self.acceleration_encoder = nn.Linear(1, 1, bias=False)
 
     def build_from_config(self):
-
         self.dt = self.config["dt"]
 
     def forward(self, ego_state, action):
@@ -80,7 +79,6 @@ class KinematicBicycleModel(nn.Module):
 
     @classmethod
     def load_model_from_wandb_run(cls, config, checkpoint_path, device):
-
         checkpoint = torch.load(
             checkpoint_path,
             map_location=organize_device(device),
@@ -91,6 +89,56 @@ class KinematicBicycleModel(nn.Module):
         model.load_state_dict(checkpoint["model_state_dict"])
 
         return model
+
+
+class DynamicBicycleModel(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+
+        self.set_default_config()
+        self.append_config(config)
+        self.build_from_config()
+
+        # Kinematic bicycle model
+        self.front_wheelbase = nn.Parameter(torch.tensor(1.0), requires_grad=True)
+        self.rear_wheelbase = nn.Parameter(torch.tensor(1.0), requires_grad=True)
+        self.inertia = nn.Parameter(torch.tensor(1.0), requires_grad=True)
+        self.mass = nn.Parameter(torch.tensor(1.0), requires_grad=True)
+        self.cornering_stiffness_front = nn.Parameter(
+            torch.tensor(1.0), requires_grad=True
+        )
+        self.cornering_stiffness_rear = nn.Parameter(
+            torch.tensor(1.0), requires_grad=True
+        )
+        self.steer_encoder = nn.Sequential(
+            nn.Linear(1, 10, bias=True),
+            nn.ReLU(),
+            nn.Linear(10, 1, bias=True),
+            nn.Tanh(),
+        )
+        self.acceleration_encoder = nn.Sequential(
+            nn.Linear(1, 10, bias=True),
+            nn.ReLU(),
+            nn.Linear(10, 1, bias=True),
+        )
+
+    def build_from_config(self):
+        self.dt = self.config["dt"]
+
+    def forward(self, ego_state, action):
+        location = ego_state["location"]
+        velocity = ego_state["velocity"]
+        yaw = ego_state["yaw"]
+        omega = ego_state["omega"]
+
+        acceleration = torch.clip(action[..., 0:1], -1, 1)
+        steer = torch.clip(action[..., 1:2], -1, 1)
+
+        acceleration_encoded = self.acceleration_encoder(acceleration)
+        steer_encoded = self.steer_encoder(steer)
+
+        # TODO: Convert normal dynamical bicycle model to semi-parametric model
+        pass
 
 
 # class KinematicBicycleModel(nn.Module):
