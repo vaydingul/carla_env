@@ -102,14 +102,24 @@ class DynamicBicycleModel(nn.Module):
         # Kinematic bicycle model
         self.front_wheelbase = nn.Parameter(torch.tensor(1.0), requires_grad=True)
         self.rear_wheelbase = nn.Parameter(torch.tensor(1.0), requires_grad=True)
-        self.inertia = nn.Parameter(torch.tensor(1.0), requires_grad=True)
-        self.mass = nn.Parameter(torch.tensor(1.0), requires_grad=True)
         self.cornering_stiffness_front = nn.Parameter(
             torch.tensor(1.0), requires_grad=True
         )
         self.cornering_stiffness_rear = nn.Parameter(
             torch.tensor(1.0), requires_grad=True
         )
+        self.inertia = nn.Parameter(torch.tensor(1.0), requires_grad=True)
+        self.mass = nn.Parameter(torch.tensor(1.0), requires_grad=True)
+        self.frontal_area = nn.Parameter(torch.tensor(1.0), requires_grad=True)
+        self.aerodynamic_drag_coefficient = nn.Parameter(
+            torch.tensor(1.0), requires_grad=True
+        )
+        self.height_aero = nn.Parameter(torch.tensor(1.0), requires_grad=True)
+        self.air_density = nn.Parameter(torch.tensor(1.0), requires_grad=True)
+        self.rolling_resistance_coefficient = nn.Parameter(
+            torch.tensor(1.0), requires_grad=True
+        )
+
         self.steer_encoder = nn.Sequential(
             nn.Linear(1, 10, bias=True),
             nn.ReLU(),
@@ -127,7 +137,11 @@ class DynamicBicycleModel(nn.Module):
 
     def forward(self, ego_state, action):
         location = ego_state["location"]
+        location_x = location[..., 0:1]
+        location_y = location[..., 1:2]
         velocity = ego_state["velocity"]
+        velocity_x = velocity[..., 0:1]
+        velocity_y = velocity[..., 1:2]
         yaw = ego_state["yaw"]
         omega = ego_state["omega"]
 
@@ -138,7 +152,7 @@ class DynamicBicycleModel(nn.Module):
         steer_encoded = self.steer_encoder(steer)
 
         # TODO: Convert normal dynamical bicycle model to semi-parametric model
-        pass
+        velocity_y_next = velocity_y + ((-(self.cornering_stiffness_rear + self.cornering_stiffness_front) / (self.mass * velocity_x)) * (velocity_y) + (((self.cornering_stiffness_rear * self.rear_wheelbase) - (self.cornering_stiffness_front * self.front_wheelbase)) / (self.mass * velocity_x)) * (omega)) * self.dt
 
 
 # class KinematicBicycleModel(nn.Module):
