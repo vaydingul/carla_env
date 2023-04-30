@@ -4,6 +4,8 @@ import torch.nn.functional as F
 from torch import nn
 from utils.train_utils import organize_device
 
+G = 9.81
+
 
 class KinematicBicycleModel(nn.Module):
     def __init__(self, config):
@@ -114,9 +116,20 @@ class DynamicBicycleModel(nn.Module):
         self.aerodynamic_drag_coefficient = nn.Parameter(
             torch.tensor(1.0), requires_grad=True
         )
-        self.height_aero = nn.Parameter(torch.tensor(1.0), requires_grad=True)
+        self.equivalent_aerodynamic_force_height = nn.Parameter(
+            torch.tensor(1.0), requires_grad=True
+        )
+        self.center_of_gravity_height = nn.Parameter(
+            torch.tensor(1.0), requires_grad=True
+        )
         self.air_density = nn.Parameter(torch.tensor(1.0), requires_grad=True)
         self.rolling_resistance_coefficient = nn.Parameter(
+            torch.tensor(1.0), requires_grad=True
+        )
+        self.longitudinal_tire_stiffness_front = nn.Parameter(
+            torch.tensor(1.0), requires_grad=True
+        )
+        self.longitudinal_tire_stiffness_rear = nn.Parameter(
             torch.tensor(1.0), requires_grad=True
         )
 
@@ -136,14 +149,34 @@ class DynamicBicycleModel(nn.Module):
         self.dt = self.config["dt"]
 
     def forward(self, ego_state, action):
-        location = ego_state["location"]
-        location_x = location[..., 0:1]
-        location_y = location[..., 1:2]
-        velocity = ego_state["velocity"]
-        velocity_x = velocity[..., 0:1]
-        velocity_y = velocity[..., 1:2]
-        yaw = ego_state["yaw"]
-        omega = ego_state["omega"]
+        location_world = ego_state["location_array"]
+        location_x_world = location_world[..., 0:1]
+        location_y_world = location_world[..., 1:2]
+        velocity_world = ego_state["velocity_array"]
+        velocity_x_world = velocity_world[..., 0:1]
+        velocity_y_world = velocity_world[..., 1:2]
+        acceleration_world = ego_state["acceleration_array"]
+        acceleration_x_world = acceleration_world[..., 0:1]
+        acceleration_y_world = acceleration_world[..., 1:2]
+        rotation = ego_state["rotation_array"]
+        pitch = torch.deg2rad(ego_state[..., 1:2])
+        yaw = torch.deg2rad(ego_state[..., 2:3])
+        angular_velocity = ego_state["angular_velocity_array"]
+        omega = torch.deg2rad(angular_velocity[..., 2:3])
+
+        velocity_x_body = velocity_x_world * torch.cos(
+            -yaw
+        ) + velocity_y_world * torch.sin(-yaw)
+        velocity_y_body = -velocity_x_world * torch.sin(
+            -yaw
+        ) + velocity_y_world * torch.cos(-yaw)
+
+        acceleration_x_body = acceleration_x_world * torch.cos(
+            -yaw
+        ) + acceleration_y_world * torch.sin(-yaw)
+        acceleration_y_body = -acceleration_x_world * torch.sin(
+            -yaw
+        ) + acceleration_y_world * torch.cos(-yaw)
 
         acceleration = torch.clip(action[..., 0:1], -1, 1)
         steer = torch.clip(action[..., 1:2], -1, 1)
@@ -152,7 +185,127 @@ class DynamicBicycleModel(nn.Module):
         steer_encoded = self.steer_encoder(steer)
 
         # TODO: Convert normal dynamical bicycle model to semi-parametric model
-        velocity_y_next = velocity_y + ((-(self.cornering_stiffness_rear + self.cornering_stiffness_front) / (self.mass * velocity_x)) * (velocity_y) + (((self.cornering_stiffness_rear * self.rear_wheelbase) - (self.cornering_stiffness_front * self.front_wheelbase)) / (self.mass * velocity_x)) * (omega)) * self.dt
+
+        # ----------------------------- LATERAL DYNAMICS ----------------------------- #
+
+        acceleration_body_y_next = (
+            (
+                -(self.cornering_stiffness_rear + self.cornering_stiffness_front)
+                / (self.mass * velocity_x_body)
+            )
+            * (velocity_y_body)
+            + (
+                (
+                    (self.cornering_stiffness_rear * self.rear_wheelbase)
+                    - (self.cornering_stiffness_front * self.front_wheelbase)
+                )
+                / (self.mass * velocity_x_body)
+            )
+            * (omega)
+            + ((self.cornering_stiffness_front) / (self.mass)) * (steer_encoded)
+        )
+
+        velocity_y_body_next = velocity_y_body + acceleration_body_y_next * self.dt
+
+        yaw_next = yaw + omega * self.dt
+
+        omega_next = omega + (
+            (
+                (
+                    (
+                        (self.rear_wheelbase * self.cornering_stiffness_rear)
+                        - (self.front_wheelbase * self.cornering_stiffness_front)
+                    )
+                    / (self.inertia * velocity_x_body)
+                )
+                * (velocity_y_body)
+                + (
+                    -(
+                        ((self.front_wheelbase**2) * self.cornering_stiffness_front)
+                        + ((self.front_wheelbase**2) * self.cornering_stiffness_rear)
+                    )
+                    / (self.inertia * velocity_x_body)
+                )
+                * (omega)
+                + (
+                    (self.cornering_stiffness_front * self.front_wheelbase)
+                    / (self.inertia)
+                )
+                * (steer_encoded)
+            )
+            * self.dt
+        )
+
+        # ----------------------------- LONGITUDINAL DYNAMICS ----------------------------- #
+
+        _slope_force = self.mass * G * torch.sin(pitch)
+        _aerodynamics_drag_force = (
+            0.5
+            * self.air_density
+            * self.aerodynamic_drag_coefficient
+            * self.frontal_area
+            * (velocity_x_body**2)
+        )
+
+        _normal_force_front = (
+            (-_aerodynamics_drag_force * self.equivalent_aerodynamic_force_height)
+            + (-self.mass * acceleration_x_body * self.center_of_gravity_height)
+            + (-self.mass * G * self.center_of_gravity_height * torch.sin(pitch))
+            + (self.mass * G * self.front_wheelbase * torch.cos(pitch))
+        ) / (self.front_wheelbase + self.rear_wheelbase)
+
+        _normal_force_rear = (
+            (_aerodynamics_drag_force * self.equivalent_aerodynamic_force_height)
+            + (self.mass * acceleration_x_body * self.center_of_gravity_height)
+            + (self.mass * G * self.center_of_gravity_height * torch.sin(pitch))
+            + (self.mass * G * self.front_wheelbase * torch.cos(pitch))
+        ) / (self.front_wheelbase + self.rear_wheelbase)
+
+        _rolling_resistance_force_front = (self.rolling_resistance_coefficient) * (
+            _normal_force_front * self.rolling_resistance_coefficient
+        )
+        _rolling_resistance_force_rear = (self.rolling_resistance_coefficient) * (
+            _normal_force_rear * self.rolling_resistance_coefficient
+        )
+        _tire_force_front = (
+            self.longitudinal_tire_stiffness_front * acceleration_encoded
+        )
+        _tire_force_rear = self.longitudinal_tire_stiffness_rear * acceleration_encoded
+
+        acceleration_x_body_next = (
+            -_slope_force
+            - _aerodynamics_drag_force
+            - _rolling_resistance_force_front
+            - _rolling_resistance_force_rear
+            + _tire_force_front
+            + _tire_force_rear
+        ) / (self.mass)
+        velocity_x_body_next = velocity_x_body + acceleration_x_body_next * self.dt
+
+        # ----------------------------- WORLD LOCATION TRANSFORMATION ----------------------------- #
+        velocity_x_world_next = velocity_x_body_next * torch.cos(
+            yaw
+        ) - velocity_y_body_next * torch.sin(yaw)
+        velocity_y_world_next = velocity_x_body_next * torch.sin(
+            yaw
+        ) + velocity_y_body_next * torch.cos(yaw)
+        location_x_world_next = location_x_world + velocity_x_world * self.dt
+        location_y_world_next = location_y_world + velocity_y_world * self.dt
+        # ----------------------------- UPDATE ----------------------------- #
+        ego_state["location_array"][..., 0:2] = torch.cat(
+            [location_x_world_next, location_y_world_next], dim=-1
+        )
+        ego_state["velocity_array"][..., 0:2] = torch.cat(
+            [velocity_x_world_next, velocity_y_world_next], dim=-1
+        )
+        ego_state["acceleration_array"][..., 0:2] = torch.cat(
+            [acceleration_x_body_next, acceleration_body_y_next], dim=-1
+        )
+
+        ego_state["rotation_array"][..., -1:] = yaw_next
+        ego_state["angular_velocity_array"][..., -1:] = omega_next
+
+        return ego_state
 
 
 # class KinematicBicycleModel(nn.Module):

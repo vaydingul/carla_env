@@ -2,7 +2,6 @@ import logging
 import numpy as np
 import torch
 from pathlib import Path
-from utils.train_utils import to, cat, stack
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +40,11 @@ class Trainer(object):
         self.val_step = val_step
 
     def train(self, run):
+
         self.model.train()
 
         for i, (data) in enumerate(self.dataloader_train):
+
             loss_dict = self.shared_step(data, i, mode="train")
 
             loss = loss_dict["loss"]
@@ -63,6 +64,7 @@ class Trainer(object):
                 )
 
     def validate(self, run=None):
+
         self.model.eval()
 
         losses_total = []
@@ -70,7 +72,9 @@ class Trainer(object):
         losses_rotation = []
 
         with torch.no_grad():
+
             for i, (data) in enumerate(self.dataloader_val):
+
                 loss_dict = self.shared_step(data, i, mode="val")
 
                 losses_total.append(loss_dict["loss"].item())
@@ -98,47 +102,80 @@ class Trainer(object):
         }
 
     def shared_step(self, data, i, mode="train"):
-        ego_state_previous = to(
-            data["ego"],
-            self.device,
-            index_start=self.num_time_step_previous - 1,
-            index_end=self.num_time_step_previous,
-        )
 
-        ego_state_future = to(
-            data["ego"],
-            self.device,
-            index_start=self.num_time_step_previous,
-            index_end=self.num_time_step_previous + self.num_time_step_future,
-        )
+        ego_previous_location = data["ego"]["location_array"][
+            :, self.num_time_step_previous - 1 : self.num_time_step_previous, 0:2
+        ].to(self.device)
+        ego_future_location = data["ego"]["location_array"][
+            :,
+            self.num_time_step_previous : self.num_time_step_previous
+            + self.num_time_step_future,
+            0:2,
+        ].to(self.device)
+        ego_future_location_predicted_list = []
 
-        ego_state_future_predicted_list = []
+        ego_previous_yaw = torch.deg2rad(
+            data["ego"]["rotation_array"][
+                :, self.num_time_step_previous - 1 : self.num_time_step_previous, 2:
+            ].to(self.device)
+        )
+        ego_future_yaw = torch.deg2rad(
+            data["ego"]["rotation_array"][
+                :,
+                self.num_time_step_previous : self.num_time_step_previous
+                + self.num_time_step_future,
+                2:,
+            ].to(self.device)
+        )
+        ego_future_yaw_predicted_list = []
+
+        ego_previous_speed = (
+            data["ego"]["velocity_array"][
+                :, self.num_time_step_previous - 1 : self.num_time_step_previous
+            ]
+            .norm(2, -1, keepdim=True)
+            .to(self.device)
+        )
+        ego_future_speed = (
+            data["ego"]["velocity_array"][
+                :,
+                self.num_time_step_previous : self.num_time_step_previous
+                + self.num_time_step_future,
+            ]
+            .norm(2, -1, keepdim=True)
+            .to(self.device)
+        )
+        ego_future_speed_predicted_list = []
 
         ego_action = data["ego"]["control_array"][:, : self.num_time_step_future].to(
             self.device
         )
 
-        ego_action[..., 0] -= ego_action[..., -1]
-        ego_action = ego_action[..., :-1]
+        ego_action_2 = ego_action.clone()
+        ego_action_2[..., 0] -= ego_action[..., -1]
+        ego_action_2 = ego_action_2[..., :-1]
+
+        ego_state_previous = {
+            "location": ego_previous_location,
+            "yaw": ego_previous_yaw,
+            "speed": ego_previous_speed,
+        }
 
         for t in range(self.num_time_step_future):
-            control_ = ego_action[:, t : t + 1]
+
+            control_ = ego_action_2[:, t : t + 1]
 
             ego_state_next = self.model(ego_state_previous, control_)
-            ego_state_future_predicted_list.append(ego_state_next)
-            ego_state_previous = ego_state_next
 
-        ego_state_future_predicted = cat(ego_state_future_predicted_list, dim=1)
+            ego_future_location_predicted_list.append(ego_state_next["location"])
+            ego_future_yaw_predicted_list.append(ego_state_next["yaw"])
+            ego_future_speed_predicted_list.append(ego_state_next["speed"])
 
-        ego_future_location = ego_state_future["location_array"][..., :2]
-        ego_future_location_predicted = ego_state_future_predicted["location_array"][
-            ..., :2
-        ]
-
-        ego_future_yaw = torch.deg2rad(ego_state_future["rotation_array"][..., 2:3])
-        ego_future_yaw_predicted = torch.deg2rad(
-            ego_state_future_predicted["rotation_array"][..., 2:3]
+        ego_future_location_predicted = torch.cat(
+            ego_future_location_predicted_list, dim=1
         )
+        ego_future_yaw_predicted = torch.cat(ego_future_yaw_predicted_list, dim=1)
+        ego_future_speed_predicted = torch.cat(ego_future_speed_predicted_list, dim=1)
 
         loss_location = self.loss_criterion(
             ego_future_location, ego_future_location_predicted
@@ -166,26 +203,29 @@ class Trainer(object):
         }
 
     def learn(self, run=None):
+
         loss_dict = self.validate(run)
         logger.info(f"{'=' * 20}")
 
         logger.info(f"Epoch: Start")
-        for k, v in loss_dict.items():
+        for (k, v) in loss_dict.items():
             logger.info(f"Val {k}: {v}")
         logger.info(f"{'=' * 20}")
 
         for epoch in range(self.current_epoch, self.num_epochs):
+
             self.epoch = epoch
             self.train(run)
             loss_dict = self.validate(run)
 
             logger.info(f"{'=' * 20}")
             logger.info(f"Epoch: {epoch}")
-            for k, v in loss_dict.items():
+            for (k, v) in loss_dict.items():
                 logger.info(f"Val {k}: {v}")
             logger.info(f"{'=' * 20}")
 
             if ((epoch + 1) % self.save_interval == 0) and self.save_path is not None:
+
                 torch.save(
                     {
                         "model_state_dict": self.model.state_dict(),

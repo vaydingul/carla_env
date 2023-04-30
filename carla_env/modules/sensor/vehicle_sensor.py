@@ -50,6 +50,7 @@ class VehicleSensorModule(sensor.SensorModule):
             "location": self.actor.get_actor().get_location(),
             "rotation": self.actor.get_actor().get_transform().rotation,
             "velocity": self.actor.get_actor().get_velocity(),
+            "angular_velocity": self.actor.get_actor().get_angular_velocity(),
             "acceleration": self.actor.get_actor().get_acceleration(),
             "control": vehicle_control_,
             "frame": self.world.get_snapshot().frame,
@@ -67,6 +68,11 @@ class VehicleSensorModule(sensor.SensorModule):
                 self.actor.get_actor().get_velocity().x,
                 self.actor.get_actor().get_velocity().y,
                 self.actor.get_actor().get_velocity().z,
+            ],
+            "angular_velocity_array": [
+                self.actor.get_actor().get_angular_velocity().x,
+                self.actor.get_actor().get_angular_velocity().y,
+                self.actor.get_actor().get_angular_velocity().z,
             ],
             "acceleration_array": [
                 self.actor.get_actor().get_acceleration().x,

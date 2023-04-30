@@ -12,6 +12,11 @@ def ego_forward_model_factory(config):
 
             return KinematicBicycleModel
 
+        elif config["ego_forward_model"]["type"] == "DynamicBicycleModel":
+            from carla_env.models.dynamic.vehicle import DynamicBicycleModel
+
+            return DynamicBicycleModel
+
         else:
             raise ValueError("Invalid ego forward model type")
 
