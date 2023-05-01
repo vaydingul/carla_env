@@ -2,9 +2,10 @@ import math
 import torch
 import torch.nn.functional as F
 from torch import nn
-from utils.train_utils import organize_device
+from utils.train_utils import clone, organize_device
 
 G = 9.81
+EPS = 1e-5
 
 
 class KinematicBicycleModel(nn.Module):
@@ -29,9 +30,12 @@ class KinematicBicycleModel(nn.Module):
         One step semi-parametric kinematic bicycle model
         """
 
-        location = ego_state["location"]
-        yaw = ego_state["yaw"]
-        speed = ego_state["speed"]
+        location = ego_state["location_array"][..., 0:2]
+        yaw = ego_state["rotation_array"][..., 2:3]
+        velocity = ego_state["velocity_array"]
+        velocity_x = velocity[..., 0:1]
+        velocity_y = velocity[..., 1:2]
+        speed = velocity.norm(2, -1, keepdim=True)
 
         acceleration = torch.clip(action[..., 0:1], -1, 1)
         steer = torch.clip(action[..., 1:2], -1, 1)
@@ -44,30 +48,40 @@ class KinematicBicycleModel(nn.Module):
         wheel_steer = self.steer_gain * steer
 
         # beta = atan((l_r * tan(delta_f)) / (l_f + l_r))
-        beta = torch.atan(
-            self.rear_wheelbase
-            / (self.front_wheelbase + self.rear_wheelbase)
-            * torch.tan(wheel_steer)
+        # beta = torch.atan(
+        #     self.rear_wheelbase
+        #     / (self.front_wheelbase + self.rear_wheelbase)
+        #     * torch.tan(wheel_steer)
+        # )
+        beta = torch.atan2(
+            self.rear_wheelbase * torch.tan(wheel_steer),
+            self.front_wheelbase + self.rear_wheelbase,
         )
-
         # x_ = x + v * dt
         location_next = (
             location
-            + speed
-            * torch.cat([torch.cos(yaw + beta), torch.sin(yaw + beta)], -1)
+            + (speed * torch.cat([torch.cos(yaw + beta), torch.sin(yaw + beta)], -1))
             * self.dt
         )
 
         # speed_ = speed + a * dt
         speed_next = speed + acceleration_encoded * self.dt
 
-        yaw_next = yaw + speed / self.rear_wheelbase * torch.sin(beta) * self.dt
+        yaw_next = yaw + (speed / self.rear_wheelbase * torch.sin(beta)) * self.dt
 
-        ego_state_next = {
-            "location": location_next,
-            "yaw": yaw_next,
-            "speed": F.relu(speed_next),
-        }
+        velocity_x_next = speed_next * torch.sin(yaw_next)
+        velocity_y_next = speed_next * torch.cos(yaw_next)
+
+        # ----------------------------- UPDATE ----------------------------- #
+        ego_state_next = clone(ego_state)
+
+        ego_state_next["location_array"][..., 0:2] = location_next
+
+        ego_state_next["velocity_array"][..., 0:2] = torch.cat(
+            [velocity_x_next, velocity_y_next], dim=-1
+        )
+
+        ego_state_next["rotation_array"][..., 2:3] = yaw_next
 
         return ego_state_next
 
@@ -110,8 +124,8 @@ class DynamicBicycleModel(nn.Module):
         self.cornering_stiffness_rear = nn.Parameter(
             torch.tensor(1.0), requires_grad=True
         )
-        self.inertia = nn.Parameter(torch.tensor(1.0), requires_grad=True)
-        self.mass = nn.Parameter(torch.tensor(1.0), requires_grad=True)
+        self.inertia = nn.Parameter(torch.tensor(1000.0), requires_grad=True)
+        self.mass = nn.Parameter(torch.tensor(1000.0), requires_grad=True)
         self.frontal_area = nn.Parameter(torch.tensor(1.0), requires_grad=True)
         self.aerodynamic_drag_coefficient = nn.Parameter(
             torch.tensor(1.0), requires_grad=True
@@ -122,7 +136,7 @@ class DynamicBicycleModel(nn.Module):
         self.center_of_gravity_height = nn.Parameter(
             torch.tensor(1.0), requires_grad=True
         )
-        self.air_density = nn.Parameter(torch.tensor(1.0), requires_grad=True)
+        self.air_density = nn.Parameter(torch.tensor(1.225), requires_grad=True)
         self.rolling_resistance_coefficient = nn.Parameter(
             torch.tensor(1.0), requires_grad=True
         )
@@ -143,6 +157,7 @@ class DynamicBicycleModel(nn.Module):
             nn.Linear(1, 10, bias=True),
             nn.ReLU(),
             nn.Linear(10, 1, bias=True),
+            nn.Tanh(),
         )
 
     def build_from_config(self):
@@ -159,10 +174,10 @@ class DynamicBicycleModel(nn.Module):
         acceleration_x_world = acceleration_world[..., 0:1]
         acceleration_y_world = acceleration_world[..., 1:2]
         rotation = ego_state["rotation_array"]
-        pitch = torch.deg2rad(ego_state[..., 1:2])
-        yaw = torch.deg2rad(ego_state[..., 2:3])
+        pitch = rotation[..., 1:2]
+        yaw = rotation[..., 2:3]
         angular_velocity = ego_state["angular_velocity_array"]
-        omega = torch.deg2rad(angular_velocity[..., 2:3])
+        omega = angular_velocity[..., 2:3]
 
         velocity_x_body = velocity_x_world * torch.cos(
             -yaw
@@ -184,14 +199,12 @@ class DynamicBicycleModel(nn.Module):
         acceleration_encoded = self.acceleration_encoder(acceleration)
         steer_encoded = self.steer_encoder(steer)
 
-        # TODO: Convert normal dynamical bicycle model to semi-parametric model
-
         # ----------------------------- LATERAL DYNAMICS ----------------------------- #
 
-        acceleration_body_y_next = (
+        acceleration_y_body_next = (
             (
                 -(self.cornering_stiffness_rear + self.cornering_stiffness_front)
-                / (self.mass * velocity_x_body)
+                / ((self.mass * velocity_x_body) + EPS)
             )
             * (velocity_y_body)
             + (
@@ -199,13 +212,13 @@ class DynamicBicycleModel(nn.Module):
                     (self.cornering_stiffness_rear * self.rear_wheelbase)
                     - (self.cornering_stiffness_front * self.front_wheelbase)
                 )
-                / (self.mass * velocity_x_body)
+                / ((self.mass * velocity_x_body) + EPS)
             )
             * (omega)
             + ((self.cornering_stiffness_front) / (self.mass)) * (steer_encoded)
         )
 
-        velocity_y_body_next = velocity_y_body + acceleration_body_y_next * self.dt
+        velocity_y_body_next = velocity_y_body + acceleration_y_body_next * self.dt
 
         yaw_next = yaw + omega * self.dt
 
@@ -216,7 +229,7 @@ class DynamicBicycleModel(nn.Module):
                         (self.rear_wheelbase * self.cornering_stiffness_rear)
                         - (self.front_wheelbase * self.cornering_stiffness_front)
                     )
-                    / (self.inertia * velocity_x_body)
+                    / ((self.inertia * velocity_x_body) + EPS)
                 )
                 * (velocity_y_body)
                 + (
@@ -224,7 +237,7 @@ class DynamicBicycleModel(nn.Module):
                         ((self.front_wheelbase**2) * self.cornering_stiffness_front)
                         + ((self.front_wheelbase**2) * self.cornering_stiffness_rear)
                     )
-                    / (self.inertia * velocity_x_body)
+                    / ((self.inertia * velocity_x_body) + EPS)
                 )
                 * (omega)
                 + (
@@ -292,20 +305,42 @@ class DynamicBicycleModel(nn.Module):
         location_x_world_next = location_x_world + velocity_x_world * self.dt
         location_y_world_next = location_y_world + velocity_y_world * self.dt
         # ----------------------------- UPDATE ----------------------------- #
-        ego_state["location_array"][..., 0:2] = torch.cat(
+        ego_state_next = clone(ego_state)
+        ego_state_next["location_array"][..., 0:2] = torch.cat(
             [location_x_world_next, location_y_world_next], dim=-1
         )
-        ego_state["velocity_array"][..., 0:2] = torch.cat(
+        ego_state_next["velocity_array"][..., 0:2] = torch.cat(
             [velocity_x_world_next, velocity_y_world_next], dim=-1
         )
-        ego_state["acceleration_array"][..., 0:2] = torch.cat(
-            [acceleration_x_body_next, acceleration_body_y_next], dim=-1
+        ego_state_next["acceleration_array"][..., 0:2] = torch.cat(
+            [acceleration_x_body_next, acceleration_y_body_next], dim=-1
         )
 
-        ego_state["rotation_array"][..., -1:] = yaw_next
-        ego_state["angular_velocity_array"][..., -1:] = omega_next
+        ego_state_next["rotation_array"][..., -1:] = yaw_next
+        ego_state_next["angular_velocity_array"][..., -1:] = omega_next
 
-        return ego_state
+        return ego_state_next
+
+    def set_default_config(self):
+        self.config = {
+            "dt": 0.1,
+        }
+
+    def append_config(self, config):
+        self.config.update(config)
+
+    @classmethod
+    def load_model_from_wandb_run(cls, config, checkpoint_path, device):
+        checkpoint = torch.load(
+            checkpoint_path,
+            map_location=organize_device(device),
+        )
+
+        model = cls(config)
+
+        model.load_state_dict(checkpoint["model_state_dict"])
+
+        return model
 
 
 # class KinematicBicycleModel(nn.Module):

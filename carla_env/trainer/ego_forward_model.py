@@ -2,8 +2,9 @@ import logging
 import numpy as np
 import torch
 from pathlib import Path
-from utils.train_utils import to, cat, stack
+from utils.train_utils import clone, to, cat, stack
 
+torch.autograd.set_detect_anomaly(True)
 logger = logging.getLogger(__name__)
 
 
@@ -52,15 +53,14 @@ class Trainer(object):
             loss.backward()
             self.optimizer.step()
 
-            if run is not None:
-                run.log(
-                    {
-                        "train/step": self.train_step,
-                        "train/loss": loss_dict["loss"],
-                        "train/loss_location": loss_dict["loss_location"],
-                        "train/loss_rotation": loss_dict["loss_rotation"],
-                    }
-                )
+            run.log(
+                {
+                    "train/step": self.train_step,
+                    "train/loss": loss_dict["loss"],
+                    "train/loss_location": loss_dict["loss_location"],
+                    "train/loss_rotation": loss_dict["loss_rotation"],
+                }
+            )
 
     def validate(self, run=None):
         self.model.eval()
@@ -81,15 +81,14 @@ class Trainer(object):
         loss_location = np.mean(losses_location)
         loss_rotation = np.mean(losses_rotation)
 
-        if run is not None:
-            run.log(
-                {
-                    "val/step": self.val_step,
-                    "val/loss": loss,
-                    "val/loss_location": loss_location,
-                    "val/loss_rotation": loss_rotation,
-                }
-            )
+        run.log(
+            {
+                "val/step": self.val_step,
+                "val/loss": loss,
+                "val/loss_location": loss_location,
+                "val/loss_rotation": loss_rotation,
+            }
+        )
 
         return {
             "loss": loss,
@@ -104,6 +103,7 @@ class Trainer(object):
             index_start=self.num_time_step_previous - 1,
             index_end=self.num_time_step_previous,
         )
+        ego_state_previous["rotation_array"].deg2rad_()
 
         ego_state_future = to(
             data["ego"],
@@ -111,6 +111,7 @@ class Trainer(object):
             index_start=self.num_time_step_previous,
             index_end=self.num_time_step_previous + self.num_time_step_future,
         )
+        ego_state_future["rotation_array"].deg2rad_()
 
         ego_state_future_predicted_list = []
 
@@ -135,10 +136,10 @@ class Trainer(object):
             ..., :2
         ]
 
-        ego_future_yaw = torch.deg2rad(ego_state_future["rotation_array"][..., 2:3])
-        ego_future_yaw_predicted = torch.deg2rad(
-            ego_state_future_predicted["rotation_array"][..., 2:3]
-        )
+        ego_future_yaw = ego_state_future["rotation_array"][..., 2:3]
+        ego_future_yaw_predicted = ego_state_future_predicted["rotation_array"][
+            ..., 2:3
+        ]
 
         loss_location = self.loss_criterion(
             ego_future_location, ego_future_location_predicted

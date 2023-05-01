@@ -45,6 +45,13 @@ def to(dict_, device=None, index_start=None, index_end=None):
         return dict_
 
 
+def clone(dict_):
+    dict_new = {}
+    for k in dict_.keys():
+        dict_new[k] = dict_[k].clone()
+    return dict_new
+
+
 def cat(list_of_dicts, dim):
     dict_new = {}
     for k in list_of_dicts[0].keys():
@@ -57,3 +64,9 @@ def stack(list_of_dicts, dim):
     for k in list_of_dicts[0].keys():
         dict_new[k] = torch.stack([d[k] for d in list_of_dicts], dim=dim)
     return dict_new
+
+
+def requires_grad(dict_, flag=True):
+    for k in dict_.keys():
+        dict_[k].requires_grad = flag
+    return dict_

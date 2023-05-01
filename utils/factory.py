@@ -579,21 +579,30 @@ def noiser_factory(config):
         or (config["experiment_type"] == "play_carla")
         or (config["experiment_type"] == "eval_policy_model_leaderboard")
     ):
-        noiser = config["environment"]["noiser"]
+        
+        if "noiser" in config["environment"]:
 
-        if noiser["type"] == "DummyNoiser":
+            noiser = config["environment"]["noiser"]
+
+            if noiser["type"] == "DummyNoiser":
+                from carla_env.modules.noiser.dummy import DummyNoiser
+
+                return {"class": DummyNoiser, "config": {}}
+
+            else:
+                if noiser["type"] == "GaussianNoiser":
+                    from carla_env.modules.noiser.gaussian import GaussianNoiser
+
+                    return {"class": GaussianNoiser, "config": noiser["config"]}
+
+                else:
+                    raise ValueError("Invalid noiser_type")
+            
+        else:
+
             from carla_env.modules.noiser.dummy import DummyNoiser
 
             return {"class": DummyNoiser, "config": {}}
-
-        else:
-            if noiser["type"] == "GaussianNoiser":
-                from carla_env.modules.noiser.gaussian import GaussianNoiser
-
-                return {"class": GaussianNoiser, "config": noiser["config"]}
-
-            else:
-                raise ValueError("Invalid noiser_type")
 
     else:
         raise ValueError("Invalid experiment type")

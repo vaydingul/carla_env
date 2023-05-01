@@ -11,10 +11,12 @@ num_workers: &num_workers 8
 
 # Dataset related parameters for training
 dataset_train:
-  data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_data_20Hz_action_repeat_4/train/"
-  sequence_length: *sequence_length
-  read_keys: *read_keys
-  dilation: *dilation
+  type: InstanceDataset
+  config:
+    data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_data_20Hz_action_repeat_4/train/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
 
 # Dataloader related parameters for training
 dataloader_train:
@@ -24,10 +26,12 @@ dataloader_train:
 
 # Dataset related parameters for validation
 dataset_val:
-  data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_data_20Hz_action_repeat_4/val/"
-  sequence_length: *sequence_length
-  read_keys: *read_keys
-  dilation: *dilation
+  type: InstanceDataset
+  config:
+    data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_data_20Hz_action_repeat_4/val/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
 
 # Dataloader related parameters for validation
 dataloader_val:
@@ -48,7 +52,7 @@ training:
     config:
       reduction: "mean"
 
-  save_interval: 50
+  save_interval: 10
 
 # Ego forward model related parameters
 ego_forward_model:
@@ -63,6 +67,7 @@ wandb:
   resume_checkpoint_number: 0
   project: "mbl-refactored"
   group: "train-ego-forward-model-multi-step"
-  name: "1-10-20Hz-new_dataset-action_repeat_4"
+  name: "1-10-20Hz-new_dataset-action_repeat_4(corrected)"
   id: ~
+  link: ~
   notes: "Ego forward model with 20Hz data and 10 time steps in the future. It can work with every model that works in 20Hz. Dataset is consisted of action repeat 4."

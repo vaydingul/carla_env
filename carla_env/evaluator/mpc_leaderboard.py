@@ -8,6 +8,7 @@ from utils.kinematic_utils import acceleration_to_throttle_brake
 from utils.model_utils import convert_standard_bev_to_model_bev
 from utils.create_video_from_folder import create_video_from_images
 from utils.cost_utils import sample_coefficient
+from utils.train_utils import to, cat
 
 
 class Evaluator:
@@ -223,23 +224,30 @@ class Evaluator:
         hero_actor_velocity = hero_actor.get_velocity()
         hero_actor_speed = hero_actor_velocity.length()
 
-        ego_previous_location = torch.zeros((1, 1, 2), device=self.device)
-        ego_previous_yaw = torch.zeros((1, 1, 1), device=self.device)
-        ego_previous_speed = torch.zeros((1, 1, 1), device=self.device)
+        ego_previous_location_array = torch.zeros((1, 1, 3), device=self.device)
+        ego_previous_rotation_array = torch.zeros((1, 1, 3), device=self.device)
+        ego_previous_velocity_array = torch.zeros((1, 1, 3), device=self.device)
 
-        ego_previous_location[..., 0] = hero_actor_location.x
-        ego_previous_location[..., 1] = hero_actor_location.y
-        ego_previous_yaw[..., 0] = hero_actor_rotation.yaw * np.pi / 180
-        ego_previous_speed[..., 0] = hero_actor_speed
+        ego_previous_location_array[..., 0] = hero_actor_location.x
+        ego_previous_location_array[..., 1] = hero_actor_location.y
+        ego_previous_location_array[..., 2] = hero_actor_location.z
 
-        ego_previous_location.requires_grad_(True)
-        ego_previous_yaw.requires_grad_(True)
-        ego_previous_speed.requires_grad_(True)
+        ego_previous_rotation_array[..., 0] = hero_actor_rotation.roll * np.pi / 180
+        ego_previous_rotation_array[..., 1] = hero_actor_rotation.pitch * np.pi / 180
+        ego_previous_rotation_array[..., 2] = hero_actor_rotation.yaw * np.pi / 180
+
+        ego_previous_velocity_array[..., 0] = hero_actor_velocity.x
+        ego_previous_velocity_array[..., 1] = hero_actor_velocity.y
+        ego_previous_velocity_array[..., 2] = hero_actor_velocity.z
+
+        ego_previous_location_array.requires_grad_(True)
+        ego_previous_rotation_array.requires_grad_(True)
+        ego_previous_velocity_array.requires_grad_(True)
 
         ego_previous = {
-            "location": ego_previous_location,
-            "yaw": ego_previous_yaw,
-            "speed": ego_previous_speed,
+            "location_array": ego_previous_location_array,
+            "rotation_array": ego_previous_rotation_array,
+            "velocity_array": ego_previous_velocity_array,
         }
 
         processed_data["ego_previous"] = ego_previous
@@ -292,9 +300,7 @@ class Evaluator:
         return processed_data
 
     def _forward_ego_forward_model(self, ego_previous):
-        location_predicted = []
-        yaw_predicted = []
-        speed_predicted = []
+        ego_state_predicted_list = []
 
         # location_predicted.append(ego_previous["location"])
         # yaw_predicted.append(ego_previous["yaw"])
@@ -305,21 +311,13 @@ class Evaluator:
 
             ego_next = self.ego_forward_model(ego_previous, action_)
 
-            location_predicted.append(ego_next["location"])
-            yaw_predicted.append(ego_next["yaw"])
-            speed_predicted.append(ego_next["speed"])
+            ego_state_predicted_list.append(ego_next)
 
             ego_previous = ego_next
 
-        location_predicted = torch.cat(location_predicted, dim=1)
-        yaw_predicted = torch.cat(yaw_predicted, dim=1)
-        speed_predicted = torch.cat(speed_predicted, dim=1)
+        ego_state_predicted = cat(ego_state_predicted_list, dim=1)
 
-        return (
-            location_predicted,
-            yaw_predicted,
-            speed_predicted,
-        )
+        return ego_state_predicted
 
     def _forward_world_forward_model(self, world_previous_bev):
         world_future_bev_predicted_list = []
@@ -439,11 +437,15 @@ class Evaluator:
         for _ in range(self.num_optimization_iteration):
             self.optimizer.zero_grad()
 
-            (
-                ego_future_location_predicted,
-                ego_future_yaw_predicted,
-                ego_future_speed_predicted,
-            ) = self._forward_ego_forward_model(ego_previous)
+            (ego_future_predicted) = self._forward_ego_forward_model(ego_previous)
+
+            ego_future_location_predicted = ego_future_predicted["location_array"][
+                ..., :2
+            ]
+            ego_future_yaw_predicted = ego_future_predicted["rotation_array"][..., 2:3]
+            ego_future_speed_predicted = ego_future_predicted["velocity_array"].norm(
+                2, -1, True
+            )
 
             cost = self._forward_cost(
                 ego_future_location_predicted,

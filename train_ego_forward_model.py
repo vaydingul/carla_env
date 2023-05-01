@@ -16,7 +16,6 @@ from utils.factory import *
 
 
 def main(config):
-
     # ---------------------------------------------------------------------------- #
     #                                    LOGGER                                    #
     # ---------------------------------------------------------------------------- #
@@ -53,8 +52,8 @@ def main(config):
     # ---------------------------------------------------------------------------- #
     #                         TRAIN AND VALIDATION DATASETS                        #
     # ---------------------------------------------------------------------------- #
-    dataset_train = dataset_class(config["dataset_train"])
-    dataset_val = dataset_class(config["dataset_val"])
+    dataset_train = dataset_class(config["dataset_train"]["config"])
+    dataset_val = dataset_class(config["dataset_val"]["config"])
 
     # --------------------- Log information about the dataset -------------------- #
     logger.info(f"Train dataset size: {len(dataset_train)}")
@@ -82,7 +81,6 @@ def main(config):
     # ---------------------------------------------------------------------------- #
 
     if config["wandb"]["resume"]:
-
         # Create the model
         model_class = ego_forward_model_factory(run.config)
 
@@ -93,7 +91,6 @@ def main(config):
         )
 
     else:
-
         model_class = ego_forward_model_factory(config)
 
         # Initialize the model
@@ -104,7 +101,6 @@ def main(config):
     # ---------------------------------------------------------------------------- #
 
     if config["wandb"]["resume"]:
-
         optimizer_class = optimizer_factory(run.config)
         optimizer = optimizer_class(
             model.parameters(), **run.config["optimizer"]["config"]
@@ -113,7 +109,6 @@ def main(config):
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
     else:
-
         optimizer_class = optimizer_factory(config)
         optimizer = optimizer_class(
             model.parameters(), **config["training"]["optimizer"]["config"]
@@ -180,12 +175,11 @@ def main(config):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config_path",
         type=str,
-        default="/home/volkan/Documents/Codes/carla_env/configs/ego_forward_model/training/config_lr.yml",
+        default="configs/ego_forward_model/training/kinematic/config_20Hz_action_repeat_4.yml",
     )
     args = parser.parse_args()
 
