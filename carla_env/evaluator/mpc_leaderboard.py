@@ -504,7 +504,7 @@ class Evaluator:
                         device=self.device,
                         dtype=torch.float32,
                     )
-                    * 0.1
+                    * 0.2
                 )
 
                 # Generate random number between -1 and 1, having the size of (B, T, A)

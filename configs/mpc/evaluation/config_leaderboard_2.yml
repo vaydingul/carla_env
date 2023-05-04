@@ -1,10 +1,10 @@
 experiment_type: eval_mpc_leaderboard
 log_path: ~
 seed: &seed_var 2023
-port: &port_var 2000
-tm_port: &tm_port_var 8000
+port: &port_var 3000
+tm_port: &tm_port_var 8001
 num_time_step_previous: &previous 20
-num_time_step_future: &future 10
+num_time_step_future: &future 20
 
 cost:
   type: "extended_bev_with_pedestrian"
@@ -45,7 +45,7 @@ environment:
     #   num_vehicles: [150, 300]
 
   renderer:
-    width: 2800
+    width: 5600
     height: 1400
     channel: 3
     background_color: [0, 0, 0]
@@ -138,18 +138,18 @@ evaluator:
   #   ego_speed_l1: 0.0
 
   cost_weight:
-    road_cost: -0.01 # -0.01
+    road_cost: -0.00 # -0.01
     road_on_cost: -0.5 # -0.01
     road_off_cost: 1.0 # 0.005
     road_red_yellow_cost: 0.5 # 0.1
     road_green_cost: -0.5 # -0.1
-    vehicle_cost: 100 # 1
+    vehicle_cost: 10 # 1
     lane_cost: 0.05 # 0.05
     pedestrian_cost: 100
     offroad_cost: 1.0 # 0.005
-    acceleration_jerk: 10.0
-    steer_jerk: 100.0
-    ego_location_l1: 1500.0
+    acceleration_jerk: 100.0
+    steer_jerk: 1000.0
+    ego_location_l1: 3000.0
     ego_yaw_l1: 100.0
     ego_speed_l1: 0.0
   # MPC is a kind of RL training.
