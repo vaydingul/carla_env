@@ -37,6 +37,7 @@ class KinematicBicycleModel(nn.Module):
         velocity_y = velocity[..., 1:2]
         speed = velocity.norm(2, -1, keepdim=True)
 
+        print(location.shape, yaw.shape, velocity.shape, speed.shape, action.shape)
         acceleration = torch.clip(action[..., 0:1], -1, 1)
         steer = torch.clip(action[..., 1:2], -1, 1)
 
