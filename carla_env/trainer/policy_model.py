@@ -348,7 +348,7 @@ class Trainer(object):
                 command=command,
                 target_location=target_location,
                 occupancy=occupancy,
-            )
+            ).unsqueeze(1)
 
             ego_state_next = self.ego_forward_model(ego_state_previous, action)
 
