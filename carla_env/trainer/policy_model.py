@@ -369,9 +369,7 @@ class Trainer(object):
 
         world_future_bev_predicted = torch.stack(world_future_bev_predicted_list, dim=1)
         ego_state_future_predicted = cat(ego_state_future_predicted_list, dim=1)
-        ego_future_action_predicted = torch.stack(
-            ego_future_action_predicted_list, dim=1
-        )
+        ego_future_action_predicted = torch.cat(ego_future_action_predicted_list, dim=1)
 
         ego_future_location_predicted = ego_state_future_predicted["location_array"][
             ..., :2

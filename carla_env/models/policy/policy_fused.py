@@ -104,9 +104,7 @@ class Policy(nn.Module):
             "speed": ego_state["velocity_array"].norm(2, -1, True).squeeze(1),
         }
 
-        for k in ego_state_.keys():
-            print(ego_state_[k].shape)
-
+      
         # Encode the world state
         world_state = world_state.view(
             world_state.shape[0], -1, world_state.shape[-2], world_state.shape[-1]
