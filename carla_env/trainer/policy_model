@@ -5,7 +5,6 @@ from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
 from carla_env.sampler.distributed_weighted_sampler import DistributedWeightedSampler
-from utils.train_utils import to, cat, stack
 
 from pathlib import Path
 from carla_env.renderer.renderer import Renderer, COLORS
@@ -54,6 +53,7 @@ class Trainer(object):
         train_step=0,
         val_step=0,
     ):
+
         self.ego_forward_model = ego_forward_model
         self.world_forward_model = world_forward_model
         self.policy_model = policy_model
@@ -114,6 +114,7 @@ class Trainer(object):
         # ------------------------------ Debug Setup ------------------------------- #
 
         if self.debug_render:
+
             (self.B_TRAIN, _, self.C, self.H, self.W) = next(iter(dataloader_train))[
                 "bev_world"
             ]["bev"].shape
@@ -127,9 +128,11 @@ class Trainer(object):
             self.renderer = Renderer(config=self.renderer)
 
         else:
+
             self.renderer = None
 
     def train(self, epoch, run):
+
         logger.info("Training epoch {}".format(epoch))
 
         self.ego_forward_model.train()
@@ -143,6 +146,7 @@ class Trainer(object):
             self.dataloader_train.sampler.set_epoch(epoch)
 
         for i, (data) in enumerate(self.dataloader_train):
+
             loss_dict, B = self.shared_step(i, data)
 
             loss = loss_dict["loss"]
@@ -152,7 +156,9 @@ class Trainer(object):
             loss.backward()
             # Clip the gradients
             if self.gradient_clip:
+
                 if self.gradient_clip_type == "norm":
+
                     torch.nn.utils.clip_grad_norm_(
                         self.ego_forward_model.parameters(), self.gradient_clip_value
                     )
@@ -166,6 +172,7 @@ class Trainer(object):
                     )
 
                 else:
+
                     torch.nn.utils.clip_grad_value_(
                         self.ego_forward_model.parameters(), self.gradient_clip_value
                     )
@@ -192,6 +199,7 @@ class Trainer(object):
         logger.info("Training epoch {} done".format(epoch))
 
     def validate(self, epoch, run=None):
+
         logger.info("Validating epoch {}".format(epoch))
 
         self.ego_forward_model.eval()
@@ -208,6 +216,7 @@ class Trainer(object):
 
         with torch.no_grad():
             for i, (data) in enumerate(self.dataloader_val):
+
                 loss_dict, B = self.shared_step(i, data)
 
                 loss_dict_list.append(loss_dict)
@@ -235,6 +244,7 @@ class Trainer(object):
         return loss_dict
 
     def shared_step(self, i, data):
+
         # ------------------------------ Data Setup ------------------------------- #
         # World previous BEV
         world_previous_bev = data["bev_world"]["bev"][
@@ -251,32 +261,68 @@ class Trainer(object):
 
         # world_future_bev_ = world_future_bev.clone().detach()
 
-        ego_state_previous = to(
-            data["ego"],
-            self.device,
-            index_start=self.num_time_step_previous - 1,
-            index_end=self.num_time_step_previous,
+        # Ego previous location
+        ego_previous_location = data["ego"]["location_array"][
+            :, self.num_time_step_previous - 1, 0:2
+        ].to(self.rank)
+
+        # Ego future location
+        ego_future_location = data["ego"]["location_array"][
+            :,
+            self.num_time_step_previous : self.num_time_step_previous
+            + self.num_time_step_future,
+            0:2,
+        ].to(self.rank)
+        ego_future_location_predicted_list = []
+
+        # Ego previous yaw
+        ego_previous_yaw = torch.deg2rad(
+            data["ego"]["rotation_array"][:, self.num_time_step_previous - 1, 2:].to(
+                self.rank
+            )
         )
 
-        ego_state_future = to(
-            data["ego"],
-            self.device,
-            index_start=self.num_time_step_previous,
-            index_end=self.num_time_step_previous + self.num_time_step_future,
+        # Ego future yaw
+        ego_future_yaw = torch.deg2rad(
+            data["ego"]["rotation_array"][
+                :,
+                self.num_time_step_previous : self.num_time_step_previous
+                + self.num_time_step_future,
+                2:,
+            ].to(self.rank)
+        )
+        ego_future_yaw_predicted_list = []
+
+        # Ego previous speed
+        ego_previous_speed = (
+            data["ego"]["velocity_array"][:, self.num_time_step_previous - 1]
+            .norm(2, -1, keepdim=True)
+            .to(self.rank)
         )
 
-        ego_future_location = ego_state_future["location_array"][..., :2]
-        ego_future_yaw = ego_state_future["rotation_array"][..., 2:3]
-        ego_future_speed = ego_state_future["velocity_array"].norm(2, -1, True)
+        # Ego future speed
+        ego_future_speed = (
+            data["ego"]["velocity_array"][
+                :,
+                self.num_time_step_previous : self.num_time_step_previous
+                + self.num_time_step_future,
+            ]
+            .norm(2, -1, keepdim=True)
+            .to(self.rank)
+        )
+        ego_future_speed_predicted_list = []
 
-        ego_state_future_predicted_list = []
-
+        # Ego future action
         ego_future_action = data["ego"]["control_array"][
-            :, : self.num_time_step_future
-        ].to(self.device)
+            :,
+            self.num_time_step_previous : self.num_time_step_previous
+            + self.num_time_step_future,
+        ].to(self.rank)
 
+        # Ground-truth action has the form of (throttle, steer, brake)
+        # We convert it to (acceleration, brake) for the model
         ego_future_action[..., 0] -= ego_future_action[..., -1]
-        ego_future_action = ego_future_action[..., :-1]
+        ego_future_action = ego_future_action[..., :2]
 
         ego_future_action_predicted_list = []
 
@@ -311,9 +357,19 @@ class Trainer(object):
         B = world_previous_bev.shape[0]
         S_future = world_future_bev.shape[1]
 
+        # Initialize the ego state
+        ego_state_previous = {
+            "location": ego_previous_location,
+            "yaw": ego_previous_yaw,
+            "speed": ego_previous_speed,
+        }
+
         for k in range(self.num_time_step_future):
+
             if self.use_world_forward_model_encoder_output_as_world_state:
+
                 if self.use_ground_truth:
+
                     world_previous_bev_feature = self.world_forward_model(
                         world_previous_bev, encoded=True
                     )
@@ -323,20 +379,24 @@ class Trainer(object):
                     ].clone()  # .detach()
 
                 else:
+
                     (
                         world_previous_bev_feature,
                         world_future_bev_feature,
                     ) = self.world_forward_model(world_previous_bev, sample_latent=True)
                     world_future_bev_feature = torch.sigmoid(world_future_bev_feature)
             else:
+
                 world_previous_bev_feature = world_previous_bev
 
                 if self.use_ground_truth:
+
                     world_future_bev_feature = world_future_bev[
                         :, k
                     ].clone()  # .detach()
 
                 else:
+
                     (_, world_future_bev_feature) = self.world_forward_model(
                         world_previous_bev, sample_latent=True
                     )
@@ -353,7 +413,10 @@ class Trainer(object):
             ego_state_next = self.ego_forward_model(ego_state_previous, action)
 
             world_future_bev_predicted_list.append(world_future_bev_feature)
-            ego_state_future_predicted_list.append(ego_state_next)
+
+            ego_future_location_predicted_list.append(ego_state_next["location"])
+            ego_future_yaw_predicted_list.append(ego_state_next["yaw"])
+            ego_future_speed_predicted_list.append(ego_state_next["speed"])
             ego_future_action_predicted_list.append(action)
 
             # Update the previous bev
@@ -368,22 +431,21 @@ class Trainer(object):
             ego_state_previous = ego_state_next
 
         world_future_bev_predicted = torch.stack(world_future_bev_predicted_list, dim=1)
-        ego_state_future_predicted = cat(ego_state_future_predicted_list, dim=1)
+
+        ego_future_location_predicted = torch.stack(
+            ego_future_location_predicted_list, dim=1
+        )
+
+        ego_future_yaw_predicted = torch.stack(ego_future_yaw_predicted_list, dim=1)
+
+        ego_future_speed_predicted = torch.stack(ego_future_speed_predicted_list, dim=1)
+
         ego_future_action_predicted = torch.stack(
             ego_future_action_predicted_list, dim=1
         )
 
-        ego_future_location_predicted = ego_state_future_predicted["location_array"][
-            ..., :2
-        ]
-        ego_future_yaw_predicted = ego_state_future_predicted["rotation_array"][
-            ..., 2:3
-        ]
-        ego_future_speed_predicted = ego_state_future_predicted["velocity_array"].norm(
-            2, -1, True
-        )
-
         if self.num_time_step_future > 1:
+
             cost = self.cost(
                 ego_future_location_predicted,
                 ego_future_yaw_predicted,
@@ -444,6 +506,7 @@ class Trainer(object):
         ego_state_mse = torch.tensor(0.0).to(self.rank)
 
         for key in self.policy_model.module.get_keys():
+
             ego_state_mse += (
                 F.l1_loss(
                     ego_future_location_predicted, ego_future_location, reduction="sum"
@@ -476,6 +539,7 @@ class Trainer(object):
         loss = torch.tensor(0.0).to(self.rank)
 
         for cost_key in cost_dict.keys():
+
             assert (
                 cost_key in self.cost_weight.keys()
             ), f"{cost_key} not in {self.cost_weight.keys()}"
@@ -513,6 +577,7 @@ class Trainer(object):
         return loss_dict, B
 
     def learn(self, run=None):
+
         # self.epoch = -1
         # loss_dict = self.validate(-1, run)
         # logger.info(f"{'='*10} Initial Validation {'='*10}")
@@ -526,10 +591,11 @@ class Trainer(object):
             self.train(epoch, run)
 
             if (epoch + 1) % self.val_interval == 0:
+
                 loss_dict = self.validate(epoch, run)
                 logger.info(f"{'='*10} Validation {'='*10}")
                 logger.info(f"Epoch: {epoch}")
-                for k, v in loss_dict.items():
+                for (k, v) in loss_dict.items():
                     logger.info(f"{k}: {v}")
                 logger.info(f"{'='*10} Validation {'='*10}")
 
@@ -537,6 +603,7 @@ class Trainer(object):
                     self.lr_scheduler.step()
 
             if ((epoch + 1) % self.save_interval == 0) and (self.save_path is not None):
+
                 torch.save(
                     {
                         "model_state_dict": self.policy_model.module.state_dict(),
@@ -555,16 +622,21 @@ class Trainer(object):
                     run.save(str(self.save_path / Path(f"checkpoint_{epoch}.pt")))
 
     def render(self, i, world_future_bev_predicted, cost, action_pred, action_gt):
+
         if self.debug_render and self.num_time_step_future > 1:
-            for mask_type, mask in cost["mask_dict"].items():
+
+            for (mask_type, mask) in cost["mask_dict"].items():
+
                 self.renderer.reset()
 
                 batch_size = world_future_bev_predicted.shape[0]
 
                 for k in range(batch_size):
+
                     cursor_row = self.renderer.get_cursor()
 
                     for m in range(self.num_time_step_future - 1):
+
                         bev = postprocess_bev(
                             world_future_bev_predicted[k][m + 1],
                             self.bev_selected_channels,
@@ -614,7 +686,8 @@ class Trainer(object):
                 cursor_end = (20, cursor_end[1] + 10)
                 self.renderer.move_cursor(direction="point", amount=cursor_end)
 
-                for k, v in cost["cost_dict"].items():
+                for (k, v) in cost["cost_dict"].items():
+
                     # Format the value such that only 3 decimal places are shown
                     self.renderer.render_text(
                         f"{k}: {v:.3f}",
