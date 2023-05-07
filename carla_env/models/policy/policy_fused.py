@@ -44,7 +44,6 @@ class Policy(nn.Module):
         )
 
     def build_from_config(self):
-
         self.input_shape_world_state = self.config["input_shape_world_state"]
 
         self.keys = []
@@ -99,6 +98,11 @@ class Policy(nn.Module):
     def forward(
         self, ego_state, world_state, command=None, target_location=None, occupancy=None
     ):
+        ego_state_ = {
+            "location": ego_state["location_array"][..., :2],
+            "yaw": ego_state["rotation_array"][..., 2:3],
+            "speed": ego_state["velocity_array"].norm(2, -1, True),
+        }
 
         # Encode the world state
         world_state = world_state.view(
@@ -116,18 +120,18 @@ class Policy(nn.Module):
 
         if self.use_target:
             if self.delta_target:
-                target_location = target_location - ego_state["location"]
+                target_location = target_location - ego_state_["location"]
                 # rot = create_2x2_rotation_tensor_from_angle_tensor(
-                #     ego_state["yaw"])
+                #     ego_state_["yaw"])
                 # target_location = torch.matmul(
                 #     rot, target_location.unsqueeze(-1)).squeeze(-1)
 
             # Concatenate the target location to the fused state
             fused = torch.cat([fused, target_location], dim=1)
 
-        ego_state = torch.cat([ego_state[k] for k in self.keys], dim=1)
+        ego_state_ = torch.cat([ego_state_[k] for k in self.keys], dim=1)
         # Concatenate the ego state to the fused state
-        fused = torch.cat([fused, ego_state], dim=1)
+        fused = torch.cat([fused, ego_state_], dim=1)
 
         if self.use_command:
             # Concatenate the command to the fused state
@@ -142,11 +146,9 @@ class Policy(nn.Module):
         return action
 
     def get_keys(self):
-
         return self.keys
 
     def set_default_config(self):
-
         self.config = {
             "input_shape_world_state": (8, 192, 192),
             "input_ego_location": 2,
@@ -170,7 +172,6 @@ class Policy(nn.Module):
 
     @classmethod
     def load_model_from_wandb_run(cls, config, checkpoint_path, device):
-
         checkpoint = torch.load(
             checkpoint_path,
             map_location=organize_device(device),
@@ -184,7 +185,6 @@ class Policy(nn.Module):
 
 
 if __name__ == "__main__":
-
     inp1 = torch.randn(10, 10, 192, 192)
     inp2 = torch.randn(10, 10)
     inp3 = torch.randn(10, 6)
