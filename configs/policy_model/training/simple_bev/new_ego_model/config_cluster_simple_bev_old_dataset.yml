@@ -95,6 +95,10 @@ training:
     type: "norm"
     value: 1
 
+  weighted_sampling:
+    enable: false
+    weight_path: ""
+
   # Scheduler related parameters
   scheduler:
     enable: false
