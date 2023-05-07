@@ -99,9 +99,9 @@ class Policy(nn.Module):
         self, ego_state, world_state, command=None, target_location=None, occupancy=None
     ):
         ego_state_ = {
-            "location": ego_state["location_array"][..., :2],
-            "yaw": ego_state["rotation_array"][..., 2:3],
-            "speed": ego_state["velocity_array"].norm(2, -1, True),
+            "location": ego_state["location_array"][..., :2].squeeze(1),
+            "yaw": ego_state["rotation_array"][..., 2:3].squeeze(1),
+            "speed": ego_state["velocity_array"].norm(2, -1, True).squeeze(1),
         }
 
         # Encode the world state
