@@ -253,14 +253,14 @@ class Trainer(object):
 
         ego_state_previous = to(
             data["ego"],
-            self.device,
+            self.rank,
             index_start=self.num_time_step_previous - 1,
             index_end=self.num_time_step_previous,
         )
 
         ego_state_future = to(
             data["ego"],
-            self.device,
+            self.rank,
             index_start=self.num_time_step_previous,
             index_end=self.num_time_step_previous + self.num_time_step_future,
         )
@@ -273,7 +273,7 @@ class Trainer(object):
 
         ego_future_action = data["ego"]["control_array"][
             :, : self.num_time_step_future
-        ].to(self.device)
+        ].to(self.rank)
 
         ego_future_action[..., 0] -= ego_future_action[..., -1]
         ego_future_action = ego_future_action[..., :-1]
