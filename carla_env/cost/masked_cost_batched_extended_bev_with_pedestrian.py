@@ -77,24 +77,47 @@ class Cost(nn.Module):
 
         cost_tensor = bev * mask_car * decay_weight
 
-        if self.reduction == "sum" or self.reduction == "mean":
+        if "sum" in self.reduction or "mean" in self.reduction:
             if self.reduction == "sum":
                 cost = torch.sum(cost_tensor, dim=[0, 1, 3, 4])
 
             elif self.reduction == "mean":
                 cost = torch.mean(cost_tensor, dim=[0, 1, 3, 4])
 
-            cost_dict = {
-                "road_cost": cost[0],
-                "road_on_cost": cost[1],
-                "road_off_cost": cost[2],
-                "road_red_yellow_cost": cost[3],
-                "road_green_cost": cost[4],
-                "lane_cost": cost[5],
-                "vehicle_cost": cost[6],
-                "pedestrian_cost": cost[7],
-                "offroad_cost": cost[8],
-            }
+            elif self.reduction == "batched_sum":
+                cost = torch.sum(cost_tensor, dim=[1, 3, 4])
+
+            elif self.reduction == "batched_mean":
+                cost = torch.mean(cost_tensor, dim=[1, 3, 4])
+            else:
+                raise ValueError(
+                    f"Reduction {self.reduction} not supported. Supported reductions are 'sum*', 'mean*', 'none'"
+                )
+
+            if self.reduction == "sum" or self.reduction == "mean":
+                cost_dict = {
+                    "road_cost": cost[0],
+                    "road_on_cost": cost[1],
+                    "road_off_cost": cost[2],
+                    "road_red_yellow_cost": cost[3],
+                    "road_green_cost": cost[4],
+                    "lane_cost": cost[5],
+                    "vehicle_cost": cost[6],
+                    "pedestrian_cost": cost[7],
+                    "offroad_cost": cost[8],
+                }
+            else:
+                cost_dict = {
+                    "road_cost": cost[:, 0],
+                    "road_on_cost": cost[:, 1],
+                    "road_off_cost": cost[:, 2],
+                    "road_red_yellow_cost": cost[:, 3],
+                    "road_green_cost": cost[:, 4],
+                    "lane_cost": cost[:, 5],
+                    "vehicle_cost": cost[:, 6],
+                    "pedestrian_cost": cost[:, 7],
+                    "offroad_cost": cost[:, 8],
+                }
         elif self.reduction == "none":
             cost = cost_tensor
 
@@ -112,7 +135,7 @@ class Cost(nn.Module):
 
         else:
             raise ValueError(
-                f"Reduction {self.reduction} not supported. Supported reductions are 'sum', 'mean', 'none'"
+                f"Reduction {self.reduction} not supported. Supported reductions are 'sum*', 'mean*', 'none'"
             )
 
         mask_dict = {

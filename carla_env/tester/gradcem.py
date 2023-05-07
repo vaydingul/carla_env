@@ -7,7 +7,6 @@ from utils.cost_utils import sample_coefficient
 from utils.kinematic_utils import acceleration_to_throttle_brake
 from utils.model_utils import convert_standard_bev_to_model_bev
 from utils.create_video_from_folder import create_video_from_images
-from utils.train_utils import cat, to, requires_grad
 
 
 class Tester:
@@ -23,8 +22,12 @@ class Tester:
         optimizer_config,
         batch_size=1,
         action_size=2,
-        num_optimization_iteration=30,
+        num_optimization_iteration_grad=5,
+        num_optimization_iteration_cem=30,
+        topk=5,
         init_action="zeros",
+        init_action_mean=0,
+        init_action_std=0.1,
         num_time_step_previous=20,
         num_time_step_future=10,
         skip_frames=1,
@@ -49,8 +52,12 @@ class Tester:
         self.optimizer_config = optimizer_config
         self.batch_size = batch_size
         self.action_size = action_size
-        self.num_optimization_iteration = num_optimization_iteration
+        self.num_optimization_iteration_grad = num_optimization_iteration_grad
+        self.num_optimization_iteration_cem = num_optimization_iteration_cem
+        self.topk = topk
         self.init_action = init_action
+        self.init_action_mean = init_action_mean
+        self.init_action_std = init_action_std
         self.num_time_step_previous = num_time_step_previous
         self.num_time_step_future = num_time_step_future
         self.skip_frames = skip_frames
@@ -68,6 +75,19 @@ class Tester:
         self.ego_forward_model.eval().to(self.device)
         if self.world_forward_model is not None:
             self.world_forward_model.eval().to(self.device)
+
+        self.init_action_mean = (
+            torch.ones(self.batch_size, self.num_time_step_future, self.action_size).to(
+                self.device
+            )
+            * self.init_action_mean
+        )
+        self.init_action_std = (
+            torch.ones(self.batch_size, self.num_time_step_future, self.action_size).to(
+                self.device
+            )
+            * self.init_action_std
+        )
 
         self.frame_counter = 0
         self.skip_counter = 0
@@ -220,27 +240,27 @@ class Tester:
         processed_data = {}
 
         if "ego" in data.keys():
-            ego_previous_location_array = torch.zeros((1, 1, 3), device=self.device)
-            ego_previous_rotation_array = torch.zeros((1, 1, 3), device=self.device)
-            ego_previous_velocity_array = torch.zeros((1, 1, 3), device=self.device)
+            ego_previous_location = torch.zeros((1, 1, 2), device=self.device)
+            ego_previous_yaw = torch.zeros((1, 1, 1), device=self.device)
+            ego_previous_speed = torch.zeros((1, 1, 1), device=self.device)
 
-            ego_previous_location_array[..., 0] = data["ego"]["location_array"][0]
-            ego_previous_location_array[..., 1] = data["ego"]["location_array"][1]
-            ego_previous_rotation_array[..., 2] = (
+            ego_previous_location[..., 0] = data["ego"]["location_array"][0]
+            ego_previous_location[..., 1] = data["ego"]["location_array"][1]
+            ego_previous_yaw[..., 0] = (
                 data["ego"]["rotation_array"][-1] * torch.pi / 180
             )
-            ego_previous_velocity_array[..., 0] = data["ego"]["velocity_array"][0]
-            ego_previous_velocity_array[..., 1] = data["ego"]["velocity_array"][1]
-            ego_previous_velocity_array[..., 2] = data["ego"]["velocity_array"][2]
+            ego_previous_speed[..., 0] = torch.norm(
+                torch.Tensor(data["ego"]["velocity_array"])
+            )
 
-            ego_previous_location_array.requires_grad_(True)
-            ego_previous_rotation_array.requires_grad_(True)
-            ego_previous_velocity_array.requires_grad_(True)
+            ego_previous_location.requires_grad_(True)
+            ego_previous_yaw.requires_grad_(True)
+            ego_previous_speed.requires_grad_(True)
 
             ego_previous = {
-                "location_array": ego_previous_location_array,
-                "rotation_array": ego_previous_rotation_array,
-                "velocity_array": ego_previous_velocity_array,
+                "location": ego_previous_location,
+                "yaw": ego_previous_yaw,
+                "speed": ego_previous_speed,
             }
 
             processed_data["ego_previous"] = ego_previous
@@ -289,7 +309,9 @@ class Tester:
         return processed_data
 
     def _forward_ego_forward_model(self, ego_previous):
-        ego_state_predicted_list = []
+        location_predicted = []
+        yaw_predicted = []
+        speed_predicted = []
 
         # location_predicted.append(ego_previous["location"])
         # yaw_predicted.append(ego_previous["yaw"])
@@ -300,13 +322,21 @@ class Tester:
 
             ego_next = self.ego_forward_model(ego_previous, action_)
 
-            ego_state_predicted_list.append(ego_next)
+            location_predicted.append(ego_next["location"])
+            yaw_predicted.append(ego_next["yaw"])
+            speed_predicted.append(ego_next["speed"])
 
             ego_previous = ego_next
 
-        ego_state_predicted = cat(ego_state_predicted_list, dim=1)
+        location_predicted = torch.cat(location_predicted, dim=1)
+        yaw_predicted = torch.cat(yaw_predicted, dim=1)
+        speed_predicted = torch.cat(speed_predicted, dim=1)
 
-        return ego_state_predicted
+        return (
+            location_predicted,
+            yaw_predicted,
+            speed_predicted,
+        )
 
     def _forward_world_forward_model(self, world_previous_bev):
         world_future_bev_predicted_list = []
@@ -357,7 +387,7 @@ class Tester:
 
         # self.predicted_bev = predicted_bev.clone().detach().cpu().numpy()[0]
 
-        loss = torch.tensor(0.0, device=self.device)
+        loss = torch.zeros((self.batch_size,), device=self.device)
 
         for cost_key in self.cost_weight.keys():
             self.cost_weight[cost_key] = (
@@ -379,25 +409,29 @@ class Tester:
         ego_location_l1 = torch.nn.functional.l1_loss(
             ego_future_location_predicted,
             target_location.expand(*(ego_future_location_predicted.shape)),
-        )
+            reduction="none",
+        ).mean(dim=tuple(range(1, len(ego_future_location_predicted.shape))))
 
         ego_yaw_l1 = torch.nn.functional.l1_loss(
             torch.cos(ego_future_yaw_predicted),
             torch.cos(target_yaw.expand(*(ego_future_yaw_predicted.shape))),
-        )
+            reduction="none",
+        ).mean(dim=tuple(range(1, len(ego_future_yaw_predicted.shape))))
 
         ego_yaw_l1 += torch.nn.functional.l1_loss(
             torch.sin(ego_future_yaw_predicted),
             torch.sin(target_yaw.expand(*(ego_future_yaw_predicted.shape))),
-        )
+            reduction="none",
+        ).mean(dim=tuple(range(1, len(ego_future_yaw_predicted.shape))))
 
         ego_speed_l1 = torch.nn.functional.l1_loss(
             ego_future_speed_predicted,
             target_speed.expand(*(ego_future_speed_predicted.shape)),
-        )
+            reduction="none",
+        ).mean(dim=tuple(range(1, len(ego_future_speed_predicted.shape))))
 
-        acceleration_jerk = torch.diff(self.action[..., 0], dim=1).square().sum()
-        steer_jerk = torch.diff(self.action[..., 1], dim=1).square().sum()
+        acceleration_jerk = torch.diff(self.action[..., 0], dim=1).square().mean(dim=1)
+        steer_jerk = torch.diff(self.action[..., 1], dim=1).square().mean(dim=1)
 
         loss += (
             ego_location_l1 * self.cost_weight["ego_location_l1"]
@@ -423,18 +457,52 @@ class Tester:
             world_previous_bev
         )
 
-        for _ in range(self.num_optimization_iteration):
-            self.optimizer.zero_grad()
+        for _ in range(self.num_optimization_iteration_cem):
+            for _ in range(self.num_optimization_iteration_grad):
+                self.optimizer.zero_grad()
 
-            (ego_future_predicted) = self._forward_ego_forward_model(ego_previous)
+                (
+                    ego_future_location_predicted,
+                    ego_future_yaw_predicted,
+                    ego_future_speed_predicted,
+                ) = self._forward_ego_forward_model(ego_previous)
 
-            ego_future_location_predicted = ego_future_predicted["location_array"][
-                ..., :2
-            ]
-            ego_future_yaw_predicted = ego_future_predicted["rotation_array"][..., 2:3]
-            ego_future_speed_predicted = ego_future_predicted["velocity_array"].norm(
-                2, -1, True
-            )
+                cost = self._forward_cost(
+                    ego_future_location_predicted,
+                    ego_future_yaw_predicted,
+                    ego_future_speed_predicted,
+                    world_future_bev_predicted,
+                    target,
+                )
+
+                loss = cost["loss"]
+
+                loss.sum().backward(retain_graph=True)
+
+                # print(self.action.grad.sum())
+                # print(self.action.sum())
+
+                if self.gradient_clip:
+                    if self.gradient_clip_type == "value":
+                        torch.nn.utils.clip_grad_value_(
+                            self.action, self.gradient_clip_value
+                        )
+                    elif self.gradient_clip_type == "norm":
+                        torch.nn.utils.clip_grad_norm_(
+                            self.action, self.gradient_clip_value
+                        )
+                    else:
+                        raise ValueError(
+                            f"Invalid gradient clip type {self.gradient_clip_type}"
+                        )
+
+                self.optimizer.step()
+
+            (
+                ego_future_location_predicted,
+                ego_future_yaw_predicted,
+                ego_future_speed_predicted,
+            ) = self._forward_ego_forward_model(ego_previous)
 
             cost = self._forward_cost(
                 ego_future_location_predicted,
@@ -446,29 +514,18 @@ class Tester:
 
             loss = cost["loss"]
 
-            loss.backward(retain_graph=True)
+            _, topk_indices = torch.topk(loss, self.topk, largest=False, sorted=True)
 
-            # print(self.action.grad.sum())
-            # print(self.action.sum())
+            (mean, std) = self._get_action_distribution(topk_indices)
 
-            if self.gradient_clip:
-                if self.gradient_clip_type == "value":
-                    torch.nn.utils.clip_grad_value_(
-                        self.action, self.gradient_clip_value
-                    )
-                elif self.gradient_clip_type == "norm":
-                    torch.nn.utils.clip_grad_norm_(
-                        self.action, self.gradient_clip_value
-                    )
-                else:
-                    raise ValueError(
-                        f"Invalid gradient clip type {self.gradient_clip_type}"
-                    )
+            topk_action = self.action.data[topk_indices]
 
-            self.optimizer.step()
+            self._reset(mean, std)
+
+            self.action.data[: self.topk] = topk_action
 
         return {
-            "action": self.action,
+            "action": topk_action,
             "cost": cost,
             "ego_future_location_predicted": ego_future_location_predicted,
             "ego_future_yaw_predicted": ego_future_yaw_predicted,
@@ -476,58 +533,22 @@ class Tester:
             "world_future_bev_predicted": world_future_bev_predicted,
         }
 
-    def _reset(self, initial_guess=None):
-        if initial_guess is None:
-            if self.init_action == "zeros":
-                action = torch.zeros(
-                    (self.batch_size, self.num_time_step_future, self.action_size),
-                    device=self.device,
-                    dtype=torch.float32,
-                )
-
-            elif self.init_action == "random":
-                # Generate random gaussian around 0 with 0.1 std
-                action = (
-                    torch.randn(
-                        (self.batch_size, self.num_time_step_future, self.action_size),
-                        device=self.device,
-                        dtype=torch.float32,
-                    )
-                    * 0.1
-                )
-
-                # Generate random number between -1 and 1, having the size of (B, T, A)
-                # action = (
-                #     torch.rand(
-                #         (self.batch_size, self.num_time_step_future, self.action_size),
-                #         device=self.device,
-                #         dtype=torch.float32,
-                #     )
-                #     * 2
-                #     - 1
-                # )
-
-                # action = torch.randn(
-                #     (self.batch_size, self.num_time_step_future, self.action_size),
-                #     device=self.device,
-                #     dtype=torch.float32,
-                # )
-
-            elif self.init_action == "ones":
-                action = torch.ones(
-                    (self.batch_size, self.num_time_step_future, self.action_size),
-                    device=self.device,
-                    dtype=torch.float32,
-                )
-
-            else:
-                raise NotImplementedError
-
-        else:
-            action = torch.tensor(
-                initial_guess, device=self.device, dtype=torch.float32
-            ).unsqueeze(0)
+    def _reset(self, init_action_mean=None, init_action_std=None):
+        # Generate random gaussian
+        action = torch.randn(
+            (self.batch_size, self.num_time_step_future, self.action_size),
+            device=self.device,
+            dtype=torch.float32,
+        ) * (self.init_action_std if init_action_std is None else init_action_std) + (
+            self.init_action_mean if init_action_mean is None else init_action_mean
+        )
 
         self.action = nn.Parameter(action, requires_grad=True)
 
         self.optimizer = self.optimizer_class((self.action,), **self.optimizer_config)
+
+    def _get_action_distribution(self, indices):
+        return (
+            self.action[indices].mean(dim=0, keepdim=True),
+            self.action[indices].std(dim=0, keepdim=True, unbiased=False),
+        )

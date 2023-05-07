@@ -26,7 +26,7 @@ cost:
 
 environment:
   name: carla_env_testing_traffic
-  random: false
+  driver: external
   action_repeat: 1
   fixed_delta_seconds: &dt 0.05
   max_steps: 5000
@@ -136,7 +136,7 @@ tester:
     pedestrian_cost: 10
     offroad_cost: 0.05 # 0.005
     acceleration_jerk: 100.0
-    steer_jerk: 1000.0
+    steer_jerk: 10.0
     ego_location_l1: 300.0
     ego_yaw_l1: 100.0
     ego_speed_l1: 0.0
@@ -155,8 +155,8 @@ training:
       # weight_decay: 0.0001
 
 wandb_ego_forward_model:
-  link: vaydingul/mbl-refactored/3vfihnmu #vaydingul/mbl-refactored/16ruxyiq
-  checkpoint_number: 99 #49
+  link: vaydingul/mbl-refactored/1zu76rnx #vaydingul/mbl-refactored/16ruxyiq
+  checkpoint_number: 49 #49
 
 # It can be None.
 # In this case, last BEV tensor should be copied

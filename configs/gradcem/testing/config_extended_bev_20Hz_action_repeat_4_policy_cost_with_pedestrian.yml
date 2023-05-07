@@ -1,8 +1,8 @@
-experiment_type: eval_mpc_leaderboard
+experiment_type: test_gradcem
 log_path: ~
-seed: &seed_var 2023
-port: &port_var 2000
-tm_port: &tm_port_var 8000
+seed: 6533
+port: &port_var 3000
+tm_port: &tm_port_var 9000
 num_time_step_previous: &previous 20
 num_time_step_future: &future 10
 
@@ -11,24 +11,22 @@ cost:
   config:
     image_width: 192
     image_height: 192
-    reduction: "sum"
+    reduction: "batched_sum"
     mask_alpha: 1.1
-    decay_factor: 0.95
+    decay_factor: 0.99
     vehicle_width: 2.1
     vehicle_length: 4.9
     pixels_per_meter: 5
     longitudinal_offset: 0.0
-    longitudinal_scaler: 1.0
+    longitudinal_scaler: 1
     longitudinal_speed_offset: 0.0
-    longitudinal_speed_scaler: 1.0
+    longitudinal_speed_scaler: 2.0
     lateral_offset: 1.0
     lateral_scaler: 0.75
-    lateral_speed_offset: 0.0
-    lateral_speed_scaler: 0.1
 
 environment:
-  name: carla_env_leaderboard
-  random: false
+  name: carla_env_testing_traffic
+  driver: external
   action_repeat: 1
   fixed_delta_seconds: &dt 0.05
   max_steps: 5000
@@ -36,7 +34,8 @@ environment:
   tm_port: *tm_port_var
   tasks:
     - world: Town02
-      num_vehicles: [60, 90]
+      num_vehicles: 0
+      num_walkers: 0
     # - world: Town03
     #   num_vehicles: [60, 90]
     # - world: Town04
@@ -46,32 +45,32 @@ environment:
 
   renderer:
     width: 2800
-    height: 1400
+    height: 1000
     channel: 3
     background_color: [0, 0, 0]
-    font_scale: 0.25
+    font_scale: 0.3
     font_color: [255, 255, 255]
     font_thickness: 1
     cursor: [0, 0]
-    name: MPC Leaderboard Evaluation
+    name: GradCEM Testing
     show: true
     save: true
     create_date_time_path: true
-    save_path: figures/env_debug/eval_mpc_leaderboard/
+    save_path: figures/env_debug/test_gradcem/
 
   sensors:
-    # - id: rgb_front
-    #   type: RGBSensor
-    #   config:
-    #     x: 1.5
-    #     y: 0.0
-    #     z: 2.4
-    #     roll: 0.0
-    #     pitch: 0.0
-    #     yaw: 0.0
-    #     width: 900
-    #     height: 256
-    #     fov: 100
+    - id: rgb_front
+      type: RGBSensor
+      config:
+        x: 1.5
+        y: 0.0
+        z: 2.4
+        roll: 0.0
+        pitch: 0.0
+        yaw: 0.0
+        width: 900
+        height: 256
+        fov: 100
 
     - id: ego
       type: VehicleSensor
@@ -91,6 +90,7 @@ environment:
     - id: col
       type: CollisionSensor
       config: {}
+
   bevs:
     - id: "bev_world"
       config:
@@ -104,13 +104,21 @@ environment:
         light_circle: true
         lane_marking_thickness: 2
 
-  route: ~
+  route:
+    config:
+      sampling_resolution: 20
+      debug: true
+      distance_threshold: 5
 
-evaluator:
-  batch_size: 1
+tester:
+  batch_size: 10
   action_size: 2
-  num_optimization_iteration: 40
-  init_action: "zeros"
+  num_optimization_iteration_grad: 10
+  num_optimization_iteration_cem: 4
+  topk: 4
+  init_action: "random"
+  init_action_mean: 0.0
+  init_action_std: 0.2
   skip_frames: 1
   repeat_frames: 1
   rollout_length: *future
@@ -121,38 +129,23 @@ evaluator:
   bev_selected_channels: [0, 1, 2, 3, 4, 5, 6, 10, 11]
   bev_calculate_offroad: false
 
-  # cost_weight:
-  #   road_cost: -0.1 # -0.01
-  #   road_on_cost: -0.1 # -0.01
-  #   road_off_cost: 0.01 # 0.005
-  #   road_red_yellow_cost: 0.5 # 0.1
-  #   road_green_cost: -0.5 # -0.1
-  #   vehicle_cost: 10 # 1
-  #   lane_cost: 0.05 # 0.05
-  #   pedestrian_cost: 10
-  #   offroad_cost: 1 # 0.005
-  #   acceleration_jerk: 100.0
-  #   steer_jerk: 500.0
-  #   ego_location_l1: 500.0
-  #   ego_yaw_l1: 100.0
-  #   ego_speed_l1: 0.0
-
   cost_weight:
     road_cost: -0.01 # -0.01
-    road_on_cost: -0.5 # -0.01
-    road_off_cost: 1.0 # 0.005
-    road_red_yellow_cost: 0.5 # 0.1
-    road_green_cost: -0.5 # -0.1
-    vehicle_cost: 100 # 1
+    road_on_cost: -0.01 # -0.01
+    road_off_cost: 0.05 # 0.005
+    road_red_yellow_cost: 0.1 # 0.1
+    road_green_cost: -0.1 # -0.1
+    vehicle_cost: 10 # 1
     lane_cost: 0.05 # 0.05
-    pedestrian_cost: 100
-    offroad_cost: 1.0 # 0.005
-    acceleration_jerk: 10.0
-    steer_jerk: 100.0
-    ego_location_l1: 1500.0
+    pedestrian_cost: 10
+    offroad_cost: 0.05 # 0.005
+    acceleration_jerk: 100.0
+    steer_jerk: 1000.0
+    ego_location_l1: 300.0
     ego_yaw_l1: 100.0
     ego_speed_l1: 0.0
-  # MPC is a kind of RL training.
+
+# MPC is a kind of RL training.
 training:
   gradient_clip:
     enable: true
@@ -166,8 +159,8 @@ training:
       # weight_decay: 0.0001
 
 wandb_ego_forward_model:
-  link: vaydingul/mbl-refactored/1zu76rnx #vaydingul/mbl-refactored/16ruxyiq
-  checkpoint_number: 49 #49
+  link: vaydingul/mbl-refactored/3vfihnmu #vaydingul/mbl-refactored/16ruxyiq
+  checkpoint_number: 99 #49
 
 # It can be None.
 # In this case, last BEV tensor should be copied
@@ -177,29 +170,13 @@ wandb_world_forward_model:
   # link: ""
   # checkpoint_number: 0
 
-leaderboard:
-  host: localhost
-  port: *port_var
-  tm_port: *tm_port_var
-  tm_seed: *seed_var
-  debug: 1
-  record: ""
-  timeout: "60"
-  routes: /home/volkan/Documents/Codes/carla_env/leaderboard_0.9.13/data/routes_town_2_debug.xml
-  scenarios: /home/volkan/Documents/Codes/carla_env/leaderboard_0.9.13/data/all_towns_traffic_scenarios_public.json
-  repetitions: 1
-  agent: /home/volkan/Documents/Codes/carla_env/leaderboard_0.9.13/leaderboard/autoagents/mpc_agent.py
-  agent_config: /home/volkan/Documents/Codes/carla_env/configs/policy_model/testing/config.yml
-  track: MAP
-  resume: false
-  checkpoint: "./results_town_2_debug.json"
-
 wandb:
   enable: false
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"
-  group: "test-policy-model-20Hz"
-  name: "20-10-20Hz"
+  group: "test-mpc"
+  name: "1-10-20Hz-policy_cost-working-example"
   id: ~
+  link: ~
   notes: ""

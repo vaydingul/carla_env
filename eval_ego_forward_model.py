@@ -15,7 +15,6 @@ import wandb
 
 
 def main(config):
-
     # ---------------------------------------------------------------------------- #
     #                                    LOGGER                                    #
     # ---------------------------------------------------------------------------- #
@@ -52,7 +51,7 @@ def main(config):
     # ---------------------------------------------------------------------------- #
     #                         TEST DATASET                                         #
     # ---------------------------------------------------------------------------- #
-    dataset_test = dataset_class(config["dataset_test"])
+    dataset_test = dataset_class(config["dataset_test"]["config"])
 
     # --------------------- Log information about the dataset -------------------- #
     logger.info(f"Test dataset size: {len(dataset_test)}")
@@ -82,7 +81,7 @@ def main(config):
 
     # Create and initialize the model with pretrained weights and biases
     model = model_class.load_model_from_wandb_run(
-        config=run.config["ego_forward_model"],
+        config=run.config["ego_forward_model"]["config"],
         checkpoint_path=checkpoint.name,
         device=device,
     )
@@ -100,7 +99,6 @@ def main(config):
     )
 
     if run_eval is not None:
-
         table = wandb.Table(
             columns=[
                 "ID",
@@ -135,12 +133,11 @@ def main(config):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config_path",
         type=str,
-        default="/home/volkan/Documents/Codes/carla_env/configs/ego_forward_model/evaluation/config.yml",
+        default="configs/ego_forward_model/evaluation/config_20Hz_action_repeat_4.yml",
     )
     args = parser.parse_args()
 
@@ -150,7 +147,7 @@ if __name__ == "__main__":
     config["config_path"] = args.config_path
 
     assert (
-        config["dataset_test"]["sequence_length"]
+        config["dataset_test"]["config"]["sequence_length"]
         == config["evaluation"]["sequence_length"]
     ), "Sequence length of the dataset and the evaluation should be the same"
 

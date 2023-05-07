@@ -11,10 +11,12 @@ save_path: "figures/ego_forward_model_detailed_evaluation/"
 # Dataset related parameters for training
 
 dataset_test:
-  data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_data_20Hz_action_repeat_4/test/"
-  sequence_length: *sequence_length
-  read_keys: *read_keys
-  dilation: *dilation
+  type: InstanceDataset
+  config:
+    data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_data_20Hz_action_repeat_4/test/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
 
 # Dataloader related parameters for training
 dataloader_test:
@@ -32,14 +34,14 @@ evaluation:
 
 # Wandb related parameters
 wandb:
-  link: "vaydingul/mbl-refactored/3vfihnmu"
-  checkpoint_number: 99
+  link: "vaydingul/mbl-refactored/1zu76rnx"
+  checkpoint_number: 49
 
   enable: true
   resume: false
   resume_checkpoint_number: 0
   project: "mbl-refactored"
   group: "eval-ego-forward-model-multi-step"
-  name: "1-10-20Hz-action_repeat_4"
+  name: "1-10-20Hz-action_repeat_4(corrected)"
   id: ~
   notes: "20 Hz ego forward model evaluation plots"

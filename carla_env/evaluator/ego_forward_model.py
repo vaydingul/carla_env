@@ -4,6 +4,8 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 
+from utils.train_utils import to, clone, cat, stack
+
 
 class Evaluator(object):
     def __init__(
@@ -18,64 +20,59 @@ class Evaluator(object):
 
         self.model.to(self.device)
 
+    @torch.no_grad()
     def evaluate(self, run, table):
-
         self.model.eval()
 
         for i, (data) in enumerate(self.dataloader):
+            ego_state_previous = to(
+                data["ego"],
+                self.device,
+                index_end=1,
+            )
+            ego_state_previous["rotation_array"].deg2rad_()
+            if "angular_velocity_array" in ego_state_previous:
+                ego_state_previous["angular_velocity_array"].deg2rad_()
 
-            ego_previous_location = data["ego"]["location_array"][:, 0:1, 0:2].to(
-                self.device
+            ego_state_future = to(
+                data["ego"],
+                self.device,
+                index_start=1,
             )
-            ego_future_location = data["ego"]["location_array"][:, 1:, 0:2].to(
-                self.device
-            )
-            ego_future_location_predicted_list = []
+            ego_state_future["rotation_array"].deg2rad_()
+            if "angular_velocity_array" in ego_state_future:
+                ego_state_future["angular_velocity_array"].deg2rad_()
 
-            ego_previous_yaw = torch.deg2rad(
-                data["ego"]["rotation_array"][:, 0:1, 2:].to(self.device)
-            )
-            ego_future_yaw = torch.deg2rad(
-                data["ego"]["rotation_array"][:, 1:, 2:].to(self.device)
-            )
-            ego_future_yaw_predicted_list = []
-
-            ego_previous_speed = (
-                data["ego"]["velocity_array"][:, 0:1]
-                .norm(2, -1, keepdim=True)
-                .to(self.device)
-            )
-            ego_future_speed = (
-                data["ego"]["velocity_array"][:, 1:]
-                .norm(2, -1, keepdim=True)
-                .to(self.device)
-            )
-            ego_future_speed_predicted_list = []
+            ego_state_future_predicted_list = []
 
             ego_action = data["ego"]["control_array"].to(self.device)
+
             ego_action[..., 0] -= ego_action[..., -1]
+            ego_action = ego_action[..., :-1]
 
-            ego_state = {
-                "location": ego_previous_location,
-                "yaw": ego_previous_yaw,
-                "speed": ego_previous_speed,
-            }
+            for t in range(self.sequence_length - 1):
+                control_ = ego_action[:, t : t + 1]
 
-            for k in range(self.sequence_length - 1):
+                ego_state_next = self.model(ego_state_previous, control_)
+                ego_state_future_predicted_list.append(ego_state_next)
+                ego_state_previous = ego_state_next
 
-                ego_state_next = self.model(ego_state, ego_action[:, k : k + 1])
+            ego_state_future_predicted = cat(ego_state_future_predicted_list, dim=1)
 
-                ego_future_location_predicted_list.append(ego_state_next["location"])
-                ego_future_yaw_predicted_list.append(ego_state_next["yaw"])
-                ego_future_speed_predicted_list.append(ego_state_next["speed"])
+            ego_future_location = ego_state_future["location_array"][..., :2]
+            ego_future_location_predicted = ego_state_future_predicted[
+                "location_array"
+            ][..., :2]
 
-                ego_state = ego_state_next
+            ego_future_yaw = ego_state_future["rotation_array"][..., 2:3]
+            ego_future_yaw_predicted = ego_state_future_predicted["rotation_array"][
+                ..., 2:3
+            ]
 
-            ego_future_location_predicted = torch.cat(
-                ego_future_location_predicted_list, 1
-            )
-            ego_future_yaw_predicted = torch.cat(ego_future_yaw_predicted_list, 1)
-            ego_future_speed_predicted = torch.cat(ego_future_speed_predicted_list, 1)
+            ego_future_speed = ego_state_future["velocity_array"].norm(2, -1, True)
+            ego_future_speed_predicted = ego_state_future_predicted[
+                "velocity_array"
+            ].norm(2, -1, True)
 
             metric_location = self.metric(
                 ego_future_location, ego_future_location_predicted
@@ -96,7 +93,7 @@ class Evaluator(object):
                 ego_future_yaw_predicted,
                 ego_future_speed,
                 ego_future_speed_predicted,
-                ego_action[..., :2],
+                ego_action,
                 i,
             )
 
@@ -114,7 +111,6 @@ class Evaluator(object):
         ego_action,
         i,
     ):
-
         ego_future_location = ego_future_location.detach().cpu().numpy().reshape(-1, 2)
         ego_future_location_predicted = (
             ego_future_location_predicted.detach().cpu().numpy().reshape(-1, 2)
