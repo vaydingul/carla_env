@@ -199,7 +199,7 @@ wandb:
   resume_checkpoint_number: 0
   project: "mbl-refactored"
   group: "train-policy-model-multi-step-20Hz"
-  name: "20-1-20Hz-simple_bev_with_pedestrian"
+  name: "20-1-20Hz-simple_bev_with_pedestrian(new_ego_forward_model)"
   id: ~
   link: ~
   notes: "Policy model with 20Hz data and 20 time steps in the past and 1 time step in the future. BC + policy cost."
