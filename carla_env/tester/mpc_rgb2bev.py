@@ -8,6 +8,7 @@ from utils.kinematic_utils import acceleration_to_throttle_brake
 from utils.model_utils import convert_standard_bev_to_model_bev
 from utils.create_video_from_folder import create_video_from_images
 from utils.train_utils import cat, to, requires_grad
+from simple_bev.instance import get_translation_and_rotation_from_sensor_list
 
 
 class Tester:
@@ -79,7 +80,7 @@ class Tester:
         if self.log_video:
             self.log_video_images_path = []
 
-        self.world_previous_bev_deque = deque(maxlen=self.num_time_step_previous)
+        self.images_deque = deque(maxlen=self.num_time_step_previous)
 
         self._reset()
 
@@ -89,22 +90,28 @@ class Tester:
         processed_data = self._process_data(data)
 
         for _ in range(self.num_time_step_previous):
-            self.world_previous_bev_deque.append(processed_data["bev_tensor"])
+            self.images_deque.append(processed_data["images"])
 
         while not self.environment.is_done:
             t0 = time.time()
 
             # Get data
             ego_previous = processed_data["ego_previous"]
-            bev_tensor = processed_data["bev_tensor"]
+
+            images = processed_data["images"]
+            translations = processed_data["translations"]
+            rotations = processed_data["rotations"]
+            intrinsics = processed_data["intrinsics"]
+
+            # bev_tensor = processed_data["bev_tensor"]
             target = processed_data["target"]
 
             # Append world deque
-            self.world_previous_bev_deque.append(bev_tensor)
+            self.images_deque.append(images)
 
             # Make it compatible with torch
-            world_previous_bev = (
-                torch.stack(list(self.world_previous_bev_deque), dim=1)
+            images = (
+                torch.stack(list(self.images), dim=1)
                 .to(self.device)
                 .requires_grad_(True)
             )
@@ -113,7 +120,10 @@ class Tester:
             if (self.skip_counter == 0) and (self.repeat_counter == 0):
                 out = self._step(
                     ego_previous=ego_previous,
-                    world_previous_bev=world_previous_bev,
+                    images=images,
+                    translations=translations,
+                    rotations=rotations,
+                    intrinsics=intrinsics,
                     target=target,
                 )
                 ego_future_action_predicted = out["action"]
@@ -276,18 +286,70 @@ class Tester:
             }
             processed_data["target"] = target
 
-        if "bev_world" in data.keys():
-            bev_tensor = convert_standard_bev_to_model_bev(
-                data["bev_world"],
-                agent_channel=self.bev_agent_channel,
-                vehicle_channel=self.bev_vehicle_channel,
-                selected_channels=self.bev_selected_channels,
-                calculate_offroad=self.bev_calculate_offroad,
-                device=self.device,
-            )
-            bev_tensor.requires_grad_(True)
+        if ("rgb_front" in data) and ("rgb_right" in data) and ("rgb_left" in data):
+            sensor_list = [
+                {"id": sensor[1], **sensor[2]}
+                for sensor in self.environment.sensors
+                if ("rgb" in sensor[1])
+            ]
 
-            processed_data["bev_tensor"] = bev_tensor
+            (
+                cameras,
+                translations,
+                rotations,
+                intrinsics,
+            ) = get_translation_and_rotation_from_sensor_list(sensor_list)
+
+            images = (
+                torch.stack(
+                    [
+                        torch.from_numpy(data[sensor["id"]]).float().permute(2, 0, 1)
+                        / 255.0
+                        for sensor in sensor_list
+                    ],
+                    dim=0,
+                )
+                .unsqueeze(0)
+                .to(self.device)
+                .requires_grad_(True)
+            )
+
+            translations = (
+                torch.stack(translations, dim=0)
+                .unsqueeze(0)
+                .to(self.device)
+                .requires_grad_(True)
+            )
+            rotations = (
+                torch.stack(rotations, dim=0)
+                .unsqueeze(0)
+                .to(self.device)
+                .requires_grad_(True)
+            )
+            intrinsics = (
+                torch.stack(intrinsics, dim=0)
+                .unsqueeze(0)
+                .to(self.device)
+                .requires_grad_(True)
+            )
+
+            processed_data["images"] = images
+            processed_data["translations"] = translations
+            processed_data["rotations"] = rotations
+            processed_data["intrinsics"] = intrinsics
+
+        # if "bev_world" in data.keys():
+        #     bev_tensor = convert_standard_bev_to_model_bev(
+        #         data["bev_world"],
+        #         agent_channel=self.bev_agent_channel,
+        #         vehicle_channel=self.bev_vehicle_channel,
+        #         selected_channels=self.bev_selected_channels,
+        #         calculate_offroad=self.bev_calculate_offroad,
+        #         device=self.device,
+        #     )
+        #     bev_tensor.requires_grad_(True)
+
+        #     processed_data["bev_tensor"] = bev_tensor
 
         return processed_data
 
@@ -338,8 +400,25 @@ class Tester:
 
         return world_future_bev_predicted
 
-    def _forward_rgb2bev_model(self, rgb_list):
-        pass
+    def _forward_rgb2bev_model(
+        self,
+        images,
+        rotations,
+        translations,
+        intrinsics,
+    ):
+        from simple_bev.run_models import run_model_mpc_rgb2bev
+
+        return run_model_mpc_rgb2bev(
+            model=self.rgb2bev_model,
+            data=(
+                images,
+                rotations,
+                translations,
+                intrinsics,
+            ),
+            device=self.device,
+        )
 
     def _forward_cost(
         self,
@@ -424,7 +503,11 @@ class Tester:
             "loss": loss,
         }
 
-    def _step(self, ego_previous, world_previous_bev, target):
+    def _step(self, ego_previous, images, rotations, translations, intrinsics, target):
+        world_previous_bev = self._forward_rgb2bev_model(
+            images, rotations, translations, intrinsics
+        )
+
         world_future_bev_predicted = self._forward_world_forward_model(
             world_previous_bev
         )
