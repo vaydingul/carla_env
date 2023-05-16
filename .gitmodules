@@ -1,0 +1,4 @@
+[submodule "simple_bev"]
+	path = simple_bev
+	url = https://github.com/vaydingul/simple_bev.git
+	branch = carla-bev
