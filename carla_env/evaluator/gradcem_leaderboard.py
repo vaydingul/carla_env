@@ -92,8 +92,7 @@ class Evaluator(Tester):
         return processed_data
 
     def step(self, ego_previous, world_previous_bev, target):
-        out = super()._step(ego_previous, world_previous_bev, target)
-        return out
-    
+        return super()._step(ego_previous, world_previous_bev, target)
+
     def reset(self):
         super()._reset()
