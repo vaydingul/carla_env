@@ -24,7 +24,7 @@ def main(config):
     logger.info(f"Dataset size: {len(dataset)}")
 
     # -------------------------------- Weight Path ------------------------------- #
-    weight_path = f"{config['dataset']['config']['data_path']}/{config['num_time_step_previous']}-{config['num_time_step_future']}-{config['dilation']}-{'-'.join(config['read_keys'])}-NAVIGATION_DOWNSAMPLED_COMMAND-weights.pt"
+    weight_path = f"{config['dataset']['config']['data_path']}/{config['num_time_step_previous']}-{config['num_time_step_future']}-{config['dilation']}-{'-'.join(config['read_keys'])}-STEER-weights.pt"
 
     if os.path.exists(weight_path):
         logger.info("Loading weights from file")
@@ -33,9 +33,7 @@ def main(config):
         logger.info("Calculating weights")
         weights = torch.Tensor(
             [
-                dataset.__get_weight_navigation_downsampled_command__(
-                    k, config["weight_coefficients"]
-                )
+                dataset.__get_weight_steer__(k, config["weight_coefficients"])
                 for k in tqdm(range(len(dataset)))
             ]
         )
@@ -45,7 +43,7 @@ def main(config):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config_path", type=str, default="configs/dataset_summary/config.yml"
+        "--config_path", type=str, default="configs/dataset_weight/config_steer.yml"
     )
 
     config = parser.parse_args()

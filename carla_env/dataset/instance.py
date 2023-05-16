@@ -232,6 +232,22 @@ class InstanceDataset(Dataset):
 
         return weight
 
+    def __get_weight_steer__(self, index, steer_location_parameter):
+        assert "ego" in self.read_keys, "ego should be in read_keys"
+
+        weight = 1
+
+        for k in range(0, self.sequence_length * self.dilation, self.dilation):
+            ego = self._load_json(index + k, "ego")
+
+            steer = np.abs(ego["control_array"][1].item())
+
+            steer = (steer - steer_location_parameter[0]) / steer_location_parameter[1]
+
+            weight *= scipy.stats.norm(0, 1).pdf(steer)
+
+        return weight
+
     def _load_bev(self, index, read_key):
         load_path = self.data[index][0] / read_key / f"{self.data[index][1]}.npz"
         data = np.load(load_path)

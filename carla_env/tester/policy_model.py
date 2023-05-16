@@ -5,6 +5,7 @@ import wandb
 from utils.kinematic_utils import acceleration_to_throttle_brake
 from utils.model_utils import convert_standard_bev_to_model_bev
 from utils.create_video_from_folder import create_video_from_images
+from utils.train_utils import cat
 
 
 class Tester:
@@ -30,7 +31,6 @@ class Tester:
         bev_selected_channels=[0, 1, 2, 3, 4, 5, 6, 11],
         bev_calculate_offroad=False,
     ):
-
         self.environment = environment
         self.ego_forward_model = ego_forward_model
         self.world_forward_model = world_forward_model
@@ -67,19 +67,15 @@ class Tester:
         self.world_previous_bev_deque = deque(maxlen=self.num_time_step_previous)
 
     def test(self, run):
-
         self.environment.step()
         data = self.environment.get_data()
         processed_data = self._process_data(data)
 
         for _ in range(self.num_time_step_previous):
-
             self.world_previous_bev_deque.append(processed_data["bev_tensor"])
 
         with torch.no_grad():
-
             while not self.environment.is_done:
-
                 t0 = time.time()
 
                 # Get data
@@ -98,28 +94,19 @@ class Tester:
                 ).to(self.device)
 
                 # Initialize predicted lists
-                ego_future_location_predicted_list = []
-                ego_future_yaw_predicted_list = []
-                ego_future_speed_predicted_list = []
+                ego_state_future_predicted_list = []
                 world_future_bev_predicted_list = []
                 ego_future_action_predicted_list = []
 
                 # It is allowed to calculate a new action
                 if (self.skip_counter == 0) and (self.repeat_counter == 0):
-
                     for k in range(self.num_time_step_future):
-
                         # Calculate encoded world state and predicted future world state
                         (
                             world_previous_bev_encoded,
                             world_future_bev,
                         ) = self.world_forward_model(
                             world_previous_bev, sample_latent=True
-                        )
-
-                        # Calculate predicted future ego state
-                        ego_future = self.ego_forward_model(
-                            ego_previous, navigational_command
                         )
 
                         # Calculate predicted future action
@@ -131,18 +118,18 @@ class Tester:
                             navigational_command,
                             target_location,
                             occupancy,
-                        )
+                        ).unsqueeze(1)
+
+                        # Calculate predicted future ego state
+                        ego_future = self.ego_forward_model(ego_previous, action)
 
                         # Take sigmoid of world future bev
                         world_future_bev = torch.sigmoid(world_future_bev)
 
                         # Append to lists
-                        ego_future_location_predicted_list.append(
-                            ego_future["location"]
-                        )
-                        ego_future_yaw_predicted_list.append(ego_future["yaw"])
-                        ego_future_speed_predicted_list.append(ego_future["speed"])
+
                         world_future_bev_predicted_list.append(world_future_bev)
+                        ego_state_future_predicted_list.append(ego_future)
                         ego_future_action_predicted_list.append(action)
 
                         # Update ego_previous and world_previous_bev
@@ -154,26 +141,27 @@ class Tester:
                         )
 
                     # Stack predicted lists
-                    ego_future_location_predicted = torch.stack(
-                        ego_future_location_predicted_list, dim=1
-                    )
-                    ego_future_yaw_predicted = torch.stack(
-                        ego_future_yaw_predicted_list, dim=1
-                    )
-                    ego_future_speed_predicted = torch.stack(
-                        ego_future_speed_predicted_list, dim=1
-                    )
+                    ego_future_predicted = cat(ego_state_future_predicted_list, dim=1)
                     world_future_bev_predicted = torch.stack(
                         world_future_bev_predicted_list, dim=1
                     )
-                    ego_future_action_predicted = torch.stack(
+                    ego_future_action_predicted = torch.cat(
                         ego_future_action_predicted_list, dim=1
                     )
+
+                    ego_future_location_predicted = ego_future_predicted[
+                        "location_array"
+                    ][..., :2]
+                    ego_future_yaw_predicted = ego_future_predicted["rotation_array"][
+                        ..., 2:3
+                    ]
+                    ego_future_speed_predicted = ego_future_predicted[
+                        "velocity_array"
+                    ].norm(2, -1, True)
 
                     # If number of future time steps is greater than 1
                     # Calculate policy cost
                     if self.num_time_step_future > 1:
-
                         cost = self.cost(
                             ego_future_location_predicted,
                             ego_future_yaw_predicted,
@@ -184,7 +172,6 @@ class Tester:
                         cost_dict = {k: v for (k, v) in cost["cost_dict"].items()}
 
                     else:
-
                         cost = {}
                         cost_dict = {}
 
@@ -281,29 +268,30 @@ class Tester:
         self.environment.close()
 
     def _process_data(self, data):
-
         processed_data = {}
 
         if "ego" in data.keys():
-            ego_previous_location = torch.zeros((1, 2), device=self.device)
-            ego_previous_yaw = torch.zeros((1, 1), device=self.device)
-            ego_previous_speed = torch.zeros((1, 1), device=self.device)
+            ego_previous_location_array = torch.zeros((1, 1, 3), device=self.device)
+            ego_previous_rotation_array = torch.zeros((1, 1, 3), device=self.device)
+            ego_previous_velocity_array = torch.zeros((1, 1, 3), device=self.device)
 
-            ego_previous_location[..., 0] = data["ego"]["location_array"][0]
-            ego_previous_location[..., 1] = data["ego"]["location_array"][1]
-            ego_previous_yaw[..., 0] = data["ego"]["rotation_array"][-1]
-            ego_previous_speed[..., 0] = torch.norm(
-                torch.Tensor(data["ego"]["velocity_array"])
+            ego_previous_location_array[..., 0] = data["ego"]["location_array"][0]
+            ego_previous_location_array[..., 1] = data["ego"]["location_array"][1]
+            ego_previous_rotation_array[..., 2] = (
+                data["ego"]["rotation_array"][-1] * torch.pi / 180
             )
+            ego_previous_velocity_array[..., 0] = data["ego"]["velocity_array"][0]
+            ego_previous_velocity_array[..., 1] = data["ego"]["velocity_array"][1]
+            ego_previous_velocity_array[..., 2] = data["ego"]["velocity_array"][2]
 
-            ego_previous_location.requires_grad_(True)
-            ego_previous_yaw.requires_grad_(True)
-            ego_previous_speed.requires_grad_(True)
+            ego_previous_location_array.requires_grad_(True)
+            ego_previous_rotation_array.requires_grad_(True)
+            ego_previous_velocity_array.requires_grad_(True)
 
             ego_previous = {
-                "location": ego_previous_location,
-                "yaw": ego_previous_yaw,
-                "speed": ego_previous_speed,
+                "location_array": ego_previous_location_array,
+                "rotation_array": ego_previous_rotation_array,
+                "velocity_array": ego_previous_velocity_array,
             }
 
             processed_data["ego_previous"] = ego_previous

@@ -4,11 +4,11 @@ seed: 999
 port: &port_var 2000
 tm_port: &tm_port_var 8000
 num_time_step_previous: &previous 20
-num_time_step_future: &future 1
+num_time_step_future: &future 10
 
 environment:
   name: carla_env_testing_traffic
-  random: false
+  driver: external
   action_repeat: 1
   fixed_delta_seconds: &dt 0.05
   max_steps: 5000
@@ -101,7 +101,7 @@ tester:
 #   checkpoint_number: 0
 
 wandb_policy_model:
-  link: vaydingul/mbl-refactored/18g1o7pm
+  link: vaydingul/mbl-refactored/1q3x53yg
   checkpoint_number: 47
 
 wandb:
