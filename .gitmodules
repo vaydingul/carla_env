@@ -2,3 +2,11 @@
 	path = simple_bev
 	url = https://github.com/vaydingul/simple_bev.git
 	branch = carla-bev
+[submodule "leaderboard"]
+	path = leaderboard
+	url = https://github.com/vaydingul/leaderboard.git
+	branch = stable
+[submodule "scenario_runner"]
+	path = scenario_runner
+	url = https://github.com/vaydingul/scenario_runner.git
+	branch = leaderboard
