@@ -80,7 +80,6 @@ def main(config):
     #                    WORLD FORWARD MODEL WANDB RUN CHECKPOINT                  #
     # ---------------------------------------------------------------------------- #
     if config["wandb_world_forward_model"] is not None:
-
         world_forward_model_wandb_link = config["wandb_world_forward_model"]["link"]
         world_forward_model_checkpoint_number = config["wandb_world_forward_model"][
             "checkpoint_number"
@@ -107,7 +106,6 @@ def main(config):
         )
 
     else:
-
         world_forward_model = None
 
     # ---------------------------------------------------------------------------- #
@@ -142,6 +140,8 @@ def main(config):
         init_action=config["tester"]["init_action"],
         skip_frames=config["tester"]["skip_frames"],
         repeat_frames=config["tester"]["repeat_frames"],
+        cost_weight_dropout=config["tester"]["cost_weight_dropout"],
+        cost_weight_frames=config["tester"]["cost_weight_frames"],
         gradient_clip=config["training"]["gradient_clip"]["enable"],
         gradient_clip_type=config["training"]["gradient_clip"]["type"],
         gradient_clip_value=config["training"]["gradient_clip"]["value"],
@@ -156,7 +156,6 @@ def main(config):
     )
 
     try:
-
         logger.info("Starting the tester")
 
         tester.test(run)
@@ -164,7 +163,6 @@ def main(config):
         logger.info("Tester finished")
 
     except Exception as e:
-
         logger.exception("Tester failed!", exc_info=e)
 
         logger.info("Closing the environment")
@@ -182,7 +180,6 @@ def main(config):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(
         description="Collect data from the CARLA simulator"
     )

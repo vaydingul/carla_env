@@ -3,7 +3,7 @@ import time
 import torch
 from torch import nn
 import wandb
-from utils.cost_utils import sample_coefficient
+from utils.cost_utils import sample_weight
 from utils.kinematic_utils import acceleration_to_throttle_brake
 from utils.model_utils import convert_standard_bev_to_model_bev
 from utils.create_video_from_folder import create_video_from_images
@@ -29,6 +29,8 @@ class Tester:
         num_time_step_future=10,
         skip_frames=1,
         repeat_frames=1,
+        cost_weight_dropout=0.0,
+        cost_weight_frames=40,
         log_video=True,
         log_video_scale=0.1,
         gradient_clip=True,
@@ -44,6 +46,7 @@ class Tester:
         self.world_forward_model = world_forward_model
         self.cost = cost
         self.cost_weight = cost_weight
+        self.cost_weight_in_use = cost_weight
         self.device = device
         self.optimizer_class = optimizer_class
         self.optimizer_config = optimizer_config
@@ -55,6 +58,8 @@ class Tester:
         self.num_time_step_future = num_time_step_future
         self.skip_frames = skip_frames
         self.repeat_frames = repeat_frames
+        self.cost_weight_dropout = cost_weight_dropout
+        self.cost_weight_frames = cost_weight_frames
         self.log_video = log_video
         self.log_video_scale = log_video_scale
         self.gradient_clip = gradient_clip
@@ -359,22 +364,28 @@ class Tester:
 
         loss = torch.tensor(0.0, device=self.device)
 
-        for cost_key in self.cost_weight.keys():
-            self.cost_weight[cost_key] = (
-                sample_coefficient(
-                    self.cost_weight[cost_key]["mean"],
-                    self.cost_weight[cost_key]["std"],
-                )
-                if isinstance(self.cost_weight[cost_key], dict)
-                else self.cost_weight[cost_key]
-            )
+        if self.frame_counter % self.cost_weight_frames == 0:
+            self.cost_weight_in_use = self.cost_weight
+            for cost_key in self.cost_weight.keys():
+                # Pick a random number to apply dropout
+                if torch.rand(1) < self.cost_weight_dropout:
+                    self.cost_weight_in_use[cost_key] = (
+                        sample_weight(
+                            self.cost_weight[cost_key]["mean"],
+                            self.cost_weight[cost_key]["std"],
+                        )
+                        if isinstance(self.cost_weight[cost_key], dict)
+                        else self.cost_weight[cost_key]
+                    )
+                else:
+                    self.cost_weight_in_use[cost_key] = 0
 
         for cost_key in cost["cost_dict"].keys():
             assert (
                 cost_key in self.cost_weight.keys()
             ), f"{cost_key} not in {self.cost_weight.keys()}"
 
-            loss += cost["cost_dict"][cost_key] * self.cost_weight[cost_key]
+            loss += cost["cost_dict"][cost_key] * self.cost_weight_in_use[cost_key]
 
         ego_location_l1 = torch.nn.functional.l1_loss(
             ego_future_location_predicted,
@@ -400,11 +411,11 @@ class Tester:
         steer_jerk = torch.diff(self.action[..., 1], dim=1).square().sum()
 
         loss += (
-            ego_location_l1 * self.cost_weight["ego_location_l1"]
-            + ego_yaw_l1 * self.cost_weight["ego_yaw_l1"]
-            + ego_speed_l1 * self.cost_weight["ego_speed_l1"]
-            + acceleration_jerk * self.cost_weight["acceleration_jerk"]
-            + steer_jerk * self.cost_weight["steer_jerk"]
+            ego_location_l1 * self.cost_weight_in_use["ego_location_l1"]
+            + ego_yaw_l1 * self.cost_weight_in_use["ego_yaw_l1"]
+            + ego_speed_l1 * self.cost_weight_in_use["ego_speed_l1"]
+            + acceleration_jerk * self.cost_weight_in_use["acceleration_jerk"]
+            + steer_jerk * self.cost_weight_in_use["steer_jerk"]
         )
 
         return {
@@ -495,23 +506,6 @@ class Tester:
                     )
                     * 0.2
                 )
-
-                # Generate random number between -1 and 1, having the size of (B, T, A)
-                # action = (
-                #     torch.rand(
-                #         (self.batch_size, self.num_time_step_future, self.action_size),
-                #         device=self.device,
-                #         dtype=torch.float32,
-                #     )
-                #     * 2
-                #     - 1
-                # )
-
-                # action = torch.randn(
-                #     (self.batch_size, self.num_time_step_future, self.action_size),
-                #     device=self.device,
-                #     dtype=torch.float32,
-                # )
 
             elif self.init_action == "ones":
                 action = torch.ones(

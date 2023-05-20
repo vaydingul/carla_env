@@ -1,8 +1,8 @@
 import torch
 
 
-def sample_coefficient(mu, std):
-    """Sample a coefficient from a normal distribution"""
+def sample_weight(mu, std):
+    """Sample a weight from a normal distribution"""
     return torch.normal(mu, std, ())
 
 

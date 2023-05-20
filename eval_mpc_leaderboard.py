@@ -152,6 +152,8 @@ def main(config):
         init_action=config["evaluator"]["init_action"],
         skip_frames=config["evaluator"]["skip_frames"],
         repeat_frames=config["evaluator"]["repeat_frames"],
+        cost_weight_dropout=config["evaluator"]["cost_weight_dropout"],
+        cost_weight_frames=config["evaluator"]["cost_weight_frames"],
         gradient_clip=config["training"]["gradient_clip"]["enable"],
         gradient_clip_type=config["training"]["gradient_clip"]["type"],
         gradient_clip_value=config["training"]["gradient_clip"]["value"],
