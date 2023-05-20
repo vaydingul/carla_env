@@ -1,13 +1,13 @@
-experiment_type: test_mpc
-log_path: ~
-seed: 6458
+experiment_type: test_mpc_rgb2bev
+seed: 24734
 port: &port_var 3000
 tm_port: &tm_port_var 9000
-num_time_step_previous: &previous 20
+num_time_step_previous: &previous 1
 num_time_step_future: &future 10
+log_path: ~
 
 cost:
-  type: "extended_bev_with_pedestrian"
+  type: "special_bev_with_pedestrian"
   config:
     image_width: 192
     image_height: 192
@@ -148,15 +148,15 @@ tester:
   log_video_scale: 0.1
   bev_agent_channel: 7
   bev_vehicle_channel: 6
-  bev_selected_channels: [0, 1, 2, 3, 4, 5, 6, 10, 11]
+  bev_selected_channels: [0, 1, 2, 5, 6, 10, 11]
   bev_calculate_offroad: false
 
   cost_weight:
     road_cost: -0.01 # -0.01
     road_on_cost: -0.01 # -0.01
     road_off_cost: 0.05 # 0.005
-    road_red_yellow_cost: 0.1 # 0.1
-    road_green_cost: -0.1 # -0.1
+    # road_red_yellow_cost: 0.1 # 0.1
+    # road_green_cost: -0.1 # -0.1
     vehicle_cost: 10 # 1
     lane_cost: 0.05 # 0.05
     pedestrian_cost: 10
@@ -199,7 +199,7 @@ rgb2bev_model:
   n_classes: 7
   branched_segmentation_head: false
   num_segmentation_head_branches: 6
-  checkpoint_path: simple_bev/checkpoints/...
+  checkpoint_path: /mnt/kuacc/scratch/users/vaydingul20/Codes/simple_bev/checkpoints/15x4_1e-4s_carla-road-road_on-road_off-lane_line-vehicle-pedestrian-offroad(weighted)(sampled)_13:06:30/
 
 wandb:
   enable: false

@@ -111,7 +111,7 @@ class Tester:
 
             # Make it compatible with torch
             images = (
-                torch.stack(list(self.images), dim=1)
+                torch.stack(list(self.images_deque), dim=1)
                 .to(self.device)
                 .requires_grad_(True)
             )
@@ -288,9 +288,9 @@ class Tester:
 
         if ("rgb_front" in data) and ("rgb_right" in data) and ("rgb_left" in data):
             sensor_list = [
-                {"id": sensor[1], **sensor[2]}
+                {"id": sensor["id"], **sensor["config"]}
                 for sensor in self.environment.sensors
-                if ("rgb" in sensor[1])
+                if ("rgb" in sensor["id"])
             ]
 
             (
@@ -303,7 +303,9 @@ class Tester:
             images = (
                 torch.stack(
                     [
-                        torch.from_numpy(data[sensor["id"]]).float().permute(2, 0, 1)
+                        torch.from_numpy(data[sensor["id"]]["data"].copy())
+                        .float()
+                        .permute(2, 0, 1)
                         / 255.0
                         for sensor in sensor_list
                     ],
@@ -409,16 +411,26 @@ class Tester:
     ):
         from simple_bev.run_models import run_model_mpc_rgb2bev
 
-        return run_model_mpc_rgb2bev(
-            model=self.rgb2bev_model,
-            data=(
-                images,
-                rotations,
-                translations,
-                intrinsics,
-            ),
-            device=self.device,
+        world_previous_bev_predicted_list = []
+        for k in range(images.shape[1]):
+            world_previous_bev_predicted_list.append(
+                run_model_mpc_rgb2bev(
+                    model=self.rgb2bev_model,
+                    data=(
+                        images[:, k],
+                        rotations,
+                        translations,
+                        intrinsics,
+                    ),
+                    device=self.device,
+                ).sigmoid()
+            )
+
+        world_previous_bev_predicted = torch.stack(
+            world_previous_bev_predicted_list, dim=1
         )
+
+        return world_previous_bev_predicted
 
     def _forward_cost(
         self,

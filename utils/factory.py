@@ -5,6 +5,7 @@ def ego_forward_model_factory(config):
         or (config["experiment_type"] == "train_policy_model")
         or (config["experiment_type"] == "test_dfm_km_cp")
         or (config["experiment_type"] == "test_mpc")
+        or (config["experiment_type"] == "test_mpc_rgb2bev")
         or (config["experiment_type"] == "test_gradcem")
     ):
         if config["ego_forward_model"]["type"] == "KinematicBicycleModel":
@@ -32,6 +33,7 @@ def world_forward_model_factory(config):
         or (config["experiment_type"] == "train_policy_model")
         or (config["experiment_type"] == "test_policy_model")
         or (config["experiment_type"] == "test_mpc")
+        or (config["experiment_type"] == "test_mpc_rgb2bev")
         or (config["experiment_type"] == "test_gradcem")
     ):
         if config["world_forward_model"]["type"] == "WorldBEVModel":
@@ -82,6 +84,7 @@ def cost_factory(config):
         (config["experiment_type"] == "train_policy_model")
         or (config["experiment_type"] == "test_policy_model")
         or (config["experiment_type"] == "test_mpc")
+        or (config["experiment_type"] == "test_mpc_rgb2bev")
         or (config["experiment_type"] == "eval_mpc_leaderboard")
         or (config["experiment_type"] == "test_gradcem")
         or (config["experiment_type"] == "eval_gradcem_leaderboard")
@@ -110,6 +113,12 @@ def cost_factory(config):
 
             return Cost
 
+        elif config["cost"]["type"] == "special_bev_with_pedestrian":
+            from carla_env.cost.masked_cost_batched_special_bev_with_pedestrian import (
+                Cost,
+            )
+
+            return Cost
         else:
             raise ValueError("Invalid bev_type")
 
@@ -195,6 +204,11 @@ def tester_factory(config):
 
         return Tester
 
+    elif config["experiment_type"] == "test_mpc_rgb2bev":
+        from carla_env.tester.mpc_rgb2bev import Tester
+
+        return Tester
+
     elif config["experiment_type"] == "test_gradcem":
         from carla_env.tester.gradcem import Tester
 
@@ -210,6 +224,7 @@ def optimizer_factory(config):
         or (config["experiment_type"] == "train_world_forward_model")
         or (config["experiment_type"] == "train_ego_forward_model")
         or (config["experiment_type"] == "test_mpc")
+        or (config["experiment_type"] == "test_mpc_rgb2bev")
         or (config["experiment_type"] == "eval_mpc_leaderboard")
         or (config["experiment_type"] == "test_gradcem")
         or (config["experiment_type"] == "eval_gradcem_leaderboard")
@@ -467,6 +482,7 @@ def environment_factory(config):
     elif (
         (config["experiment_type"] == "test_policy_model")
         or (config["experiment_type"] == "test_mpc")
+        or (config["experiment_type"] == "test_mpc_rgb2bev")
         or (config["experiment_type"] == "test_gradcem")
     ):
         from carla_env.carla_env_testing_traffic import CarlaEnvironment
@@ -501,6 +517,7 @@ def sensor_factory(config):
         (config["experiment_type"] == "collect_data_random")
         or (config["experiment_type"] == "collect_data_driving")
         or (config["experiment_type"] == "test_mpc")
+        or (config["experiment_type"] == "test_mpc_rgb2bev")
         or (config["experiment_type"] == "test_gradcem")
         or (config["experiment_type"] == "test_policy_model")
         or (config["experiment_type"] == "play_carla")
@@ -575,13 +592,12 @@ def noiser_factory(config):
         (config["experiment_type"] == "collect_data_random")
         or (config["experiment_type"] == "collect_data_driving")
         or (config["experiment_type"] == "test_mpc")
+        or (config["experiment_type"] == "test_mpc_rgb2bev")
         or (config["experiment_type"] == "test_policy_model")
         or (config["experiment_type"] == "play_carla")
         or (config["experiment_type"] == "eval_policy_model_leaderboard")
     ):
-        
         if "noiser" in config["environment"]:
-
             noiser = config["environment"]["noiser"]
 
             if noiser["type"] == "DummyNoiser":
@@ -597,9 +613,8 @@ def noiser_factory(config):
 
                 else:
                     raise ValueError("Invalid noiser_type")
-            
-        else:
 
+        else:
             from carla_env.modules.noiser.dummy import DummyNoiser
 
             return {"class": DummyNoiser, "config": {}}
