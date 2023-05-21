@@ -17,7 +17,6 @@ from utils.config_utils import parse_yml
 from utils.log_utils import get_logger, configure_logger, pretty_print_config
 from leaderboard.leaderboard_evaluator_local import main as leaderboard_evaluator_main
 
-
 def main(config):
     # ---------------------------------------------------------------------------- #
     #                                     SEED                                     #

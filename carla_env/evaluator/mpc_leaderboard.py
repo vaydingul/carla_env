@@ -1,15 +1,7 @@
-from collections import deque
-import time
 import numpy as np
 import torch
-from torch import nn
-import wandb
 from carla_env.tester.mpc import Tester
-from utils.kinematic_utils import acceleration_to_throttle_brake
 from utils.model_utils import convert_standard_bev_to_model_bev
-from utils.create_video_from_folder import create_video_from_images
-from utils.cost_utils import sample_coefficient
-from utils.train_utils import to, cat
 
 
 class Evaluator(Tester):
