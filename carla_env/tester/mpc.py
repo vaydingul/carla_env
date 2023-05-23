@@ -365,10 +365,21 @@ class Tester:
         loss = torch.tensor(0.0, device=self.device)
 
         if self.frame_counter % self.cost_weight_frames == 0:
+
             self.cost_weight_in_use = self.cost_weight.copy()
+
             for cost_key in self.cost_weight.keys():
+                
+                if isinstance(self.cost_weight[cost_key], dict):
+                    
+                    dropout_rate = self.cost_weight[cost_key]["dropout"]
+
+                else:
+
+                    dropout_rate = self.cost_weight_dropout
+
                 # Pick a random number to apply dropout
-                if torch.rand(1) > self.cost_weight_dropout:
+                if torch.rand(1) > dropout_rate:
                     self.cost_weight_in_use[cost_key] = (
                         sample_weight(
                             self.cost_weight[cost_key]["mean"],
@@ -377,7 +388,9 @@ class Tester:
                         if isinstance(self.cost_weight[cost_key], dict)
                         else self.cost_weight[cost_key]
                     )
+
                 else:
+
                     self.cost_weight_in_use[cost_key] = 0
 
         for cost_key in cost["cost_dict"].keys():
