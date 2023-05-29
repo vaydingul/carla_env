@@ -3,7 +3,7 @@ import numpy as np
 
 from typing import NamedTuple, List, Tuple, Optional
 from . import lanes
-from cv2 import cv2 as cv
+import cv2
 from .lanes import LaneSide
 
 Mask = np.ndarray  # of shape (y, x), stores 0 and 1, dtype=np.int32
@@ -234,13 +234,13 @@ class MapMaskGenerator:
             if len(polygon) > 2:
                 polygon = np.array([polygon], dtype=np.int32)
 
-                cv.polylines(
+                cv2.polylines(
                     img=canvas,
                     pts=polygon,
                     isClosed=True,
                     color=COLOR_ON,
                     thickness=5)
-                cv.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
+                cv2.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
         return canvas
 
     def road_on_mask(self, next_waypoint) -> Mask:
@@ -263,13 +263,13 @@ class MapMaskGenerator:
                 if len(polygon) > 2:
                     polygon = np.array([polygon], dtype=np.int32)
 
-                    cv.polylines(
+                    cv2.polylines(
                         img=canvas,
                         pts=polygon,
                         isClosed=True,
                         color=COLOR_ON,
                         thickness=5)
-                    cv.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
+                    cv2.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
         return canvas
 
     def road_off_mask(self, next_waypoint) -> Mask:
@@ -292,13 +292,13 @@ class MapMaskGenerator:
                 if len(polygon) > 2:
                     polygon = np.array([polygon], dtype=np.int32)
 
-                    cv.polylines(
+                    cv2.polylines(
                         img=canvas,
                         pts=polygon,
                         isClosed=True,
                         color=COLOR_ON,
                         thickness=5)
-                    cv.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
+                    cv2.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
 
         return canvas
 
@@ -328,13 +328,13 @@ class MapMaskGenerator:
                 if len(polygon) > 2:
                     polygon = np.array([polygon], dtype=np.int32)
 
-                    cv.polylines(
+                    cv2.polylines(
                         img=canvas,
                         pts=polygon,
                         isClosed=True,
                         color=COLOR_ON,
                         thickness=5)
-                    cv.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
+                    cv2.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
         return canvas
 
 
@@ -373,7 +373,7 @@ class MapMaskGenerator:
                     wp.transform.location) for wp in road_waypoints]
             if len(polygon) > 2:
                 polygon = np.array([polygon], dtype=np.int32)
-                cv.polylines(
+                cv2.polylines(
                     img=canvas,
                     pts=polygon,
                     isClosed=False,
@@ -393,7 +393,7 @@ class MapMaskGenerator:
 
         agent.get_transform().transform(corners)
         corners = [self.location_to_pixel(loc) for loc in corners]
-        cv.fillPoly(img=canvas, pts=np.int32([corners]), color=COLOR_ON)
+        cv2.fillPoly(img=canvas, pts=np.int32([corners]), color=COLOR_ON)
         return canvas
 
     def vehicles_mask(self, vehicles: List[carla.Actor]) -> Mask:
@@ -415,7 +415,7 @@ class MapMaskGenerator:
             else:
                 color = COLOR_ON
 
-            cv.fillPoly(img=canvas, pts=np.int32([corners]), color=color)
+            cv2.fillPoly(img=canvas, pts=np.int32([corners]), color=color)
         return canvas
 
     def pedestrians_mask(self, pedestrians: List[carla.Actor], scale = 5.0) -> Mask:
@@ -434,7 +434,7 @@ class MapMaskGenerator:
 
             ped.get_transform().transform(corners)
             corners = [self.location_to_pixel(loc) for loc in corners]
-            cv.fillPoly(img=canvas, pts=np.int32([corners]), color=COLOR_ON)
+            cv2.fillPoly(img=canvas, pts=np.int32([corners]), color=COLOR_ON)
         return canvas
 
     def traffic_lights_masks(self,
@@ -457,11 +457,11 @@ class MapMaskGenerator:
                 # Unknown or off traffic light
                 continue
 
-            cv.circle(
+            cv2.circle(
                 img=target_canvas,
                 center=pos,
                 radius=radius,
                 color=COLOR_ON,
-                thickness=cv.FILLED,
+                thickness=cv2.FILLED,
             )
         return red_light_canvas, yellow_light_canvas, green_light_canvas

@@ -62,6 +62,12 @@ class Cost(nn.Module):
         bev[bev > 0.5] = 1
         bev[bev <= 0.5] = 0
 
+        C = bev.shape[2]
+
+        highest_class_indices = C - bev.flip(dims=(2, )).argmax(dim=2) - 1
+        
+        bev = torch.nn.functional.one_hot(highest_class_indices, C).permute((0, 1, 4, 2, 3)).float()
+
         # Calculate cost
 
         decay_weight = (

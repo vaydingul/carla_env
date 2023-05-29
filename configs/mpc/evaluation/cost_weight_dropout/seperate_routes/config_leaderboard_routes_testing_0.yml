@@ -1,8 +1,8 @@
 experiment_type: eval_mpc_leaderboard
 log_path: ~
 seed: &seed_var 2023
-port: &port_var 2000
-tm_port: &tm_port_var 8000
+port: &port_var 5000
+tm_port: &tm_port_var 8003
 num_time_step_previous: &previous 20
 num_time_step_future: &future 40
 
@@ -145,20 +145,20 @@ evaluator:
       std: 0.00
       dropout: 0.0
     road_on_cost:
-      mean: -0.5 # -0.01
+      mean: -1.0 # -0.01
       std: 0.1
       dropout: 0.05
     road_off_cost:
-      mean: 0.01 # 0.005
-      std: 0.0
-      dropout: 0.1
+      mean: 0.05 # 0.005
+      std: 0.01
+      dropout: 0.05
     road_red_yellow_cost:
-      mean: 1.0 # 0.1
-      std: 0.1
+      mean: 5.0 # 0.1
+      std: 1.0
       dropout: 0.05
     road_green_cost:
-      mean: -0.5 # -0.1
-      std: 0.0
+      mean: -0.0 # -0.1
+      std: 0.00
       dropout: 0.05
     vehicle_cost:
       mean: 100 # 1
