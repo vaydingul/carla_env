@@ -149,7 +149,7 @@ evaluator:
       std: 0.1
       dropout: 0.05
     road_off_cost:
-      mean: 0.1 # 0.005
+      mean: 0.05 # 0.005
       std: 0.01
       dropout: 0.05
     road_red_yellow_cost:

@@ -15,18 +15,6 @@ from utils.wandb_utils import create_wandb_run
 from utils.config_utils import parse_yml
 from utils.log_utils import get_logger, configure_logger, pretty_print_config
 
-from simple_bev.nets.segnet import Segnet
-from simple_bev.utils.vox import Vox_util
-from simple_bev.eval_carla_instance_dataset import (
-    X,
-    Y,
-    Z,
-    bounds,
-    requires_grad,
-    scene_centroid,
-)
-import simple_bev.saverloader as saverloader
-
 
 def main(config):
     # ---------------------------------------------------------------------------- #
@@ -121,44 +109,6 @@ def main(config):
         world_forward_model = None
 
     # ---------------------------------------------------------------------------- #
-    #                                 RGB2BEV MODEL                                #
-    # ---------------------------------------------------------------------------- #
-
-    vox_util = Vox_util(
-        Z,
-        Y,
-        X,
-        scene_centroid=scene_centroid.to(device),
-        bounds=bounds,
-        assert_cube=False,
-    )
-
-    rgb2bev_model = Segnet(
-        Z,
-        Y,
-        X,
-        vox_util,
-        use_lidar=config["rgb2bev_model"]["use_lidar"],
-        do_rgbcompress=config["rgb2bev_model"]["do_rgbcompress"],
-        encoder_type=config["rgb2bev_model"]["encoder_type"],
-        n_classes=config["rgb2bev_model"]["n_classes"],
-        branched_segmentation_head=config["rgb2bev_model"][
-            "branched_segmentation_head"
-        ],
-        num_segmentation_head_branches=config["rgb2bev_model"][
-            "num_segmentation_head_branches"
-        ],
-    )
-
-    rgb2bev_model = rgb2bev_model.to(device)
-
-    saverloader.load(
-        config["rgb2bev_model"]["checkpoint_path"],
-        rgb2bev_model,
-        ignore_load=None,
-    )
-
-    # ---------------------------------------------------------------------------- #
     #                                   COST                                       #
     # ---------------------------------------------------------------------------- #
 
@@ -179,7 +129,6 @@ def main(config):
         environment=environment,
         ego_forward_model=ego_forward_model,
         world_forward_model=world_forward_model,
-        rgb2bev_model=rgb2bev_model,
         cost=cost,
         cost_weight=config["tester"]["cost_weight"],
         device=device,
@@ -191,6 +140,8 @@ def main(config):
         init_action=config["tester"]["init_action"],
         skip_frames=config["tester"]["skip_frames"],
         repeat_frames=config["tester"]["repeat_frames"],
+        cost_weight_dropout=config["tester"]["cost_weight_dropout"],
+        cost_weight_frames=config["tester"]["cost_weight_frames"],
         gradient_clip=config["training"]["gradient_clip"]["enable"],
         gradient_clip_type=config["training"]["gradient_clip"]["type"],
         gradient_clip_value=config["training"]["gradient_clip"]["value"],
@@ -235,7 +186,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path",
         type=str,
-        default="configs/mpc_rgb2bev/testing/config_extended_bev_20Hz_action_repeat_4_policy_cost_with_pedestrian.yml",
+        default="/home/volkan/Documents/Codes/carla_env/configs/mpc/testing/config_extended_bev_20Hz_action_repeat_4_policy_cost.yml",
         help="Path to config file",
     )
 
