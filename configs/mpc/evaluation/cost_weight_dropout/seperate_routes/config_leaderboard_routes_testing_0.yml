@@ -149,9 +149,9 @@ evaluator:
       std: 0.1
       dropout: 0.05
     road_off_cost:
-      mean: 0.05 # 0.005
-      std: 0.01
-      dropout: 0.05
+      mean: 1.0 # 0.005
+      std: 0.1
+      dropout: 0.1
     road_red_yellow_cost:
       mean: 5.0 # 0.1
       std: 1.0
@@ -173,7 +173,7 @@ evaluator:
       std: 10
       dropout: 0.1
     offroad_cost:
-      mean: 10.0 # 0.005
+      mean: 25.0 # 0.005
       std: 1.0
       dropout: 0.01
     acceleration_jerk:
@@ -185,7 +185,7 @@ evaluator:
       std: 10.0
       dropout: 0.05
     ego_location_l1:
-      mean: 10000.0
+      mean: 20000.0
       std: 1000.0
       dropout: 0.01
     ego_yaw_l1:

@@ -1,3 +1,28 @@
+TEST_EXPERIMENTS = [
+    "test_dfm_km_cp",
+    "test_mpc",
+    "test_mpc_rgb2bev",
+    "test_gradcem",
+    "eval_mpc_leaderboard",
+    "eval_gradcem_leaderboard",
+]
+
+TRAIN_EXPERIMENTS = [
+    "train_ego_forward_model",
+    "train_world_forward_model",
+    "train_policy_model",
+]
+
+EVAL_EXPERIMENTS = [
+    "eval_ego_forward_model",
+    "eval_world_forward_model",
+    "eval_world_forward_model_last_frame_repeated",
+    "eval_policy_model",
+]
+
+
+
+
 def ego_forward_model_factory(config):
     if (
         (config["experiment_type"] == "train_ego_forward_model")
@@ -621,3 +646,22 @@ def noiser_factory(config):
 
     else:
         raise ValueError("Invalid experiment type")
+
+
+def adapter_factory(config):
+
+    if (
+        (config["experiment_type"] == "collect_data_random")
+        or (config["experiment_type"] == "collect_data_driving")
+        or (config["experiment_type"] == "test_mpc")
+        or (config["experiment_type"] == "test_mpc_rgb2bev")
+        or (config["experiment_type"] == "test_policy_model")
+        or (config["experiment_type"] == "play_carla")
+        or (config["experiment_type"] == "eval_policy_model_leaderboard")
+        or (config["experiment_type"] == "eval_mpc_leaderboard")
+        or (config["experiment_type"] == "eval_gradcem_leaderboard")
+    ):
+        if "adapter" in config:
+            adapter = config["adapter"]
+
+            pass

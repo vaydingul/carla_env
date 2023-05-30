@@ -109,6 +109,16 @@ def main(config):
         world_forward_model = None
 
     # ---------------------------------------------------------------------------- #
+    #                                    ADAPTER                                   #
+    # ---------------------------------------------------------------------------- #
+    adapter_class = adapter_factory(config)
+    adapter = adapter_class(
+        ego_forward_model=ego_forward_model,
+        world_forward_model=world_forward_model,
+        device=device,
+    )
+
+    # ---------------------------------------------------------------------------- #
     #                                   COST                                       #
     # ---------------------------------------------------------------------------- #
 
@@ -129,6 +139,7 @@ def main(config):
         environment=environment,
         ego_forward_model=ego_forward_model,
         world_forward_model=world_forward_model,
+        adapter=adapter,
         cost=cost,
         cost_weight=config["tester"]["cost_weight"],
         device=device,
