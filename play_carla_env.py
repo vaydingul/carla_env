@@ -3,10 +3,10 @@ import logging
 import time
 import numpy as np
 import carla
-from utils.factory import *
-from utils.wandb_utils import create_wandb_run
-from utils.config_utils import parse_yml
-from utils.log_utils import get_logger, configure_logger, pretty_print_config
+from utilities.factory import *
+from utilities.wandb_utils import create_wandb_run
+from utilities.config_utils import parse_yml
+from utilities.log_utils import get_logger, configure_logger, pretty_print_config
 
 
 def main(config):

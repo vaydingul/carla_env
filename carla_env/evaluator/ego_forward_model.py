@@ -4,7 +4,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 
-from utils.train_utils import to, clone, cat, stack
+from utilities.train_utils import to, clone, cat, stack
 
 
 class Evaluator(object):

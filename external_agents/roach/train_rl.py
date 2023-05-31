@@ -10,7 +10,7 @@ from stable_baselines3.common.callbacks import CallbackList
 
 from agents.rl_birdview.utils.wandb_callback import WandbCallback
 from carla_gym.utils import config_utils
-from utils import server_utils
+from utilities import server_utils
 
 log = logging.getLogger(__name__)
 

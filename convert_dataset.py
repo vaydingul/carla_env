@@ -5,9 +5,9 @@ import tqdm
 import torch
 
 
-from utils.config_utils import parse_yml
-from utils.log_utils import get_logger, configure_logger, pretty_print_config
-from utils.factory import *
+from utilities.config_utils import parse_yml
+from utilities.log_utils import get_logger, configure_logger, pretty_print_config
+from utilities.factory import *
 
 
 def main(config):

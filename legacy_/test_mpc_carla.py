@@ -9,8 +9,8 @@ import time
 import logging
 import math
 import argparse
-from utils.kinematic_utils import acceleration_to_throttle_brake
-from utils.model_utils import convert_standard_bev_to_model_bev
+from utilities.kinematic_utils import acceleration_to_throttle_brake
+from utilities.model_utils import convert_standard_bev_to_model_bev
 
 logging.basicConfig(level=logging.INFO)
 

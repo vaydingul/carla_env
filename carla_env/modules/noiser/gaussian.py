@@ -1,7 +1,7 @@
 from carla_env.modules.noiser.noiser import Noiser
 import numpy as np
 import carla
-from utils.log_utils import get_logger
+from utilities.log_utils import get_logger
 
 
 logger = get_logger(__name__)

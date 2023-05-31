@@ -22,7 +22,7 @@ from torch.utils.data.distributed import DistributedSampler
 from torch.distributed import init_process_group, destroy_process_group
 import os
 
-from utils.model_utils import (
+from utilities.model_utils import (
     load_world_model_from_wandb_run,
     load_policy_model_from_wandb_run,
     load_ego_model_from_checkpoint,
@@ -30,9 +30,9 @@ from utils.model_utils import (
     fetch_checkpoint_from_wandb_run,
 )
 
-from utils.train_utils import seed_everything, get_device
+from utilities.train_utils import seed_everything, get_device
 
-from utils.wandb_utils import create_initial_run, create_resumed_run
+from utilities.wandb_utils import create_initial_run, create_resumed_run
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(

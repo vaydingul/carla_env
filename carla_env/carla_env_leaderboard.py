@@ -12,8 +12,8 @@ from carla_env.modules.module import Module
 from carla_env.renderer.renderer import Renderer, COLORS
 from carla_env.bev import BirdViewProducer, BIRDVIEW_CROP_TYPE
 from carla_env.bev.mask import PixelDimensions
-from utils.carla_utils import create_multiple_vehicle_actors_for_traffic_manager
-from utils.render_utils import *
+from utilities.carla_utils import create_multiple_vehicle_actors_for_traffic_manager
+from utilities.render_utils import *
 
 # Import utils
 import time
@@ -38,7 +38,9 @@ class CarlaEnvironment(Environment):
         self.build_from_config()
 
         # We have our server and client up and running
-        self.server_module = server.ServerModule(config={"port": self.port})
+        self.server_module = server.ServerModule(
+            config={"port": self.port, "off_screen": self.off_screen}
+        )
 
         self.is_first_reset = True
 
@@ -55,6 +57,7 @@ class CarlaEnvironment(Environment):
         self.action_repeat = self.config["action_repeat"]
         self.fixed_delta_seconds = self.config["fixed_delta_seconds"]
         self.port = self.config["port"]
+        self.off_screen = self.config["off_screen"]
         self.max_steps = self.config["max_steps"]
         self.tm_port = self.config["tm_port"]
         self.tasks = self.config["tasks"]
@@ -490,6 +493,7 @@ class CarlaEnvironment(Environment):
             "action_repeat": 1,
             "fixed_delta_seconds": 0.05,
             "port": 2000,
+            "off_screen": False,
             "tm_port": 8000,
             "max_steps": 1000,
             "tasks": [{"world": "Town02", "num_vehicles": 80}],

@@ -6,9 +6,9 @@ import yaml
 import os
 
 
-from utils.config_utils import parse_yml
-from utils.factory import *
-from utils.log_utils import get_logger, configure_logger, pretty_print_config
+from utilities.config_utils import parse_yml
+from utilities.factory import *
+from utilities.log_utils import get_logger, configure_logger, pretty_print_config
 
 
 def main(config):

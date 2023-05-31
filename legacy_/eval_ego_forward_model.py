@@ -6,8 +6,8 @@ import os
 import pathlib
 import torch
 import argparse
-from utils.plot_utils import plot_result_eval
-from utils.kinematic_utils import throttle_brake_to_acceleration
+from utilities.plot_utils import plot_result_eval
+from utilities.kinematic_utils import throttle_brake_to_acceleration
 import time
 
 logger = logging.getLogger(__name__)

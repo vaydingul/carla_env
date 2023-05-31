@@ -5,11 +5,11 @@ from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
 from carla_env.sampler.distributed_weighted_sampler import DistributedWeightedSampler
-from utils.train_utils import to, cat, stack
+from utilities.train_utils import to, cat, stack
 
 from pathlib import Path
 from carla_env.renderer.renderer import Renderer, COLORS
-from utils.render_utils import (
+from utilities.render_utils import (
     postprocess_bev,
     postprocess_mask,
     postprocess_action,

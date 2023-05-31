@@ -2,18 +2,18 @@ import logging
 import numpy as np
 import argparse
 from collections import deque
-from utils.kinematic_utils import acceleration_to_throttle_brake
-from utils.model_utils import (
+from utilities.kinematic_utils import acceleration_to_throttle_brake
+from utilities.model_utils import (
     fetch_checkpoint_from_wandb_run,
     fetch_run_from_wandb_link,
 )
-from utils.train_utils import seed_everything, get_device
+from utilities.train_utils import seed_everything, get_device
 
-from utils.path_utils import create_date_time_path
-from utils.factory import *
-from utils.wandb_utils import create_wandb_run
-from utils.config_utils import parse_yml
-from utils.log_utils import get_logger, configure_logger, pretty_print_config
+from utilities.path_utils import create_date_time_path
+from utilities.factory import *
+from utilities.wandb_utils import create_wandb_run
+from utilities.config_utils import parse_yml
+from utilities.log_utils import get_logger, configure_logger, pretty_print_config
 
 from simple_bev.nets.segnet import Segnet
 from simple_bev.utils.vox import Vox_util

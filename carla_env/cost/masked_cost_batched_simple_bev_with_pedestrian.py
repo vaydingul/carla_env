@@ -2,8 +2,8 @@ import torch
 from torch import nn
 import numpy as np
 import logging
-from utils.cost_utils import *
-from utils.train_utils import organize_device
+from utilities.cost_utils import *
+from utilities.train_utils import organize_device
 
 
 class Cost(nn.Module):

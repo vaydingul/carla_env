@@ -16,7 +16,7 @@ from torchmetrics.classification import (
     MultilabelStatScores,
 )
 import pandas as pd
-from utils.plot_utils import plot_roc, plot_confusion_matrix
+from utilities.plot_utils import plot_roc, plot_confusion_matrix
 import wandb
 
 NUM_LABELS = 9

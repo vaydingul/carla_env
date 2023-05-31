@@ -12,17 +12,17 @@ from carla_env.sampler.distributed_weighted_sampler import (
 from torch.distributed import init_process_group, destroy_process_group, barrier
 
 
-from utils.train_utils import seed_everything, organize_device
-from utils.wandb_utils import create_wandb_run, DummyWandb
-from utils.model_utils import (
+from utilities.train_utils import seed_everything, organize_device
+from utilities.wandb_utils import create_wandb_run, DummyWandb
+from utilities.model_utils import (
     fetch_checkpoint_from_wandb_run,
     fetch_run_from_wandb_link,
     fetch_checkpoint_from_wandb_link,
 )
-from utils.path_utils import create_date_time_path
-from utils.config_utils import parse_yml
-from utils.log_utils import get_logger, configure_logger, pretty_print_config
-from utils.factory import *
+from utilities.path_utils import create_date_time_path
+from utilities.config_utils import parse_yml
+from utilities.log_utils import get_logger, configure_logger, pretty_print_config
+from utilities.factory import *
 
 
 def ddp_setup(rank, world_size, master_port):

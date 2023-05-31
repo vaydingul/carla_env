@@ -3,9 +3,9 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 import os
-from utils.config_utils import parse_yml
-from utils.factory import *
-from utils.log_utils import configure_logger, get_logger
+from utilities.config_utils import parse_yml
+from utilities.factory import *
+from utilities.log_utils import configure_logger, get_logger
 
 
 def main(config):

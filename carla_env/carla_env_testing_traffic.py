@@ -12,11 +12,11 @@ from carla_env.modules.module import Module
 from carla_env.renderer.renderer import Renderer, COLORS
 from carla_env.bev import BirdViewProducer, BIRDVIEW_CROP_TYPE
 from carla_env.bev.mask import PixelDimensions
-from utils.carla_utils import (
+from utilities.carla_utils import (
     create_multiple_vehicle_actors_for_traffic_manager,
     create_multiple_walker_actors_for_traffic_manager,
 )
-from utils.render_utils import *
+from utilities.render_utils import *
 
 # Import utils
 import time

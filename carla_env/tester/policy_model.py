@@ -2,10 +2,10 @@ from collections import deque
 import time
 import torch
 import wandb
-from utils.kinematic_utils import acceleration_to_throttle_brake
-from utils.model_utils import convert_standard_bev_to_model_bev
-from utils.create_video_from_folder import create_video_from_images
-from utils.train_utils import cat
+from utilities.kinematic_utils import acceleration_to_throttle_brake
+from utilities.model_utils import convert_standard_bev_to_model_bev
+from utilities.create_video_from_folder import create_video_from_images
+from utilities.train_utils import cat
 
 
 class Tester:

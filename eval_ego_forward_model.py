@@ -4,13 +4,13 @@ import logging
 
 import torch
 from torch.utils.data import DataLoader, Subset
-from utils.path_utils import create_date_time_path
-from utils.train_utils import get_device, seed_everything
-from utils.model_utils import fetch_run_from_wandb_link, fetch_checkpoint_from_wandb_run
-from utils.config_utils import parse_yml
-from utils.factory import *
-from utils.wandb_utils import create_wandb_run
-from utils.log_utils import get_logger, configure_logger, pretty_print_config
+from utilities.path_utils import create_date_time_path
+from utilities.train_utils import get_device, seed_everything
+from utilities.model_utils import fetch_run_from_wandb_link, fetch_checkpoint_from_wandb_run
+from utilities.config_utils import parse_yml
+from utilities.factory import *
+from utilities.wandb_utils import create_wandb_run
+from utilities.log_utils import get_logger, configure_logger, pretty_print_config
 import wandb
 
 

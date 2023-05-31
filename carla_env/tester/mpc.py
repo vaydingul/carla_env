@@ -3,11 +3,11 @@ import time
 import torch
 from torch import nn
 import wandb
-from utils.cost_utils import sample_weight
-from utils.kinematic_utils import acceleration_to_throttle_brake
-from utils.model_utils import convert_standard_bev_to_model_bev
-from utils.create_video_from_folder import create_video_from_images
-from utils.train_utils import cat, to, requires_grad
+from utilities.cost_utils import sample_weight
+from utilities.kinematic_utils import acceleration_to_throttle_brake
+from utilities.model_utils import convert_standard_bev_to_model_bev
+from utilities.create_video_from_folder import create_video_from_images
+from utilities.train_utils import cat, to, requires_grad
 
 
 class Tester:
@@ -400,22 +400,22 @@ class Tester:
 
             loss += cost["cost_dict"][cost_key] * self.cost_weight_in_use[cost_key]
 
-        ego_location_l1 = torch.nn.functional.l1_loss(
+        ego_location_l1 = torch.nn.functional.mse_loss(
             ego_future_location_predicted,
             target_location.expand(*(ego_future_location_predicted.shape)),
         )
 
-        ego_yaw_l1 = torch.nn.functional.l1_loss(
+        ego_yaw_l1 = torch.nn.functional.mse_loss(
             torch.cos(ego_future_yaw_predicted),
             torch.cos(target_yaw.expand(*(ego_future_yaw_predicted.shape))),
         )
 
-        ego_yaw_l1 += torch.nn.functional.l1_loss(
+        ego_yaw_l1 += torch.nn.functional.mse_loss(
             torch.sin(ego_future_yaw_predicted),
             torch.sin(target_yaw.expand(*(ego_future_yaw_predicted.shape))),
         )
 
-        ego_speed_l1 = torch.nn.functional.l1_loss(
+        ego_speed_l1 = torch.nn.functional.mse_loss(
             ego_future_speed_predicted,
             target_speed.expand(*(ego_future_speed_predicted.shape)),
         )

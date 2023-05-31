@@ -6,7 +6,7 @@ from torch.nn import functional as F
 from carla_env.models.layers.vgg import VGG64, VGG128, VGG192
 from carla_env.models.layers.dcgan import DCGAN64, DCGAN128, DCGAN192
 from carla_env.models.layers.lstm import LSTM, ProbabilisticLSTM
-from utils.train_utils import organize_device
+from utilities.train_utils import organize_device
 
 
 class WorldSVGLPModel(nn.Module):

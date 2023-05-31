@@ -7,7 +7,7 @@ import argparse
 import matplotlib.pyplot as plt
 import os
 from pathlib import Path
-from utils.plot_utils import plot_result_mpc_path_follow
+from utilities.plot_utils import plot_result_mpc_path_follow
 
 torch.autograd.set_detect_anomaly(True)
 # Save the log to a file name with the current date

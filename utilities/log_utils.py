@@ -1,5 +1,5 @@
 import logging
-from utils.path_utils import create_date_time_path
+from utilities.path_utils import create_date_time_path
 
 
 def get_logger(name=__name__):

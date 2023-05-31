@@ -6,13 +6,13 @@ import argparse
 import logging
 from pathlib import Path
 
-from utils.train_utils import seed_everything, get_device
-from utils.wandb_utils import create_wandb_run
-from utils.model_utils import fetch_checkpoint_from_wandb_run
-from utils.path_utils import create_date_time_path
-from utils.config_utils import parse_yml
-from utils.log_utils import get_logger, configure_logger, pretty_print_config
-from utils.factory import *
+from utilities.train_utils import seed_everything, get_device
+from utilities.wandb_utils import create_wandb_run
+from utilities.model_utils import fetch_checkpoint_from_wandb_run
+from utilities.path_utils import create_date_time_path
+from utilities.config_utils import parse_yml
+from utilities.log_utils import get_logger, configure_logger, pretty_print_config
+from utilities.factory import *
 
 
 def main(config):

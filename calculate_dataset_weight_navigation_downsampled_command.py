@@ -4,9 +4,9 @@ import logging
 import torch
 import argparse
 from tqdm import tqdm
-from utils.config_utils import parse_yml
-from utils.factory import *
-from utils.log_utils import configure_logger, get_logger
+from utilities.config_utils import parse_yml
+from utilities.factory import *
+from utilities.log_utils import configure_logger, get_logger
 
 
 def main(config):

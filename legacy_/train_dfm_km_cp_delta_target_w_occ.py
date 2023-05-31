@@ -17,16 +17,16 @@ from datetime import datetime
 from pathlib import Path
 from collections import deque
 
-from utils.model_utils import (
+from utilities.model_utils import (
     load_world_model_from_wandb_run,
     load_policy_model_from_wandb_run,
     load_ego_model_from_checkpoint,
     fetch_checkpoint_from_wandb_link,
     fetch_checkpoint_from_wandb_run)
 
-from utils.train_utils import (seed_everything, get_device)
+from utilities.train_utils import (seed_everything, get_device)
 
-from utils.wandb_utils import (
+from utilities.wandb_utils import (
     create_initial_run,
     create_resumed_run
 )

@@ -49,6 +49,8 @@ class ServerModule(module.Module):
 
         # self.command += ["-vulkan"]
 
+        if self.config["off_screen"]:
+            self.command += ["-RenderOffScreen"]
         
         self.command = " ".join(self.command)
 
@@ -120,4 +122,4 @@ class ServerModule(module.Module):
         """Set the default config for the module"""
         self.config = {"quality": None,
                        "port": None,
-                       "no_screen": False}
+                       "off_screen": False}

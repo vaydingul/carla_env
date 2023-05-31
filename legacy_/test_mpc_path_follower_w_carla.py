@@ -9,7 +9,7 @@ import logging
 import math
 import numpy as np
 import argparse
-from utils.kinematic_utils import acceleration_to_throttle_brake
+from utilities.kinematic_utils import acceleration_to_throttle_brake
 
 
 logging.basicConfig(level=logging.INFO)

@@ -12,8 +12,8 @@ from carla_env.modules.sensor import collision_sensor
 from carla_env.modules.route import route
 from carla_env.modules.module import Module
 
-from utils.camera_utils import world_2_pixel
-from utils.bev_utils import world_2_bev
+from utilities.camera_utils import world_2_pixel
+from utilities.bev_utils import world_2_bev
 # Import utils
 import carla
 import time

@@ -8,17 +8,19 @@ class Adapter(ABC):
 		pass
 	
 	@abstractmethod
+	def reset(self):
+		pass
+
+	@abstractmethod
+	def step(self, action):
+		pass
+
+	@abstractmethod
+	def get_state(self):
+		pass
+
+	@abstractmethod
 	def get_action(self, state):
 		pass
 	
-	@abstractmethod
-	def train(self, state, action, reward, next_state, done):
-		pass
 	
-	@abstractmethod
-	def save(self, path):
-		pass
-	
-	@abstractmethod
-	def load(self, path):
-		pass

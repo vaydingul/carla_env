@@ -16,7 +16,7 @@ from gym.wrappers.monitoring.video_recorder import ImageEncoder
 
 from carla_gym.utils import config_utils
 from carla_gym.utils.expert_noiser import ExpertNoiser
-from utils import saving_utils, server_utils
+from utilities import saving_utils, server_utils
 from agents.rl_birdview.utils.wandb_callback import WandbCallback
 
 log = logging.getLogger(__name__)

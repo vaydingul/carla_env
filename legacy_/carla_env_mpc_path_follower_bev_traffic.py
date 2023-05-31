@@ -17,8 +17,8 @@ from carla_env.bev import (
     BirdViewCropType,
 )
 from carla_env.bev.mask import PixelDimensions
-from utils.camera_utils import world_2_pixel
-from utils.bev_utils import world_2_bev
+from utilities.camera_utils import world_2_pixel
+from utilities.bev_utils import world_2_bev
 
 
 # Import utils

@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from carla_env.tester.mpc import Tester
-from utils.model_utils import convert_standard_bev_to_model_bev
+from utilities.model_utils import convert_standard_bev_to_model_bev
 
 
 class Evaluator(Tester):

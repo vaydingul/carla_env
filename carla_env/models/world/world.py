@@ -4,7 +4,7 @@ from torch import nn
 from torch.nn import functional as F
 from carla_env.models.layers.encoder import Encoder2D, ProbabilisticEncoder2D
 from carla_env.models.layers.decoder import Decoder2D
-from utils.train_utils import organize_device
+from utilities.train_utils import organize_device
 
 
 class WorldBEVModel(nn.Module):

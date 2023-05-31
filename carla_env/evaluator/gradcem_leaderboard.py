@@ -5,10 +5,10 @@ import torch
 from torch import nn
 import wandb
 from carla_env.tester.gradcem import Tester
-from utils.kinematic_utils import acceleration_to_throttle_brake
-from utils.model_utils import convert_standard_bev_to_model_bev
-from utils.create_video_from_folder import create_video_from_images
-from utils.cost_utils import sample_coefficient
+from utilities.kinematic_utils import acceleration_to_throttle_brake
+from utilities.model_utils import convert_standard_bev_to_model_bev
+from utilities.create_video_from_folder import create_video_from_images
+from utilities.cost_utils import sample_coefficient
 
 
 class Evaluator(Tester):

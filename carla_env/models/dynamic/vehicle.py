@@ -2,7 +2,7 @@ import math
 import torch
 import torch.nn.functional as F
 from torch import nn
-from utils.train_utils import clone, organize_device
+from utilities.train_utils import clone, organize_device
 
 G = 9.81
 EPS = 1e-5

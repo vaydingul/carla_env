@@ -1,6 +1,6 @@
 experiment_type: test_mpc
 log_path: ~
-seed: 6458
+seed: 265
 port: &port_var 3000
 tm_port: &tm_port_var 9000
 num_time_step_previous: &previous 20
@@ -117,6 +117,8 @@ tester:
   init_action: "zeros"
   skip_frames: 1
   repeat_frames: 1
+  cost_weight_dropout: 0.0
+  cost_weight_frames: 1
   rollout_length: *future
   log_video: true
   log_video_scale: 0.1

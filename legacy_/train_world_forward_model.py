@@ -8,12 +8,12 @@ from torch.utils.data import DataLoader
 from carla_env.dataset.instance import InstanceDataset
 from carla_env.models.world.world import WorldBEVModel
 from carla_env.trainer.world_model import Trainer
-from utils.model_utils import (
+from utilities.model_utils import (
     fetch_checkpoint_from_wandb_link,
     fetch_checkpoint_from_wandb_run,
     load_world_model_from_wandb_run)
-from utils.wandb_utils import (create_initial_run, create_resumed_run)
-from utils.train_utils import (seed_everything, get_device)
+from utilities.wandb_utils import (create_initial_run, create_resumed_run)
+from utilities.train_utils import (seed_everything, get_device)
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,

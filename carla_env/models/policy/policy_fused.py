@@ -1,8 +1,8 @@
 from torch import nn
 import torch
 from carla_env.models.layers.encoder import Encoder, Encoder2D
-from utils.cost_utils import create_2x2_rotation_tensor_from_angle_tensor
-from utils.train_utils import organize_device
+from utilities.cost_utils import create_2x2_rotation_tensor_from_angle_tensor
+from utilities.train_utils import organize_device
 
 
 class Policy(nn.Module):

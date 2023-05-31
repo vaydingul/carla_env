@@ -10,14 +10,14 @@ import wandb
 import math
 import argparse
 from collections import deque
-from utils.kinematic_utils import acceleration_to_throttle_brake
-from utils.model_utils import (
+from utilities.kinematic_utils import acceleration_to_throttle_brake
+from utilities.model_utils import (
     load_world_model_from_wandb_run,
     load_ego_model_from_checkpoint,
     fetch_checkpoint_from_wandb_link,
     convert_standard_bev_to_model_bev,
 )
-from utils.train_utils import seed_everything
+from utilities.train_utils import seed_everything
 
 logging.basicConfig(level=logging.INFO)
 

@@ -1,6 +1,6 @@
 import cv2
 
-from utils.path_utils import create_date_time_path
+from utilities.path_utils import create_date_time_path
 from .colors import COLORS
 import cv2
 import numpy as np
