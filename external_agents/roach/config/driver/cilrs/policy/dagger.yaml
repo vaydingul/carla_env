@@ -1,5 +1,5 @@
 # @package _group_
-entry_point: agents.cilrs.models.cilrs_model:CoILICRA
+entry_point: drivers.cilrs.models.cilrs_model:CoILICRA
 kwargs:
   freeze_value_head: false
   freeze_action_head: false

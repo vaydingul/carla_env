@@ -1,5 +1,5 @@
 # @package _group_
-entry_point: agents.rl_birdview.models.ppo:PPO
+entry_point: drivers.rl_birdview.models.ppo:PPO
 kwargs:
   learning_rate: 1e-5
   n_steps_total: 12288

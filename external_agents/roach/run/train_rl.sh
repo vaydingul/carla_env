@@ -2,16 +2,16 @@
 
 train_rl () {
   python -u train_rl.py \
-  agent.ppo.wb_run_path=null \
+  driver.ppo.wb_run_path=null \
   wb_project=train_rl_experts wb_name=roach \
-  agent/ppo/policy=xtma_beta \
-  agent.ppo.training.kwargs.explore_coef=0.05 \
+  driver/ppo/policy=xtma_beta \
+  driver.ppo.training.kwargs.explore_coef=0.05 \
   carla_sh_path=${CARLA_ROOT}/CarlaUE4.sh
 }
 
-# To use gaussian distribution: `agent/ppo/policy=xtma_gaus`
-# To disable exploration loss: `agent.ppo.training.kwargs.explore_coef=0.0`
-# To resume a crashed run, set `agent.ppo.wb_run_path` to the w&b run path
+# To use gaussian distribution: `driver/ppo/policy=xtma_gaus`
+# To disable exploration loss: `driver.ppo.training.kwargs.explore_coef=0.0`
+# To resume a crashed run, set `driver.ppo.wb_run_path` to the w&b run path
 
 
 # NO NEED TO MODIFY THE FOLLOWING

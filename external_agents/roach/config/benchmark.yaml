@@ -1,9 +1,9 @@
 defaults:
-  - agent: roaming
+  - driver: roaming
   - test_suites: nocrash_dense
 actors:
   hero:
-    agent: roaming
+    driver: roaming
     reward:
       entry_point: reward.valeo_action:ValeoAction
     terminal:

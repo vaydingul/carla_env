@@ -50,7 +50,11 @@ def check_h5_maps(env_configs, obs_configs, carla_sh_path):
 
 def load_entry_point(name):
     mod_name, attr_name = name.split(":")
+    
+    mod_name = mod_name.replace("agents", "drivers")
+    
     mod = import_module(mod_name)
+
     fn = getattr(mod, attr_name)
     return fn
 

@@ -1,13 +1,13 @@
 # @package _group_
 cilrs:
-  entry_point: agents.cilrs.cilrs_agent:CilrsAgent
+  entry_point: drivers.cilrs.cilrs_agent:CilrsAgent
   ckpt: null
   wb_run_path: null
   wb_ckpt_step: null
   rl_run_path: null
   rl_ckpt_step: null
   env_wrapper:
-    entry_point: agents.cilrs.cilrs_wrapper:CilrsWrapper
+    entry_point: drivers.cilrs.cilrs_wrapper:CilrsWrapper
     kwargs:
       acc_as_action: true
       view_augmentation: false

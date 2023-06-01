@@ -3,7 +3,7 @@
 import torch as th
 import torch.nn as nn
 import numpy as np
-
+from gym import spaces
 from . import torch_util as tu
 
 
@@ -17,7 +17,8 @@ class XtMaCNN(nn.Module):
         self.features_dim = features_dim
 
         n_input_channels = observation_space['birdview'].shape[0]
-
+        
+        
         self.cnn = nn.Sequential(
             nn.Conv2d(n_input_channels, 8, kernel_size=5, stride=2),
             nn.ReLU(),
@@ -35,6 +36,8 @@ class XtMaCNN(nn.Module):
         )
         # Compute shape by doing one forward pass
         with th.no_grad():
+
+            
             n_flatten = self.cnn(th.as_tensor(observation_space['birdview'].sample()[None]).float()).shape[1]
 
         self.linear = nn.Sequential(nn.Linear(n_flatten+states_neurons[-1], 512), nn.ReLU(),

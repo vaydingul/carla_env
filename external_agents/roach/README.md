@@ -52,7 +52,7 @@ To collect a dataset from Roach, use [run/data_collect_bc.sh](run/data_collect_b
 - `dataset_root`: local directory for saving the dataset.
 - `test_suites`: default is `eu_data` which collects data in Town01 for the NoCrash-dense benchmark. Available configurations are found [here](config/test_suites). You can also create your own configuration.
 - `n_episodes`: how many episodes to collect, each episode will be saved to a separate h5 file.
-- `agent/cilrs/obs_configs`: observation (i.e. sensor) configuration, default is `central_rgb_wide`. Available configurations are found [here](config/agent/cilrs/obs_configs). You can also create your own configuration.
+- `driver/cilrs/obs_configs`: observation (i.e. sensor) configuration, default is `central_rgb_wide`. Available configurations are found [here](config/driver/cilrs/obs_configs). You can also create your own configuration.
 - `inject_noise`: default is `True`. As introduced in CILRS, triangular noise is injected to steering and throttle such that the ego-vehicle does not always follow the lane center. Very useful for imitation learning.
 - `actors.hero.terminal.kwargs.max_time`: Maximum duration of an episode, in seconds.
 - Early stop the episode if traffic rule is violated, such that the collected dataset is error-free.
@@ -75,12 +75,12 @@ The trained models are hosted [here](https://wandb.ai/iccv21-roach/trained-model
 Given the corresponding W&B run path, our code will automatically download and load the [checkpoint](https://wandb.ai/iccv21-roach/trained-models/runs/1929isj0/files/ckpt) with the [configuration yaml file](https://wandb.ai/iccv21-roach/trained-models/runs/1929isj0/files/config_agent.yaml).
 
 The following checkpoints are used to produce the results reported in our paper.
-- To benchmark the Autopilot, use `benchmark()` with `agent="roaming"`.
-- To benchmark the RL experts, use `benchmark()` with `agent="ppo"` and set `agent.ppo.wb_run_path` to one of the following.
+- To benchmark the Autopilot, use `benchmark()` with `driver="roaming"`.
+- To benchmark the RL experts, use `benchmark()` with `driver="ppo"` and set `agent.ppo.wb_run_path` to one of the following.
   - `iccv21-roach/trained-models/1929isj0`: Roach
   - `iccv21-roach/trained-models/1ch63m76`: PPO+beta
   - `iccv21-roach/trained-models/10pscpih`: PPO+exp
-- To benchmark the IL agents, use `benchmark()` with `agent="cilrs"` and set `agent.cilrs.wb_run_path` to one of the following.
+- To benchmark the IL agents, use `benchmark()` with `driver="cilrs"` and set `agent.cilrs.wb_run_path` to one of the following.
   - Checkpoints trained for the NoCrash benchmark, at DAGGER iteration 5:
     - `iccv21-roach/trained-models/39o1h862`: L_A(AP)
     - `iccv21-roach/trained-models/v5kqxe3i`: L_A

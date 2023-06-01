@@ -52,7 +52,7 @@ class RlBirdviewAgent():
             self._logger.info(f'Loading wandb checkpoint: {self._ckpt}')
             self._policy, self._train_cfg['kwargs'] = self._policy_class.load(self._ckpt)
             self._policy = self._policy.eval()
-
+            
         self._wrapper_class = load_entry_point(cfg['env_wrapper']['entry_point'])
         self._wrapper_kwargs = cfg['env_wrapper']['kwargs']
 

@@ -1,8 +1,8 @@
 defaults:
-  - agent: cilrs
-  - agent/cilrs/policy: dagger
-  - agent/cilrs/training: dagger
-  - agent/cilrs/obs_configs: central_rgb_wide
+  - driver: cilrs
+  - driver/cilrs/policy: dagger
+  - driver/cilrs/training: dagger
+  - driver/cilrs/obs_configs: central_rgb_wide
 train_epochs: 25
 seed: 2021
 wb_project: debug_cilrs

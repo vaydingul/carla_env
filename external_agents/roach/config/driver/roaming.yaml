@@ -1,6 +1,6 @@
 # @package _group_
 roaming:
-  entry_point: agents.expert.lbc_roaming_agent:LbcRoamingAgent
+  entry_point: drivers.expert.lbc_roaming_agent:LbcRoamingAgent
   hack_throttle: true
   target_speed: 6.0
   resolution: 1.0

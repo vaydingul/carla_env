@@ -9,9 +9,9 @@ data_collect () {
   n_episodes=160 \
   dataset_root=/home/ubuntu/dataset/bc \
   actors.hero.driver=ppo \
-  agent.ppo.wb_run_path=iccv21-roach/trained-models/1929isj0 \
-  agent.ppo.wb_ckpt_step=null \
-  agent/cilrs/obs_configs=central_rgb_wide \
+  driver.ppo.wb_run_path=iccv21-roach/trained-models/1929isj0 \
+  driver.ppo.wb_ckpt_step=null \
+  driver/cilrs/obs_configs=central_rgb_wide \
   inject_noise=true \
   actors.hero.terminal.kwargs.max_time=300 \
   actors.hero.terminal.kwargs.no_collision=true \
@@ -29,7 +29,7 @@ data_collect () {
 #   n_episodes=80 \
 #   dataset_root=/home/ubuntu/dataset/bc \
 #   actors.hero.driver=roaming \
-#   agent/cilrs/obs_configs=central_rgb_wide \
+#   driver/cilrs/obs_configs=central_rgb_wide \
 #   inject_noise=true \
 #   actors.hero.terminal.kwargs.max_time=300 \
 #   actors.hero.terminal.kwargs.no_collision=true \

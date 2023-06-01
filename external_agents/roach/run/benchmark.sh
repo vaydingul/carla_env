@@ -1,44 +1,44 @@
 #!/bin/bash
 
 # * To benchmark the Autopilot.
-agent="roaming"
+# driver="roaming"
+# benchmark() {
+#   python -u benchmark.py resume=true log_video=true \
+#     wb_project=iccv21-roach-benchmark \
+#     driver=$driver actors.hero.driver=$driver \
+#     +driver/roaming/obs_configs=birdview \
+#     'wb_group="Autopilot"' \
+#     'wb_notes="Benchmark Autopilot on NoCrash-dense."' \
+#     test_suites=nocrash_dense \
+#     seed=2021 \
+#     +wb_sub_group=nocrash_dense-2021 \
+#     no_rendering=false \
+#     carla_sh_path=${CARLA_ROOT}/CarlaUE4.sh
+# }
+
+# * To benchmark rl experts.
+driver="ppo"
 benchmark () {
   python -u benchmark.py resume=true log_video=true \
   wb_project=iccv21-roach-benchmark \
-  agent=$agent actors.hero.agent=$agent \
-  +agent/roaming/obs_configs=birdview \
-  'wb_group="Autopilot"' \
-  'wb_notes="Benchmark Autopilot on NoCrash-dense."' \
+  driver=$driver actors.hero.driver=$driver \
+  driver.ppo.wb_run_path=iccv21-roach/trained-models/1929isj0 \
+  'wb_group="Roach"' \
+  'wb_notes="Benchmark Roach on NoCrash-dense."' \
   test_suites=nocrash_dense \
   seed=2021 \
   +wb_sub_group=nocrash_dense-2021 \
-  no_rendering=true \
+  no_rendering=false \
   carla_sh_path=${CARLA_ROOT}/CarlaUE4.sh
 }
 
-# * To benchmark rl experts.
-# agent="ppo"
-# benchmark () {
-#   python -u benchmark.py resume=true log_video=true \
-#   wb_project=iccv21-roach-benchmark \
-#   agent=$agent actors.hero.agent=$agent \
-#   agent.ppo.wb_run_path=iccv21-roach/trained-models/1929isj0 \
-#   'wb_group="Roach"' \
-#   'wb_notes="Benchmark Roach on NoCrash-dense."' \
-#   test_suites=nocrash_dense \
-#   seed=2021 \
-#   +wb_sub_group=nocrash_dense-2021 \
-#   no_rendering=true \
-#   carla_sh_path=${CARLA_ROOT}/CarlaUE4.sh
-# }
-
 # * To benchmark il agents.
-# agent="cilrs"
+# driver="cilrs"
 # benchmark () {
 #   python -u benchmark.py resume=true log_video=true \
 #   wb_project=iccv21-roach-benchmark \
-#   agent=$agent actors.hero.agent=$agent \
-#   agent.cilrs.wb_run_path=iccv21-roach/trained-models/31u9tki7 \
+#   driver=$driver actors.hero.driver=$driver \
+#   driver.cilrs.wb_run_path=iccv21-roach/trained-models/31u9tki7 \
 #   'wb_group="L_K+L_F(c)"' \
 #   'wb_notes="Benchmark L_K+L_F(c) on NoCrash-dense."' \
 #   test_suites=nocrash_dense \
@@ -47,7 +47,6 @@ benchmark () {
 #   no_rendering=false \
 #   carla_sh_path=${CARLA_ROOT}/CarlaUE4.sh
 # }
-
 
 # NO NEED TO MODIFY THE FOLLOWING
 # actiate conda env
