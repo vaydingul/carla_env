@@ -109,6 +109,12 @@ def main(config):
         world_forward_model = None
 
     # ---------------------------------------------------------------------------- #
+    #                                    ADAPTER                                   #
+    # ---------------------------------------------------------------------------- #
+    adapter_class = adapter_factory(config)
+    adapter = adapter_class(config["adapter"]["config"])
+    adapter.reset(environment.get_hero_actor(), environment.get_route())
+    # ---------------------------------------------------------------------------- #
     #                                   COST                                       #
     # ---------------------------------------------------------------------------- #
 
@@ -129,6 +135,7 @@ def main(config):
         environment=environment,
         ego_forward_model=ego_forward_model,
         world_forward_model=world_forward_model,
+        adapter=adapter,
         cost=cost,
         cost_weight=config["tester"]["cost_weight"],
         device=device,
@@ -186,7 +193,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path",
         type=str,
-        default="/home/volkan/Documents/Codes/carla_env/configs/mpc/testing/config_extended_bev_20Hz_action_repeat_4_policy_cost.yml",
+        default="configs/mpc_with_external_agent/roach/testing/config.yml",
         help="Path to config file",
     )
 

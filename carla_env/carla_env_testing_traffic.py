@@ -625,6 +625,10 @@ class CarlaEnvironment(Environment):
         """Get the hero actor of the environment"""
         return self.hero_actor_module.get_actor()
 
+    def get_route(self):
+        """Get the route of the environment"""
+        return self.route.get_route()
+
     def get_data(self):
         """Get the data of the environment"""
         return self.data.get()

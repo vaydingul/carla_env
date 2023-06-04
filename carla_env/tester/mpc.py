@@ -16,6 +16,7 @@ class Tester:
         environment,
         ego_forward_model,
         world_forward_model,
+        adapter,
         cost,
         cost_weight,
         device,
@@ -44,6 +45,7 @@ class Tester:
         self.environment = environment
         self.ego_forward_model = ego_forward_model
         self.world_forward_model = world_forward_model
+        self.adapter = adapter
         self.cost = cost
         self.cost_weight = cost_weight
         self.cost_weight_in_use = cost_weight
@@ -92,6 +94,9 @@ class Tester:
 
         for _ in range(self.num_time_step_previous):
             self.world_previous_bev_deque.append(processed_data["bev_tensor"])
+
+        if self.adapter is not None:
+            self.initial_guess = self.adapter.step()
 
         while not self.environment.is_done:
             t0 = time.time()
@@ -157,7 +162,10 @@ class Tester:
                 frame_counter=self.frame_counter,
                 skip_counter=self.skip_counter,
                 repeat_counter=self.repeat_counter,
-                action=env_control,
+                adapter_action=self.initial_guess[0]
+                if self.adapter is not None
+                else None,
+                mpc_action=env_control,
                 **cost,
                 cost_viz={  # Some dummy arguments for visualization
                     "world_future_bev_predicted": world_future_bev_predicted,
@@ -174,7 +182,18 @@ class Tester:
             if self.log_video:
                 self.log_video_images_path.append(image_path)
 
-            self._reset()
+            if self.adapter is not None:
+                
+                self.initial_guess = self.adapter.step()  # Shape: (1,2)
+
+                self._reset(
+                    initial_guess=torch.Tensor(self.initial_guess)
+                    .unsqueeze(1)
+                    .repeat((1, self.num_time_step_future, 1))
+                )
+
+            else:
+                self._reset()
 
             # Update counters
             self.frame_counter += 1
@@ -365,17 +384,13 @@ class Tester:
         loss = torch.tensor(0.0, device=self.device)
 
         if self.frame_counter % self.cost_weight_frames == 0:
-
             self.cost_weight_in_use = self.cost_weight.copy()
 
             for cost_key in self.cost_weight.keys():
-                
                 if isinstance(self.cost_weight[cost_key], dict):
-                    
                     dropout_rate = self.cost_weight[cost_key]["dropout"]
 
                 else:
-
                     dropout_rate = self.cost_weight_dropout
 
                 # Pick a random number to apply dropout
@@ -390,7 +405,6 @@ class Tester:
                     )
 
                 else:
-
                     self.cost_weight_in_use[cost_key] = 0
 
         for cost_key in cost["cost_dict"].keys():
@@ -531,9 +545,11 @@ class Tester:
                 raise NotImplementedError
 
         else:
-            action = torch.tensor(
-                initial_guess, device=self.device, dtype=torch.float32
-            ).unsqueeze(0)
+            # action = torch.tensor(
+            #     initial_guess, device=self.device, dtype=torch.float32
+            # ).unsqueeze(0)
+
+            action = initial_guess.clone().detach().requires_grad_(True).to(self.device)
 
         self.action = nn.Parameter(action, requires_grad=True)
 

@@ -120,6 +120,15 @@ def main(config):
         world_forward_model = None
 
     # ---------------------------------------------------------------------------- #
+    #                                    ADAPTER                                   #
+    # ---------------------------------------------------------------------------- #
+    adapter_class = adapter_factory(config)
+    if adapter_class is not None:
+        adapter = adapter_class(config["adapter"]["config"])
+    else:
+        adapter = None
+
+    # ---------------------------------------------------------------------------- #
     #                                   COST                                       #
     # ---------------------------------------------------------------------------- #
 
@@ -140,6 +149,7 @@ def main(config):
         environment=environment,
         ego_forward_model=ego_forward_model,
         world_forward_model=world_forward_model,
+        adapter=adapter,
         cost=cost,
         cost_weight=config["evaluator"]["cost_weight"],
         device=device,
@@ -181,7 +191,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path_leaderboard",
         type=str,
-        default="/home/volkan/Documents/Codes/carla_env/configs/mpc/evaluation/config_leaderboard.yml",
+        default="configs/mpc_with_external_agent/roach/evaluation/config.yml",
         help="Path to config file",
     )
 

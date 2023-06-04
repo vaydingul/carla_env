@@ -21,8 +21,6 @@ EVAL_EXPERIMENTS = [
 ]
 
 
-
-
 def ego_forward_model_factory(config):
     if (
         (config["experiment_type"] == "train_ego_forward_model")
@@ -649,7 +647,6 @@ def noiser_factory(config):
 
 
 def adapter_factory(config):
-
     if (
         (config["experiment_type"] == "collect_data_random")
         or (config["experiment_type"] == "collect_data_driving")
@@ -662,6 +659,16 @@ def adapter_factory(config):
         or (config["experiment_type"] == "eval_gradcem_leaderboard")
     ):
         if "adapter" in config:
-            adapter = config["adapter"]
+            if config["adapter"]["type"] == "roach":
+                from externals.roach.roach_adapter import RoachAdapter
 
-            pass
+                return RoachAdapter
+
+            else:
+                raise ValueError("Invalid adapter_type")
+
+        else:
+            return None
+
+    else:
+        raise ValueError("Invalid experiment type")
