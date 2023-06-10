@@ -32,6 +32,8 @@ class Tester:
         repeat_frames=1,
         cost_weight_dropout=0.0,
         cost_weight_frames=40,
+        adapter_weight=0.0,
+        mpc_weight=1.0,
         log_video=True,
         log_video_scale=0.1,
         gradient_clip=True,
@@ -62,6 +64,8 @@ class Tester:
         self.repeat_frames = repeat_frames
         self.cost_weight_dropout = cost_weight_dropout
         self.cost_weight_frames = cost_weight_frames
+        self.adapter_weight = adapter_weight
+        self.mpc_weight = mpc_weight
         self.log_video = log_video
         self.log_video_scale = log_video_scale
         self.gradient_clip = gradient_clip
@@ -73,8 +77,12 @@ class Tester:
         self.bev_calculate_offroad = bev_calculate_offroad
 
         self.ego_forward_model.eval().to(self.device)
+
         if self.world_forward_model is not None:
             self.world_forward_model.eval().to(self.device)
+
+        if self.adapter is not None:
+            self.adapter.eval().to(self.device)
 
         self.frame_counter = 0
         self.skip_counter = 0
@@ -132,6 +140,11 @@ class Tester:
             # Fetch predicted action
             control_selected = ego_future_action_predicted[0][self.skip_counter]
 
+            if self.adapter is not None:
+                control_selected = torch.from_numpy(self.initial_guess * self.adapter_weight).to(self.device)[0] + (
+                    control_selected * self.mpc_weight
+                )
+
             # Convert to environment control
             acceleration = control_selected[0].item()
             steer = control_selected[1].item()
@@ -183,7 +196,6 @@ class Tester:
                 self.log_video_images_path.append(image_path)
 
             if self.adapter is not None:
-                
                 self.initial_guess = self.adapter.step()  # Shape: (1,2)
 
                 self._reset(

@@ -8,16 +8,16 @@ tm_port: &tm_port_var 8000
 
 environment:
   name: carla_env_playground
-  random: false
+  driver: autopilot
   action_repeat: 1
-  fixed_delta_seconds: &dt 0.05
+  fixed_delta_seconds: &dt 0.2
   max_steps: 50000
   port: *port_var
   tm_port: *tm_port_var
   tasks:
-    - world: Town02
-      num_vehicles: [90, 100]
-      num_walkers: [50, 100]
+    - world: Town06
+      num_vehicles: [50, 60]
+      num_walkers: [50, 60]
 
   renderer:
     width: 1800
@@ -135,7 +135,7 @@ environment:
         width: 400
         height: 400
         render_lanes_on_junctions: false
-        pixels_per_meter: 5
+        pixels_per_meter: 10
         crop_type: "FRONT_AREA_ONLY"
         road_on_off: true
         road_light: true

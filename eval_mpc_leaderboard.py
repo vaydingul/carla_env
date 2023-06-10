@@ -17,6 +17,7 @@ from utilities.config_utils import parse_yml
 from utilities.log_utils import get_logger, configure_logger, pretty_print_config
 from leaderboard.leaderboard_evaluator_local import main as leaderboard_evaluator_main
 
+
 def main(config):
     # ---------------------------------------------------------------------------- #
     #                                     SEED                                     #
@@ -166,6 +167,8 @@ def main(config):
         gradient_clip=config["training"]["gradient_clip"]["enable"],
         gradient_clip_type=config["training"]["gradient_clip"]["type"],
         gradient_clip_value=config["training"]["gradient_clip"]["value"],
+        adapter_weight=config["evaluator"]["adapter_weight"],
+        mpc_weight=config["evaluator"]["mpc_weight"],
         log_video=config["evaluator"]["log_video"],
         log_video_scale=config["evaluator"]["log_video_scale"],
         num_time_step_previous=config["num_time_step_previous"],
@@ -191,7 +194,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path_leaderboard",
         type=str,
-        default="configs/mpc_with_external_agent/roach/evaluation/config.yml",
+        default="configs/mpc_with_external_agent/roach/evaluation/10Hz/config_roach_cilrs_main.yml",
         help="Path to config file",
     )
 
@@ -204,14 +207,21 @@ if __name__ == "__main__":
 
     # Create structured folder path for checkpoint path based on the
     # experiment_name, checkpoint_name, and date time information
+
     checkpoint_name = config_leaderboard["leaderboard"]["checkpoint"]
+    checkpoint_dir = os.path.dirname(checkpoint_name)
+    checkpoint_file_name = os.path.basename(checkpoint_name)
     checkpoint_path = create_date_time_path(
         os.path.join(
             "leaderboard_results",
             config_leaderboard["experiment_type"],
+            checkpoint_dir,
         )
     )
-    config_leaderboard["leaderboard"]["checkpoint"] = str(
-        checkpoint_path / checkpoint_name
-    )
+
+    os.makedirs(
+        checkpoint_path, exist_ok=True
+    )  # (checkpoint_path / checkpoint_name).mkdir(parents=True, exist_ok=True)
+    checkpoint_path = os.path.join(checkpoint_path, checkpoint_file_name)
+    config_leaderboard["leaderboard"]["checkpoint"] = str(checkpoint_path)
     main(config_leaderboard)

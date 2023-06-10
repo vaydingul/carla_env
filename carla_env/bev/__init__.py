@@ -309,8 +309,8 @@ class BirdViewProducer:
 
             waypoint = waypoint if waypoint is not None else agent_vehicle_loc_waypoint
 
-            road_on_mask = self.masks_generator.road_on_mask(waypoint)
-            road_off_mask = self.masks_generator.road_off_mask(waypoint)
+            road_on_mask, road_off_mask = self.masks_generator.road_on_off_mask(waypoint)
+            
             masks[BirdViewMasks.ROAD_ON.value] = road_on_mask
             masks[BirdViewMasks.ROAD_OFF.value] = road_off_mask
 

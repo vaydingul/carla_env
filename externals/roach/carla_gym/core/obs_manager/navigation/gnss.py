@@ -37,7 +37,7 @@ class ObsManager(ObsManagerBase):
         })
 
     def attach_ego_vehicle(self, parent_actor):
-        self._world = parent_actor.vehicle.get_world()
+        self._world = parent_actor.get_world()
         self._parent_actor = parent_actor
         self._idx = -1
         self._gnss_queue = Queue()
@@ -54,7 +54,7 @@ class ObsManager(ObsManagerBase):
         sensor_location = carla.Location()
         sensor_rotation = carla.Rotation()
         sensor_transform = carla.Transform(location=sensor_location, rotation=sensor_rotation)
-        self._gnss_sensor = self._world.spawn_actor(bp, sensor_transform, attach_to=parent_actor.vehicle)
+        self._gnss_sensor = self._world.spawn_actor(bp, sensor_transform, attach_to=parent_actor)
         weak_self = weakref.ref(self)
         self._gnss_sensor.listen(lambda gnss_data: self._parse_gnss(weak_self, gnss_data))
 
@@ -69,7 +69,7 @@ class ObsManager(ObsManagerBase):
         sensor_location = carla.Location()
         sensor_rotation = carla.Rotation()
         sensor_transform = carla.Transform(location=sensor_location, rotation=sensor_rotation)
-        self._imu_sensor = self._world.spawn_actor(bp, sensor_transform, attach_to=parent_actor.vehicle)
+        self._imu_sensor = self._world.spawn_actor(bp, sensor_transform, attach_to=parent_actor)
         weak_self = weakref.ref(self)
         self._imu_sensor.listen(lambda imu_data: self._parse_imu(weak_self, imu_data))
 
@@ -82,6 +82,7 @@ class ObsManager(ObsManagerBase):
         try: 
             frame, gnss_data = self._gnss_queue.get(True, self._queue_timeout)
             assert snap_shot.frame == frame
+            print("GNSS OKUNDUUUUUUUUUUU")
         except Empty:
             raise Exception('gnss sensor took too long!')
 

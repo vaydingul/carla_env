@@ -37,7 +37,7 @@ training:
     clip_range: 0.2
     clip_range_vf: null
     ent_coef: 0.01
-    explore_coef: 0.05
+    explore_coef: 0.0
     vf_coef: 0.5
     max_grad_norm: 0.5
     target_kl: 0.01

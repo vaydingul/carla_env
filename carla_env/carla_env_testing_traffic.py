@@ -162,8 +162,8 @@ class CarlaEnvironment(Environment):
             config={
                 "start": start,
                 "end": end,
-                "sampling_resolution": 5,
-                "distance_threshold": 5,
+                "sampling_resolution": 1,
+                "distance_threshold": 1,
             },
             client=self.client,
         )
@@ -627,7 +627,8 @@ class CarlaEnvironment(Environment):
 
     def get_route(self):
         """Get the route of the environment"""
-        return self.route.get_route()
+        return {"route":self.route.get_route(),
+                "route_bev": self.route_bev.get_route()}
 
     def get_data(self):
         """Get the data of the environment"""
@@ -661,6 +662,6 @@ class CarlaEnvironment(Environment):
             "tasks": [{"world": "Town02", "num_vehicles": 80, "num_walkers": 0}],
             "sensors": [],
             "bevs": [],
-            "route": None,
+            "routes": None,
             "renderer": None,
         }

@@ -63,8 +63,10 @@ class CroppingRect(NamedTuple):
         )
 
     def __contains__(self, p: Coord) -> bool:
-        return self.x <= p.x <= self.x + \
-            self.width and self.y <= p.y <= self.y + self.height
+        return (
+            self.x <= p.x <= self.x + self.width
+            and self.y <= p.y <= self.y + self.height
+        )
 
 
 def lateral_shift(transform, shift):
@@ -158,10 +160,8 @@ class MapMaskGenerator:
 
         if self.rendering_window is not None:
             # global rendering area coordinates
-            origin_x = self.pixels_per_meter * \
-                (self.rendering_window.origin.x - min_x)
-            origin_y = self.pixels_per_meter * \
-                (self.rendering_window.origin.y - min_y)
+            origin_x = self.pixels_per_meter * (self.rendering_window.origin.x - min_x)
+            origin_y = self.pixels_per_meter * (self.rendering_window.origin.y - min_y)
             topleft_x = int(origin_x - self.rendering_window.area.width / 2)
             topleft_y = int(origin_y - self.rendering_window.area.height / 2)
 
@@ -221,13 +221,11 @@ class MapMaskGenerator:
         canvas = self.make_empty_mask()
         for road_waypoints in self._each_road_waypoints:
             road_left_side = [
-                lateral_shift(
-                    w.transform, -w.lane_width * 0.5) for w in road_waypoints]
+                lateral_shift(w.transform, -w.lane_width * 0.5) for w in road_waypoints
+            ]
             road_right_side = [
-                lateral_shift(
-                    w.transform,
-                    w.lane_width *
-                    0.5) for w in road_waypoints]
+                lateral_shift(w.transform, w.lane_width * 0.5) for w in road_waypoints
+            ]
 
             polygon = road_left_side + [x for x in reversed(road_right_side)]
             polygon = [self.location_to_pixel(x) for x in polygon]
@@ -235,74 +233,53 @@ class MapMaskGenerator:
                 polygon = np.array([polygon], dtype=np.int32)
 
                 cv2.polylines(
-                    img=canvas,
-                    pts=polygon,
-                    isClosed=True,
-                    color=COLOR_ON,
-                    thickness=5)
+                    img=canvas, pts=polygon, isClosed=True, color=COLOR_ON, thickness=5
+                )
                 cv2.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
         return canvas
 
-    def road_on_mask(self, next_waypoint) -> Mask:
-        canvas = self.make_empty_mask()
+    def road_on_off_mask(self, next_waypoint) -> Mask:
+        road_on_waypoints = []
+        road_off_waypoints = []
         for road_waypoints in self._each_road_waypoints:
             if road_waypoints[0].road_id == next_waypoint.road_id:
+                for w in road_waypoints:
+                    if w.lane_id == next_waypoint.lane_id:
+                        road_on_waypoints.append(w)
+                    else:
+                        road_off_waypoints.append(w)
 
-                road_left_side = [
-                    lateral_shift(
-                        w.transform, -w.lane_width * 0.5) for w in road_waypoints if w.lane_id == next_waypoint.lane_id]
-                road_right_side = [
-                    lateral_shift(
-                        w.transform,
-                        w.lane_width *
-                        0.5) for w in road_waypoints if w.lane_id == next_waypoint.lane_id]
+        return self.road_on_off_mask_from_waypoints(
+            waypoints=road_on_waypoints
+        ), self.road_on_off_mask_from_waypoints(waypoints=road_off_waypoints)
 
-                polygon = road_left_side + \
-                    [x for x in reversed(road_right_side)]
-                polygon = [self.location_to_pixel(x) for x in polygon]
-                if len(polygon) > 2:
-                    polygon = np.array([polygon], dtype=np.int32)
-
-                    cv2.polylines(
-                        img=canvas,
-                        pts=polygon,
-                        isClosed=True,
-                        color=COLOR_ON,
-                        thickness=5)
-                    cv2.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
-        return canvas
-
-    def road_off_mask(self, next_waypoint) -> Mask:
+    def road_on_off_mask_from_waypoints(self, waypoints) -> Mask:
         canvas = self.make_empty_mask()
-        for road_waypoints in self._each_road_waypoints:
-            if road_waypoints[0].road_id == next_waypoint.road_id:
 
-                road_left_side = [
-                    lateral_shift(
-                        w.transform, -w.lane_width * 0.5) for w in road_waypoints if w.lane_id != next_waypoint.lane_id]
-                road_right_side = [
-                    lateral_shift(
-                        w.transform,
-                        w.lane_width *
-                        0.5) for w in road_waypoints if w.lane_id != next_waypoint.lane_id]
+        road_left_side = [
+            lateral_shift(w.transform, -w.lane_width * 0.5) for w in waypoints
+        ]
+        road_right_side = [
+            lateral_shift(w.transform, w.lane_width * 0.5) for w in waypoints
+        ]
 
-                polygon = road_left_side + \
-                    [x for x in reversed(road_right_side)]
-                polygon = [self.location_to_pixel(x) for x in polygon]
-                if len(polygon) > 2:
-                    polygon = np.array([polygon], dtype=np.int32)
+        polygon = road_left_side + [x for x in reversed(road_right_side)]
+        polygon = [self.location_to_pixel(x) for x in polygon]
+        if len(polygon) > 2:
+            polygon = np.array([polygon], dtype=np.int32)
 
-                    cv2.polylines(
-                        img=canvas,
-                        pts=polygon,
-                        isClosed=True,
-                        color=COLOR_ON,
-                        thickness=5)
-                    cv2.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
+            cv2.polylines(
+                img=canvas,
+                pts=polygon,
+                isClosed=True,
+                color=COLOR_ON,
+                thickness=5,
+            )
+            cv2.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
 
         return canvas
 
-    def road_light_mask(self, traffic_lights:carla.TrafficLight) -> Mask:
+    def road_light_mask(self, traffic_lights: carla.TrafficLight) -> Mask:
         canvas = self.make_empty_mask()
         road_ids = []
         lane_ids = []
@@ -312,18 +289,18 @@ class MapMaskGenerator:
                 lane_ids.append(wp.lane_id)
         for road_waypoints in self._each_road_waypoints:
             if road_waypoints[0].road_id in road_ids:
-
                 road_left_side = [
-                    lateral_shift(
-                        w.transform, -w.lane_width * 0.5) for w in road_waypoints if w.lane_id in lane_ids]
+                    lateral_shift(w.transform, -w.lane_width * 0.5)
+                    for w in road_waypoints
+                    if w.lane_id in lane_ids
+                ]
                 road_right_side = [
-                    lateral_shift(
-                        w.transform,
-                        w.lane_width *
-                        0.5) for w in road_waypoints if w.lane_id in lane_ids]
+                    lateral_shift(w.transform, w.lane_width * 0.5)
+                    for w in road_waypoints
+                    if w.lane_id in lane_ids
+                ]
 
-                polygon = road_left_side + \
-                    [x for x in reversed(road_right_side)]
+                polygon = road_left_side + [x for x in reversed(road_right_side)]
                 polygon = [self.location_to_pixel(x) for x in polygon]
                 if len(polygon) > 2:
                     polygon = np.array([polygon], dtype=np.int32)
@@ -333,12 +310,10 @@ class MapMaskGenerator:
                         pts=polygon,
                         isClosed=True,
                         color=COLOR_ON,
-                        thickness=5)
+                        thickness=5,
+                    )
                     cv2.fillPoly(img=canvas, pts=polygon, color=COLOR_ON)
         return canvas
-
-
-
 
     def lanes_mask(self, lane_thickness) -> Mask:
         canvas = self.make_empty_mask()
@@ -351,7 +326,7 @@ class MapMaskGenerator:
                     side=LaneSide.LEFT,
                     location_to_pixel_func=self.location_to_pixel,
                     color=COLOR_ON,
-                    thickness = lane_thickness
+                    thickness=lane_thickness,
                 )
 
                 # Right Side
@@ -361,7 +336,7 @@ class MapMaskGenerator:
                     side=LaneSide.RIGHT,
                     location_to_pixel_func=self.location_to_pixel,
                     color=COLOR_ON,
-                    thickness = lane_thickness
+                    thickness=lane_thickness,
                 )
         return canvas
 
@@ -369,16 +344,13 @@ class MapMaskGenerator:
         canvas = self.make_empty_mask()
         for road_waypoints in self._each_road_waypoints:
             polygon = [
-                self.location_to_pixel(
-                    wp.transform.location) for wp in road_waypoints]
+                self.location_to_pixel(wp.transform.location) for wp in road_waypoints
+            ]
             if len(polygon) > 2:
                 polygon = np.array([polygon], dtype=np.int32)
                 cv2.polylines(
-                    img=canvas,
-                    pts=polygon,
-                    isClosed=False,
-                    color=COLOR_ON,
-                    thickness=1)
+                    img=canvas, pts=polygon, isClosed=False, color=COLOR_ON, thickness=1
+                )
         return canvas
 
     def agent_vehicle_mask(self, agent: carla.Actor) -> Mask:
@@ -400,11 +372,23 @@ class MapMaskGenerator:
         canvas = self.make_empty_mask()
         for veh in vehicles:
             bb = veh.bounding_box.extent
+
+            scale = 1.0
+
+            number_of_wheels = int(veh.attributes["number_of_wheels"])
+
+            if bb.y == 0.0:
+                bb.y = 0.4
+
+            if number_of_wheels < 4:
+                scale = -2.5
+
+
             corners = [
-                carla.Location(x=-bb.x, y=-bb.y),
-                carla.Location(x=bb.x, y=-bb.y),
-                carla.Location(x=bb.x, y=bb.y),
-                carla.Location(x=-bb.x, y=bb.y),
+                carla.Location(x=-bb.x , y=-bb.y * scale),
+                carla.Location(x=bb.x , y=-bb.y * scale),
+                carla.Location(x=bb.x , y=bb.y * scale),
+                carla.Location(x=-bb.x , y=bb.y * scale),
             ]
 
             veh.get_transform().transform(corners)
@@ -418,7 +402,7 @@ class MapMaskGenerator:
             cv2.fillPoly(img=canvas, pts=np.int32([corners]), color=color)
         return canvas
 
-    def pedestrians_mask(self, pedestrians: List[carla.Actor], scale = 5.0) -> Mask:
+    def pedestrians_mask(self, pedestrians: List[carla.Actor], scale=5.0) -> Mask:
         canvas = self.make_empty_mask()
         for ped in pedestrians:
             if not hasattr(ped, "bounding_box"):
@@ -437,8 +421,7 @@ class MapMaskGenerator:
             cv2.fillPoly(img=canvas, pts=np.int32([corners]), color=COLOR_ON)
         return canvas
 
-    def traffic_lights_masks(self,
-                             traffic_lights: List[carla.Actor]) -> Tuple[Mask]:
+    def traffic_lights_masks(self, traffic_lights: List[carla.Actor]) -> Tuple[Mask]:
         red_light_canvas = self.make_empty_mask()
         yellow_light_canvas = self.make_empty_mask()
         green_light_canvas = self.make_empty_mask()

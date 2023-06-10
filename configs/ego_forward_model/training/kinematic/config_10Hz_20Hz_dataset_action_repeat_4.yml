@@ -1,0 +1,73 @@
+experiment_type: "train_ego_forward_model"
+seed: 42
+checkpoint_path: "pretrained_models/"
+log_path: ~ #"/home/volkan/Documents/Codes/carla_env/logs/"
+num_time_step_previous: &previous 1
+num_time_step_future: &future 10
+sequence_length: &sequence_length 11
+read_keys: &read_keys ["ego"]
+dilation: &dilation 2
+num_workers: &num_workers 8
+
+# Dataset related parameters for training
+dataset_train:
+  type: InstanceDataset
+  config:
+    data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_data_20Hz_action_repeat_4/train/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+
+# Dataloader related parameters for training
+dataloader_train:
+  batch_size: 5000
+  shuffle: true
+  num_workers: *num_workers
+
+# Dataset related parameters for validation
+dataset_val:
+  type: InstanceDataset
+  config:
+    data_path: "/home/volkan/Documents/Codes/carla_env/data/kinematic_model_data_20Hz_action_repeat_4/val/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+
+# Dataloader related parameters for validation
+dataloader_val:
+  batch_size: 1000
+  shuffle: false
+  num_workers: *num_workers
+
+# Training related parameters
+training:
+  num_epochs: 1000
+  optimizer:
+    type: "Adam"
+    config:
+      lr: 0.01
+      # weight_decay: 0.0
+  loss:
+    criterion: "L1Loss"
+    config:
+      reduction: "mean"
+
+  save_interval: 10
+
+# Ego forward model related parameters
+ego_forward_model:
+  type: "KinematicBicycleModel"
+  config:
+    dt: 0.1
+
+# Wandb related parameters
+wandb:
+  enable: true
+  resume: false
+  resume_checkpoint_number: 0
+  project: "mbl-refactored"
+  group: "train-ego-forward-model-multi-step"
+  name: "1-10-10Hz-20Hz_dataset-action_repeat_4"
+  id: ~
+  link: ~
+  notes: "Ego forward model with 10Hz data and 10 time steps in the future. It can work with every model that works in 10Hz. Dataset is consisted of action repeat 4 collected under 20Hz."

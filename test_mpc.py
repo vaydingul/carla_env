@@ -112,8 +112,12 @@ def main(config):
     #                                    ADAPTER                                   #
     # ---------------------------------------------------------------------------- #
     adapter_class = adapter_factory(config)
-    adapter = adapter_class(config["adapter"]["config"])
-    adapter.reset(environment.get_hero_actor(), environment.get_route())
+    if adapter_class is not None:
+        adapter = adapter_class(config["adapter"]["config"])
+        adapter.reset(environment.get_hero_actor(), environment.get_route()["route_bev"])
+    else:
+        adapter = None
+    
     # ---------------------------------------------------------------------------- #
     #                                   COST                                       #
     # ---------------------------------------------------------------------------- #
@@ -152,6 +156,8 @@ def main(config):
         gradient_clip=config["training"]["gradient_clip"]["enable"],
         gradient_clip_type=config["training"]["gradient_clip"]["type"],
         gradient_clip_value=config["training"]["gradient_clip"]["value"],
+        adapter_weight=config["tester"]["adapter_weight"],
+        mpc_weight=config["tester"]["mpc_weight"],
         log_video=config["tester"]["log_video"],
         log_video_scale=config["tester"]["log_video_scale"],
         num_time_step_previous=config["num_time_step_previous"],
@@ -193,7 +199,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path",
         type=str,
-        default="configs/mpc_with_external_agent/roach/testing/config.yml",
+        default="configs/mpc_with_external_agent/roach/evaluation/5Hz/config_roach+ppo+beta_main.yml",
         help="Path to config file",
     )
 

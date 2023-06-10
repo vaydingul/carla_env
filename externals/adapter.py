@@ -31,6 +31,10 @@ class Adapter(ABC):
     @abstractmethod
     def set_default_config(self):
         pass
+    
+    @abstractmethod
+    def render(self):
+        pass
 
     def append_config(self, config):
         self.config.update(config)
@@ -39,3 +43,19 @@ class Adapter(ABC):
         for k, v in self.__dict__.items():
             if isinstance(v, torch.nn.Module):
                 self.__dict__[k] = v.to(device)
+        
+        return self
+
+    def eval(self):
+        for k, v in self.__dict__.items():
+            if isinstance(v, torch.nn.Module):
+                self.__dict__[k].eval()
+
+        return self
+    
+    def train(self):
+        for k, v in self.__dict__.items():
+            if isinstance(v, torch.nn.Module):
+                self.__dict__[k].train()
+
+        return self

@@ -1,0 +1,249 @@
+experiment_type: test_mpc
+log_path: ~
+seed: 333
+port: &port_var 2000
+tm_port: &tm_port_var 8000
+num_time_step_previous: &previous 1
+num_time_step_future: &future 10
+
+cost:
+  type: "extended_bev_with_pedestrian"
+  config:
+    image_width: 192
+    image_height: 192
+    reduction: "sum"
+    mask_alpha: 1.1
+    decay_factor: 0.99
+    vehicle_width: 2.1
+    vehicle_length: 4.9
+    pixels_per_meter: 5
+    longitudinal_offset: 0.0
+    longitudinal_scaler: 1.0
+    longitudinal_speed_offset: 0.0
+    longitudinal_speed_scaler: 1.0
+    lateral_offset: 1.0
+    lateral_scaler: 0.75
+    lateral_speed_offset: 0.0
+    lateral_speed_scaler: 0.2
+
+environment:
+  name: carla_env_testing_traffic
+  driver: external
+  action_repeat: 1
+  fixed_delta_seconds: &dt 0.2
+  max_steps: 5000
+  port: *port_var
+  tm_port: *tm_port_var
+  tasks:
+    - world: Town02
+      num_vehicles: [60, 90]
+      num_walkers: 100
+    # - world: Town03
+    #   num_vehicles: [60, 90]
+    # - world: Town04
+    #   num_vehicles: [120, 180]
+    # - world: Town06
+    #   num_vehicles: [150, 300]
+
+  renderer:
+    width: 2800
+    height: 1100
+    channel: 3
+    background_color: [0, 0, 0]
+    font_scale: 0.3
+    font_color: [255, 255, 255]
+    font_thickness: 1
+    cursor: [0, 0]
+    name: MPC Testing
+    show: true
+    save: true
+    create_date_time_path: true
+    save_path: figures/env_debug/test_mpc/
+
+  sensors:
+    - id: rgb_front
+      type: RGBSensor
+      config:
+        x: 1.5
+        y: 0.0
+        z: 2.4
+        roll: 0.0
+        pitch: 0.0
+        yaw: 0.0
+        width: 900
+        height: 256
+        fov: 100
+
+    - id: ego
+      type: VehicleSensor
+      config: {}
+
+    # - id: occ
+    #   type: OccupancySensor
+    #   config:
+    #     threshold: 3
+    #     number_of_radars: 8
+    #     horizontal_fov: 5
+    #     vertical_fov: 5
+    #     range: 10
+    #     points_per_second: 100
+
+    #! It is a must. NEVER DISCARD IT.
+    - id: col
+      type: CollisionSensor
+      config: {}
+
+  bevs:
+    - id: "bev_world"
+      config:
+        width: 192
+        height: 192
+        render_lanes_on_junctions: false
+        pixels_per_meter: 5
+        crop_type: "FRONT_AREA_ONLY"
+        road_on_off: true
+        road_light: true
+        light_circle: true
+        lane_marking_thickness: 2
+
+  route:
+    config:
+      sampling_resolution: 20.0
+      debug: true
+      distance_threshold: 5
+
+tester:
+  batch_size: 1
+  action_size: 2
+  num_optimization_iteration: 40
+  init_action: "random"
+  skip_frames: 1
+  repeat_frames: 1
+  cost_weight_dropout: 0.025
+  cost_weight_frames: 20
+  rollout_length: *future
+  adapter_weight: 0.0
+  mpc_weight: 1.0
+  log_video: true
+  log_video_scale: 0.1
+  bev_agent_channel: 7
+  bev_vehicle_channel: 6
+  bev_selected_channels: [0, 1, 2, 3, 4, 5, 6, 10, 11]
+  bev_calculate_offroad: false
+
+  cost_weight:
+    road_cost:
+      mean: -0.00 # -0.01
+      std: 0.00
+      dropout: 0.0
+    road_on_cost:
+      mean: -0.0 # -0.01
+      std: 0.0
+      dropout: 0.05
+    road_off_cost:
+      mean: 50.0 # 0.005
+      std: 5.0
+      dropout: 0.1
+    road_red_yellow_cost:
+      mean: 5.0 # 0.1
+      std: 1.0
+      dropout: 0.05
+    road_green_cost:
+      mean: -0.0 # -0.1
+      std: 0.00
+      dropout: 0.05
+    vehicle_cost:
+      mean: 100 # 1
+      std: 10.0
+      dropout: 0.01
+    lane_cost:
+      mean: 0.05 # 0.05
+      std: 0.01
+      dropout: 0.1
+    pedestrian_cost:
+      mean: 1000
+      std: 10
+      dropout: 0.1
+    offroad_cost:
+      mean: 100.0 # 0.005
+      std: 10.0
+      dropout: 0.01
+    acceleration_jerk:
+      mean: 10000.0
+      std: 100.0
+      dropout: 0.05
+    steer_jerk:
+      mean: 10000.0
+      std: 100.0
+      dropout: 0.05
+    ego_location_l1:
+      mean: 10000.0
+      std: 10.0
+      dropout: 0.01
+    ego_yaw_l1:
+      mean: 100.0
+      std: 10.0
+      dropout: 0.05
+    ego_speed_l1:
+      mean: 0.0
+      std: 0.0
+      dropout: 0.0
+  # MPC is a kind of RL training.
+training:
+  gradient_clip:
+    enable: true
+    type: "norm"
+    value: 1
+
+  optimizer:
+    type: "Adam"
+    config:
+      lr: 0.01 #0.05
+      # weight_decay: 0.0001
+
+wandb_ego_forward_model:
+  link: vaydingul/mbl-refactored/1rhmkzfd #vaydingul/mbl-refactored/16ruxyiq
+  checkpoint_number: 999 #49
+
+# It can be None.
+# In this case, last BEV tensor should be copied
+# num_time_step_previous times.
+wandb_world_forward_model:
+  ~
+  # link: ""
+  # checkpoint_number: 0
+
+adapter:
+  type: roach
+  config:
+    actors:
+      hero:
+        driver: ppo
+        reward:
+          entry_point: reward.valeo_action:ValeoAction
+        terminal:
+          entry_point: terminal.leaderboard:Leaderboard
+
+    driver:
+      ppo:
+        entry_point: agents.rl_birdview.rl_birdview_agent:RlBirdviewAgent
+        wb_run_path: iccv21-roach/trained-models/1929isj0
+        wb_ckpt_step: null
+        env_wrapper:
+          entry_point: agents.rl_birdview.utils.rl_birdview_wrapper:RlBirdviewWrapper
+          kwargs:
+            input_states:
+              - control
+              - vel_xy
+            acc_as_action: true
+
+wandb:
+  enable: false
+  resume: false
+  resume_checkpoint_number: 0
+  project: "mbl-refactored"
+  group: "test-mpc"
+  name: "1-10-5Hz-policy_cost-working-example"
+  id: ~
+  link: ~
+  notes: ""

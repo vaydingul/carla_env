@@ -126,11 +126,15 @@ class RlBirdviewAgent:
         model = model_class(self._policy, env, **self._train_cfg["kwargs"])
         model.learn(total_timesteps, callback=callback, seed=seed)
 
-    def render(self, reward_debug, terminal_debug):
+    def render(self, reward_debug = None, terminal_debug= None):
         """
         test render, used in benchmark.py
         """
+        if reward_debug is None:
+            reward_debug = {}
         self._render_dict["reward_debug"] = reward_debug
+        if terminal_debug is None:
+            self._render_dict["terminal_debug"] = {}
         self._render_dict["terminal_debug"] = terminal_debug
 
         return self._wrapper_class.im_render(self._render_dict)

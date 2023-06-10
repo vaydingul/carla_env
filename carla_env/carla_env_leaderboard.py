@@ -150,6 +150,7 @@ class CarlaEnvironment(Environment):
             bool(self.render_dict["rgb_front"])
         )
         bev_valid = ("bev_world" in kwargs) and (bool(self.render_dict["bev_world"]))
+        adapter_render_valid = ("adapter_render" in kwargs) and (kwargs["adapter_render"] is not None)
 
         ego_current_location = self.render_dict["hero_actor_module"]["location"]
         ego_current_location_ = postprocess_location(ego_current_location)
@@ -157,6 +158,7 @@ class CarlaEnvironment(Environment):
 
         h_image, w_image = 0, 0
         h_bev, w_bev = 0, 0
+        h_adapter_render, w_adapter_render = 0, 0
         # Put all of the rgb cameras as a 2x3 grid
         if rgb_valid:
             world_2_camera_transformation = self.render_dict["rgb_front"][
@@ -185,11 +187,20 @@ class CarlaEnvironment(Environment):
 
             self.renderer_module.render_image(bev, move_cursor="down")
 
-            self.renderer_module.move_cursor(
-                direction="right-up",
-                amount=(h_image + h_bev * bev_valid, max(w_image, w_bev) + 20),
-            )
+            
+        if adapter_render_valid:
+            adapter_render = kwargs["adapter_render"]
 
+            (h_adapter_render, w_adapter_render, c_adapter_render) = adapter_render.shape
+
+            self.renderer_module.render_image(cv2.cvtColor(adapter_render, cv2.COLOR_BGR2RGB), move_cursor="down")
+
+        self.renderer_module.move_cursor(
+            direction="right-up",
+            amount=(h_image + h_bev + h_adapter_render, max(w_image, w_bev, w_adapter_render) + 20),
+        )
+
+            
         self.renderer_module.render_text("", move_cursor="down", font_color=COLORS.RED)
 
         for module, render_dict in self.render_dict.items():

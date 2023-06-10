@@ -181,10 +181,10 @@ class RlBirdviewWrapper(gym.Wrapper):
             render_dict["obs"]["state"], precision=2, separator=",", suppress_small=True
         )
 
-        txt_t = f'step:{render_dict["timestamp"]["step"]:5}, frame:{render_dict["timestamp"]["frame"]:5}'
-        im = cv2.putText(
-            im, txt_t, (3, 12), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1
-        )
+        # txt_t = f'step:{render_dict["timestamp"]["step"]:5}, frame:{render_dict["timestamp"]["frame"]:5}'
+        # im = cv2.putText(
+        #     im, txt_t, (3, 12), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1
+        # )
         txt_1 = f'a{action_str} v:{render_dict["action_value"]:5.2f} p:{render_dict["action_log_probs"]:5.2f}'
         im = cv2.putText(
             im, txt_1, (3, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1
@@ -198,19 +198,19 @@ class RlBirdviewWrapper(gym.Wrapper):
         im = cv2.putText(
             im, txt_3, (w, 12), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1
         )
-        for i, txt in enumerate(
-            render_dict["reward_debug"]["debug_texts"]
-            + render_dict["terminal_debug"]["debug_texts"]
-        ):
-            im = cv2.putText(
-                im,
-                txt,
-                (w, (i + 2) * 12),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.3,
-                (255, 255, 255),
-                1,
-            )
+        # for i, txt in enumerate(
+        #     render_dict["reward_debug"]["debug_texts"]
+        #     + render_dict["terminal_debug"]["debug_texts"]
+        # ):
+        #     im = cv2.putText(
+        #         im,
+        #         txt,
+        #         (w, (i + 2) * 12),
+        #         cv2.FONT_HERSHEY_SIMPLEX,
+        #         0.3,
+        #         (255, 255, 255),
+        #         1,
+        #     )
         return im
 
     @staticmethod

@@ -42,10 +42,10 @@ class ObsManager(ObsManagerBase):
 
     def attach_ego_vehicle(self, parent_actor):
         self._parent_actor = parent_actor
-        self._world = self._parent_actor.vehicle.get_world()
+        self._world = self._parent_actor.get_world()
 
     def get_observation(self):
-        ev_transform = self._parent_actor.vehicle.get_transform()
+        ev_transform = self._parent_actor.get_transform()
 
         route_plan = self._parent_actor.route_plan
 

@@ -60,7 +60,7 @@ class ObsManager(ObsManagerBase):
         init_obs = np.zeros([self._height, self._width, self._channels], dtype=np.uint8)
         self._image_queue = Queue()
 
-        self._world = parent_actor.vehicle.get_world()
+        self._world = parent_actor.get_world()
 
         bp = self._world.get_blueprint_library().find("sensor."+self._sensor_type)
         bp.set_attribute('image_size_x', str(self._width))
@@ -72,7 +72,7 @@ class ObsManager(ObsManagerBase):
         bp.set_attribute('chromatic_aberration_intensity', str(0.5))
         bp.set_attribute('chromatic_aberration_offset', str(0))
 
-        self._sensor = self._world.spawn_actor(bp, self._camera_transform, attach_to=parent_actor.vehicle)
+        self._sensor = self._world.spawn_actor(bp, self._camera_transform, attach_to=parent_actor)
         weak_self = weakref.ref(self)
         self._sensor.listen(lambda image: self._parse_image(weak_self, image))
 

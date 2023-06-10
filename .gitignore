@@ -143,6 +143,7 @@ pretrained_models/
 cache/Carla/Maps/
 data/
 figures/
+ckpt/
 # 
 !cache/Carla/Maps/.gitkeep 
 
