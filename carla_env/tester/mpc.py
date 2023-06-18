@@ -506,11 +506,13 @@ class Tester:
 
             (ego_future_predicted) = self._forward_ego_forward_model(ego_previous)
 
-            ego_future_location_predicted = ego_future_predicted["location_array"][
-                ..., :2
-            ]
-            ego_future_yaw_predicted = ego_future_predicted["rotation_array"][..., 2:3]
-            ego_future_speed_predicted = ego_future_predicted["velocity_array"].norm(
+            ego_future_location_predicted = torch.cat(
+                [ego_future_predicted["location"]["x"], ego_future_predicted["location"]["y"]], dim=1
+            ) 
+            
+           
+            ego_future_yaw_predicted = ego_future_predicted["rotation"]["yaw"]
+            ego_future_speed_predicted = torch.cat([ego_future_predicted["velocity"]["x"],ego_future_predicted["velocity"]["y"]], dim = 1).norm(
                 2, -1, True
             )
 
