@@ -3,6 +3,7 @@ import time
 import torch
 from torch import nn
 import wandb
+from copy import deepcopy
 from utilities.cost_utils import sample_weight
 from utilities.kinematic_utils import acceleration_to_throttle_brake
 from utilities.model_utils import convert_standard_bev_to_model_bev
@@ -396,7 +397,7 @@ class Tester:
         loss = torch.tensor(0.0, device=self.device)
 
         if self.frame_counter % self.cost_weight_frames == 0:
-            self.cost_weight_in_use = self.cost_weight.copy()
+            self.cost_weight_in_use = {}
 
             for cost_key in self.cost_weight.keys():
                 if isinstance(self.cost_weight[cost_key], dict):
@@ -420,34 +421,43 @@ class Tester:
                     self.cost_weight_in_use[cost_key] = 0
 
         for cost_key in cost["cost_dict"].keys():
-            assert (
-                cost_key in self.cost_weight.keys()
-            ), f"{cost_key} not in {self.cost_weight.keys()}"
 
-            loss += cost["cost_dict"][cost_key] * self.cost_weight_in_use[cost_key]
+            if cost_key not in ["road_red_yellow_cost", "road_green_cost"]:
+                    
+                assert (
+                    cost_key in self.cost_weight.keys()
+                ), f"{cost_key} not in {self.cost_weight.keys()}"
 
-        ego_location_l1 = torch.nn.functional.mse_loss(
+                loss += cost["cost_dict"][cost_key] * self.cost_weight_in_use[cost_key]
+
+        if cost["cost_dict"]["road_red_yellow_cost"] > cost["cost_dict"]["road_green_cost"]:
+            loss += cost["cost_dict"]["road_red_yellow_cost"] * self.cost_weight_in_use["road_red_yellow_cost"]
+        else:
+            loss += cost["cost_dict"]["road_green_cost"] * self.cost_weight_in_use["road_green_cost"]
+
+        ego_location_l1 = torch.nn.functional.l1_loss(
             ego_future_location_predicted,
             target_location.expand(*(ego_future_location_predicted.shape)),
         )
 
-        ego_yaw_l1 = torch.nn.functional.mse_loss(
+        ego_yaw_l1 = torch.nn.functional.l1_loss(
             torch.cos(ego_future_yaw_predicted),
             torch.cos(target_yaw.expand(*(ego_future_yaw_predicted.shape))),
         )
 
-        ego_yaw_l1 += torch.nn.functional.mse_loss(
+        ego_yaw_l1 += torch.nn.functional.l1_loss(
             torch.sin(ego_future_yaw_predicted),
             torch.sin(target_yaw.expand(*(ego_future_yaw_predicted.shape))),
         )
 
-        ego_speed_l1 = torch.nn.functional.mse_loss(
+        ego_speed_l1 = torch.nn.functional.l1_loss(
             ego_future_speed_predicted,
             target_speed.expand(*(ego_future_speed_predicted.shape)),
         )
 
-        acceleration_jerk = torch.diff(self.action[..., 0], dim=1).square().sum()
-        steer_jerk = torch.diff(self.action[..., 1], dim=1).square().sum()
+        acceleration_jerk = torch.diff(self.action[..., 0], dim=1).square().sum().mean()
+        steer_jerk = torch.diff(self.action[..., 1], dim=1).square().sum().mean()
+
 
         loss += (
             ego_location_l1 * self.cost_weight_in_use["ego_location_l1"]
@@ -456,6 +466,8 @@ class Tester:
             + acceleration_jerk * self.cost_weight_in_use["acceleration_jerk"]
             + steer_jerk * self.cost_weight_in_use["steer_jerk"]
         )
+
+
 
         return {
             **cost["cost_dict"],

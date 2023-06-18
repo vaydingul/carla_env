@@ -1,4 +1,5 @@
 import numpy as np
+import carla
 from gym import spaces
 
 from externals.roach.carla_gym.core.obs_manager.obs_manager import ObsManagerBase
@@ -60,6 +61,9 @@ class ObsManager(ObsManagerBase):
                 waypoint, road_option = route_plan[i]
             else:
                 waypoint, road_option = route_plan[-1]
+            
+            if isinstance(waypoint, carla.Transform):
+                waypoint = self._world.get_map().get_waypoint(waypoint.location)
 
             wp_location_world_coord = waypoint.transform.location
             wp_location_actor_coord = trans_utils.loc_global_to_ref(

@@ -104,7 +104,7 @@ class ClientModule(module.Module):
         self.config = {
             "host": "localhost",
             "port": 2000,
-            "timeout": 40.0,
+            "timeout": 100.0,
             "world": "Town02",
             "synchronous_mode": True,
             "fixed_delta_seconds": 1 / 20,

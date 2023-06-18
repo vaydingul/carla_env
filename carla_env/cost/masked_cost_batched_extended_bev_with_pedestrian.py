@@ -68,7 +68,7 @@ class Cost(nn.Module):
         
         bev = torch.nn.functional.one_hot(highest_class_indices, C).permute((0, 1, 4, 2, 3)).float()
 
-        # Calculate cost
+        # # Calculate cost
 
         decay_weight = (
             torch.pow(

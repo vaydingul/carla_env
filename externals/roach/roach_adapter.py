@@ -48,7 +48,12 @@ class RoachAdapter(Adapter):
 
         world = self.vehicle.get_world()
         self.vehicle.criteria_stop = RunStopSign(world)
+
+        # Set various plans
         self.vehicle.route_plan = global_plan_world_coord
+        
+        self.vehicle.global_plan_gps = global_plan_gps
+
 
         TrafficLightHandler.reset(world)
 

@@ -71,7 +71,7 @@ def calculate_mask(
     term_2 = (dy - torch.abs(aligned_coordinate_mask[..., 1:2])) / (dy - (length / 2))
 
     mask_car = torch.maximum(term_1, torch.tensor(0)) * torch.minimum(
-        torch.maximum(term_2, torch.tensor(0)), torch.tensor(1)
+        torch.maximum(term_2, torch.tensor(0)), torch.tensor(1.0)
     )
     mask_car = torch.pow(mask_car, alpha)
     mask_car = mask_car.flip(-2).permute((0, 1, 3, 2, -1)).squeeze(-1)

@@ -13,16 +13,16 @@ def changed(config):
     it is defined in the task folder.
     """
 
-    for file in os.listdir("leaderboard/data/routes_testing/"):
+    for file in os.listdir("leaderboard/data/routes_testing_town_02/"):
         if file.endswith(".xml"):
             config_ = deepcopy(config)
 
 
             config_["leaderboard"]["routes"] = os.path.join(
-                "leaderboard/data/routes_testing/", file
+                "leaderboard/data/routes_testing_town_02/", file
             )
             
-            config_["leaderboard"]["checkpoint"] = f'routes_testing_mpc/{file.replace(".xml", ".json")}'
+            config_["leaderboard"]["checkpoint"] = f'routes_testing_town_02_roach_cilrs_mpc_0.01/{file.replace(".xml", ".json")}'
             
             config_["environment"]["renderer"]["save_path"] = os.path.join(
                 config["environment"]["renderer"]["save_path"], file.replace(".xml", "")

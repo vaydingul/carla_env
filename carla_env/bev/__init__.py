@@ -164,6 +164,8 @@ class BirdViewProducer:
         self.road_light = road_light
         self.light_circle = light_circle
         self.lane_marking_thickness = lane_marking_thickness
+
+        
         self.is_first_frame = True
         if crop_type is BirdViewCropType.FRONT_AND_REAR_AREA:
             rendering_square_size = round(

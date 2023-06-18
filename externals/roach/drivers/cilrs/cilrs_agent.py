@@ -128,8 +128,10 @@ class CilrsAgent():
         }
         self._render_dict = copy.deepcopy(self._render_dict)
         self.supervision_dict = {}
-        return control
-
+        
+        
+        # return control
+        return actions
     def reset(self, log_file_path):
         # logger
         self._logger.handlers = []
@@ -152,13 +154,20 @@ class CilrsAgent():
 
         trainer.learn(dataset_dir, int(train_epochs), self._env_wrapper, reset_step)
 
-    def render(self, reward_debug, terminal_debug):
+    def render(self, reward_debug = None, terminal_debug= None):
         '''
         test render, used in benchmark.py
         '''
-        self._render_dict['reward_debug'] = reward_debug
-        self._render_dict['terminal_debug'] = terminal_debug
+        if self._render_dict is not None:
+            if reward_debug is None:
+                reward_debug = {}
+            self._render_dict["reward_debug"] = reward_debug
+            if terminal_debug is None:
+                self._render_dict["terminal_debug"] = {}
+            self._render_dict["terminal_debug"] = terminal_debug
+        
         im_render = self._env_wrapper.im_render(self._render_dict)
+
         self._render_dict = None
         return im_render
 

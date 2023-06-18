@@ -1,49 +1,117 @@
-entry_point: agents.rl_birdview.rl_birdview_agent:RlBirdviewAgent
+entry_point: agents.cilrs.cilrs_agent:CilrsAgent
+ckpt: null
 wb_run_path: null
 wb_ckpt_step: null
+rl_run_path: zhejun/ppo_dec/xghmsngp
+rl_ckpt_step: 8183808
 env_wrapper:
-  entry_point: agents.rl_birdview.utils.rl_birdview_wrapper:RlBirdviewWrapper
+  entry_point: agents.cilrs.cilrs_wrapper:CilrsWrapper
   kwargs:
-    input_states:
-    - control
-    - vel_xy
     acc_as_action: true
+    view_augmentation: false
+    value_as_supervision: true
+    value_factor: 1.0
+    action_distribution: beta_shared
+    dim_features_supervision: 256
+    input_states:
+    - speed
+    - vec
+    - cmd
+    im_mean:
+    - 0.485
+    - 0.456
+    - 0.406
+    im_std:
+    - 0.229
+    - 0.224
+    - 0.225
+    im_stack_idx:
+    - -1
 policy:
-  entry_point: agents.rl_birdview.models.ppo_policy:PpoPolicy
+  entry_point: agents.cilrs.models.cilrs_model:CoILICRA
   kwargs:
-    policy_head_arch:
+    freeze_value_head: false
+    freeze_action_head: false
+    resnet_pretrain: true
+    perception_output_neurons: 1000
+    measurements_neurons:
+    - 128
+    - 128
+    measurements_dropouts:
+    - 0.0
+    - 0.0
+    join_neurons:
+    - 512
+    - 512
+    - 256
+    join_dropouts:
+    - 0.0
+    - 0.0
+    - 0.0
+    speed_branch_neurons:
     - 256
     - 256
-    value_head_arch:
+    speed_branch_dropouts:
+    - 0.0
+    - 0.5
+    value_branch_neurons:
     - 256
     - 256
-    features_extractor_entry_point: agents.rl_birdview.models.torch_layers:XtMaCNN
-    features_extractor_kwargs:
-      states_neurons:
-      - 256
-      - 256
-    distribution_entry_point: agents.rl_birdview.models.distributions:BetaDistribution
-    distribution_kwargs:
-      dist_init: null
+    value_branch_dropouts:
+    - 0.0
+    - 0.5
+    number_of_branches: 1
+    branches_neurons:
+    - 256
+    - 256
+    branches_dropouts:
+    - 0.0
+    - 0.5
+    squash_outputs: false
+    perception_net: resnet34
 training:
-  entry_point: agents.rl_birdview.models.ppo:PPO
+  entry_point: agents.cilrs.models.trainer:Trainer
   kwargs:
-    learning_rate: 1.0e-05
-    n_steps_total: 12288
-    batch_size: 256
-    n_epochs: 20
-    gamma: 0.99
-    gae_lambda: 0.9
-    clip_range: 0.2
-    clip_range_vf: null
-    ent_coef: 0.01
-    explore_coef: 0.0
-    vf_coef: 0.5
-    max_grad_norm: 0.5
-    target_kl: 0.01
-    update_adv: false
-    lr_schedule_step: 8
+    batch_size: 48
+    num_workers: 4
+    learning_rate: 0.0002
+    lr_schedule_factor: 0.5
+    branch_weights:
+    - 1.0
+    action_weights:
+    - 0.5
+    - 0.5
+    speed_weight: 0.05
+    value_weight: 0.001
+    features_weight: 0.05
+    l1_loss: true
+    action_kl: true
+    action_agg: null
+    action_mll: null
+    starting_iteration: 0
+    starting_epoch: 0
+    im_augmentation: hard
 obs_configs:
+  speed:
+    module: actor_state.speed
+  gnss:
+    module: navigation.gnss
+  central_rgb:
+    module: camera.rgb
+    fov: 100
+    width: 900
+    height: 256
+    location:
+    - -1.5
+    - 0.0
+    - 2.0
+    rotation:
+    - 0.0
+    - 0.0
+    - 0.0
+  route_plan:
+    module: navigation.waypoint_plan
+    steps: 20
   birdview:
     module: birdview.chauffeurnet
     width_in_pixels: 192
@@ -54,11 +122,4 @@ obs_configs:
     - -11
     - -6
     - -1
-    scale_bbox: true
-    scale_mask_col: 1.0
-  speed:
-    module: actor_state.speed
-  control:
-    module: actor_state.control
-  velocity:
-    module: actor_state.velocity
+    scale_bbox: false

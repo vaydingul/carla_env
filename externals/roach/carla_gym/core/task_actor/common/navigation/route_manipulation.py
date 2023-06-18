@@ -30,7 +30,10 @@ def location_to_gps(location):
 
 
 def gps_to_location(gps):
-    lat, lon, z = gps
+    if isinstance(gps, dict):
+        lat, lon, z = gps["lat"], gps["lon"], gps["z"]
+    else:
+        lat, lon, z = gps
     lat = float(lat)
     lon = float(lon)
     z = float(z)

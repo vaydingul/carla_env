@@ -1,0 +1,227 @@
+adapter:
+  config:
+    actors:
+      hero:
+        driver: ppo
+        reward:
+          entry_point: reward.valeo_action:ValeoAction
+        terminal:
+          entry_point: terminal.leaderboard:Leaderboard
+    driver:
+      ppo:
+        entry_point: agents.cilrs.cilrs_agent:CilrsAgent
+        env_wrapper:
+          entry_point: agents.cilrs.cilrs_wrapper:CilrsWrapper
+          kwargs:
+            acc_as_action: true
+            input_states:
+            - control
+            - vel_xy
+        wb_ckpt_step: null
+        wb_run_path: iccv21-roach/trained-models/21trg553
+  type: roach
+cost:
+  config:
+    decay_factor: 0.99
+    image_height: 192
+    image_width: 192
+    lateral_offset: 1.0
+    lateral_scaler: 0.75
+    lateral_speed_offset: 0.0
+    lateral_speed_scaler: 0.2
+    longitudinal_offset: 0.0
+    longitudinal_scaler: 1.0
+    longitudinal_speed_offset: 0.0
+    longitudinal_speed_scaler: 1.0
+    mask_alpha: 1.1
+    pixels_per_meter: 5
+    reduction: sum
+    vehicle_length: 4.9
+    vehicle_width: 2.1
+  type: extended_bev_with_pedestrian
+environment:
+  action_repeat: 1
+  bevs:
+  - config:
+      crop_type: FRONT_AREA_ONLY
+      height: 192
+      lane_marking_thickness: 2
+      light_circle: true
+      pixels_per_meter: 5
+      render_lanes_on_junctions: false
+      road_light: false
+      road_on_off: false
+      width: 192
+    id: bev_world
+  driver: external
+  fixed_delta_seconds: 0.1
+  max_steps: 5000
+  name: carla_env_leaderboard
+  port: 2000
+  renderer:
+    background_color:
+    - 0
+    - 0
+    - 0
+    channel: 3
+    create_date_time_path: true
+    cursor:
+    - 0
+    - 0
+    font_color:
+    - 255
+    - 255
+    - 255
+    font_scale: 0.25
+    font_thickness: 1
+    height: 700
+    name: MPC Leaderboard Evaluation
+    save: true
+    save_path: figures/env_debug/eval_mpc_leaderboard/routes_testing_town_02_roach_cilrs/Town02_route0
+    show: true
+    width: 1500
+  route: null
+  sensors:
+  - config: {}
+    id: ego
+    type: VehicleSensor
+  - config: {}
+    id: col
+    type: CollisionSensor
+  tasks:
+  - num_vehicles:
+    - 60
+    - 90
+    world: Town02
+  tm_port: 8000
+evaluator:
+  action_size: 2
+  adapter_weight: 1.0
+  batch_size: 1
+  bev_agent_channel: 7
+  bev_calculate_offroad: false
+  bev_selected_channels:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 10
+  - 11
+  bev_vehicle_channel: 6
+  cost_weight:
+    acceleration_jerk:
+      dropout: 0.05
+      mean: 100.0
+      std: 10.0
+    ego_location_l1:
+      dropout: 0.01
+      mean: 500.0
+      std: 50.0
+    ego_speed_l1:
+      dropout: 0.0
+      mean: 0.0
+      std: 0.0
+    ego_yaw_l1:
+      dropout: 0.05
+      mean: 100.0
+      std: 10.0
+    lane_cost:
+      dropout: 0.1
+      mean: 0.05
+      std: 0.01
+    offroad_cost:
+      dropout: 0.01
+      mean: 200.0
+      std: 10.0
+    pedestrian_cost:
+      dropout: 0.1
+      mean: 1000
+      std: 10
+    road_cost:
+      dropout: 0.0
+      mean: -0.0
+      std: 0.0
+    road_green_cost:
+      dropout: 0.05
+      mean: -0.0
+      std: 0.0
+    road_off_cost:
+      dropout: 0.1
+      mean: 5.0
+      std: 1.0
+    road_on_cost:
+      dropout: 0.05
+      mean: -1.0
+      std: 0.1
+    road_red_yellow_cost:
+      dropout: 0.05
+      mean: 5.0
+      std: 1.0
+    steer_jerk:
+      dropout: 0.05
+      mean: 1000.0
+      std: 100.0
+    vehicle_cost:
+      dropout: 0.01
+      mean: 100
+      std: 10.0
+  cost_weight_dropout: 0.025
+  cost_weight_frames: 20
+  init_action: random
+  log_video: true
+  log_video_scale: 0.1
+  mpc_weight: 0.0
+  num_optimization_iteration: 1
+  repeat_frames: 1
+  rollout_length: 1
+  skip_frames: 1
+experiment_type: eval_mpc_leaderboard
+leaderboard:
+  agent: /home/volkan/Documents/Codes/carla_env/leaderboard/leaderboard/autoagents/mpc_agent.py
+  agent_config: /home/volkan/Documents/Codes/carla_env/configs/policy_model/testing/config.yml
+  checkpoint: routes_testing_town_02_roach_cilrs/Town02_route0.json
+  debug: 0
+  frame_rate: 0.1
+  host: localhost
+  port: 2000
+  record: ''
+  repetitions: 1
+  resume: false
+  routes: leaderboard/data/routes_testing_town_02/Town02_route0.xml
+  scenarios: /home/volkan/Documents/Codes/carla_env/leaderboard/data/all_towns_traffic_scenarios_public.json
+  timeout: '120'
+  tm_port: 8000
+  tm_seed: 2023
+  track: MAP
+log_path: null
+num_time_step_future: 1
+num_time_step_previous: 1
+port: 2000
+seed: 2023
+tm_port: 8000
+training:
+  gradient_clip:
+    enable: true
+    type: norm
+    value: 1
+  optimizer:
+    config:
+      lr: 0.05
+    type: Adam
+wandb:
+  enable: false
+  group: test-mpc
+  id: null
+  link: null
+  name: 1-10-10Hz-policy_cost-working-example
+  notes: ''
+  project: mbl-refactored
+  resume: false
+  resume_checkpoint_number: 0
+wandb_ego_forward_model:
+  checkpoint_number: 200
+  link: vaydingul/mbl-refactored/jv293euj
+wandb_world_forward_model: null

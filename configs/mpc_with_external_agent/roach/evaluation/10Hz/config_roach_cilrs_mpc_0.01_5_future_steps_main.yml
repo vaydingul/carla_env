@@ -4,7 +4,7 @@ seed: &seed_var 2023
 port: &port_var 2000
 tm_port: &tm_port_var 8000
 num_time_step_previous: &previous 1
-num_time_step_future: &future 20
+num_time_step_future: &future 5
 
 cost:
   type: "extended_bev_with_pedestrian"
@@ -12,19 +12,19 @@ cost:
     image_width: 256
     image_height: 256
     reduction: "sum"
-    mask_alpha: 1.0
+    mask_alpha: 1.1
     decay_factor: 0.999
-    vehicle_width: 2.0
-    vehicle_length: 5.0
+    vehicle_width: 2.1
+    vehicle_length: 4.9
     pixels_per_meter: 10
-    longitudinal_offset: 0.5
-    longitudinal_scaler: 0.75
+    longitudinal_offset: 0.0
+    longitudinal_scaler: 1.0
     longitudinal_speed_offset: 0.0
     longitudinal_speed_scaler: 1.0
     lateral_offset: 0.5
     lateral_scaler: 0.75
     lateral_speed_offset: 0.0
-    lateral_speed_scaler: 0.1
+    lateral_speed_scaler: 0.2
 
 environment:
   name: carla_env_leaderboard
@@ -58,7 +58,6 @@ environment:
     save: true
     create_date_time_path: true
     save_path: figures/env_debug/eval_mpc_leaderboard/
-
   sensors:
     # - id: rgb_front
     #   type: RGBSensor
@@ -109,9 +108,9 @@ environment:
 evaluator:
   batch_size: 1
   action_size: 2
-  num_optimization_iteration: 40
+  num_optimization_iteration: 100
   init_action: "random"
-  skip_frames: 1
+  skip_frames: 2
   repeat_frames: 1
   cost_weight_dropout: 0.0
   cost_weight_frames: 20
@@ -126,94 +125,79 @@ evaluator:
   bev_calculate_offroad: false
 
   # cost_weight:
-  #   road_cost: -0.1 # -0.01
-  #   road_on_cost: -0.1 # -0.01
-  #   road_off_cost: 0.01 # 0.005
-  #   road_red_yellow_cost: 0.5 # 0.1
-  #   road_green_cost: -0.5 # -0.1
-  #   vehicle_cost: 10 # 1
-  #   lane_cost: 0.05 # 0.05
-  #   pedestrian_cost: 10
-  #   offroad_cost: 1 # 0.005
-  #   acceleration_jerk: 100.0
-  #   steer_jerk: 500.0
-  #   ego_location_l1: 500.0
-  #   ego_yaw_l1: 100.0
+  #   road_cost: -1.0
+  #   road_on_cost: -1.0
+  #   road_off_cost: 100.0
+  #   road_red_yellow_cost: 50.0
+  #   road_green_cost: -1.0
+  #   vehicle_cost: 1000.0
+  #   lane_cost: 1.0
+  #   pedestrian_cost: 10000.0
+  #   offroad_cost: 10000.0
+  #   acceleration_jerk: 1.0
+  #   steer_jerk: 10.0
+  #   ego_location_l1: 100.0
+  #   ego_yaw_l1: 10.0
   #   ego_speed_l1: 0.0
 
   cost_weight:
-    road_cost: 0.0
-    road_on_cost: -1.0
-    road_off_cost: 1.0
-    road_red_yellow_cost: 5.0
-    road_green_cost: -1.0
-    vehicle_cost: 100.0
-    lane_cost: 1.0
-    pedestrian_cost: 1000.0
-    offroad_cost: 1000.0
-    acceleration_jerk: 1.0
-    steer_jerk: 1000.0
-    ego_location_l1: 100000.0
-    ego_yaw_l1: 10.0
-    ego_speed_l1: 0.0
+    road_cost:
+      mean: -0.00 # -0.01
+      std: 0.00
+      dropout: 0.0
+    road_on_cost:
+      mean: -0.0 # -0.01
+      std: 0.0
+      dropout: 0.05
+    road_off_cost:
+      mean: 100.0 # 0.005
+      std: 10.0
+      dropout: 0.1
+    road_red_yellow_cost:
+      mean: 200.0 # 0.1
+      std: 20.0
+      dropout: 0.05
+    road_green_cost:
+      mean: -0.0 # -0.1
+      std: 0.00
+      dropout: 0.05
+    vehicle_cost:
+      mean: 10000.0 # 1
+      std: 100.0
+      dropout: 0.01
+    lane_cost:
+      mean: 1.0 # 0.05
+      std: 0.1
+      dropout: 0.1
+    pedestrian_cost:
+      mean: 1000.0
+      std: 100.0
+      dropout: 0.1
+    offroad_cost:
+      mean: 1000.0 # 0.005
+      std: 100.0
+      dropout: 0.01
+    acceleration_jerk:
+      mean: 100.0
+      std: 10.0
+      dropout: 0.05
+    steer_jerk:
+      mean: 1000.0
+      std: 100.0
+      dropout: 0.05
+    ego_location_l1:
+      mean: 100000.0
+      std: 10.0
+      dropout: 0.01
+    ego_yaw_l1:
+      mean: 100.0
+      std: 10.0
+      dropout: 0.05
+    ego_speed_l1:
+      mean: 0.0
+      std: 0.0
+      dropout: 0.0
 
-  # cost_weight:
-  #   road_cost:
-  #     mean: -0.00 # -0.01
-  #     std: 0.00
-  #     dropout: 0.0
-  #   road_on_cost:
-  #     mean: -10.0 # -0.01
-  #     std: 0.0
-  #     dropout: 0.0
-  #   road_off_cost:
-  #     mean: 100.0 # 0.005
-  #     std: 1.0
-  #     dropout: 0.0
-  #   road_red_yellow_cost:
-  #     mean: 200.0 # 0.1
-  #     std: 20.0
-  #     dropout: 0.0
-  #   road_green_cost:
-  #     mean: -10.0 # -0.1
-  #     std: 0.00
-  #     dropout: 0.0
-  #   vehicle_cost:
-  #     mean: 1000.0 # 1
-  #     std: 1.0
-  #     dropout: 0.0
-  #   lane_cost:
-  #     mean: 1.0 # 0.05
-  #     std: 0.1
-  #     dropout: 0.0
-  #   pedestrian_cost:
-  #     mean: 10000.0
-  #     std: 100.0
-  #     dropout: 0.0
-  #   offroad_cost:
-  #     mean: 10000.0 # 0.005
-  #     std: 10.0
-  #     dropout: 0.0
-  #   acceleration_jerk:
-  #     mean: 1000.0
-  #     std: 10.0
-  #     dropout: 0.0
-  #   steer_jerk:
-  #     mean: 1000.0
-  #     std: 10.0
-  #     dropout: 0.0
-  #   ego_location_l1:
-  #     mean: 50000.0
-  #     std: 10.0
-  #     dropout: 0.0
-  #   ego_yaw_l1:
-  #     mean: 0.0
-  #     std: 0.0
-  #     dropout: 0.0
-  #   ego_speed_l1:
-  #     mean: 0.0
-  #     std: 0.0
-  #     dropout: 0.0
   # MPC is a kind of RL training.
 training:
   gradient_clip:
@@ -224,7 +208,7 @@ training:
   optimizer:
     type: "Adam"
     config:
-      lr: 0.1 #0.05
+      lr: 0.01 #0.05 #0.05
       # weight_decay: 0.0001
 
 wandb_ego_forward_model:
@@ -252,11 +236,11 @@ wandb_world_forward_model:
 
 #     driver:
 #       ppo:
-#         entry_point: agents.rl_birdview.rl_birdview_agent:RlBirdviewAgent
-#         wb_run_path: iccv21-roach/trained-models/1ch63m76
+#         entry_point: agents.cilrs.cilrs_agent:CilrsAgent
+#         wb_run_path: iccv21-roach/trained-models/21trg553
 #         wb_ckpt_step: null
 #         env_wrapper:
-#           entry_point: agents.rl_birdview.utils.rl_birdview_wrapper:RlBirdviewWrapper
+#           entry_point: agents.cilrs.cilrs_wrapper:CilrsWrapper
 #           kwargs:
 #             input_states:
 #               - control
@@ -269,17 +253,17 @@ leaderboard:
   tm_port: *tm_port_var
   tm_seed: *seed_var
   frame_rate: *dt
-  debug: 1
+  debug: 0
   record: ""
-  timeout: "60"
-  routes: /home/volkan/Documents/Codes/carla_env/leaderboard/data/routes_testing/Town02_route1.xml
+  timeout: "120"
+  routes: /home/volkan/Documents/Codes/carla_env/leaderboard/data/routes_testing/Town02_route4.xml
   scenarios: /home/volkan/Documents/Codes/carla_env/leaderboard/data/all_towns_traffic_scenarios_public.json
   repetitions: 1
   agent: /home/volkan/Documents/Codes/carla_env/leaderboard/leaderboard/autoagents/mpc_agent.py
   agent_config: /home/volkan/Documents/Codes/carla_env/configs/policy_model/testing/config.yml
   track: MAP
   resume: false
-  checkpoint: "./results_routes_testing_Town02_route1.json"
+  checkpoint: "./results_routes_testing_Town02_route4.json"
 
 wandb:
   enable: false

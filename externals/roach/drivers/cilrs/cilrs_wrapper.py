@@ -175,9 +175,10 @@ class CilrsWrapper():
         txt_2 = f'cmd: {render_dict["command"][0]} s{state_str}'
         im = cv2.putText(im, txt_2, (w, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1)
 
-        for i, txt in enumerate(render_dict['reward_debug']['debug_texts'] +
-                                render_dict['terminal_debug']['debug_texts']):
-            im = cv2.putText(im, txt, (3, (i+1)*12), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1)
+        if render_dict["reward_debug"] and render_dict["terminal_debug"]:
+            for i, txt in enumerate(render_dict['reward_debug']['debug_texts'] +
+                                    render_dict['terminal_debug']['debug_texts']):
+                im = cv2.putText(im, txt, (3, (i+1)*12), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1)
         return im
 
     @staticmethod
