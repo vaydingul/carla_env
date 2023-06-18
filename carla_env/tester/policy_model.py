@@ -271,30 +271,46 @@ class Tester:
         processed_data = {}
 
         if "ego" in data.keys():
-            ego_previous_location_array = torch.zeros((1, 1, 3), device=self.device)
-            ego_previous_rotation_array = torch.zeros((1, 1, 3), device=self.device)
-            ego_previous_velocity_array = torch.zeros((1, 1, 3), device=self.device)
+            
+            ego_previous = {}
+            ego_previous["location"] = data["ego"]["location"]
+            ego_previous["rotation"] = data["ego"]["rotation"]
+            ego_previous["velocity"] = data["ego"]["velocity"]
 
-            ego_previous_location_array[..., 0] = data["ego"]["location_array"][0]
-            ego_previous_location_array[..., 1] = data["ego"]["location_array"][1]
-            ego_previous_rotation_array[..., 2] = (
-                data["ego"]["rotation_array"][-1] * torch.pi / 180
-            )
-            ego_previous_velocity_array[..., 0] = data["ego"]["velocity_array"][0]
-            ego_previous_velocity_array[..., 1] = data["ego"]["velocity_array"][1]
-            ego_previous_velocity_array[..., 2] = data["ego"]["velocity_array"][2]
+            ego_previous = apply_torch_func(torch.Tensor, ego_previous)
+            ego_previous = apply_torch_func(torch.view, ego_previous, ((1, 1, -1), ))
 
-            ego_previous_location_array.requires_grad_(True)
-            ego_previous_rotation_array.requires_grad_(True)
-            ego_previous_velocity_array.requires_grad_(True)
+            ego_previous = to(ego_previous, self.device)
+            requires_grad(ego_previous, True) 
 
-            ego_previous = {
-                "location_array": ego_previous_location_array,
-                "rotation_array": ego_previous_rotation_array,
-                "velocity_array": ego_previous_velocity_array,
-            }
+            ego_previous["rotation"] = apply_torch_func(torch.deg2rad, ego_previous["rotation"])
 
             processed_data["ego_previous"] = ego_previous
+            
+            # ego_previous_location_array = torch.zeros((1, 1, 3), device=self.device)
+            # ego_previous_rotation_array = torch.zeros((1, 1, 3), device=self.device)
+            # ego_previous_velocity_array = torch.zeros((1, 1, 3), device=self.device)
+
+            # ego_previous_location_array[..., 0] = data["ego"]["location_array"][0]
+            # ego_previous_location_array[..., 1] = data["ego"]["location_array"][1]
+            # ego_previous_rotation_array[..., 2] = (
+            #     data["ego"]["rotation_array"][-1] * torch.pi / 180
+            # )
+            # ego_previous_velocity_array[..., 0] = data["ego"]["velocity_array"][0]
+            # ego_previous_velocity_array[..., 1] = data["ego"]["velocity_array"][1]
+            # ego_previous_velocity_array[..., 2] = data["ego"]["velocity_array"][2]
+
+            # ego_previous_location_array.requires_grad_(True)
+            # ego_previous_rotation_array.requires_grad_(True)
+            # ego_previous_velocity_array.requires_grad_(True)
+
+            # ego_previous = {
+            #     "location_array": ego_previous_location_array,
+            #     "rotation_array": ego_previous_rotation_array,
+            #     "velocity_array": ego_previous_velocity_array,
+            # }
+
+            # processed_data["ego_previous"] = ego_previous
 
         if "navigation" in data.keys():
             target_location = torch.zeros((1, 2), device=self.device)

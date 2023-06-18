@@ -30,11 +30,15 @@ class KinematicBicycleModel(nn.Module):
         One step semi-parametric kinematic bicycle model
         """
 
-        location = ego_state["location_array"][..., 0:2]
-        yaw = ego_state["rotation_array"][..., 2:3]
-        velocity = ego_state["velocity_array"]
-        velocity_x = velocity[..., 0:1]
-        velocity_y = velocity[..., 1:2]
+        location_x = ego_state["location"]["x"][..., 0:1]
+        location_y = ego_state["location"]["y"][..., 0:1]
+        location = torch.cat([location_x, location_y], -1)
+
+        yaw = ego_state["rotation"]["yaw"][..., 0:1]
+        
+        velocity_x = ego_state["velocity"]["x"][..., 0:1]
+        velocity_y = ego_state["velocity"]["y"][..., 0:1]
+        velocity = torch.cat([velocity_x, velocity_y], -1)
         speed = velocity.norm(2, -1, keepdim=True)
 
         acceleration = torch.clip(action[..., 0:1], -1, 1)
@@ -75,13 +79,13 @@ class KinematicBicycleModel(nn.Module):
         # ----------------------------- UPDATE ----------------------------- #
         ego_state_next = clone(ego_state)
 
-        ego_state_next["location_array"][..., 0:2] = location_next
+        ego_state_next["location"]["x"][..., 0:1] = location_next[..., 0:1]
+        ego_state_next["location"]["y"][..., 0:1] = location_next[..., 1:2]
 
-        ego_state_next["velocity_array"][..., 0:2] = torch.cat(
-            [velocity_x_next, velocity_y_next], dim=-1
-        )
+        ego_state_next["velocity"]["x"][..., 0:1] = velocity_x_next
+        ego_state_next["velocity"]["y"][..., 0:1] = velocity_y_next
 
-        ego_state_next["rotation_array"][..., 2:3] = yaw_next
+        ego_state_next["rotation"]["yaw"][..., 0:1] = yaw_next
 
         return ego_state_next
 
@@ -164,6 +168,8 @@ class DynamicBicycleModel(nn.Module):
         self.dt = self.config["dt"]
 
     def forward(self, ego_state, action):
+
+        #! TODO: Change I/O convention
         location_world = ego_state["location_array"]
         location_x_world = location_world[..., 0:1]
         location_y_world = location_world[..., 1:2]

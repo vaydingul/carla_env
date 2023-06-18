@@ -24,33 +24,55 @@ def organize_device(device):
 
 
 def to(dict_, device=None, index_start=None, index_end=None):
-    if index_start is not None and index_end is not None:
-        dict_new = {}
-        for k in dict_.keys():
-            dict_new[k] = dict_[k][:, index_start:index_end].to(device)
-        return dict_new
-    elif (index_start is not None) and (index_end is None):
-        dict_new = {}
-        for k in dict_.keys():
-            dict_new[k] = dict_[k][:, index_start:].to(device)
-        return dict_new
-    elif (index_start is None) and (index_end is not None):
-        dict_new = {}
-        for k in dict_.keys():
-            dict_new[k] = dict_[k][:, :index_end].to(device)
-        return dict_new
-    else:
-        for k in dict_.keys():
-            dict_[k] = dict_[k].to(device)
-        return dict_
+    """
+    Recursive function that moves all tensors in a dictionary to a device.
+    """
 
+    assert isinstance(dict_, dict), "Input must be a dictionary."
 
-def clone(dict_):
     dict_new = {}
-    for k in dict_.keys():
-        dict_new[k] = dict_[k].clone()
+
+    for (k,v) in dict_.items():
+        
+        if isinstance(v, dict):
+
+            to(v, device=device, index_start=index_start, index_end=index_end)
+
+        else:
+
+            if index_start is not None and index_end is not None:
+                
+                dict_new[k] = dict_[k][:, index_start:index_end].to(device)
+
+            elif (index_start is not None) and (index_end is None):
+               
+                dict_new[k] = dict_[k][:, index_start:].to(device)
+
+            elif (index_start is None) and (index_end is not None):
+                
+                dict_new[k] = dict_[k][:, :index_end].to(device)
+
+            else:
+
+                dict_[k] = dict_[k].to(device)
+    
     return dict_new
 
+def clone(dict_):
+    """
+    Recursive function that clones a dictionary of tensors.
+    """
+    
+    assert isinstance(dict_, dict), "Input must be a dictionary."
+
+    dict_new = {}
+    for (k,v) in dict_.items():
+        
+        if isinstance(v, dict):
+            dict_new[k] = clone(v)
+        else:
+            dict_new[k] = v.clone()
+    
 
 def cat(list_of_dicts, dim):
     dict_new = {}
@@ -67,6 +89,31 @@ def stack(list_of_dicts, dim):
 
 
 def requires_grad(dict_, flag=True):
-    for k in dict_.keys():
-        dict_[k].requires_grad = flag
-    return dict_
+    """
+    Recursive function that sets the requires_grad flag of all tensors in a dictionary.
+    """
+    
+    assert isinstance(dict_, dict), "Input must be a dictionary."
+
+    for (k,v) in dict_.items():
+        
+        if isinstance(v, dict):
+            requires_grad(v, flag=flag)
+        else:
+            v.requires_grad = flag
+
+
+def apply_torch_func(dict_, func, *args, **kwargs):
+
+    assert isinstance(dict_, dict), "Input must be a dictionary."
+
+    dict_new = {}
+
+    for (k,v) in dict_.items():
+        
+        if isinstance(v, dict):
+            dict_new[k] = apply_torch_func(v, func, *args, **kwargs)
+        else:
+            dict_new[k] = func(v, *args, **kwargs)
+
+    return dict_new
