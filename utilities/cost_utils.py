@@ -1,9 +1,28 @@
 import torch
+from utilities.config_utils import parse_yml
 
 
 def sample_weight(mu, std):
     """Sample a weight from a normal distribution"""
     return torch.normal(mu, std, ())
+
+
+def transfer_cost_weight(cost_weight):
+    """
+    If cost_weight is a path to another yml file, read the cost_weight in that yml file.
+    Otherwise, return the cost_weight as is. However, check the structure of the cost weight
+    """
+
+    cost_weight_new = {}
+    if isinstance(cost_weight, str):
+        cost_weight_new = parse_yml(cost_weight)
+    elif isinstance(cost_weight, dict):
+        for k, v in cost_weight.items():
+            cost_weight_new[k] = transfer_cost_weight(v)
+    else:
+        cost_weight_new = cost_weight
+
+    return cost_weight_new
 
 
 def create_coordinate_mask(nx, ny, pixels_per_meter, device):

@@ -3,11 +3,12 @@ import time
 import torch
 from torch import nn
 import wandb
-from utilities.cost_utils import sample_coefficient
+from copy import deepcopy
+from utilities.cost_utils import sample_weight, transfer_cost_weight
 from utilities.kinematic_utils import acceleration_to_throttle_brake
 from utilities.model_utils import convert_standard_bev_to_model_bev
 from utilities.create_video_from_folder import create_video_from_images
-from utilities.train_utils import apply_torch_func, requires_grad, to
+from utilities.train_utils import cat, to, requires_grad, clone, stack, apply_torch_func
 
 
 class Tester:
@@ -16,6 +17,7 @@ class Tester:
         environment,
         ego_forward_model,
         world_forward_model,
+        adapter,
         cost,
         cost_weight,
         device,
@@ -23,16 +25,16 @@ class Tester:
         optimizer_config,
         batch_size=1,
         action_size=2,
-        num_optimization_iteration_grad=5,
-        num_optimization_iteration_cem=30,
-        topk=5,
+        num_optimization_iteration=30,
         init_action="zeros",
-        init_action_mean=0,
-        init_action_std=0.1,
         num_time_step_previous=20,
         num_time_step_future=10,
         skip_frames=1,
         repeat_frames=1,
+        cost_weight_dropout=0.0,
+        cost_weight_frames=40,
+        adapter_weight=0.0,
+        mpc_weight=1.0,
         log_video=True,
         log_video_scale=0.1,
         gradient_clip=True,
@@ -46,23 +48,25 @@ class Tester:
         self.environment = environment
         self.ego_forward_model = ego_forward_model
         self.world_forward_model = world_forward_model
+        self.adapter = adapter
         self.cost = cost
-        self.cost_weight = cost_weight
+        self.cost_weight = transfer_cost_weight(cost_weight)
+        self.cost_weight_in_use = cost_weight
         self.device = device
         self.optimizer_class = optimizer_class
         self.optimizer_config = optimizer_config
         self.batch_size = batch_size
         self.action_size = action_size
-        self.num_optimization_iteration_grad = num_optimization_iteration_grad
-        self.num_optimization_iteration_cem = num_optimization_iteration_cem
-        self.topk = topk
+        self.num_optimization_iteration = num_optimization_iteration
         self.init_action = init_action
-        self.init_action_mean = init_action_mean
-        self.init_action_std = init_action_std
         self.num_time_step_previous = num_time_step_previous
         self.num_time_step_future = num_time_step_future
         self.skip_frames = skip_frames
         self.repeat_frames = repeat_frames
+        self.cost_weight_dropout = cost_weight_dropout
+        self.cost_weight_frames = cost_weight_frames
+        self.adapter_weight = adapter_weight
+        self.mpc_weight = mpc_weight
         self.log_video = log_video
         self.log_video_scale = log_video_scale
         self.gradient_clip = gradient_clip
@@ -74,21 +78,12 @@ class Tester:
         self.bev_calculate_offroad = bev_calculate_offroad
 
         self.ego_forward_model.eval().to(self.device)
+
         if self.world_forward_model is not None:
             self.world_forward_model.eval().to(self.device)
 
-        self.init_action_mean = (
-            torch.ones(self.batch_size, self.num_time_step_future, self.action_size).to(
-                self.device
-            )
-            * self.init_action_mean
-        )
-        self.init_action_std = (
-            torch.ones(self.batch_size, self.num_time_step_future, self.action_size).to(
-                self.device
-            )
-            * self.init_action_std
-        )
+        if self.adapter is not None:
+            self.adapter.eval().to(self.device)
 
         self.frame_counter = 0
         self.skip_counter = 0
@@ -108,6 +103,9 @@ class Tester:
 
         for _ in range(self.num_time_step_previous):
             self.world_previous_bev_deque.append(processed_data["bev_tensor"])
+
+        if self.adapter is not None:
+            self.initial_guess = self.adapter.step()
 
         while not self.environment.is_done:
             t0 = time.time()
@@ -143,6 +141,11 @@ class Tester:
             # Fetch predicted action
             control_selected = ego_future_action_predicted[0][self.skip_counter]
 
+            if self.adapter is not None:
+                control_selected = torch.from_numpy(
+                    self.initial_guess * self.adapter_weight
+                ).to(self.device)[0] + (control_selected * self.mpc_weight)
+
             # Convert to environment control
             acceleration = control_selected[0].item()
             steer = control_selected[1].item()
@@ -173,7 +176,10 @@ class Tester:
                 frame_counter=self.frame_counter,
                 skip_counter=self.skip_counter,
                 repeat_counter=self.repeat_counter,
-                action=env_control,
+                adapter_action=self.initial_guess[0]
+                if self.adapter is not None
+                else None,
+                mpc_action=env_control,
                 **cost,
                 cost_viz={  # Some dummy arguments for visualization
                     "world_future_bev_predicted": world_future_bev_predicted,
@@ -190,7 +196,17 @@ class Tester:
             if self.log_video:
                 self.log_video_images_path.append(image_path)
 
-            self._reset()
+            if self.adapter is not None:
+                self.initial_guess = self.adapter.step()  # Shape: (1,2)
+
+                self._reset(
+                    initial_guess=torch.Tensor(self.initial_guess)
+                    .unsqueeze(1)
+                    .repeat((1, self.num_time_step_future, 1))
+                )
+
+            else:
+                self._reset()
 
             # Update counters
             self.frame_counter += 1
@@ -370,58 +386,69 @@ class Tester:
 
         # self.predicted_bev = predicted_bev.clone().detach().cpu().numpy()[0]
 
-        loss = torch.zeros((self.batch_size,), device=self.device)
+        loss = torch.tensor(0.0, device=self.device)
 
-        for cost_key in self.cost_weight.keys():
-            self.cost_weight[cost_key] = (
-                sample_coefficient(
-                    self.cost_weight[cost_key]["mean"],
-                    self.cost_weight[cost_key]["std"],
-                )
-                if isinstance(self.cost_weight[cost_key], dict)
-                else self.cost_weight[cost_key]
-            )
+        if self.frame_counter % self.cost_weight_frames == 0:
+            self.cost_weight_in_use = {}
+
+            for cost_key in self.cost_weight.keys():
+                if isinstance(self.cost_weight[cost_key], dict):
+                    dropout_rate = self.cost_weight[cost_key]["dropout"]
+
+                else:
+                    dropout_rate = self.cost_weight_dropout
+
+                # Pick a random number to apply dropout
+                if torch.rand(1) > dropout_rate:
+                    self.cost_weight_in_use[cost_key] = (
+                        sample_weight(
+                            self.cost_weight[cost_key]["mean"],
+                            self.cost_weight[cost_key]["std"],
+                        )
+                        if isinstance(self.cost_weight[cost_key], dict)
+                        else self.cost_weight[cost_key]
+                    )
+
+                else:
+                    self.cost_weight_in_use[cost_key] = 0
 
         for cost_key in cost["cost_dict"].keys():
-            assert (
-                cost_key in self.cost_weight.keys()
-            ), f"{cost_key} not in {self.cost_weight.keys()}"
+            if cost_key not in ["road_red_yellow_cost", "road_green_cost"]:
+                assert (
+                    cost_key in self.cost_weight.keys()
+                ), f"{cost_key} not in {self.cost_weight.keys()}"
 
-            loss += cost["cost_dict"][cost_key] * self.cost_weight[cost_key]
+                loss += cost["cost_dict"][cost_key] * self.cost_weight_in_use[cost_key]
 
         ego_location_l1 = torch.nn.functional.l1_loss(
             ego_future_location_predicted,
             target_location.expand(*(ego_future_location_predicted.shape)),
-            reduction="none",
-        ).mean(dim=tuple(range(1, len(ego_future_location_predicted.shape))))
+        )
 
         ego_yaw_l1 = torch.nn.functional.l1_loss(
             torch.cos(ego_future_yaw_predicted),
             torch.cos(target_yaw.expand(*(ego_future_yaw_predicted.shape))),
-            reduction="none",
-        ).mean(dim=tuple(range(1, len(ego_future_yaw_predicted.shape))))
+        )
 
         ego_yaw_l1 += torch.nn.functional.l1_loss(
             torch.sin(ego_future_yaw_predicted),
             torch.sin(target_yaw.expand(*(ego_future_yaw_predicted.shape))),
-            reduction="none",
-        ).mean(dim=tuple(range(1, len(ego_future_yaw_predicted.shape))))
+        )
 
         ego_speed_l1 = torch.nn.functional.l1_loss(
             ego_future_speed_predicted,
             target_speed.expand(*(ego_future_speed_predicted.shape)),
-            reduction="none",
-        ).mean(dim=tuple(range(1, len(ego_future_speed_predicted.shape))))
+        )
 
-        acceleration_jerk = torch.diff(self.action[..., 0], dim=1).square().mean(dim=1)
-        steer_jerk = torch.diff(self.action[..., 1], dim=1).square().mean(dim=1)
+        acceleration_jerk = torch.diff(self.action[..., 0], dim=1).square().sum().mean()
+        steer_jerk = torch.diff(self.action[..., 1], dim=1).square().sum().mean()
 
         loss += (
-            ego_location_l1 * self.cost_weight["ego_location_l1"]
-            + ego_yaw_l1 * self.cost_weight["ego_yaw_l1"]
-            + ego_speed_l1 * self.cost_weight["ego_speed_l1"]
-            + acceleration_jerk * self.cost_weight["acceleration_jerk"]
-            + steer_jerk * self.cost_weight["steer_jerk"]
+            ego_location_l1 * self.cost_weight_in_use["ego_location_l1"]
+            + ego_yaw_l1 * self.cost_weight_in_use["ego_yaw_l1"]
+            + ego_speed_l1 * self.cost_weight_in_use["ego_speed_l1"]
+            + acceleration_jerk * self.cost_weight_in_use["acceleration_jerk"]
+            + steer_jerk * self.cost_weight_in_use["steer_jerk"]
         )
 
         return {
@@ -440,52 +467,27 @@ class Tester:
             world_previous_bev
         )
 
-        for _ in range(self.num_optimization_iteration_cem):
-            for _ in range(self.num_optimization_iteration_grad):
-                self.optimizer.zero_grad()
+        for _ in range(self.num_optimization_iteration):
+            self.optimizer.zero_grad()
 
-                (
-                    ego_future_location_predicted,
-                    ego_future_yaw_predicted,
-                    ego_future_speed_predicted,
-                ) = self._forward_ego_forward_model(ego_previous)
+            (ego_future_predicted) = self._forward_ego_forward_model(ego_previous)
 
-                cost = self._forward_cost(
-                    ego_future_location_predicted,
-                    ego_future_yaw_predicted,
-                    ego_future_speed_predicted,
-                    world_future_bev_predicted,
-                    target,
-                )
+            ego_future_location_predicted = torch.cat(
+                [
+                    ego_future_predicted["location"]["x"],
+                    ego_future_predicted["location"]["y"],
+                ],
+                dim=-1,
+            )
 
-                loss = cost["loss"]
-
-                loss.sum().backward(retain_graph=True)
-
-                # print(self.action.grad.sum())
-                # print(self.action.sum())
-
-                if self.gradient_clip:
-                    if self.gradient_clip_type == "value":
-                        torch.nn.utils.clip_grad_value_(
-                            self.action, self.gradient_clip_value
-                        )
-                    elif self.gradient_clip_type == "norm":
-                        torch.nn.utils.clip_grad_norm_(
-                            self.action, self.gradient_clip_value
-                        )
-                    else:
-                        raise ValueError(
-                            f"Invalid gradient clip type {self.gradient_clip_type}"
-                        )
-
-                self.optimizer.step()
-
-            (
-                ego_future_location_predicted,
-                ego_future_yaw_predicted,
-                ego_future_speed_predicted,
-            ) = self._forward_ego_forward_model(ego_previous)
+            ego_future_yaw_predicted = ego_future_predicted["rotation"]["yaw"]
+            ego_future_speed_predicted = torch.cat(
+                [
+                    ego_future_predicted["velocity"]["x"],
+                    ego_future_predicted["velocity"]["y"],
+                ],
+                dim=-1,
+            ).norm(2, -1, True)
 
             cost = self._forward_cost(
                 ego_future_location_predicted,
@@ -497,18 +499,29 @@ class Tester:
 
             loss = cost["loss"]
 
-            _, topk_indices = torch.topk(loss, self.topk, largest=False, sorted=True)
+            loss.backward(retain_graph=True)
 
-            (mean, std) = self._get_action_distribution(topk_indices)
+            # print(self.action.grad.sum())
+            # print(self.action.sum())
 
-            topk_action = self.action.data[topk_indices]
+            if self.gradient_clip:
+                if self.gradient_clip_type == "value":
+                    torch.nn.utils.clip_grad_value_(
+                        self.action, self.gradient_clip_value
+                    )
+                elif self.gradient_clip_type == "norm":
+                    torch.nn.utils.clip_grad_norm_(
+                        self.action, self.gradient_clip_value
+                    )
+                else:
+                    raise ValueError(
+                        f"Invalid gradient clip type {self.gradient_clip_type}"
+                    )
 
-            self._reset(mean, std)
-
-            self.action.data[: self.topk] = topk_action
+            self.optimizer.step()
 
         return {
-            "action": topk_action,
+            "action": self.action,
             "cost": cost,
             "ego_future_location_predicted": ego_future_location_predicted,
             "ego_future_yaw_predicted": ego_future_yaw_predicted,
@@ -516,22 +529,43 @@ class Tester:
             "world_future_bev_predicted": world_future_bev_predicted,
         }
 
-    def _reset(self, init_action_mean=None, init_action_std=None):
-        # Generate random gaussian
-        action = torch.randn(
-            (self.batch_size, self.num_time_step_future, self.action_size),
-            device=self.device,
-            dtype=torch.float32,
-        ) * (self.init_action_std if init_action_std is None else init_action_std) + (
-            self.init_action_mean if init_action_mean is None else init_action_mean
-        )
+    def _reset(self, initial_guess=None):
+        if initial_guess is None:
+            if self.init_action == "zeros":
+                action = torch.zeros(
+                    (self.batch_size, self.num_time_step_future, self.action_size),
+                    device=self.device,
+                    dtype=torch.float32,
+                )
+
+            elif self.init_action == "random":
+                # Generate random gaussian around 0 with 0.1 std
+                action = (
+                    torch.randn(
+                        (self.batch_size, self.num_time_step_future, self.action_size),
+                        device=self.device,
+                        dtype=torch.float32,
+                    )
+                    * 0.2
+                )
+
+            elif self.init_action == "ones":
+                action = torch.ones(
+                    (self.batch_size, self.num_time_step_future, self.action_size),
+                    device=self.device,
+                    dtype=torch.float32,
+                )
+
+            else:
+                raise NotImplementedError
+
+        else:
+            # action = torch.tensor(
+            #     initial_guess, device=self.device, dtype=torch.float32
+            # ).unsqueeze(0)
+
+            action = initial_guess.clone().detach().requires_grad_(True).to(self.device)
 
         self.action = nn.Parameter(action, requires_grad=True)
 
         self.optimizer = self.optimizer_class((self.action,), **self.optimizer_config)
-
-    def _get_action_distribution(self, indices):
-        return (
-            self.action[indices].mean(dim=0, keepdim=True),
-            self.action[indices].std(dim=0, keepdim=True, unbiased=False),
-        )

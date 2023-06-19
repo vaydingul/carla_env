@@ -38,44 +38,13 @@ class Evaluator(Tester):
             }
         }
 
-        ego_previous = apply_torch_func(torch.Tensor, ego_previous)
-        ego_previous = apply_torch_func(torch.view, ego_previous, ((1, 1, -1), ))
+        ego_previous = apply_torch_func(ego_previous, torch.tensor)
+        ego_previous = apply_torch_func(ego_previous, torch.Tensor.view, (1, 1, -1))
 
         ego_previous = to(ego_previous, self.device)
         requires_grad(ego_previous, True)
 
         processed_data["ego_previous"] = ego_previous
-
-        
-        # ego_previous_location_array = torch.zeros((1, 1, 3), device=self.device)
-        # ego_previous_rotation_array = torch.zeros((1, 1, 3), device=self.device)
-        # ego_previous_velocity_array = torch.zeros((1, 1, 3), device=self.device)
-        
-        
-
-        # ego_previous_location_array[..., 0] = hero_actor_location.x
-        # ego_previous_location_array[..., 1] = hero_actor_location.y
-        # ego_previous_location_array[..., 2] = hero_actor_location.z
-
-        # ego_previous_rotation_array[..., 0] = hero_actor_rotation.roll * np.pi / 180
-        # ego_previous_rotation_array[..., 1] = hero_actor_rotation.pitch * np.pi / 180
-        # ego_previous_rotation_array[..., 2] = hero_actor_rotation.yaw * np.pi / 180
-
-        # ego_previous_velocity_array[..., 0] = hero_actor_velocity.x
-        # ego_previous_velocity_array[..., 1] = hero_actor_velocity.y
-        # ego_previous_velocity_array[..., 2] = hero_actor_velocity.z
-
-        # ego_previous_location_array.requires_grad_(True)
-        # ego_previous_rotation_array.requires_grad_(True)
-        # ego_previous_velocity_array.requires_grad_(True)
-
-        # ego_previous = {
-        #     "location_array": ego_previous_location_array,
-        #     "rotation_array": ego_previous_rotation_array,
-        #     "velocity_array": ego_previous_velocity_array,
-        # }
-
-        # processed_data["ego_previous"] = ego_previous
 
         target_location = torch.zeros((1, 1, 2), device=self.device)
         target_yaw = torch.zeros((1, 1, 1), device=self.device)

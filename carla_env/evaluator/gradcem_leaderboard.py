@@ -9,6 +9,7 @@ from utilities.kinematic_utils import acceleration_to_throttle_brake
 from utilities.model_utils import convert_standard_bev_to_model_bev
 from utilities.create_video_from_folder import create_video_from_images
 from utilities.cost_utils import sample_coefficient
+from utilities.train_utils import apply_torch_func, requires_grad, to
 
 
 class Evaluator(Tester):
@@ -21,26 +22,30 @@ class Evaluator(Tester):
         hero_actor_location = hero_actor.get_location()
         hero_actor_rotation = hero_actor.get_transform().rotation
         hero_actor_velocity = hero_actor.get_velocity()
-        hero_actor_speed = hero_actor_velocity.length()
-
-        ego_previous_location = torch.zeros((1, 1, 2), device=self.device)
-        ego_previous_yaw = torch.zeros((1, 1, 1), device=self.device)
-        ego_previous_speed = torch.zeros((1, 1, 1), device=self.device)
-
-        ego_previous_location[..., 0] = hero_actor_location.x
-        ego_previous_location[..., 1] = hero_actor_location.y
-        ego_previous_yaw[..., 0] = hero_actor_rotation.yaw * np.pi / 180
-        ego_previous_speed[..., 0] = hero_actor_speed
-
-        ego_previous_location.requires_grad_(True)
-        ego_previous_yaw.requires_grad_(True)
-        ego_previous_speed.requires_grad_(True)
 
         ego_previous = {
-            "location": ego_previous_location,
-            "yaw": ego_previous_yaw,
-            "speed": ego_previous_speed,
+            "location": {
+                "x": hero_actor_location.x,
+                "y": hero_actor_location.y,
+                "z": hero_actor_location.z,
+            },
+            "rotation": {
+                "roll": hero_actor_rotation.roll * np.pi / 180,
+                "pitch": hero_actor_rotation.pitch * np.pi / 180,
+                "yaw": hero_actor_rotation.yaw * np.pi / 180,
+            },
+            "velocity": {
+                "x": hero_actor_velocity.x,
+                "y": hero_actor_velocity.y,
+                "z": hero_actor_velocity.z,
+            },
         }
+
+        ego_previous = apply_torch_func(ego_previous, torch.tensor)
+        ego_previous = apply_torch_func(ego_previous, torch.Tensor.view, (1, 1, -1))
+
+        ego_previous = to(ego_previous, self.device)
+        requires_grad(ego_previous, True)
 
         processed_data["ego_previous"] = ego_previous
 
