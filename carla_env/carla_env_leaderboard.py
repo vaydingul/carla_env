@@ -106,13 +106,13 @@ class CarlaEnvironment(Environment):
         time.sleep(1.0)
         logger.info("Everything is set!")
 
-    def step(self):
+    def step(self, *args, **kwargs):
         """Perform an action in the environment"""
 
         snapshot = self.client_module.world.get_snapshot()
 
         for sensor in self.sensor_modules:
-            sensor["module"].step()
+            sensor["module"].step(*args, **kwargs)
 
         self.data_dict = {}
 
@@ -150,7 +150,9 @@ class CarlaEnvironment(Environment):
             bool(self.render_dict["rgb_front"])
         )
         bev_valid = ("bev_world" in kwargs) and (bool(self.render_dict["bev_world"]))
-        adapter_render_valid = ("adapter_render" in kwargs) and (kwargs["adapter_render"] is not None)
+        adapter_render_valid = ("adapter_render" in kwargs) and (
+            kwargs["adapter_render"] is not None
+        )
 
         ego_current_location = self.render_dict["hero_actor_module"]["location"]
         ego_current_location_ = postprocess_location(ego_current_location)
@@ -187,20 +189,27 @@ class CarlaEnvironment(Environment):
 
             self.renderer_module.render_image(bev, move_cursor="down")
 
-            
         if adapter_render_valid:
             adapter_render = kwargs["adapter_render"]
 
-            (h_adapter_render, w_adapter_render, c_adapter_render) = adapter_render.shape
+            (
+                h_adapter_render,
+                w_adapter_render,
+                c_adapter_render,
+            ) = adapter_render.shape
 
-            self.renderer_module.render_image(cv2.cvtColor(adapter_render, cv2.COLOR_BGR2RGB), move_cursor="down")
+            self.renderer_module.render_image(
+                cv2.cvtColor(adapter_render, cv2.COLOR_BGR2RGB), move_cursor="down"
+            )
 
         self.renderer_module.move_cursor(
             direction="right-up",
-            amount=(h_image + h_bev + h_adapter_render, max(w_image, w_bev, w_adapter_render) + 20),
+            amount=(
+                h_image + h_bev + h_adapter_render,
+                max(w_image, w_bev, w_adapter_render) + 20,
+            ),
         )
 
-            
         self.renderer_module.render_text("", move_cursor="down", font_color=COLORS.RED)
 
         for module, render_dict in self.render_dict.items():
@@ -344,7 +353,7 @@ class CarlaEnvironment(Environment):
         if "route_viz" in kwargs:
             self.renderer_module.move_cursor("point", amount=(0, 0))
 
-            route_current_location = kwargs["route_viz"]["next_waypoint"].location
+            route_current_location = kwargs["route_viz"]["next_waypoint"]
 
             route_current_location = postprocess_location(
                 route_current_location, ego_current_location

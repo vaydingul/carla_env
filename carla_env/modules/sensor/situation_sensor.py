@@ -3,13 +3,26 @@ import logging
 import numpy as np
 
 from carla_env.modules.sensor import sensor
+from enum import IntEnum
+from queue import Queue
+from statistics import mean
+from agents.navigation.local_planner import RoadOption
+
 
 logger = logging.getLogger(__name__)
 
 
-class VehicleSensorModule(sensor.SensorModule):
+class SituationState(IntEnum):
+    """Enum class for situation state"""
+
+    DRIVE = 1
+    STOP = 2
+    TURN = 3
+
+
+class SituationSensorModule(sensor.SensorModule):
     """Concrete implementation of SensorModule abstract base class for
-    vehicle sensor management"""
+    situation sensor management"""
 
     def __init__(self, config, client, actor=None, id=None) -> None:
         super().__init__(config, client)
@@ -22,6 +35,8 @@ class VehicleSensorModule(sensor.SensorModule):
         if actor is not None:
             self.attach_to_actor(actor, id)
 
+        self.steer_deque = Queue(maxlen=self.config["steer_deque_maxlen"])
+
         self.reset()
 
     def _start(self):
@@ -32,13 +47,48 @@ class VehicleSensorModule(sensor.SensorModule):
         """Stop the sensor module"""
         self.is_attached = False
 
-    def _tick(self):
+    def _tick(self, *args, **kwargs):
         """Tick the sensor"""
-        self._get_sensor_data()
+        self._get_sensor_data(*args, **kwargs)
 
-    def _get_sensor_data(self):
+    def _get_sensor_data(self, *args, **kwargs):
         """Get the sensor data"""
 
+        data = self._get_required_data()
+
+        situation = SituationState.DRIVE
+
+        turn_command_available = False
+        
+        if "next_command" in kwargs:
+            next_command = kwargs["next_command"]
+            if next_command in [RoadOption.LEFT, RoadOption.RIGHT, RoadOption.CHANGELANELEFT, RoadOption.CHANGELANERIGHT]:
+                turn_command_available = True
+
+        steer = data["control"]["steer"]
+        self.steer_deque.append(steer)
+
+        if data["is_at_traffic_light"] and data["traffic_light_state"] == "Red":
+            situation = SituationState.STOP
+
+        else:
+            steer_threshold_exceeded = False
+            if self.steer_deque.qsize() > (self.config["steer_deque_maxlen"] // 2):
+                steer_mean = mean(self.steer_deque)
+                steer_threshold_exceeded = steer_mean > self.config["steer_threshold"]:
+            
+            if steer_threshold_exceeded or turn_command_available:
+                situation = SituationState.TURN
+
+        data = {
+            "frame" : data["frame"],
+            "situation" : situation,
+        }
+
+        if self.save_to_queue:
+            self._queue_operation(data)
+
+    def _get_required_data(self):
         actor = self.actor.get_actor()
 
         transform_ = actor.get_transform()
@@ -114,7 +164,7 @@ class VehicleSensorModule(sensor.SensorModule):
         }
 
         world = world_.get_map().name
-        
+
         is_at_traffic_light = actor.is_at_traffic_light()
         speed_limit = actor.get_speed_limit()
 
@@ -159,11 +209,6 @@ class VehicleSensorModule(sensor.SensorModule):
             "lane_width": location_waypoint_.lane_width,
         }
 
-
-
-
-
-
         data = {
             "transform_": transform_,
             "location_": location_,
@@ -190,17 +235,9 @@ class VehicleSensorModule(sensor.SensorModule):
             "location_waypoint": location_waypoint,
         }
 
+        return data
 
-        
-
-
-
-
-        
-        if self.save_to_queue:
-            self._queue_operation(data)
-
-    def step(self):
+    def step(self, *args, **kwargs):
         """Step the sensor"""
         self._tick()
 
@@ -227,7 +264,10 @@ class VehicleSensorModule(sensor.SensorModule):
 
     def _set_default_config(self):
         """Set the default config of the sensor"""
-        self.config = {}
+        self.config = {
+            "steer_deque_maxlen": 20,
+            "steer_threshold": 0.35,
+        }
 
     def _queue_operation(self, data):
         """Queue the sensor data and additional stuff"""

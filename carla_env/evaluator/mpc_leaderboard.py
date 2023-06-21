@@ -4,11 +4,17 @@ from carla_env.tester.mpc import Tester
 from utilities.model_utils import convert_standard_bev_to_model_bev
 from utilities.train_utils import apply_torch_func, requires_grad, to
 
+
 class Evaluator(Tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def process_data(self, hero_actor, input_data, bev_image, next_waypoint):
+        data = self.environment.get_data()
+
+        print(data["ego"]["is_at_traffic_light"])
+        print(data["ego"]["traffic_light_state"])
+        print(data["snapshot"].frame)
         processed_data = {}
 
         hero_actor_location = hero_actor.get_location()
@@ -16,26 +22,21 @@ class Evaluator(Tester):
         hero_actor_velocity = hero_actor.get_velocity()
 
         ego_previous = {
-            "location":
-            {
+            "location": {
                 "x": hero_actor_location.x,
                 "y": hero_actor_location.y,
                 "z": hero_actor_location.z,
-            }
-            ,
-            "rotation":
-            {
+            },
+            "rotation": {
                 "roll": hero_actor_rotation.roll * np.pi / 180,
                 "pitch": hero_actor_rotation.pitch * np.pi / 180,
                 "yaw": hero_actor_rotation.yaw * np.pi / 180,
-            }
-            ,
-            "velocity":
-            {
+            },
+            "velocity": {
                 "x": hero_actor_velocity.x,
                 "y": hero_actor_velocity.y,
                 "z": hero_actor_velocity.z,
-            }
+            },
         }
 
         ego_previous = apply_torch_func(ego_previous, torch.tensor)
@@ -50,9 +51,9 @@ class Evaluator(Tester):
         target_yaw = torch.zeros((1, 1, 1), device=self.device)
         target_speed = torch.zeros((1, 1, 1), device=self.device)
 
-        target_location[..., 0] = next_waypoint.location.x
-        target_location[..., 1] = next_waypoint.location.y
-        target_yaw[..., 0] = next_waypoint.rotation.yaw * np.pi / 180
+        target_location[..., 0] = next_waypoint.transform.location.x
+        target_location[..., 1] = next_waypoint.transform.location.y
+        target_yaw[..., 0] = next_waypoint.transform.rotation.yaw * np.pi / 180
 
         # target_speed[..., 0] = 5
 

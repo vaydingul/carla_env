@@ -3,7 +3,7 @@ import time
 import torch
 from torch import nn
 import wandb
-from utilities.cost_utils import sample_coefficient
+from utilities.cost_utils import sample_coefficient, transfer_cost_weight
 from utilities.kinematic_utils import acceleration_to_throttle_brake
 from utilities.model_utils import convert_standard_bev_to_model_bev
 from utilities.create_video_from_folder import create_video_from_images
@@ -47,7 +47,7 @@ class Tester:
         self.ego_forward_model = ego_forward_model
         self.world_forward_model = world_forward_model
         self.cost = cost
-        self.cost_weight = cost_weight
+        self.cost_weight = transfer_cost_weight(cost_weight)
         self.device = device
         self.optimizer_class = optimizer_class
         self.optimizer_config = optimizer_config

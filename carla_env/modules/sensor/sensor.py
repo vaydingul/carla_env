@@ -37,7 +37,7 @@ class SensorModule(module.Module):
         """Get the sensor data"""
         pass
 
-    def step(self):
+    def step(self, *args, **kwargs):
         """Step the sensor"""
         self._tick()
 
@@ -76,25 +76,27 @@ class SensorModule(module.Module):
     def attach_to_actor(self, actor, id=None):
         """Attach the sensor to an actor"""
 
-        if (id is not None):
-
-            if (id not in actor.sensor_dict.keys()):
+        if id is not None:
+            if id not in actor.sensor_dict.keys():
                 actor.sensor_dict[id] = self
             else:
                 raise ("A sensor with same ID exists!")
 
         else:
-
             if f"{self.__class__.__name__}_0" not in actor.sensor_dict.keys():
-
                 actor.sensor_dict[f"{self.__class__.__name__}_0"] = self
 
             else:
+                sorted_keys = sorted(
+                    [
+                        int(key_.split("_")[-1])
+                        for key_ in actor.sensor_dict.keys()
+                        if self.__class__.__name__ in key_
+                    ]
+                )
 
-                sorted_keys = sorted([int(key_.split("_")[-1])
-                                      for key_ in actor.sensor_dict.keys()
-                                      if self.__class__.__name__ in key_])
-
-                actor.sensor_dict[f"{self.__class__.__name__}_{sorted_keys[-1] + 1}"] = self
+                actor.sensor_dict[
+                    f"{self.__class__.__name__}_{sorted_keys[-1] + 1}"
+                ] = self
 
         self.actor = actor

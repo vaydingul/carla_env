@@ -1,12 +1,11 @@
 import cv2
 import numpy as np
 import torch
-
+import carla
 from carla_env.bev import BirdViewProducer
 
 
 def postprocess_bev(bev, bev_selected_channels, bev_calculate_offroad):
-
     # Copy the list of bev_selected_channels to avoid modifying the original list
     bev_selected_channels = bev_selected_channels.copy()
 
@@ -26,7 +25,6 @@ def postprocess_bev(bev, bev_selected_channels, bev_calculate_offroad):
 
 
 def postprocess_mask(mask):
-
     mask = mask.clone().detach().cpu().numpy()
 
     mask = (((mask - mask.min()) / (mask.max() - mask.min())) * 255).astype(np.uint8)
@@ -37,9 +35,8 @@ def postprocess_mask(mask):
 
 
 def postprocess_action(action, val=50):
-
     action = action.clone().detach().cpu().numpy()
-    
+
     action = action * val
     action = action.astype(np.int32)
 
@@ -47,9 +44,8 @@ def postprocess_action(action, val=50):
 
 
 def postprocess_location(location, ego_current_location=None):
-
     if isinstance(location, torch.Tensor):
-
+        
         location_ = np.zeros((3,))
 
         location = location.clone().detach().cpu().numpy()
@@ -59,15 +55,24 @@ def postprocess_location(location, ego_current_location=None):
         location_[: location.shape[0]] = location
 
         if ego_current_location is not None:
-
             location_[-1] = ego_current_location.z
 
         location = location_
 
-    else:
-
+    elif isinstance(location, carla.Waypoint):
+        location = location.transform.location
         location = np.array([location.x, location.y, location.z])
 
+    elif isinstance(location, carla.Transform):
+        location = location.location
+        location = np.array([location.x, location.y, location.z])
+
+    elif isinstance(location, carla.Location):
+        location = np.array([location.x, location.y, location.z])
+
+    else:
+        raise ValueError(f"Unknown location type: {type(location)}")
+    
     return location
 
 

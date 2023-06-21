@@ -4,7 +4,7 @@ import torch
 from torch import nn
 import wandb
 from copy import deepcopy
-from utilities.cost_utils import sample_weight
+from utilities.cost_utils import sample_weight, transfer_cost_weight
 from utilities.kinematic_utils import acceleration_to_throttle_brake
 from utilities.model_utils import convert_standard_bev_to_model_bev
 from utilities.create_video_from_folder import create_video_from_images
@@ -50,7 +50,7 @@ class Tester:
         self.world_forward_model = world_forward_model
         self.adapter = adapter
         self.cost = cost
-        self.cost_weight = cost_weight
+        self.cost_weight = transfer_cost_weight(cost_weight)
         self.cost_weight_in_use = cost_weight
         self.device = device
         self.optimizer_class = optimizer_class
@@ -273,31 +273,6 @@ class Tester:
 
             processed_data["ego_previous"] = ego_previous
 
-            # ego_previous_location_array = torch.zeros((1, 1, 3), device=self.device)
-            # ego_previous_rotation_array = torch.zeros((1, 1, 3), device=self.device)
-            # ego_previous_velocity_array = torch.zeros((1, 1, 3), device=self.device)
-
-            # ego_previous_location_array[..., 0] = data["ego"]["location"]["x"]
-            # ego_previous_location_array[..., 1] = data["ego"]["location"]["y"]
-            # ego_previous_rotation_array[..., 2] = (
-            #     data["ego"]["rotation_array"][-1] * torch.pi / 180
-            # )
-            # ego_previous_velocity_array[..., 0] = data["ego"]["velocity"]["x"]
-            # ego_previous_velocity_array[..., 1] = data["ego"]["velocity"]["y"]
-            
-
-            # ego_previous_location_array.requires_grad_(True)
-            # ego_previous_rotation_array.requires_grad_(True)
-            # ego_previous_velocity_array.requires_grad_(True)
-
-            # ego_previous = {
-            #     "location_array": ego_previous_location_array,
-            #     "rotation_array": ego_previous_rotation_array,
-            #     "velocity_array": ego_previous_velocity_array,
-            # }
-
-            # processed_data["ego_previous"] = ego_previous
-
         if "navigation" in data.keys():
             target_location = torch.zeros((1, 1, 2), device=self.device)
             target_yaw = torch.zeros((1, 1, 1), device=self.device)
@@ -437,19 +412,13 @@ class Tester:
                     self.cost_weight_in_use[cost_key] = 0
 
         for cost_key in cost["cost_dict"].keys():
+        
+            assert (
+                cost_key in self.cost_weight.keys()
+            ), f"{cost_key} not in {self.cost_weight.keys()}"
 
-            if cost_key not in ["road_red_yellow_cost", "road_green_cost"]:
-                    
-                assert (
-                    cost_key in self.cost_weight.keys()
-                ), f"{cost_key} not in {self.cost_weight.keys()}"
+            loss += cost["cost_dict"][cost_key] * self.cost_weight_in_use[cost_key]
 
-                loss += cost["cost_dict"][cost_key] * self.cost_weight_in_use[cost_key]
-
-        if cost["cost_dict"]["road_red_yellow_cost"] > cost["cost_dict"]["road_green_cost"]:
-            loss += cost["cost_dict"]["road_red_yellow_cost"] * self.cost_weight_in_use["road_red_yellow_cost"]
-        else:
-            loss += cost["cost_dict"]["road_green_cost"] * self.cost_weight_in_use["road_green_cost"]
 
         ego_location_l1 = torch.nn.functional.l1_loss(
             ego_future_location_predicted,

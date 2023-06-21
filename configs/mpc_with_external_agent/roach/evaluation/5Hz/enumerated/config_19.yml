@@ -180,7 +180,7 @@ evaluator:
   skip_frames: 1
 experiment_type: eval_mpc_leaderboard
 leaderboard:
-  agent: /home/volkan/Documents/Codes/carla_env/leaderboard/leaderboard/autoagents/mpc_agent.py
+  agent: /home/volkan/Documents/Codes/carla_env/leaderboard/leaderboard/autoagents/generic_algorithm_agent.py
   agent_config: /home/volkan/Documents/Codes/carla_env/configs/policy_model/testing/config.yml
   checkpoint: routes_testing/Town05_route17.json
   debug: 1
