@@ -269,7 +269,7 @@ class Tester:
             requires_grad(ego_previous, True)
 
             ego_previous["rotation"] = apply_torch_func(
-                torch.deg2rad, ego_previous["rotation"]
+                ego_previous["rotation"], torch.deg2rad
             )
 
             processed_data["ego_previous"] = ego_previous
@@ -413,12 +413,11 @@ class Tester:
                     self.cost_weight_in_use[cost_key] = 0
 
         for cost_key in cost["cost_dict"].keys():
-            if cost_key not in ["road_red_yellow_cost", "road_green_cost"]:
-                assert (
-                    cost_key in self.cost_weight.keys()
-                ), f"{cost_key} not in {self.cost_weight.keys()}"
+            assert (
+                cost_key in self.cost_weight.keys()
+            ), f"{cost_key} not in {self.cost_weight.keys()}"
 
-                loss += cost["cost_dict"][cost_key] * self.cost_weight_in_use[cost_key]
+            loss += cost["cost_dict"][cost_key] * self.cost_weight_in_use[cost_key]
 
         ego_location_l1 = torch.nn.functional.l1_loss(
             ego_future_location_predicted,

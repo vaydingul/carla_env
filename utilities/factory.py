@@ -20,6 +20,8 @@ EVAL_EXPERIMENTS = [
     "eval_policy_model",
 ]
 
+DATA_EXPERIMENTS = []
+
 
 def ego_forward_model_factory(config):
     if (
@@ -596,6 +598,13 @@ def sensor_factory(config):
                 from carla_env.modules.sensor.radar_sensor import RadarSensorModule
 
                 cls = RadarSensorModule
+
+            elif sensor["type"] == "SituationSensor":
+                from carla_env.modules.sensor.situation_sensor import (
+                    SituationSensorModule,
+                )
+
+                cls = SituationSensorModule
 
             else:
                 raise ValueError("Invalid sensor_type")

@@ -270,6 +270,7 @@ class CarlaEnvironment(Environment):
         self.is_done = False
         self.counter = 0
         self.data = Queue()
+        self.data_dict = {}
 
     def step(self, action=None):
         """Perform an action in the environment"""
@@ -288,7 +289,13 @@ class CarlaEnvironment(Environment):
             self.hero_actor_module.step(action=action)
 
         for sensor in self.sensor_modules:
-            sensor["module"].step()
+            if "navigation" in self.data_dict:
+                sensor["module"].step(
+                    next_waypoint=self.data_dict["navigation"]["waypoint"],
+                    next_command=self.data_dict["navigation"]["command"],
+                )
+            else:
+                sensor["module"].step()
 
         self.data_dict = {}
 
@@ -308,10 +315,21 @@ class CarlaEnvironment(Environment):
                 self.data_dict[k] = data_
 
                 if k == "ego":
-                    current_transform = self.data_dict[k]["transform"]
-
-                    transform = current_transform
-                    transform.location.z += 2.0
+                    current_location = self.data_dict[k]["location"]
+                    current_rotation = self.data_dict[k]["rotation"]
+                    current_location_waypoint_ = self.data_dict[k]["location_waypoint_"]
+                    transform = carla.Transform(
+                        location=carla.Location(
+                            x=current_location["x"],
+                            y=current_location["y"],
+                            z=current_location["z"] + 2,
+                        ),
+                        rotation=carla.Rotation(
+                            roll=current_rotation["roll"],
+                            pitch=current_rotation["pitch"] - 10,
+                            yaw=current_rotation["yaw"],
+                        ),
+                    )
 
                 if k == "col":
                     impulse = self.data_dict[k]["impulse"]
@@ -324,10 +342,8 @@ class CarlaEnvironment(Environment):
 
         self.spectator.set_transform(transform)
 
-        route_step = self.route.step(self.map.get_waypoint(current_transform.location))
-        route_bev_step = self.route_bev.step(
-            self.map.get_waypoint(current_transform.location)
-        )
+        route_step = self.route.step(current_location_waypoint_)
+        route_bev_step = self.route_bev.step(current_location_waypoint_)
 
         for bev_module in self.bev_modules:
             bev_output = bev_module["module"].step(
@@ -627,8 +643,10 @@ class CarlaEnvironment(Environment):
 
     def get_route(self):
         """Get the route of the environment"""
-        return {"route":self.route.get_route(),
-                "route_bev": self.route_bev.get_route()}
+        return {
+            "route": self.route.get_route(),
+            "route_bev": self.route_bev.get_route(),
+        }
 
     def get_data(self):
         """Get the data of the environment"""

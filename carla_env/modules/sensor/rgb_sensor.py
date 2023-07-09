@@ -55,7 +55,6 @@ class RGBSensorModule(sensor.SensorModule):
         """Stop the sensor module"""
 
         if self.is_attached:
-
             self.camera.destroy()
 
         self.is_attached = False
@@ -78,12 +77,16 @@ class RGBSensorModule(sensor.SensorModule):
         self.image_data = image_data_
         self.image_transform = image_data.transform
 
-        data = {"frame": image_data.frame, "transform": image_data.transform, "data": image_data_}
+        data = {
+            "frame": image_data.frame,
+            "transform": image_data.transform,
+            "data": image_data_,
+        }
 
         if self.save_to_queue:
             self._queue_operation(data)
 
-    def step(self):
+    def step(self, *args, **kwargs):
         """Step the sensor"""
         self._tick()
 
@@ -100,9 +103,9 @@ class RGBSensorModule(sensor.SensorModule):
             self.render_dict["image_height"] = self.config["height"]
             self.render_dict["image_width"] = self.config["width"]
             self.render_dict["image_fov"] = self.config["fov"]
-        
+
         return self.render_dict
-        
+
     def close(self):
         """Close the sensor"""
         self._stop()

@@ -114,7 +114,7 @@ class VehicleSensorModule(sensor.SensorModule):
         }
 
         world = world_.get_map().name
-        
+
         is_at_traffic_light = actor.is_at_traffic_light()
         speed_limit = actor.get_speed_limit()
 
@@ -159,11 +159,6 @@ class VehicleSensorModule(sensor.SensorModule):
             "lane_width": location_waypoint_.lane_width,
         }
 
-
-
-
-
-
         data = {
             "transform_": transform_,
             "location_": location_,
@@ -190,17 +185,10 @@ class VehicleSensorModule(sensor.SensorModule):
             "location_waypoint": location_waypoint,
         }
 
-
-        
-
-
-
-
-        
         if self.save_to_queue:
             self._queue_operation(data)
 
-    def step(self):
+    def step(self, *args, **kwargs):
         """Step the sensor"""
         self._tick()
 

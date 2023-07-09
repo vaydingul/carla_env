@@ -9,6 +9,7 @@ from utilities.kinematic_utils import acceleration_to_throttle_brake
 from utilities.model_utils import convert_standard_bev_to_model_bev
 from utilities.create_video_from_folder import create_video_from_images
 from utilities.train_utils import cat, to, requires_grad, clone, stack, apply_torch_func
+from carla_env.modules.sensor.situation_sensor import SituationState
 
 
 class Tester:
@@ -96,6 +97,8 @@ class Tester:
 
         self._reset()
 
+        self.previous_action = self.action
+
     def test(self, run):
         self.environment.step()
         data = self.environment.get_data()
@@ -114,7 +117,9 @@ class Tester:
             ego_previous = processed_data["ego_previous"]
             bev_tensor = processed_data["bev_tensor"]
             target = processed_data["target"]
-
+            situation = (
+                processed_data["situation"] if "situation" in processed_data else None
+            )
             # Append world deque
             self.world_previous_bev_deque.append(bev_tensor)
 
@@ -131,6 +136,7 @@ class Tester:
                     ego_previous=ego_previous,
                     world_previous_bev=world_previous_bev,
                     target=target,
+                    situation=situation,
                 )
                 ego_future_action_predicted = out["action"]
                 world_future_bev_predicted = out["world_future_bev_predicted"]
@@ -142,9 +148,9 @@ class Tester:
             control_selected = ego_future_action_predicted[0][self.skip_counter]
 
             if self.adapter is not None:
-                control_selected = torch.from_numpy(self.initial_guess * self.adapter_weight).to(self.device)[0] + (
-                    control_selected * self.mpc_weight
-                )
+                control_selected = torch.from_numpy(
+                    self.initial_guess * self.adapter_weight
+                ).to(self.device)[0] + (control_selected * self.mpc_weight)
 
             # Convert to environment control
             acceleration = control_selected[0].item()
@@ -154,8 +160,6 @@ class Tester:
                 acceleration=acceleration,
             )
 
-            if self.frame_counter <= 2:
-                throttle = 1.0
             env_control = [throttle, steer, brake]
 
             # Step environment
@@ -180,6 +184,7 @@ class Tester:
                 if self.adapter is not None
                 else None,
                 mpc_action=env_control,
+                situation=situation,
                 **cost,
                 cost_viz={  # Some dummy arguments for visualization
                     "world_future_bev_predicted": world_future_bev_predicted,
@@ -256,8 +261,7 @@ class Tester:
     def _process_data(self, data):
         processed_data = {}
 
-        if "ego" in data.keys():
-            
+        if "ego" in data:
             ego_previous = {}
             ego_previous["location"] = data["ego"]["location"]
             ego_previous["rotation"] = data["ego"]["rotation"]
@@ -269,11 +273,13 @@ class Tester:
             ego_previous = to(ego_previous, self.device)
             requires_grad(ego_previous, True)
 
-            ego_previous["rotation"] = apply_torch_func(torch.deg2rad, ego_previous["rotation"])
+            ego_previous["rotation"] = apply_torch_func(
+                ego_previous["rotation"], torch.deg2rad
+            )
 
             processed_data["ego_previous"] = ego_previous
 
-        if "navigation" in data.keys():
+        if "navigation" in data:
             target_location = torch.zeros((1, 1, 2), device=self.device)
             target_yaw = torch.zeros((1, 1, 1), device=self.device)
             target_speed = torch.zeros((1, 1, 1), device=self.device)
@@ -301,7 +307,7 @@ class Tester:
             }
             processed_data["target"] = target
 
-        if "bev_world" in data.keys():
+        if "bev_world" in data:
             bev_tensor = convert_standard_bev_to_model_bev(
                 data["bev_world"],
                 agent_channel=self.bev_agent_channel,
@@ -313,6 +319,9 @@ class Tester:
             bev_tensor.requires_grad_(True)
 
             processed_data["bev_tensor"] = bev_tensor
+
+        if "sit" in data:
+            processed_data["situation"] = data["sit"]["situation"]
 
         return processed_data
 
@@ -370,10 +379,18 @@ class Tester:
         ego_future_speed_predicted,
         world_future_bev_predicted,
         target,
+        situation=None,
     ):
         target_location = target["location"]
         target_yaw = target["yaw"]
         target_speed = target["speed"]
+
+        cost_weight = self.cost_weight
+
+        if situation is not None:
+            if isinstance(situation, SituationState):
+                situation = situation.name
+                cost_weight = self.cost_weight[situation]
 
         # Calculate the cost
         cost = self.cost(
@@ -390,9 +407,9 @@ class Tester:
         if self.frame_counter % self.cost_weight_frames == 0:
             self.cost_weight_in_use = {}
 
-            for cost_key in self.cost_weight.keys():
-                if isinstance(self.cost_weight[cost_key], dict):
-                    dropout_rate = self.cost_weight[cost_key]["dropout"]
+            for cost_key in cost_weight.keys():
+                if isinstance(cost_weight[cost_key], dict):
+                    dropout_rate = cost_weight[cost_key]["dropout"]
 
                 else:
                     dropout_rate = self.cost_weight_dropout
@@ -401,48 +418,50 @@ class Tester:
                 if torch.rand(1) > dropout_rate:
                     self.cost_weight_in_use[cost_key] = (
                         sample_weight(
-                            self.cost_weight[cost_key]["mean"],
-                            self.cost_weight[cost_key]["std"],
+                            cost_weight[cost_key]["mean"],
+                            cost_weight[cost_key]["std"],
                         )
-                        if isinstance(self.cost_weight[cost_key], dict)
-                        else self.cost_weight[cost_key]
+                        if isinstance(cost_weight[cost_key], dict)
+                        else cost_weight[cost_key]
                     )
 
                 else:
                     self.cost_weight_in_use[cost_key] = 0
 
         for cost_key in cost["cost_dict"].keys():
-        
             assert (
-                cost_key in self.cost_weight.keys()
-            ), f"{cost_key} not in {self.cost_weight.keys()}"
+                cost_key in cost_weight.keys()
+            ), f"{cost_key} not in {cost_weight.keys()}"
 
             loss += cost["cost_dict"][cost_key] * self.cost_weight_in_use[cost_key]
-
 
         ego_location_l1 = torch.nn.functional.l1_loss(
             ego_future_location_predicted,
             target_location.expand(*(ego_future_location_predicted.shape)),
         )
 
-        ego_yaw_l1 = torch.nn.functional.l1_loss(
+        ego_yaw_l1 = torch.nn.functional.mse_loss(
             torch.cos(ego_future_yaw_predicted),
             torch.cos(target_yaw.expand(*(ego_future_yaw_predicted.shape))),
         )
 
-        ego_yaw_l1 += torch.nn.functional.l1_loss(
+        ego_yaw_l1 += torch.nn.functional.mse_loss(
             torch.sin(ego_future_yaw_predicted),
             torch.sin(target_yaw.expand(*(ego_future_yaw_predicted.shape))),
         )
 
-        ego_speed_l1 = torch.nn.functional.l1_loss(
+        ego_speed_l1 = torch.nn.functional.mse_loss(
             ego_future_speed_predicted,
             target_speed.expand(*(ego_future_speed_predicted.shape)),
         )
 
-        acceleration_jerk = torch.diff(self.action[..., 0], dim=1).square().sum().mean()
-        steer_jerk = torch.diff(self.action[..., 1], dim=1).square().sum().mean()
+        acceleration_jerk = torch.diff(self.action[..., 0], dim=1).square().sum()
+        steer_jerk = torch.diff(self.action[..., 1], dim=1).square().sum()
 
+        # Take MSE between the previous action and the current action
+        action_difference = torch.nn.functional.mse_loss(
+            self.action + 1, self.previous_action + 1
+        )
 
         loss += (
             ego_location_l1 * self.cost_weight_in_use["ego_location_l1"]
@@ -450,9 +469,8 @@ class Tester:
             + ego_speed_l1 * self.cost_weight_in_use["ego_speed_l1"]
             + acceleration_jerk * self.cost_weight_in_use["acceleration_jerk"]
             + steer_jerk * self.cost_weight_in_use["steer_jerk"]
+            + action_difference * self.cost_weight_in_use["action_difference"]
         )
-
-
 
         return {
             **cost["cost_dict"],
@@ -462,10 +480,11 @@ class Tester:
             "ego_speed_l1": ego_speed_l1,
             "acceleration_jerk": acceleration_jerk,
             "steer_jerk": steer_jerk,
+            "action_difference": action_difference,
             "loss": loss,
         }
 
-    def _step(self, ego_previous, world_previous_bev, target):
+    def _step(self, ego_previous, world_previous_bev, target, situation=None):
         world_future_bev_predicted = self._forward_world_forward_model(
             world_previous_bev
         )
@@ -476,14 +495,21 @@ class Tester:
             (ego_future_predicted) = self._forward_ego_forward_model(ego_previous)
 
             ego_future_location_predicted = torch.cat(
-                [ego_future_predicted["location"]["x"], ego_future_predicted["location"]["y"]], dim=-1
-            ) 
-            
-           
-            ego_future_yaw_predicted = ego_future_predicted["rotation"]["yaw"]
-            ego_future_speed_predicted = torch.cat([ego_future_predicted["velocity"]["x"],ego_future_predicted["velocity"]["y"]], dim = -1).norm(
-                2, -1, True
+                [
+                    ego_future_predicted["location"]["x"],
+                    ego_future_predicted["location"]["y"],
+                ],
+                dim=-1,
             )
+
+            ego_future_yaw_predicted = ego_future_predicted["rotation"]["yaw"]
+            ego_future_speed_predicted = torch.cat(
+                [
+                    ego_future_predicted["velocity"]["x"],
+                    ego_future_predicted["velocity"]["y"],
+                ],
+                dim=-1,
+            ).norm(2, -1, True)
 
             cost = self._forward_cost(
                 ego_future_location_predicted,
@@ -491,6 +517,7 @@ class Tester:
                 ego_future_speed_predicted,
                 world_future_bev_predicted,
                 target,
+                situation,
             )
 
             loss = cost["loss"]
@@ -542,7 +569,7 @@ class Tester:
                         device=self.device,
                         dtype=torch.float32,
                     )
-                    * 0.2
+                    * 0.1
                 )
 
             elif self.init_action == "ones":

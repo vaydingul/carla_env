@@ -1,0 +1,16 @@
+cost_weight:
+  road_cost: 0.0
+  road_on_cost: 0.0
+  road_off_cost: 1.0
+  road_red_yellow_cost: 1.0
+  road_green_cost: 0.0
+  vehicle_cost: 1.0
+  lane_cost: 1.0
+  pedestrian_cost: 10.0
+  offroad_cost: 1.0
+  acceleration_jerk: 100.0
+  steer_jerk: 100.0
+  action_difference: 0.0
+  ego_location_l1: 1.0
+  ego_yaw_l1: 0.0
+  ego_speed_l1: 1000.0

@@ -30,13 +30,15 @@ class CollisionSensorModule(sensor.SensorModule):
     def _start(self):
         """Start the sensor module"""
 
-        collision_bp = self.world.get_blueprint_library().find('sensor.other.collision')
+        collision_bp = self.world.get_blueprint_library().find("sensor.other.collision")
 
         self.collision_sensor = self.world.spawn_actor(
-            collision_bp, carla.Transform(), attach_to=self.actor.get_actor())
+            collision_bp, carla.Transform(), attach_to=self.actor.get_actor()
+        )
 
         self.collision_sensor.listen(
-            lambda collision_data: self._get_sensor_data(collision_data))
+            lambda collision_data: self._get_sensor_data(collision_data)
+        )
 
         self.is_attached = True
 
@@ -46,6 +48,7 @@ class CollisionSensorModule(sensor.SensorModule):
             self.collision_sensor.destroy()
 
         self.is_attached = False
+
     def _tick(self):
         """Tick the sensor"""
         pass
@@ -53,7 +56,7 @@ class CollisionSensorModule(sensor.SensorModule):
     def _get_sensor_data(self, collision_data):
         """Get the sensor data"""
 
-        #logger.info("Received an image of frame: " + str(image.frame))
+        # logger.info("Received an image of frame: " + str(image.frame))
 
         impulse = collision_data.normal_impulse
         impulse = np.array([impulse.x, impulse.y, impulse.z])
@@ -61,16 +64,16 @@ class CollisionSensorModule(sensor.SensorModule):
 
         self.impulse = impulse
 
-        data = {'frame': collision_data.frame,
-                'transform': collision_data.transform,
-                'impulse': impulse
-                }
+        data = {
+            "frame": collision_data.frame,
+            "transform": collision_data.transform,
+            "impulse": impulse,
+        }
 
         if self.save_to_queue:
             self._queue_operation(data)
 
-        
-    def step(self):
+    def step(self, *args, **kwargs):
         """Step the sensor"""
         self._tick()
 
@@ -82,7 +85,7 @@ class CollisionSensorModule(sensor.SensorModule):
     def render(self):
         """Render the sensor"""
         if self.impulse is not None:
-            self.render_dict['impulse'] = self.impulse
+            self.render_dict["impulse"] = self.impulse
 
         return self.render_dict
 

@@ -4,7 +4,7 @@ import numpy as np
 
 from carla_env.modules.sensor import sensor
 from enum import IntEnum
-from queue import Queue
+from queue import deque
 from statistics import mean
 from agents.navigation.local_planner import RoadOption
 
@@ -17,7 +17,8 @@ class SituationState(IntEnum):
 
     DRIVE = 1
     STOP = 2
-    TURN = 3
+    STEER = 3
+    TURN = 4
 
 
 class SituationSensorModule(sensor.SensorModule):
@@ -35,7 +36,7 @@ class SituationSensorModule(sensor.SensorModule):
         if actor is not None:
             self.attach_to_actor(actor, id)
 
-        self.steer_deque = Queue(maxlen=self.config["steer_deque_maxlen"])
+        self.steer_deque = deque(maxlen=self.config["steer_deque_maxlen"])
 
         self.reset()
 
@@ -56,33 +57,46 @@ class SituationSensorModule(sensor.SensorModule):
 
         data = self._get_required_data()
 
-        situation = SituationState.DRIVE
+        self.situation = SituationState.DRIVE
 
-        turn_command_available = False
-        
+        self.turn_command_available = False
+        self.steer_threshold_exceeded = False
+        self.steer_mean = 0.0
+
         if "next_command" in kwargs:
-            next_command = kwargs["next_command"]
-            if next_command in [RoadOption.LEFT, RoadOption.RIGHT, RoadOption.CHANGELANELEFT, RoadOption.CHANGELANERIGHT]:
-                turn_command_available = True
+            self.next_command = kwargs["next_command"]
+            if self.next_command in [
+                RoadOption.LEFT,
+                RoadOption.RIGHT,
+                RoadOption.CHANGELANELEFT,
+                RoadOption.CHANGELANERIGHT,
+            ]:
+                self.turn_command_available = True
 
-        steer = data["control"]["steer"]
-        self.steer_deque.append(steer)
+        abs_steer = abs(data["control"]["steer"])
+        self.steer_deque.append(abs_steer)
+        self.is_at_traffic_light = data["is_at_traffic_light"]
+        self.traffic_light_state = data["traffic_light_state"]
+        if self.is_at_traffic_light and (self.traffic_light_state == "Red"):
+            self.situation = SituationState.STOP
 
-        if data["is_at_traffic_light"] and data["traffic_light_state"] == "Red":
-            situation = SituationState.STOP
+        elif self.steer_threshold_exceeded or self.turn_command_available:
+            self.situation = SituationState.TURN
+
+        elif len(self.steer_deque) > (self.config["steer_deque_maxlen"] // 2):
+            self.steer_mean = mean(self.steer_deque)
+            self.steer_threshold_exceeded = (
+                self.steer_mean > self.config["steer_threshold"]
+            )
+            if self.steer_threshold_exceeded:
+                self.situation = SituationState.STEER
 
         else:
-            steer_threshold_exceeded = False
-            if self.steer_deque.qsize() > (self.config["steer_deque_maxlen"] // 2):
-                steer_mean = mean(self.steer_deque)
-                steer_threshold_exceeded = steer_mean > self.config["steer_threshold"]:
-            
-            if steer_threshold_exceeded or turn_command_available:
-                situation = SituationState.TURN
+            self.situation = SituationState.DRIVE
 
         data = {
-            "frame" : data["frame"],
-            "situation" : situation,
+            "frame": data["frame"],
+            "situation": self.situation,
         }
 
         if self.save_to_queue:
@@ -239,7 +253,7 @@ class SituationSensorModule(sensor.SensorModule):
 
     def step(self, *args, **kwargs):
         """Step the sensor"""
-        self._tick()
+        self._tick(*args, **kwargs)
 
     def reset(self):
         """Reset the sensor"""
@@ -248,6 +262,18 @@ class SituationSensorModule(sensor.SensorModule):
 
     def render(self):
         """Render the sensor"""
+        self.render_dict = {
+            "situation": self.situation,
+            "is_at_traffic_light": self.is_at_traffic_light,
+            "traffic_light_state": self.traffic_light_state,
+            "steer_deque": self.steer_deque,
+            "steer_threshold": self.config["steer_threshold"],
+            "steer_deque_maxlen": self.config["steer_deque_maxlen"],
+            "steer_threshold_exceeded": self.steer_threshold_exceeded,
+            "steer_mean": self.steer_mean,
+            "next_command": self.next_command,
+            "turn_command_available": self.turn_command_available,
+        }
         return self.render_dict
 
     def close(self):

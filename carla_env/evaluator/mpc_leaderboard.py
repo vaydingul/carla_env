@@ -12,9 +12,6 @@ class Evaluator(Tester):
     def process_data(self, hero_actor, input_data, bev_image, next_waypoint):
         data = self.environment.get_data()
 
-        print(data["ego"]["is_at_traffic_light"])
-        print(data["ego"]["traffic_light_state"])
-        print(data["snapshot"].frame)
         processed_data = {}
 
         hero_actor_location = hero_actor.get_location()
@@ -81,21 +78,13 @@ class Evaluator(Tester):
 
         processed_data["bev_tensor"] = bev_tensor
 
-        occupancy = torch.zeros((1, 8), dtype=torch.float32, device=self.device)
-        for i in range(8):
-            radar_data = input_data[f"radar_{i}"][1][:, 0]
-            occupancy[0, i] = float(
-                np.nanmin(radar_data) if radar_data.shape[0] > 0 else 10
-            )
-
-        occupancy[occupancy > 10] = 10
-
-        processed_data["occupancy"] = occupancy
+        if "sit" in data:
+            processed_data["situation"] = data["sit"]["situation"]
 
         return processed_data
 
-    def step(self, ego_previous, world_previous_bev, target):
-        return super()._step(ego_previous, world_previous_bev, target)
+    def step(self, *args, **kwargs):
+        return super()._step(*args, **kwargs)
 
     def reset(self, initial_guess=None):
         super()._reset(initial_guess=initial_guess)

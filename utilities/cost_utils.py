@@ -16,9 +16,13 @@ def transfer_cost_weight(cost_weight):
     cost_weight_new = {}
     if isinstance(cost_weight, str):
         cost_weight_new = parse_yml(cost_weight)
+        if "cost_weight" in cost_weight_new:
+            cost_weight_new = cost_weight_new["cost_weight"]
+
     elif isinstance(cost_weight, dict):
         for k, v in cost_weight.items():
             cost_weight_new[k] = transfer_cost_weight(v)
+
     else:
         cost_weight_new = cost_weight
 
@@ -162,7 +166,7 @@ def create_2x2_rotation_tensor_from_angle_tensor(angle_tensor):
         2,
         2,
         device=angle_tensor.device,
-        dtype=angle_tensor.dtype
+        dtype=angle_tensor.dtype,
     )
     cos = torch.cos(angle_tensor).squeeze(-1)
     sin = torch.sin(angle_tensor).squeeze(-1)
@@ -173,7 +177,52 @@ def create_2x2_rotation_tensor_from_angle_tensor(angle_tensor):
     return rotation_tensor
 
 
-if __name__ == "__main__":
+def _test_transfer_cost_weight_func():
+    import tempfile
+    import os
+    import yaml
+
+    # Test case 1: Vanilla cost weight
+    cost_weight = {
+        "weight_a": 1,
+        "weight_b": 1,
+        "weight_c": 1,
+    }
+
+    transferred_cost_weight = transfer_cost_weight(cost_weight)
+
+    print(cost_weight)
+    print(transferred_cost_weight)
+
+    # Test case 2: Cost weight with a string to a YML file
+    cost_weight_to_yml = {
+        "cost_weight": {
+            "weight_a_yml": 1,
+            "weight_b_yml": 1,
+            "weight_c_yml": 1,
+        }
+    }
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_file = os.path.join(temp_dir, "test.yml")
+        with open(temp_file, "w") as f:
+            yaml.dump(cost_weight_to_yml, f)
+
+        cost_weight = {
+            "weight_a": 1,
+            "weight_b": 1,
+            "weight_c": 1,
+            "weight_d": f"{str(temp_file)}",
+        }
+
+        transferred_cost_weight = transfer_cost_weight(cost_weight=cost_weight)
+
+    print(cost_weight_to_yml)
+    print(cost_weight)
+    print(transferred_cost_weight)
+
+
+def _test_mask_generation():
     speed = 3
     vehicle_width = 2
     vehicle_length = 4
@@ -236,3 +285,16 @@ if __name__ == "__main__":
     plt.colorbar()
 
     plt.show()
+
+
+if __name__ == "__main__":
+    print("Testing:")
+    print("Type C for cost weight transfer")
+    print("Type M for mask generation")
+    test_case = input("Enter test case: ")
+
+    if test_case == "C":
+        _test_transfer_cost_weight_func()
+
+    elif test_case == "M":
+        _test_mask_generation()

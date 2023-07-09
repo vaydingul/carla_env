@@ -194,7 +194,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path_leaderboard",
         type=str,
-        default="configs/mpc_with_external_agent/roach/evaluation/10Hz/config_mpc_main.yml",
+        default="configs/mpc_with_external_agent/roach/evaluation/10Hz/config_mpc_situational_main.yml",
         help="Path to config file",
     )
 
