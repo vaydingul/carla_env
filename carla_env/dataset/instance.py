@@ -1,6 +1,7 @@
 import torch
 from pathlib import Path
 from torch.utils.data import Dataset, DataLoader, default_collate
+from utilities.train_utils import to, clone, cat, stack, apply_torch_func
 import os
 import numpy as np
 import cv2
@@ -174,14 +175,15 @@ class InstanceDataset(Dataset):
 
             elem = data_[0]
             if isinstance(elem, dict):
-                data_stacked = {}
+                # data_stacked = {}
 
-                for key in elem.keys():
-                    data_stacked[key] = torch.stack(
-                        [data_[k][key] for k in range(len(data_))], dim=0
-                    )
+                # for key in elem.keys():
+                #     data_stacked[key] = torch.stack(
+                #         [data_[k][key] for k in range(len(data_))], dim=0
+                #     )
 
-                data_ = data_stacked
+                # data_ = data_stacked
+                data_ = stack(data_, dim=0)
 
             data[read_key] = data_
 
@@ -305,8 +307,9 @@ class InstanceDataset(Dataset):
         ego = json.load(open(load_path))
         ego_ = {}
         for key, value in ego.items():
-            if value != "<<??>>" and not isinstance(value, str):
-                ego_[key] = torch.tensor(ego[key], dtype=torch.float32)
+            if value != "<<??>>":
+                ego_[key] = value
+        ego_ = apply_torch_func(ego_, torch.tensor)
         return ego_
 
     def set_default_config(self):

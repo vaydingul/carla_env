@@ -2,7 +2,7 @@ import logging
 import numpy as np
 import torch
 from pathlib import Path
-from utilities.train_utils import clone, to, cat, stack
+from utilities.train_utils import clone, to, cat, stack, apply_torch_func
 
 torch.autograd.set_detect_anomaly(True)
 logger = logging.getLogger(__name__)
@@ -103,7 +103,7 @@ class Trainer(object):
             index_start=self.num_time_step_previous - 1,
             index_end=self.num_time_step_previous,
         )
-        ego_state_previous["rotation_array"].deg2rad_()
+        ego_state_previous["rotation"] = apply_torch_func(ego_state_previous["rotation"], torch.deg2rad)
 
         ego_state_future = to(
             data["ego"],
@@ -111,19 +111,19 @@ class Trainer(object):
             index_start=self.num_time_step_previous,
             index_end=self.num_time_step_previous + self.num_time_step_future,
         )
-        ego_state_future["rotation_array"].deg2rad_()
+        ego_state_future["rotation"] = apply_torch_func(ego_state_future["rotation"], torch.deg2rad)
 
         ego_state_future_predicted_list = []
 
-        ego_action = data["ego"]["control_array"][:, : self.num_time_step_future].to(
-            self.device
-        )
+        ego_action = torch.stack([data["ego"]["control"]["throttle"][:, : self.num_time_step_future], 
+                                  data["ego"]["control"]["steer"][:, : self.num_time_step_future],
+                                  data["ego"]["control"]["brake"][:, : self.num_time_step_future]], dim=-1).to(self.device)
 
         ego_action[..., 0] -= ego_action[..., -1]
         ego_action = ego_action[..., :-1]
 
         for t in range(self.num_time_step_future):
-            control_ = ego_action[:, t : t + 1]
+            control_ = ego_action[:, t]
 
             ego_state_next = self.model(ego_state_previous, control_)
             ego_state_future_predicted_list.append(ego_state_next)
@@ -131,19 +131,21 @@ class Trainer(object):
 
         ego_state_future_predicted = cat(ego_state_future_predicted_list, dim=1)
 
-        ego_future_location = ego_state_future["location_array"][..., :2]
-        ego_future_location_predicted = ego_state_future_predicted["location_array"][
-            ..., :2
-        ]
+        ego_future_location = ego_state_future["location"]
+        ego_future_location_predicted = ego_state_future_predicted["location"]
 
-        ego_future_yaw = ego_state_future["rotation_array"][..., 2:3]
-        ego_future_yaw_predicted = ego_state_future_predicted["rotation_array"][
-            ..., 2:3
-        ]
+        ego_future_yaw = ego_state_future["rotation"]["yaw"]
+        ego_future_yaw_predicted = ego_state_future_predicted["rotation"]["yaw"]
 
-        loss_location = self.loss_criterion(
-            ego_future_location, ego_future_location_predicted
+        loss_location_x = self.loss_criterion(
+            ego_future_location["x"], ego_future_location_predicted["x"]
         )
+        loss_location_y = self.loss_criterion(
+            ego_future_location["y"], ego_future_location_predicted["y"]
+        )
+
+        loss_location = (loss_location_x + loss_location_y) / 2.0
+
         loss_rotation = self.loss_criterion(
             torch.cos(ego_future_yaw), torch.cos(ego_future_yaw_predicted)
         )
@@ -154,9 +156,9 @@ class Trainer(object):
         loss = loss_location + loss_rotation
 
         if mode == "train":
-            self.train_step += ego_future_location.shape[0]
+            self.train_step += ego_future_location["x"].shape[0]
         elif mode == "val":
-            self.val_step += ego_future_location.shape[0]
+            self.val_step += ego_future_location["x"].shape[0]
         else:
             raise ValueError("mode should be either train or val")
 

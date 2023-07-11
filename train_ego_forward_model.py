@@ -179,7 +179,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config_path",
         type=str,
-        default="configs/ego_forward_model/training/kinematic/config_20Hz_action_repeat_4.yml",
+        default="configs/ego_forward_model/training/kinematic/config_10Hz_20Hz_dataset_action_repeat_4.yml",
     )
     args = parser.parse_args()
 

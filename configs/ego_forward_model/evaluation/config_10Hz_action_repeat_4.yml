@@ -1,0 +1,47 @@
+experiment_type: "eval_ego_forward_model"
+seed: 42
+log_path: ~ #"/home/volkan/Documents/Codes/carla_env/logs/"
+num_time_step_previous: &previous 1
+num_time_step_future: &future 10
+sequence_length: &sequence_length 11
+read_keys: &read_keys ["ego"]
+dilation: &dilation 2
+
+save_path: "figures/ego_forward_model_detailed_evaluation/"
+# Dataset related parameters for training
+
+dataset_test:
+  type: InstanceDataset
+  config:
+    data_path: "/home/volkan/Documents/Codes/carla_env/data/dynamic_model_data_20Hz_action_repeat_4/test/"
+    sequence_length: *sequence_length
+    read_keys: *read_keys
+    dilation: *dilation
+
+# Dataloader related parameters for training
+dataloader_test:
+  batch_size: 10
+  shuffle: false
+  num_workers: 0
+
+# Training related parameters
+evaluation:
+  sequence_length: *sequence_length
+  metric:
+    type: "L1Loss"
+    config:
+      reduction: "mean"
+
+# Wandb related parameters
+wandb:
+  link: "vaydingul/mbl-refactored/5uei2p19"
+  checkpoint_number: 50
+
+  enable: true
+  resume: false
+  resume_checkpoint_number: 0
+  project: "mbl-refactored"
+  group: "eval-ego-forward-model-multi-step"
+  name: "1-10-10Hz-action_repeat_4"
+  id: ~
+  notes: "10 Hz ego forward model evaluation plots"

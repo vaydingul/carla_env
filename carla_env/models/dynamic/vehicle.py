@@ -86,6 +86,7 @@ class KinematicBicycleModel(nn.Module):
         ego_state_next["velocity"]["y"][..., 0:1] = velocity_y_next
 
         ego_state_next["rotation"]["yaw"][..., 0:1] = yaw_next
+        
 
         return ego_state_next
 

@@ -4,7 +4,7 @@ seed: &seed_var 2023
 port: &port_var 2000
 tm_port: &tm_port_var 8000
 num_time_step_previous: &previous 1
-num_time_step_future: &future 40
+num_time_step_future: &future 20
 
 cost:
   type: "extended_bev_with_pedestrian"
@@ -45,7 +45,7 @@ environment:
     #   num_vehicles: [150, 300]
 
   renderer:
-    width: 12000
+    width: 6000
     height: 1280
     channel: 3
     background_color: [0, 0, 0]
@@ -113,7 +113,7 @@ environment:
 evaluator:
   batch_size: 1
   action_size: 2
-  num_optimization_iteration: 40
+  num_optimization_iteration: 20
   init_action: "random"
   skip_frames: 2
   repeat_frames: 1
@@ -155,11 +155,11 @@ evaluator:
       vehicle_cost: 1000.0
       lane_cost: 1.0
       pedestrian_cost: 1000.0
-      offroad_cost: 10.0
-      acceleration_jerk: 100.0
-      steer_jerk: 1000.0
-      action_difference: 100.0
-      ego_location_l1: 10000.0
+      offroad_cost: 100.0
+      acceleration_jerk: 0.0
+      steer_jerk: 0.0
+      action_difference: 500.0
+      ego_location_l1: 100.0
       ego_yaw_l1: 0.0
       ego_speed_l1: 0.0
     STOP:
@@ -179,19 +179,19 @@ evaluator:
       ego_yaw_l1: 0.0
       ego_speed_l1: 0.0
     STEER:
-      road_cost: 0.0
-      road_on_cost: -1.0
-      road_off_cost: 0.0
+      road_cost: -1.0
+      road_on_cost: -10.0
+      road_off_cost: 100.0
       road_red_yellow_cost: 0.0
-      road_green_cost: 0.0
-      vehicle_cost: 0.0
-      lane_cost: 0.0
-      pedestrian_cost: 0.0
-      offroad_cost: 0.0
-      acceleration_jerk: 0.0
-      steer_jerk: 100000.0
-      action_difference: 0.0
-      ego_location_l1: 0.0
+      road_green_cost: -10.0
+      vehicle_cost: 1000.0
+      lane_cost: 1.0
+      pedestrian_cost: 1000.0
+      offroad_cost: 10.0
+      acceleration_jerk: 100.0
+      steer_jerk: 1000000.0
+      action_difference: 100.0
+      ego_location_l1: 10000.0
       ego_yaw_l1: 0.0
       ego_speed_l1: 0.0
     TURN:
@@ -203,13 +203,29 @@ evaluator:
       vehicle_cost: 1000.0
       lane_cost: 1.0
       pedestrian_cost: 1000.0
-      offroad_cost: 10.0
+      offroad_cost: 100.0
       acceleration_jerk: 100.0
-      steer_jerk: 10.0
+      steer_jerk: -10.0
       action_difference: 100.0
-      ego_location_l1: 10000.0
+      ego_location_l1: 1000.0
       ego_yaw_l1: 0.0
       ego_speed_l1: 0.0
+    JUNCTION: *drive
+      # road_cost: -1.0
+      # road_on_cost: -10.0
+      # road_off_cost: 100.0
+      # road_red_yellow_cost: 0.0
+      # road_green_cost: 0.0
+      # vehicle_cost: 1000.0
+      # lane_cost: 1.0
+      # pedestrian_cost: 1000.0
+      # offroad_cost: 100.0
+      # acceleration_jerk: 100.0
+      # steer_jerk: -10.0
+      # action_difference: 1.0
+      # ego_location_l1: 100000.0
+      # ego_yaw_l1: 0.0
+      # ego_speed_l1: 0.0
 
   # cost_weight:
   #   road_cost:
@@ -282,8 +298,8 @@ training:
       # weight_decay: 0.0001
 
 wandb_ego_forward_model:
-  link: vaydingul/mbl-refactored/jv293euj #vaydingul/mbl-refactored/16ruxyiq
-  checkpoint_number: 200 #49
+  link: vaydingul/mbl-refactored/5uei2p19 #vaydingul/mbl-refactored/16ruxyiq
+  checkpoint_number: 50 #49
 
 # It can be None.
 # In this case, last BEV tensor should be copied

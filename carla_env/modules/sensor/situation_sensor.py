@@ -19,6 +19,8 @@ class SituationState(IntEnum):
     STOP = 2
     STEER = 3
     TURN = 4
+    JUNCTION = 5
+
 
 
 class SituationSensorModule(sensor.SensorModule):
@@ -75,21 +77,32 @@ class SituationSensorModule(sensor.SensorModule):
 
         abs_steer = abs(data["control"]["steer"])
         self.steer_deque.append(abs_steer)
-        self.is_at_traffic_light = data["is_at_traffic_light"]
-        self.traffic_light_state = data["traffic_light_state"]
-        if self.is_at_traffic_light and (self.traffic_light_state == "Red"):
-            self.situation = SituationState.STOP
 
-        elif self.steer_threshold_exceeded or self.turn_command_available:
-            self.situation = SituationState.TURN
-
-        elif len(self.steer_deque) > (self.config["steer_deque_maxlen"] // 2):
+        if len(self.steer_deque) > (self.config["steer_deque_maxlen"] // 2):
             self.steer_mean = mean(self.steer_deque)
             self.steer_threshold_exceeded = (
                 self.steer_mean > self.config["steer_threshold"]
             )
-            if self.steer_threshold_exceeded:
-                self.situation = SituationState.STEER
+
+        self.is_junction = data["location_waypoint"]["is_junction"]
+        self.is_at_traffic_light = data["is_at_traffic_light"]
+        self.traffic_light_state = data["traffic_light_state"]
+
+        if self.is_at_traffic_light and (
+            self.traffic_light_state == "Red" or self.traffic_light_state == "Yellow"
+        ):
+            self.situation = SituationState.STOP
+
+        elif self.is_junction:
+            self.situation = SituationState.JUNCTION
+
+        elif self.turn_command_available:
+            # self.situation = SituationState.TURN
+            pass
+
+        elif self.steer_threshold_exceeded:
+            # self.situation = SituationState.STEER
+            pass
 
         else:
             self.situation = SituationState.DRIVE
@@ -264,6 +277,7 @@ class SituationSensorModule(sensor.SensorModule):
         """Render the sensor"""
         self.render_dict = {
             "situation": self.situation,
+            "is_junction": self.is_junction,
             "is_at_traffic_light": self.is_at_traffic_light,
             "traffic_light_state": self.traffic_light_state,
             "steer_deque": self.steer_deque,
@@ -291,8 +305,8 @@ class SituationSensorModule(sensor.SensorModule):
     def _set_default_config(self):
         """Set the default config of the sensor"""
         self.config = {
-            "steer_deque_maxlen": 20,
-            "steer_threshold": 0.35,
+            "steer_deque_maxlen": 5,
+            "steer_threshold": 0.5,
         }
 
     def _queue_operation(self, data):

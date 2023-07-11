@@ -25,7 +25,7 @@ from cv2 import VideoWriter, VideoWriter_fourcc
 from datetime import datetime
 from pathlib import Path
 from queue import Queue, Empty
-
+import carla
 import logging
 
 logger = logging.getLogger(__name__)
@@ -298,10 +298,21 @@ class CarlaEnvironment(Environment):
                 self.data_dict[k] = data_
 
                 if k == "ego":
-                    current_transform = self.data_dict[k]["transform"]
-
-                    transform = current_transform
-                    transform.location.z += 2.0
+                    current_location = self.data_dict[k]["location"]
+                    current_rotation = self.data_dict[k]["rotation"]
+                    current_location_waypoint_ = self.data_dict[k]["location_waypoint_"]
+                    transform = carla.Transform(
+                        location=carla.Location(
+                            x=current_location["x"],
+                            y=current_location["y"],
+                            z=current_location["z"] + 2,
+                        ),
+                        rotation=carla.Rotation(
+                            roll=current_rotation["roll"],
+                            pitch=current_rotation["pitch"] - 10,
+                            yaw=current_rotation["yaw"],
+                        ),
+                    )
 
                 if k == "col":
                     impulse = self.data_dict[k]["impulse"]

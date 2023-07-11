@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-
+import numbers
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -127,11 +127,11 @@ def apply_torch_func(dict_, func, *args, **kwargs):
     assert isinstance(dict_, dict), "Input must be a dictionary."
 
     dict_new = {}
-
+    
     for k, v in dict_.items():
         if isinstance(v, dict):
             dict_new[k] = apply_torch_func(v, func, *args, **kwargs)
-        else:
+        elif isinstance(v, numbers.Number) or isinstance(v, torch.Tensor):
             dict_new[k] = func(v, *args, **kwargs)
 
     return dict_new
