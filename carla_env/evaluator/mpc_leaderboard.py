@@ -8,7 +8,7 @@ from utilities.train_utils import apply_torch_func, requires_grad, to
 class Evaluator(Tester):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        
     def process_data(self, hero_actor, input_data, bev_image, next_waypoint):
         data = self.environment.get_data()
 

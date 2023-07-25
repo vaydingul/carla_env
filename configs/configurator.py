@@ -22,7 +22,7 @@ def changed(config):
                 "leaderboard/data/routes_testing_town_02/", file
             )
             
-            config_["leaderboard"]["checkpoint"] = f'routes_testing_town_02_roach_cilrs_mpc_0.01/{file.replace(".xml", ".json")}'
+            config_["leaderboard"]["checkpoint"] = f'routes_testing_town_02_roach_cilrs_mpc_situational/{file.replace(".xml", ".json")}'
             
             config_["environment"]["renderer"]["save_path"] = os.path.join(
                 config["environment"]["renderer"]["save_path"], file.replace(".xml", "")

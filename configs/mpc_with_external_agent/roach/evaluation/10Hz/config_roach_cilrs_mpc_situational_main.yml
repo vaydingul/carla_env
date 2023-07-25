@@ -57,7 +57,7 @@ environment:
     show: true
     save: true
     create_date_time_path: true
-    save_path: figures/env_debug/eval_mpc_leaderboard/
+    save_path: figures/env_debug/eval_mpc_leaderboard/routes_testing_town_02_roach_mpc_situational
 
   sensors:
     # - id: rgb_front
@@ -115,7 +115,7 @@ evaluator:
   action_size: 2
   num_optimization_iteration: 20
   init_action: "random"
-  skip_frames: 2
+  skip_frames: 5
   repeat_frames: 1
   cost_weight_dropout: 0.0
   cost_weight_frames: 20
@@ -157,7 +157,7 @@ evaluator:
       pedestrian_cost: 1000.0
       offroad_cost: 10.0
       acceleration_jerk: 1.0
-      steer_jerk: 0.0
+      steer_jerk: 1.0
       action_difference: 1000.0
       ego_location_l1: 5000.0
       ego_yaw_l1: 0.0
@@ -223,7 +223,7 @@ evaluator:
       acceleration_jerk: 1.0
       steer_jerk: 0.0
       action_difference: 100.0
-      ego_location_l1: 10000.0
+      ego_location_l1: 20000.0
       ego_yaw_l1: 0.0
       ego_speed_l1: 0.0
 
@@ -309,29 +309,29 @@ wandb_world_forward_model:
   # link: ""
   # checkpoint_number: 0
 
-# adapter:
-#   type: roach
-#   config:
-#     actors:
-#       hero:
-#         driver: ppo
-#         reward:
-#           entry_point: reward.valeo_action:ValeoAction
-#         terminal:
-#           entry_point: terminal.leaderboard:Leaderboard
+adapter:
+  type: roach
+  config:
+    actors:
+      hero:
+        driver: ppo
+        reward:
+          entry_point: reward.valeo_action:ValeoAction
+        terminal:
+          entry_point: terminal.leaderboard:Leaderboard
 
-#     driver:
-#       ppo:
-#         entry_point: agents.rl_birdview.rl_birdview_agent:RlBirdviewAgent
-#         wb_run_path: iccv21-roach/trained-models/1ch63m76
-#         wb_ckpt_step: null
-#         env_wrapper:
-#           entry_point: agents.rl_birdview.utils.rl_birdview_wrapper:RlBirdviewWrapper
-#           kwargs:
-#             input_states:
-#               - control
-#               - vel_xy
-#             acc_as_action: true
+    driver:
+      ppo:
+        entry_point: agents.cilrs.cilrs_agent:CilrsAgent
+        wb_run_path: iccv21-roach/trained-models/21trg553
+        wb_ckpt_step: null
+        env_wrapper:
+          entry_point: agents.cilrs.cilrs_wrapper:CilrsWrapper
+          kwargs:
+            input_states:
+              - control
+              - vel_xy
+            acc_as_action: true
 
 leaderboard:
   host: localhost
@@ -349,7 +349,7 @@ leaderboard:
   agent_config: /home/volkan/Documents/Codes/carla_env/configs/policy_model/testing/config.yml
   track: MAP
   resume: false
-  checkpoint: "./results_routes_testing_Town02_.json"
+  checkpoint: "./results_routes_testing_town_02_roach_cilrs_mpc_situational.json"
 
 wandb:
   enable: false

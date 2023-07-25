@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set the directory path where the .yml files are located
-directory="/home/volkan/Documents/Codes/carla_env/configs/mpc_with_external_agent/roach/evaluation/10Hz/roach_cilrs_mpc_0.01_enumerated_town_02/"
+directory="/home/volkan/Documents/Codes/carla_env/configs/mpc_with_external_agent/roach/evaluation/10Hz/roach_cilrs_mpc_situational_enumerated_town_02/"
 
 # Set the Python script to run
 python_script="eval_mpc_leaderboard.py"

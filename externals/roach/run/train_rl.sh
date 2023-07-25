@@ -1,7 +1,7 @@
 #!/bin/bash
 
 train_rl () {
-  python -u train_rl.py \
+  python -u externals/roach/train_rl.py \
   driver.ppo.wb_run_path=null \
   wb_project=train_rl_experts wb_name=roach \
   driver/ppo/policy=xtma_beta \
@@ -16,8 +16,8 @@ train_rl () {
 
 # NO NEED TO MODIFY THE FOLLOWING
 # actiate conda env
-source ~/miniconda3/etc/profile.d/conda.sh
-conda activate carla
+# source ~/miniconda3/etc/profile.d/conda.sh
+# conda activate carla
 
 # resume benchmark in case carla is crashed.
 RED=$'\e[0;31m'

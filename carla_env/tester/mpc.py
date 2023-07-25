@@ -78,6 +78,12 @@ class Tester:
         self.bev_selected_channels = bev_selected_channels
         self.bev_calculate_offroad = bev_calculate_offroad
 
+        # Not to make human-driven mistake
+        assert (self.adapter_weight + self.mpc_weight) == 1.0, (
+            "Adapter weight and MPC weight must sum to 1.0. "
+            f"Adapter weight: {self.adapter_weight}, MPC weight: {self.mpc_weight}"
+        )
+
         self.ego_forward_model.eval().to(self.device)
 
         if self.world_forward_model is not None:
@@ -440,17 +446,17 @@ class Tester:
             target_location.expand(*(ego_future_location_predicted.shape)),
         )
 
-        ego_yaw_l1 = torch.nn.functional.mse_loss(
+        ego_yaw_l1 = torch.nn.functional.l1_loss(
             torch.cos(ego_future_yaw_predicted),
             torch.cos(target_yaw.expand(*(ego_future_yaw_predicted.shape))),
         )
 
-        ego_yaw_l1 += torch.nn.functional.mse_loss(
+        ego_yaw_l1 += torch.nn.functional.l1_loss(
             torch.sin(ego_future_yaw_predicted),
             torch.sin(target_yaw.expand(*(ego_future_yaw_predicted.shape))),
         )
 
-        ego_speed_l1 = torch.nn.functional.mse_loss(
+        ego_speed_l1 = torch.nn.functional.l1_loss(
             ego_future_speed_predicted,
             target_speed.expand(*(ego_future_speed_predicted.shape)),
         )
@@ -459,8 +465,8 @@ class Tester:
         steer_jerk = torch.diff(self.action[..., 1], dim=1).square().sum()
 
         # Take MSE between the previous action and the current action
-        action_difference = torch.nn.functional.mse_loss(
-            self.action + 1, self.previous_action + 1
+        action_difference = torch.nn.functional.l1_loss(
+            self.action, self.previous_action
         )
 
         loss += (
@@ -521,7 +527,7 @@ class Tester:
             )
 
             loss = cost["loss"]
-
+            print(loss)
             loss.backward(retain_graph=True)
 
             # print(self.action.grad.sum())
@@ -569,7 +575,7 @@ class Tester:
                         device=self.device,
                         dtype=torch.float32,
                     )
-                    * 0.1
+                    * 0.25
                 )
 
             elif self.init_action == "ones":
