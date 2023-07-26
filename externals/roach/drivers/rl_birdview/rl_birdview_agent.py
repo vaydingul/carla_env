@@ -3,7 +3,7 @@ import numpy as np
 from omegaconf import OmegaConf
 import wandb
 import copy
-
+import pdb
 from externals.roach.carla_gym.utils.config_utils import load_entry_point
 
 

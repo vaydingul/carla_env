@@ -190,7 +190,11 @@ class ObsManager(ObsManagerBase):
 
         route_in_pixel = np.array(
             [
-                [self._world_to_pixel(wp.transform.location) if isinstance(wp, carla.Waypoint) else self._world_to_pixel(wp.location)]
+                [
+                    self._world_to_pixel(wp.transform.location)
+                    if isinstance(wp, carla.Waypoint)
+                    else self._world_to_pixel(wp.location)
+                ]
                 for wp, _ in self._parent_actor.route_plan
             ]
         )
@@ -412,3 +416,4 @@ class ObsManager(ObsManagerBase):
         self._parent_actor = None
         self._world = None
         self._history_queue.clear()
+

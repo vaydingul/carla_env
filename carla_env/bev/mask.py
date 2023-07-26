@@ -91,13 +91,12 @@ class MapMaskGenerator:
     """
 
     def __init__(
-        self, client, pixels_per_meter: int, render_lanes_on_junctions: bool
+        self, world, pixels_per_meter: int, render_lanes_on_junctions: bool
     ) -> None:
-        self.client = client
         self.pixels_per_meter = pixels_per_meter
         self.rendering_window: Optional[RenderingWindow] = None
 
-        self._world = client.get_world()
+        self._world = world
         self._map = self._world.get_map()
         self._topology = self._map.get_topology()
         self._waypoints = self._map.generate_waypoints(2)
@@ -383,12 +382,11 @@ class MapMaskGenerator:
             if number_of_wheels < 4:
                 scale = -2.5
 
-
             corners = [
-                carla.Location(x=-bb.x , y=-bb.y * scale),
-                carla.Location(x=bb.x , y=-bb.y * scale),
-                carla.Location(x=bb.x , y=bb.y * scale),
-                carla.Location(x=-bb.x , y=bb.y * scale),
+                carla.Location(x=-bb.x, y=-bb.y * scale),
+                carla.Location(x=bb.x, y=-bb.y * scale),
+                carla.Location(x=bb.x, y=bb.y * scale),
+                carla.Location(x=-bb.x, y=bb.y * scale),
             ]
 
             veh.get_transform().transform(corners)

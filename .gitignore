@@ -137,6 +137,7 @@ tickable_modules
 *.csv
 
 # Folders
+externals/roach/outputs/
 logs/
 wandb/
 pretrained_models/
@@ -144,6 +145,7 @@ cache/Carla/Maps/
 data/
 figures/
 ckpt/
+
 # 
 !cache/Carla/Maps/.gitkeep 
 

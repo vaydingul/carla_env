@@ -91,9 +91,9 @@ def main(cfg: DictConfig):
     wb_callback = WandbCallback(cfg, env)
     callback = CallbackList([wb_callback])
 
-    # save wandb run path to file such that bash file can find it
-    with open(last_checkpoint_path, "w") as f:
-        f.write(wandb.run.path)
+    # # save wandb run path to file such that bash file can find it
+    # with open(last_checkpoint_path, "w") as f:
+    #     f.write(wandb.run.path)
 
     agent.learn(
         env, total_timesteps=int(cfg.total_timesteps), callback=callback, seed=cfg.seed

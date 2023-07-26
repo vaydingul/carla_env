@@ -1,4 +1,3 @@
-
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -52,7 +51,6 @@ class WorldBEVModel(nn.Module):
         )
 
     def build_from_config(self):
-
         self.input_shape_previous = self.config["input_shape"].copy()
         self.input_shape_future = self.config["input_shape"].copy()
         self.latent_size = self.config["latent_size"]
@@ -87,7 +85,6 @@ class WorldBEVModel(nn.Module):
         )
 
         if world_future_bev is not None:
-
             B_future, H_future, W_future = (
                 world_future_bev.shape[0],
                 world_future_bev.shape[-2],
@@ -108,7 +105,6 @@ class WorldBEVModel(nn.Module):
             return world_previous_bev_encoded
 
         if not sample_latent:
-
             world_previous_bev_encoded = self.world_previous_bev_encoder(
                 world_previous_bev
             )
@@ -129,7 +125,6 @@ class WorldBEVModel(nn.Module):
             return (world_future_bev_predicted, mu, logvar)
 
         else:
-
             world_previous_bev_encoded = self.world_previous_bev_encoder(
                 world_previous_bev
             )
@@ -149,15 +144,12 @@ class WorldBEVModel(nn.Module):
             return world_previous_bev_encoded, world_future_bev_predicted
 
     def get_input_shape_previous(self):
-
         return self.input_shape_previous
 
     def get_input_shape_future(self):
-
         return self.input_shape_future
 
     def set_default_config(self):
-
         self.config = {
             "input_shape": [8, 192, 192],
             "latent_size": 256,
@@ -171,12 +163,10 @@ class WorldBEVModel(nn.Module):
         }
 
     def append_config(self, config):
-
         self.config.update(config)
 
     @classmethod
     def load_model_from_wandb_run(cls, config, checkpoint_path, device):
-
         checkpoint = torch.load(
             checkpoint_path,
             map_location=organize_device(device),
@@ -187,6 +177,31 @@ class WorldBEVModel(nn.Module):
         model.load_state_dict(checkpoint["model_state_dict"])
 
         return model
+
+
+class WorldBEVModelRepeatedFrames(nn.Module):
+    def __init__(
+        self,
+        n=10,
+    ):
+        super(WorldBEVModelRepeatedFrames, self).__init__()
+        self.n = n
+
+    def forward(
+        self, x: torch.Tensor
+    ) -> torch.Tensor:  # x.shape = [B, T, C, H, W] or [B, C, H, W]
+        shape = x.shape
+
+        assert ((len(shape) == 5) and shape[1] == 1) or (
+            len(shape) == 4
+        ), "Input shape must be [B, 1, C, H, W] or [B, C, H, W]"
+
+        if len(shape) == 5:
+            x = x.expand(-1, self.n, -1, -1, -1)
+        else:
+            x = x.unsqueeze(1).expand(-1, self.n, -1, -1, -1)
+
+        return x
 
 
 if __name__ == "__main__":

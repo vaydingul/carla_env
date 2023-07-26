@@ -7,6 +7,7 @@ from enum import IntEnum, auto, Enum
 from pathlib import Path
 from typing import List
 from filelock import FileLock
+from typing import overload
 
 from . import actors, cache
 from .actors import SegregatedActors
@@ -35,8 +36,8 @@ class BirdViewCropType(Enum):
     DYNAMIC = auto()
 
 
-DEFAULT_HEIGHT = 336  # its 84m when density is 4px/m
-DEFAULT_WIDTH = 150  # its 37.5m when density is 4px/m
+DEFAULT_HEIGHT = 256  # its 84m when density is 4px/m
+DEFAULT_WIDTH = 256  # its 37.5m when density is 4px/m
 DEFAULT_CROP_TYPE = BirdViewCropType.FRONT_AND_REAR_AREA
 
 
@@ -143,10 +144,13 @@ class BirdViewProducer:
 
     def __init__(
         self,
-        client: carla.Client,
-        target_size: PixelDimensions,
-        render_lanes_on_junctions: bool,
-        pixels_per_meter: int = 4,
+        client: carla.Client = None,
+        world: carla.World = None,
+        target_size: PixelDimensions = PixelDimensions(
+            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT
+        ),
+        render_lanes_on_junctions: bool = False,
+        pixels_per_meter: int = 10,
         crop_type: BirdViewCropType = BirdViewCropType.FRONT_AND_REAR_AREA,
         dynamic_crop_margin: float = 0.1,
         road_on_off: bool = False,
@@ -154,8 +158,21 @@ class BirdViewProducer:
         light_circle: bool = False,
         lane_marking_thickness=1,
     ) -> None:
+        
+        # Either client or world must be provided
+        assert (client is not None) or (world is not None), (
+            "Either client or world must be provided"
+        )
 
-        self.client = client
+        if world is None:
+            world = client.get_world()
+            self._world = world
+        else:
+            self._world = world
+
+        
+
+
         self.target_size = target_size
         self.pixels_per_meter = pixels_per_meter
         self._crop_type = crop_type
@@ -165,7 +182,6 @@ class BirdViewProducer:
         self.light_circle = light_circle
         self.lane_marking_thickness = lane_marking_thickness
 
-        
         self.is_first_frame = True
         if crop_type is BirdViewCropType.FRONT_AND_REAR_AREA:
             rendering_square_size = round(
@@ -187,10 +203,10 @@ class BirdViewProducer:
         self.rendering_area = PixelDimensions(
             width=rendering_square_size, height=rendering_square_size
         )
-        self._world = client.get_world()
+
         self._map = self._world.get_map()
         self.masks_generator = MapMaskGenerator(
-            client,
+            world,
             pixels_per_meter=pixels_per_meter,
             render_lanes_on_junctions=render_lanes_on_junctions,
         )
@@ -268,7 +284,6 @@ class BirdViewProducer:
         # )
 
         if self._crop_type is BirdViewCropType.DYNAMIC:
-
             if self.is_first_frame:
                 self.is_first_frame = False
                 self.cropping_rect = cropping_rect
@@ -278,7 +293,6 @@ class BirdViewProducer:
                 )
                 self.agent_global_px_pos = agent_global_px_pos
         else:
-
             self.cropping_rect = cropping_rect
             self.agent_vehicle_loc = agent_vehicle_loc
 
@@ -308,11 +322,12 @@ class BirdViewProducer:
         self.masks_generator.enable_local_rendering_mode(rendering_window)
 
         if self.road_on_off:
-
             waypoint = waypoint if waypoint is not None else agent_vehicle_loc_waypoint
 
-            road_on_mask, road_off_mask = self.masks_generator.road_on_off_mask(waypoint)
-            
+            road_on_mask, road_off_mask = self.masks_generator.road_on_off_mask(
+                waypoint
+            )
+
             masks[BirdViewMasks.ROAD_ON.value] = road_on_mask
             masks[BirdViewMasks.ROAD_OFF.value] = road_off_mask
 
@@ -330,9 +345,7 @@ class BirdViewProducer:
         )
 
         if self._crop_type is BirdViewCropType.DYNAMIC:
-
             if reference_change:
-
                 self.cropping_rect = cropping_rect
                 self.agent_vehicle_loc = agent_vehicle_loc
                 self.agent_vehicle_angle = (
@@ -340,7 +353,6 @@ class BirdViewProducer:
                 )
                 self.agent_global_px_pos = agent_global_px_pos
         else:
-
             self.cropping_rect = cropping_rect
             self.agent_vehicle_loc = agent_vehicle_loc
 
@@ -378,7 +390,7 @@ class BirdViewProducer:
         def nonzero_indices(arr):
             return arr == COLOR_ON
 
-        for (k, mask_type) in enumerate(indices):
+        for k, mask_type in enumerate(indices):
             # print(BirdViewMasks.bottom_to_top()[mask_type])
             rgb_color = RGB_BY_MASK[BirdViewMasks.bottom_to_top()[mask_type]]
             # print(BirdViewMasks.bottom_to_top()[mask_type])

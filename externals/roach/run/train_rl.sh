@@ -1,9 +1,9 @@
 #!/bin/bash
 
 train_rl () {
-  python -u externals/roach/train_rl.py \
+  python -u train_rl.py \
   driver.ppo.wb_run_path=null \
-  wb_project=train_rl_experts wb_name=roach \
+  wb_project=train_rl_experts wb_name=roach_full \
   driver/ppo/policy=xtma_beta \
   driver.ppo.training.kwargs.explore_coef=0.05 \
   carla_sh_path=${CARLA_ROOT}/CarlaUE4.sh

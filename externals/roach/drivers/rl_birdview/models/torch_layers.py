@@ -115,3 +115,5 @@ class ImpalaCNN(nn.Module):
         if self.final_relu:
             x = th.relu(x)
         return x
+    
+

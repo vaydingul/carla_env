@@ -6,7 +6,13 @@ import numpy as np
 import logging
 import copy
 
-from .criteria import blocked, collision, outside_route_lane, route_deviation, run_stop_sign
+from .criteria import (
+    blocked,
+    collision,
+    outside_route_lane,
+    route_deviation,
+    run_stop_sign,
+)
 from .criteria import encounter_light, run_red_light
 
 logger = logging.getLogger(__name__)
@@ -14,7 +20,6 @@ logger.setLevel(logging.DEBUG)
 
 
 class TaskVehicle(object):
-
     def __init__(self, vehicle, target_transforms, spawn_transforms, endless):
         """
         vehicle: carla.Vehicle
@@ -30,7 +35,9 @@ class TaskVehicle(object):
         self.criteria_light = run_red_light.RunRedLight(self._map)
         self.criteria_encounter_light = encounter_light.EncounterLight()
         self.criteria_stop = run_stop_sign.RunStopSign(world)
-        self.criteria_outside_route_lane = outside_route_lane.OutsideRouteLane(self._map, self.vehicle.get_location())
+        self.criteria_outside_route_lane = outside_route_lane.OutsideRouteLane(
+            self._map, self.vehicle.get_location()
+        )
         self.criteria_route_deviation = route_deviation.RouteDeviation()
 
         # navigation
@@ -62,7 +69,9 @@ class TaskVehicle(object):
         ds_ids = downsample_route(route_trace, 50)
 
         self._global_plan_gps += [plan_gps[x] for x in ds_ids]
-        self._global_plan_world_coord += [(route_trace[x][0].transform.location, route_trace[x][1]) for x in ds_ids]
+        self._global_plan_world_coord += [
+            (route_trace[x][0].transform.location, route_trace[x][1]) for x in ds_ids
+        ]
 
     def _add_random_target(self):
         if len(self._target_transforms) == 0:
@@ -73,9 +82,13 @@ class TaskVehicle(object):
         else:
             last_target_loc = self._target_transforms[-1].location
             last_road_id = self._map.get_waypoint(last_target_loc).road_id
-            new_target_transform = np.random.choice([x[1] for x in self._spawn_transforms if x[0] != last_road_id])
+            new_target_transform = np.random.choice(
+                [x[1] for x in self._spawn_transforms if x[0] != last_road_id]
+            )
 
-        route_trace = self._planner.trace_route(last_target_loc, new_target_transform.location)
+        route_trace = self._planner.trace_route(
+            last_target_loc, new_target_transform.location
+        )
         self._global_route += route_trace
         self._target_transforms.append(new_target_transform)
         self._route_length += self._compute_route_length(route_trace)
@@ -85,7 +98,9 @@ class TaskVehicle(object):
         current_location = self.vehicle.get_location()
         for tt in self._target_transforms:
             next_target_location = tt.location
-            route_trace = self._planner.trace_route(current_location, next_target_location)
+            route_trace = self._planner.trace_route(
+                current_location, next_target_location
+            )
             self._global_route += route_trace
             self._route_length += self._compute_route_length(route_trace)
             current_location = next_target_location
@@ -95,8 +110,10 @@ class TaskVehicle(object):
     @staticmethod
     def _compute_route_length(route):
         length_in_m = 0.0
-        for i in range(len(route)-1):
-            d = route[i][0].transform.location.distance(route[i+1][0].transform.location)
+        for i in range(len(route) - 1):
+            d = route[i][0].transform.location.distance(
+                route[i + 1][0].transform.location
+            )
             length_in_m += d
         return length_in_m
 
@@ -104,25 +121,29 @@ class TaskVehicle(object):
         ev_location = self.vehicle.get_location()
         closest_idx = 0
 
-        for i in range(len(self._global_route)-1):
+        for i in range(len(self._global_route) - 1):
             if i > windows_size:
                 break
 
             loc0 = self._global_route[i][0].transform.location
-            loc1 = self._global_route[i+1][0].transform.location
+            loc1 = self._global_route[i + 1][0].transform.location
 
             wp_dir = loc1 - loc0
             wp_veh = ev_location - loc0
             dot_ve_wp = wp_veh.x * wp_dir.x + wp_veh.y * wp_dir.y + wp_veh.z * wp_dir.z
 
             if dot_ve_wp > 0:
-                closest_idx = i+1
+                closest_idx = i + 1
 
-        distance_traveled = self._compute_route_length(self._global_route[:closest_idx+1])
+        distance_traveled = self._compute_route_length(
+            self._global_route[: closest_idx + 1]
+        )
         self._route_completed += distance_traveled
 
         if closest_idx > 0:
-            self._last_route_location = carla.Location(self._global_route[0][0].transform.location)
+            self._last_route_location = carla.Location(
+                self._global_route[0][0].transform.location
+            )
 
         self._global_route = self._global_route[closest_idx:]
         return distance_traveled
@@ -133,7 +154,9 @@ class TaskVehicle(object):
 
         percentage_route_completed = self._route_completed / self._route_length
         is_completed = percentage_route_completed > percentage_threshold
-        is_within_dist = ev_loc.distance(self._target_transforms[-1].location) < distance_threshold
+        is_within_dist = (
+            ev_loc.distance(self._target_transforms[-1].location) < distance_threshold
+        )
 
         return is_completed and is_within_dist
 
@@ -147,44 +170,93 @@ class TaskVehicle(object):
         info_blocked = self.criteria_blocked.tick(self.vehicle, timestamp)
         info_collision = self.criteria_collision.tick(self.vehicle, timestamp)
         info_light = self.criteria_light.tick(self.vehicle, timestamp)
-        info_encounter_light = self.criteria_encounter_light.tick(self.vehicle, timestamp)
+        info_encounter_light = self.criteria_encounter_light.tick(
+            self.vehicle, timestamp
+        )
         info_stop = self.criteria_stop.tick(self.vehicle, timestamp)
-        info_outside_route_lane = self.criteria_outside_route_lane.tick(self.vehicle, timestamp, distance_traveled)
+        info_outside_route_lane = self.criteria_outside_route_lane.tick(
+            self.vehicle, timestamp, distance_traveled
+        )
         info_route_deviation = self.criteria_route_deviation.tick(
-            self.vehicle, timestamp, self._global_route[0][0], distance_traveled, self._route_length)
+            self.vehicle,
+            timestamp,
+            self._global_route[0][0],
+            distance_traveled,
+            self._route_length,
+        )
 
         info_route_completion = {
-            'step': timestamp['step'],
-            'simulation_time': timestamp['relative_simulation_time'],
-            'route_completed_in_m': self._route_completed,
-            'route_length_in_m': self._route_length,
-            'is_route_completed': route_completed
+            "step": timestamp["step"],
+            "simulation_time": timestamp["relative_simulation_time"],
+            "route_completed_in_m": self._route_completed,
+            "route_length_in_m": self._route_length,
+            "is_route_completed": route_completed,
         }
 
         self._info_criteria = {
-            'route_completion': info_route_completion,
-            'outside_route_lane': info_outside_route_lane,
-            'route_deviation': info_route_deviation,
-            'blocked': info_blocked,
-            'collision': info_collision,
-            'run_red_light': info_light,
-            'encounter_light': info_encounter_light,
-            'run_stop_sign': info_stop
+            "route_completion": info_route_completion,
+            "outside_route_lane": info_outside_route_lane,
+            "route_deviation": info_route_deviation,
+            "blocked": info_blocked,
+            "collision": info_collision,
+            "run_red_light": info_light,
+            "encounter_light": info_encounter_light,
+            "run_stop_sign": info_stop,
         }
 
         # turn on light
         weather = self._world.get_weather()
         if weather.sun_altitude_angle < 0.0:
-            vehicle_lights = carla.VehicleLightState.Position | carla.VehicleLightState.LowBeam
+            vehicle_lights = (
+                carla.VehicleLightState.Position | carla.VehicleLightState.LowBeam
+            )
         else:
             vehicle_lights = carla.VehicleLightState.NONE
         self.vehicle.set_light_state(carla.VehicleLightState(vehicle_lights))
 
         return self._info_criteria
 
+    def get_world(self):
+        return self._world
+
+    def get_map(self):
+        return self._map
+
+    def get_transform(self):
+        return self.vehicle.get_transform()
+
+    def get_velocity(self):
+        return self.vehicle.get_velocity()
+
+    def get_location(self):
+        return self.vehicle.get_location()
+
+    def get_rotation(self):
+        return self.vehicle.get_transform().rotation
+
+    def get_acceleration(self):
+        return self.vehicle.get_acceleration()
+
+    def get_angular_velocity(self):
+        return self.vehicle.get_angular_velocity()
+
+    def get_control(self):
+        return self.vehicle.get_control()
+
+    def get_speed_limit(self):
+        return self.vehicle.get_speed_limit()
+
     def clean(self):
         self.criteria_collision.clean()
         self.vehicle.destroy()
+
+    @property
+    def id(self):
+        return self.vehicle.id
+
+    @property
+    def bounding_box(self):
+        return self.vehicle.bounding_box
 
     @property
     def info_criteria(self):

@@ -1,4 +1,4 @@
-from externals.roach.carla_gym import externals.roach.carla_gym_ROOT_DIR
+from externals.roach.carla_gym import CARLA_GYM_ROOT_DIR
 from externals.roach.carla_gym.carla_multi_agent_env import CarlaMultiAgentEnv
 from externals.roach.carla_gym.utils import config_utils
 import json

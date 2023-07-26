@@ -3,7 +3,7 @@ defaults:
   - driver/ppo/policy: xtma_beta
   - driver/ppo/training: ppo
   - driver/ppo/obs_configs: birdview
-  - train_envs: endless_all
+  - train_envs: endless_debug
 actors:
   hero:
     driver: ppo
