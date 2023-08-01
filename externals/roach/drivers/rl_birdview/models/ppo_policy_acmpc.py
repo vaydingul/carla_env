@@ -50,6 +50,11 @@ class PPO_ACMPC(nn.Module):
             int(np.prod(action_space.shape)), **distribution_kwargs
         )
 
+        mpc_class = load_entry_point(mpc_entry_point)
+        self.mpc = mpc_class(**mpc_kwargs)
+
+        
+
         if "StateDependentNoiseDistribution" in distribution_entry_point:
             self.use_sde = True
             self.sde_sample_freq = 4
@@ -255,6 +260,8 @@ class PPO_ACMPC(nn.Module):
             features_extractor_kwargs=self.features_extractor_kwargs,
             distribution_entry_point=self.distribution_entry_point,
             distribution_kwargs=self.distribution_kwargs,
+            mpc_entry_point=self.mpc_entry_point,
+            mpc_kwargs=self.mpc_kwargs,
         )
         return init_kwargs
 

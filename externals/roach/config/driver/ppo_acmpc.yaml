@@ -6,5 +6,5 @@ ppo:
   env_wrapper:
     entry_point: drivers.rl_birdview.utils.rl_birdview_wrapper:RlBirdviewWrapper
     kwargs:
-      input_states: [speed, control]
+      input_states: [speed, control, vel_xy, ego, route]
       acc_as_action: True

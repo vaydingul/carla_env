@@ -1,0 +1,24 @@
+# @package _group_
+entry_point: drivers.rl_birdview.models.ppo_policy_acmpc:PPO_ACMPC
+kwargs:
+  policy_head_arch: [256, 256]
+  value_head_arch: [256, 256]
+  features_extractor_entry_point: drivers.rl_birdview.models.torch_layers:XtMaCNN
+  features_extractor_kwargs:
+    states_neurons: [256, 256]
+  distribution_entry_point: drivers.rl_birdview.models.distributions:BetaDistribution
+  distribution_kwargs:
+    dist_init: null
+  mpc_entry_point: drivers.rl_birdview.models.mpc:ModelPredictiveControlWithoutOptimizer
+  mpc_kwargs:
+    system_entry_point: drivers.rl_birdview.models.torch_layers:CARLASystem
+    system_kwargs: ~
+    cost_entry_point: FILL
+    cost_kwargs: FILL
+    action_size: 2
+    prediction_horizon: 10
+    num_optimization_step: 10
+    lr: 1.0
+    std: 0.25
+    device: cuda
+  obs_to_state_target_fn: drivers.rl_birdview.utils.misc:obs_to_state_target

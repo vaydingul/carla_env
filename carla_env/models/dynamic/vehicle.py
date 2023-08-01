@@ -140,21 +140,14 @@ class KinematicBicycleModelFromParams(nn.Module):
         self.steer_gain = self.config["steer_gain"]
         self.acceleration_gain = self.config["acceleration_gain"]
 
-    def forward(self, ego_state, action):
+    def forward(self, state, action):
         """
         One step semi-parametric kinematic bicycle model
         """
 
-        location_x = ego_state["location"]["x"][..., 0:1]
-        location_y = ego_state["location"]["y"][..., 0:1]
-        location = torch.cat([location_x, location_y], -1)
-
-        yaw = ego_state["rotation"]["yaw"][..., 0:1]
-
-        velocity_x = ego_state["velocity"]["x"][..., 0:1]
-        velocity_y = ego_state["velocity"]["y"][..., 0:1]
-        velocity = torch.cat([velocity_x, velocity_y], -1)
-        speed = velocity.norm(2, -1, keepdim=True)
+        location = state["location"]
+        speed = state["speed"]
+        yaw = state["yaw"]
 
         acceleration = torch.clip(action[..., 0:1], -1, 1)
         steer = torch.clip(action[..., 1:2], -1, 1)
@@ -188,25 +181,22 @@ class KinematicBicycleModelFromParams(nn.Module):
 
         yaw_next = yaw + (speed / self.rear_wheelbase * torch.sin(beta)) * self.dt
 
-        velocity_x_next = speed_next * torch.sin(yaw_next)
-        velocity_y_next = speed_next * torch.cos(yaw_next)
-
         # ----------------------------- UPDATE ----------------------------- #
-        ego_state_next = clone(ego_state)
+        state_next = dict(
+            location=location_next,
+            speed=speed_next,
+            yaw=yaw_next,
+        )
 
-        ego_state_next["location"]["x"][..., 0:1] = location_next[..., 0:1]
-        ego_state_next["location"]["y"][..., 0:1] = location_next[..., 1:2]
-
-        ego_state_next["velocity"]["x"][..., 0:1] = velocity_x_next
-        ego_state_next["velocity"]["y"][..., 0:1] = velocity_y_next
-
-        ego_state_next["rotation"]["yaw"][..., 0:1] = yaw_next
-
-        return ego_state_next
+        return state_next
 
     def set_default_config(self):
         self.config = {
             "dt": 0.1,
+            "front_wheelbase": 1.2523,
+            "rear_wheelbase": 1.3201,
+            "steer_gain": 0.6505,
+            "acceleration_gain": 1.3908,
         }
 
     def append_config(self, config):

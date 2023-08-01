@@ -28,3 +28,8 @@ control:
   module: actor_state.control
 velocity:
   module: actor_state.velocity
+ego:
+  module: object_finder.ego
+route_plan:
+  module: navigation.waypoint_plan
+  steps: 10

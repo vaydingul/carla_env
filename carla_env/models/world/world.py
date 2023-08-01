@@ -204,6 +204,16 @@ class WorldBEVModelRepeatedFrames(nn.Module):
         return x
 
 
+class WorldBEVModelPassThrough(nn.Module):
+    def __init__(
+        self,
+    ):
+        super(WorldBEVModelPassThrough, self).__init__()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return x
+
+
 if __name__ == "__main__":
     model = WorldBEVModel(input_shape=[8, 192, 192])
     print(model)

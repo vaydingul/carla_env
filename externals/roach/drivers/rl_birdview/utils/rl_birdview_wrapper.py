@@ -55,6 +55,13 @@ class RlBirdviewWrapper(gym.Wrapper):
             state_spaces.append(
                 env.observation_space[self._ev_id]["velocity"]["vel_ang_z"]
             )
+        if "ego" in self._input_states:
+            state_spaces.append(
+                env.observation_space[self._ev_id]["ego"]["actor_location"]
+            )
+            state_spaces.append(
+                env.observation_space[self._ev_id]["ego"]["actor_rotation"]
+            )
 
         state_low = np.concatenate([s.low for s in state_spaces])
         state_high = np.concatenate([s.high for s in state_spaces])
@@ -64,7 +71,12 @@ class RlBirdviewWrapper(gym.Wrapper):
                 "state": gym.spaces.Box(
                     low=state_low, high=state_high, dtype=np.float32
                 ),
-                "birdview": env.observation_space[self._ev_id]["birdview"]["masks"],
+                "birdview_ppo": env.observation_space[self._ev_id]["birdview_ppo"][
+                    "masks"
+                ],
+                "birdview_mpc": env.observation_space[self._ev_id]["birdview_mpc"][
+                    "masks"
+                ],
             }
         )
 
@@ -231,16 +243,23 @@ class RlBirdviewWrapper(gym.Wrapper):
             state_list.append(obs["velocity"]["vel_xy"])
         if "vel_ang_z" in input_states:
             state_list.append(obs["velocity"]["vel_ang_z"])
+        if "ego" in input_states:
+            state_list.append(obs["ego"]["actor_location"])
+            state_list.append(obs["ego"]["actor_rotation"])
 
         state = np.concatenate(state_list)
 
-        birdview = obs["birdview"]["masks"]
-
+        birdview_ppo = obs["birdview_ppo"]["masks"]
+        birdview_mpc = obs["birdview_mpc"]["masks"]
         if not train:
             birdview = np.expand_dims(birdview, 0)
             state = np.expand_dims(state, 0)
 
-        obs_dict = {"state": state.astype(np.float32), "birdview": birdview}
+        obs_dict = {
+            "state": state.astype(np.float32),
+            "birdview_ppo": birdview_ppo,
+            "birdview_mpc": birdview_mpc,
+        }
         return obs_dict
 
     @staticmethod
