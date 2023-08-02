@@ -31,5 +31,5 @@ velocity:
 ego:
   module: object_finder.ego
 route_plan:
-  module: navigation.waypoint_plan
+  module: navigation.waypoint_plan_downsampled
   steps: 10

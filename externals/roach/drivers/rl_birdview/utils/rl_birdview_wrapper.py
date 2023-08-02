@@ -30,37 +30,44 @@ class RlBirdviewWrapper(gym.Wrapper):
         self._render_dict = {}
 
         state_spaces = []
-        if "speed" in self._input_states:
+        if "speed" in self._input_states:  # 0
             state_spaces.append(env.observation_space[self._ev_id]["speed"]["speed_xy"])
-        if "speed_limit" in self._input_states:
+        if "speed_limit" in self._input_states:  # 1
             state_spaces.append(
                 env.observation_space[self._ev_id]["control"]["speed_limit"]
             )
-        if "control" in self._input_states:
+        if "control" in self._input_states:  # 2 3 4 5
             state_spaces.append(
                 env.observation_space[self._ev_id]["control"]["throttle"]
             )
             state_spaces.append(env.observation_space[self._ev_id]["control"]["steer"])
             state_spaces.append(env.observation_space[self._ev_id]["control"]["brake"])
             state_spaces.append(env.observation_space[self._ev_id]["control"]["gear"])
-        if "acc_xy" in self._input_states:
+        if "acc_xy" in self._input_states:  # 6 7
             state_spaces.append(
                 env.observation_space[self._ev_id]["velocity"]["acc_xy"]
             )
-        if "vel_xy" in self._input_states:
+        if "vel_xy" in self._input_states:  # 8 9
             state_spaces.append(
                 env.observation_space[self._ev_id]["velocity"]["vel_xy"]
             )
-        if "vel_ang_z" in self._input_states:
+        if "vel_ang_z" in self._input_states:  # 10
             state_spaces.append(
                 env.observation_space[self._ev_id]["velocity"]["vel_ang_z"]
             )
-        if "ego" in self._input_states:
+        if "ego" in self._input_states:  # 11 12 13 14 15 16
             state_spaces.append(
                 env.observation_space[self._ev_id]["ego"]["actor_location"]
             )
             state_spaces.append(
                 env.observation_space[self._ev_id]["ego"]["actor_rotation"]
+            )
+        if "route" in self._input_states:  # 17 18 19 20 21 22
+            state_spaces.append(
+                env.observation_space[self._ev_id]["route_plan"]["location"]
+            )
+            state_spaces.append(
+                env.observation_space[self._ev_id]["route_plan"]["rotation"]
             )
 
         state_low = np.concatenate([s.low for s in state_spaces])

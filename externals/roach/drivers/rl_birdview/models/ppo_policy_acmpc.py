@@ -21,6 +21,7 @@ class PPO_ACMPC(nn.Module):
         distribution_kwargs={},
         mpc_entry_point=None,
         mpc_kwargs={},
+        obs_to_state_target_fn=None,
     ):
         super(PPO_ACMPC, self).__init__()
         self.observation_space = observation_space
@@ -31,6 +32,7 @@ class PPO_ACMPC(nn.Module):
         self.distribution_kwargs = distribution_kwargs
         self.mpc_entry_point = mpc_entry_point
         self.mpc_kwargs = mpc_kwargs
+        self.obs_to_state_target_fn = obs_to_state_target_fn
 
         if th.cuda.is_available():
             self.device = "cuda"
@@ -52,8 +54,6 @@ class PPO_ACMPC(nn.Module):
 
         mpc_class = load_entry_point(mpc_entry_point)
         self.mpc = mpc_class(**mpc_kwargs)
-
-        
 
         if "StateDependentNoiseDistribution" in distribution_entry_point:
             self.use_sde = True
@@ -128,9 +128,32 @@ class PPO_ACMPC(nn.Module):
         features = self.features_extractor(birdview, state)
         return features
 
-    def _get_action_dist_from_features(self, features: th.Tensor):
+    def _get_action_dist_from_features(self, features: th.Tensor, obs: th.Tensor):
         latent_pi = self.policy_head(features)
-        mu = self.dist_mu(latent_pi)
+
+        num_optimization_step = self.mpc_kwargs["num_optimization_step"]
+        prediction_horizon = self.mpc_kwargs["prediction_horizon"]
+
+        state, target = self.obs_to_state_target_fn(obs)
+
+        with th.enable_grad():  # enable gradient for action_initial
+            if num_optimization_step > 0:
+                action_initial = latent_pi.view(
+                    -1, prediction_horizon, self.action_dist.action_dim
+                )
+                action_initial.requires_grad = True
+
+                mu, _ = self.mpc(
+                    state=state,
+                    target=target,
+                    action_initial=action_initial,
+                    cost_dict=None,
+                )
+
+            # mu = self.dist_mu(latent_pi)
+
+        mu = mu[:, 0]
+
         if isinstance(self.dist_sigma, nn.Parameter):
             sigma = self.dist_sigma
         else:
