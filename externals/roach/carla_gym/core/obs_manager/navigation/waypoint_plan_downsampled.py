@@ -18,7 +18,7 @@ class ObsManager(ObsManagerBase):
     """
 
     def __init__(self, obs_configs):
-        self._steps = obs_configs["steps"]
+        # self._steps = obs_configs["steps"]
         self._parent_actor = None
         super(ObsManager, self).__init__()
 
@@ -26,21 +26,15 @@ class ObsManager(ObsManagerBase):
         self.obs_space = spaces.Dict(
             {
                 "location": spaces.Box(
-                    low=-100, high=1000, shape=(self._steps, 2), dtype=np.float32
+                    low=-100, high=1000, shape=(2,), dtype=np.float32
                 ),
                 "rotation": spaces.Box(
                     low=-180, high=180, shape=(3,), dtype=np.float32
                 ),
-                "command": spaces.Box(
-                    low=-1, high=6, shape=(self._steps,), dtype=np.uint8
-                ),
-                "road_id": spaces.Box(
-                    low=0, high=6000, shape=(self._steps,), dtype=np.uint8
-                ),
-                "lane_id": spaces.Box(
-                    low=-20, high=20, shape=(self._steps,), dtype=np.int8
-                ),
-                "is_junction": spaces.MultiBinary(self._steps),
+                "command": spaces.Box(low=-1, high=6, shape=(1,), dtype=np.uint8),
+                "road_id": spaces.Box(low=0, high=6000, shape=(1,), dtype=np.uint8),
+                "lane_id": spaces.Box(low=-20, high=20, shape=(1,), dtype=np.int8),
+                "is_junction": spaces.MultiBinary(1),
             }
         )
 
@@ -54,36 +48,31 @@ class ObsManager(ObsManagerBase):
         route_plan = self._parent_actor.global_plan_world_coord
 
         route_length = len(route_plan)
-        location_list = []
-        rotation_list = []
-        command_list = []
-        road_id = []
-        lane_id = []
-        is_junction = []
-        for i in range(self._steps):
-            if i < route_length:
-                waypoint, road_option = route_plan[i]
-            else:
-                waypoint, road_option = route_plan[-1]
 
-            if isinstance(waypoint, carla.Transform):
-                waypoint = self._world.get_map().get_waypoint(waypoint.location)
+        if 0 < route_length:
+            waypoint, road_option = route_plan[0]
+        else:
+            waypoint, road_option = route_plan[-1]
 
-            wp_location_world_coord = waypoint.transform.location
-            wp_rotation_world_coord = waypoint.transform.rotation
+        if isinstance(waypoint, carla.Transform):
+            waypoint = self._world.get_map().get_waypoint(waypoint.location)
+        if isinstance(waypoint, carla.Location):
+            waypoint = self._world.get_map().get_waypoint(waypoint)
 
-            location_list.append([wp_location_world_coord.x, wp_location_world_coord.y])
-            rotation_list.append(
-                [
-                    wp_rotation_world_coord.roll,
-                    wp_rotation_world_coord.pitch,
-                    wp_rotation_world_coord.yaw,
-                ]
-            )
-            command_list.append(road_option.value)
-            road_id.append(waypoint.road_id)
-            lane_id.append(waypoint.lane_id)
-            is_junction.append(waypoint.is_junction)
+        wp_location_world_coord = waypoint.transform.location
+        wp_rotation_world_coord = waypoint.transform.rotation
+
+        location_list = [wp_location_world_coord.x, wp_location_world_coord.y]
+        rotation_list = [
+            wp_rotation_world_coord.roll,
+            wp_rotation_world_coord.pitch,
+            wp_rotation_world_coord.yaw,
+        ]
+
+        command_list = road_option.value
+        road_id = waypoint.road_id
+        lane_id = waypoint.lane_id
+        is_junction = waypoint.is_junction
 
         obs_dict = {
             "location": np.array(location_list, dtype=np.float32),

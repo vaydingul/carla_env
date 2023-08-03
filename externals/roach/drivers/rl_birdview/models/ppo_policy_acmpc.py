@@ -32,7 +32,6 @@ class PPO_ACMPC(nn.Module):
         self.distribution_kwargs = distribution_kwargs
         self.mpc_entry_point = mpc_entry_point
         self.mpc_kwargs = mpc_kwargs
-        self.obs_to_state_target_fn = obs_to_state_target_fn
 
         if th.cuda.is_available():
             self.device = "cuda"
@@ -55,6 +54,8 @@ class PPO_ACMPC(nn.Module):
         mpc_class = load_entry_point(mpc_entry_point)
         self.mpc = mpc_class(**mpc_kwargs)
 
+        self.obs_to_state_target_fn = load_entry_point(obs_to_state_target_fn)
+
         if "StateDependentNoiseDistribution" in distribution_entry_point:
             self.use_sde = True
             self.sde_sample_freq = 4
@@ -64,7 +65,14 @@ class PPO_ACMPC(nn.Module):
 
         # best_so_far
         # self.net_arch = [dict(pi=[256, 128, 64], vf=[128, 64])]
+
         self.policy_head_arch = list(policy_head_arch)
+
+        if "prediction_horizon" in mpc_kwargs:
+            self.policy_head_arch.append(
+                mpc_kwargs["prediction_horizon"] * self.action_dist.action_dim
+            )
+
         self.value_head_arch = list(value_head_arch)
         self.activation_fn = nn.ReLU
         self.ortho_init = False
@@ -78,10 +86,13 @@ class PPO_ACMPC(nn.Module):
     def _build(self) -> None:
         last_layer_dim_pi = self.features_extractor.features_dim
         policy_net = []
-        for layer_size in self.policy_head_arch:
+        for layer_size in self.policy_head_arch[:-1]:
             policy_net.append(nn.Linear(last_layer_dim_pi, layer_size))
             policy_net.append(self.activation_fn())
             last_layer_dim_pi = layer_size
+
+        policy_net.append(nn.Linear(last_layer_dim_pi, self.policy_head_arch[-1]))
+        last_layer_dim_pi = self.policy_head_arch[-1]
 
         self.policy_head = nn.Sequential(*policy_net).to(self.device)
         # mu->alpha/mean, sigma->beta/log_std (nn.Module, nn.Parameter)
@@ -119,13 +130,15 @@ class PPO_ACMPC(nn.Module):
             self.parameters(), **self.optimizer_kwargs
         )
 
-    def _get_features(self, birdview: th.Tensor, state: th.Tensor) -> th.Tensor:
+    def _get_features(
+        self, birdview_ppo: th.Tensor, state: th.Tensor, birdview_mpc: None
+    ) -> th.Tensor:
         """
         :param birdview: th.Tensor (num_envs, frame_stack*channel, height, width)
         :param state: th.Tensor (num_envs, state_dim)
         """
-        birdview = birdview.float() / 255.0
-        features = self.features_extractor(birdview, state)
+        birdview_ppo = birdview_ppo.float() / 255.0
+        features = self.features_extractor(birdview_ppo, state)
         return features
 
     def _get_action_dist_from_features(self, features: th.Tensor, obs: th.Tensor):
@@ -144,8 +157,8 @@ class PPO_ACMPC(nn.Module):
                 action_initial.requires_grad = True
 
                 mu, _ = self.mpc(
-                    state=state,
-                    target=target,
+                    current_state=state,
+                    target_state=target,
                     action_initial=action_initial,
                     cost_dict=None,
                 )
@@ -179,7 +192,9 @@ class PPO_ACMPC(nn.Module):
         else:
             values = self.value_head(features)
 
-        distribution, mu, sigma = self._get_action_dist_from_features(features)
+        distribution, mu, sigma = self._get_action_dist_from_features(
+            features, obs_dict
+        )
         actions = self.scale_action(actions)
         log_prob = distribution.log_prob(actions)
         return (
@@ -211,7 +226,9 @@ class PPO_ACMPC(nn.Module):
             )
             features = self._get_features(**obs_tensor_dict)
             values = self.value_head(features)
-            distribution, mu, sigma = self._get_action_dist_from_features(features)
+            distribution, mu, sigma = self._get_action_dist_from_features(
+                features, obs_tensor_dict
+            )
             actions = distribution.get_actions(deterministic=deterministic)
             log_prob = distribution.log_prob(actions)
 
@@ -240,7 +257,9 @@ class PPO_ACMPC(nn.Module):
                 [(k, th.as_tensor(v).to(self.device)) for k, v in obs_dict.items()]
             )
             features = self._get_features(**obs_tensor_dict)
-            distribution, mu, sigma = self._get_action_dist_from_features(features)
+            distribution, mu, sigma = self._get_action_dist_from_features(
+                features, obs_tensor_dict
+            )
         return mu, sigma
 
     def scale_action(self, action: th.Tensor, eps=1e-7) -> th.Tensor:

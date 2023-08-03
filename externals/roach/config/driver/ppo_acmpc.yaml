@@ -1,5 +1,5 @@
 # @package _group_
-ppo:
+ppo_acmpc:
   entry_point: drivers.rl_birdview.rl_birdview_agent:RlBirdviewAgent
   wb_run_path: null
   wb_ckpt_step: null

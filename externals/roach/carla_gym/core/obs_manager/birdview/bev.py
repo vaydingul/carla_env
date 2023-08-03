@@ -74,12 +74,27 @@ class ObsManager(ObsManagerBase):
             waypoint=None,
         )
 
+        masks[..., self._bev_vehicle_channel] = np.logical_and(
+            masks[..., self._bev_vehicle_channel],
+            np.logical_not(masks[..., self._bev_agent_channel]),
+        )
+
+        bev = masks[..., self._bev_selected_channels]
+
         # Get birdview image
-        rendered = BirdViewProducer.as_rgb(masks)
+        rendered = BirdViewProducer.as_rgb_with_indices(
+            birdview=bev, indices=self._bev_selected_channels
+        )
+
+        bev = np.transpose(bev, (2, 0, 1))
 
         obs_dict = {
             "rendered": rendered,
-            "masks": masks,
+            "masks": bev,
         }
 
         return obs_dict
+
+    def clean(self):
+        self._parent_actor = None
+        self._world = None

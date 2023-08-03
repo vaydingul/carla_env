@@ -32,43 +32,44 @@ class RlBirdviewWrapper(gym.Wrapper):
         state_spaces = []
         if "speed" in self._input_states:  # 0
             state_spaces.append(env.observation_space[self._ev_id]["speed"]["speed_xy"])
-        if "speed_limit" in self._input_states:  # 1
+        if "speed_limit" in self._input_states:  
             state_spaces.append(
                 env.observation_space[self._ev_id]["control"]["speed_limit"]
             )
-        if "control" in self._input_states:  # 2 3 4 5
+        if "control" in self._input_states:  # 1 2 3 4
             state_spaces.append(
                 env.observation_space[self._ev_id]["control"]["throttle"]
             )
             state_spaces.append(env.observation_space[self._ev_id]["control"]["steer"])
             state_spaces.append(env.observation_space[self._ev_id]["control"]["brake"])
             state_spaces.append(env.observation_space[self._ev_id]["control"]["gear"])
-        if "acc_xy" in self._input_states:  # 6 7
+        if "acc_xy" in self._input_states: 
             state_spaces.append(
                 env.observation_space[self._ev_id]["velocity"]["acc_xy"]
             )
-        if "vel_xy" in self._input_states:  # 8 9
+        if "vel_xy" in self._input_states:  # 5 6
             state_spaces.append(
                 env.observation_space[self._ev_id]["velocity"]["vel_xy"]
             )
-        if "vel_ang_z" in self._input_states:  # 10
+        if "vel_ang_z" in self._input_states:
             state_spaces.append(
                 env.observation_space[self._ev_id]["velocity"]["vel_ang_z"]
             )
-        if "ego" in self._input_states:  # 11 12 13 14 15 16
+        if "ego" in self._input_states:  # 7 8 9 10 11 12
             state_spaces.append(
                 env.observation_space[self._ev_id]["ego"]["actor_location"]
             )
             state_spaces.append(
                 env.observation_space[self._ev_id]["ego"]["actor_rotation"]
             )
-        if "route" in self._input_states:  # 17 18 19 20 21 22
+        if "route" in self._input_states:  # 13 14 15 16 17
             state_spaces.append(
                 env.observation_space[self._ev_id]["route_plan"]["location"]
             )
             state_spaces.append(
                 env.observation_space[self._ev_id]["route_plan"]["rotation"]
             )
+
 
         state_low = np.concatenate([s.low for s in state_spaces])
         state_high = np.concatenate([s.high for s in state_spaces])
@@ -143,7 +144,7 @@ class RlBirdviewWrapper(gym.Wrapper):
         obs = self.process_obs(obs_ma[self._ev_id], self._input_states)
 
         self._render_dict["prev_obs"] = obs
-        self._render_dict["prev_im_render"] = obs_ma[self._ev_id]["birdview"][
+        self._render_dict["prev_im_render"] = obs_ma[self._ev_id]["birdview_ppo"][
             "rendered"
         ]
         return obs
@@ -163,7 +164,7 @@ class RlBirdviewWrapper(gym.Wrapper):
             "obs": self._render_dict["prev_obs"],
             "prev_obs": obs,
             "im_render": self._render_dict["prev_im_render"],
-            "prev_im_render": obs_ma[self._ev_id]["birdview"]["rendered"],
+            "prev_im_render": obs_ma[self._ev_id]["birdview_ppo"]["rendered"],
             "action": action,
             "reward_debug": info["reward_debug"],
             "terminal_debug": info["terminal_debug"],
@@ -253,6 +254,9 @@ class RlBirdviewWrapper(gym.Wrapper):
         if "ego" in input_states:
             state_list.append(obs["ego"]["actor_location"])
             state_list.append(obs["ego"]["actor_rotation"])
+        if "route" in input_states:
+            state_list.append(obs["route_plan"]["location"])
+            state_list.append(obs["route_plan"]["rotation"])
 
         state = np.concatenate(state_list)
 

@@ -208,7 +208,7 @@ class WorldBEVModelPassThrough(nn.Module):
     def __init__(
         self,
     ):
-        super(WorldBEVModelPassThrough, self).__init__()
+        super().__init__()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return x

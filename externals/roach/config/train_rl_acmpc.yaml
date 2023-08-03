@@ -1,8 +1,8 @@
 defaults:
   - driver: ppo_acmpc
-  - driver/ppo/policy: xtma_beta_acmpc
-  - driver/ppo/training: ppo
-  - driver/ppo/obs_configs: birdview_chauffeurnet+bev
+  - driver/ppo_acmpc/policy: xtma_gaus_acmpc
+  - driver/ppo_acmpc/training: ppo
+  - driver/ppo_acmpc/obs_configs: birdview_chauffeurnet+bev
   - train_envs: endless_debug
 actors:
   hero:

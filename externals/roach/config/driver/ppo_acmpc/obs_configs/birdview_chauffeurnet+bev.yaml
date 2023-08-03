@@ -1,0 +1,35 @@
+# @package _group_
+birdview_ppo:
+  module: birdview.chauffeurnet
+  width_in_pixels: 192
+  pixels_ev_to_bottom: 40
+  pixels_per_meter: 5.0
+  history_idx: [-16, -11, -6, -1]
+  scale_bbox: true
+  scale_mask_col: 1.0
+birdview_mpc:
+  module: birdview.bev
+  width: 256
+  height: 256
+  render_lanes_on_junctions: false
+  pixels_per_meter: 10
+  crop_type: "FRONT_AREA_ONLY"
+  road_on_off: true
+  road_light: true
+  light_circle: true
+  lane_marking_thickness: 2
+  bev_agent_channel: 7
+  bev_vehicle_channel: 6
+  bev_selected_channels: [0, 1, 2, 3, 4, 5, 6, 10, 11]
+  bev_calculate_offroad: false
+speed:
+  module: actor_state.speed
+control:
+  module: actor_state.control
+velocity:
+  module: actor_state.velocity
+ego:
+  module: object_finder.ego
+route_plan:
+  module: navigation.waypoint_plan_downsampled
+

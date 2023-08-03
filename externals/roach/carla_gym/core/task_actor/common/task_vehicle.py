@@ -162,6 +162,7 @@ class TaskVehicle(object):
 
     def tick(self, timestamp):
         distance_traveled = self._truncate_global_route_till_local_target()
+        self._update_leaderboard_plan(self._global_route)
         route_completed = self._is_route_completed()
         if self._endless and (len(self._global_route) < 10 or route_completed):
             self._add_random_target()
@@ -245,6 +246,9 @@ class TaskVehicle(object):
 
     def get_speed_limit(self):
         return self.vehicle.get_speed_limit()
+
+    def get_vehicle(self):
+        return self.vehicle
 
     def clean(self):
         self.criteria_collision.clean()

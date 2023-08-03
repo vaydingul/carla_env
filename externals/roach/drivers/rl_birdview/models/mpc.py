@@ -3,9 +3,10 @@ from torch import nn
 
 from typing import Optional, Tuple
 from externals.roach.carla_gym.utils.config_utils import load_entry_point
+from utilities.train_utils import stack
 
 
-class c(nn.Module):
+class ModelPredictiveControlWithoutOptimizer(nn.Module):
     def __init__(
         self,
         system_entry_point: str,
@@ -29,7 +30,7 @@ class c(nn.Module):
 
         self.device = device
 
-        self.system = load_entry_point(system_entry_point)(**system_kwargs)
+        self.system = load_entry_point(system_entry_point)(system_kwargs)
         self.cost = load_entry_point(cost_entry_point)(**cost_kwargs)
 
     def forward(
@@ -85,6 +86,7 @@ class c(nn.Module):
                 cost_dict,
             )
 
+
             action_grad = torch.autograd.grad(
                 loss,
                 self.action,
@@ -131,10 +133,7 @@ class c(nn.Module):
             )
             predicted_state_.append(state)
 
-        predicted_state = dict()
-        elem = predicted_state_[0]
-        for k in elem.keys():
-            predicted_state[k] = torch.stack([x[k] for x in predicted_state_], dim=1)
+        predicted_state = stack(predicted_state_, dim=1)
 
         return predicted_state
 

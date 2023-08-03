@@ -1,17 +1,18 @@
 import torch
+import numpy as np
 
 
 def obs_to_state_target(obs):
     birdview = obs["birdview_mpc"]
     state_ = obs["state"]
 
-    location = state_[..., 11:13]
+    location = state_[..., 7:9]
     speed = state_[..., 0:1]
-    yaw = torch.deg2rad(state_[..., 16:17])
+    yaw = torch.deg2rad(state_[..., 12:13])
 
-    target_location = state_[..., 17:19]
+    target_location = state_[..., 13:15]
     target_speed = torch.zeros_like(speed)
-    target_yaw = torch.deg2rad(state[..., 22:23])
+    target_yaw = torch.deg2rad(state_[..., 17:18])
 
     state = dict(
         ego=dict(

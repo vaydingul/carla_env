@@ -13,7 +13,7 @@ def check_h5_maps(env_configs, obs_configs, carla_sh_path):
     pixels_per_meter = None
     for agent_id, obs_cfg in obs_configs.items():
         for k, v in obs_cfg.items():
-            if "birdview" in v["module"]:
+            if "birdview_ppo" in v["module"]:
                 pixels_per_meter = float(v["pixels_per_meter"])
 
     if pixels_per_meter is None:

@@ -22,7 +22,9 @@ class XtMaCNN(nn.Module):
         super().__init__()
         self.features_dim = features_dim
 
-        n_input_channels = observation_space["birdview"].shape[0]
+        key = "birdview" if "birdview" in observation_space else "birdview_ppo"
+
+        n_input_channels = observation_space[key].shape[0]
 
         self.cnn = nn.Sequential(
             nn.Conv2d(n_input_channels, 8, kernel_size=5, stride=2),
@@ -42,7 +44,7 @@ class XtMaCNN(nn.Module):
         # Compute shape by doing one forward pass
         with th.no_grad():
             n_flatten = self.cnn(
-                th.as_tensor(observation_space["birdview"].sample()[None]).float()
+                th.as_tensor(observation_space[key].sample()[None]).float()
             ).shape[1]
 
         self.linear = nn.Sequential(
@@ -97,7 +99,8 @@ class ImpalaCNN(nn.Module):
         self.final_relu = final_relu
 
         # image encoder
-        curshape = observation_space["birdview"].shape
+        key = "birdview" if "birdview" in observation_space else "birdview_ppo"
+        curshape = observation_space[key].shape
         s = 1 / np.sqrt(len(chans))  # per stack scale
         self.stacks = nn.ModuleList()
         for outchan in chans:
@@ -147,12 +150,12 @@ class ImpalaCNN(nn.Module):
 
 
 class CARLASystem(nn.Module):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super().__init__()
 
-        self.ego_forward_model = KinematicBicycleModelFromParams()
+        self.ego_forward_model = KinematicBicycleModelFromParams({})
 
-        self.world_forward_model = WorldBEVModelPassThrough(n=10)
+        self.world_forward_model = WorldBEVModelPassThrough()
 
     def forward(self, state, action):
         ego_state = state["ego"]
@@ -182,7 +185,6 @@ class CARLACost(Cost):
         target_speed = target["ego"]["speed"]
         target_yaw = target["ego"]["yaw"]
 
-
         cost = super().forward(
             location=location,
             yaw=yaw,
@@ -190,4 +192,4 @@ class CARLACost(Cost):
             bev=bev,
         )
 
-        
+        return cost["cost_dict"]["offroad_cost"]

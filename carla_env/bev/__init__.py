@@ -2,7 +2,7 @@ import carla
 import logging
 import numpy as np
 import cv2
-
+import os
 from enum import IntEnum, auto, Enum
 from pathlib import Path
 from typing import List
@@ -158,20 +158,16 @@ class BirdViewProducer:
         light_circle: bool = False,
         lane_marking_thickness=1,
     ) -> None:
-        
         # Either client or world must be provided
-        assert (client is not None) or (world is not None), (
-            "Either client or world must be provided"
-        )
+        assert (client is not None) or (
+            world is not None
+        ), "Either client or world must be provided"
 
         if world is None:
             world = client.get_world()
             self._world = world
         else:
             self._world = world
-
-        
-
 
         self.target_size = target_size
         self.pixels_per_meter = pixels_per_meter
@@ -211,6 +207,7 @@ class BirdViewProducer:
             render_lanes_on_junctions=render_lanes_on_junctions,
         )
 
+
         cache_path = self.parametrized_cache_path()
         with FileLock(f"{cache_path}.lock"):
             if Path(cache_path).is_file():
@@ -240,7 +237,7 @@ class BirdViewProducer:
                 LOGGER.info(f"Saved static layers to cache file: {cache_path}")
 
     def parametrized_cache_path(self) -> str:
-        cache_dir = Path("cache")
+        cache_dir = Path(os.environ["CACHE_PATH"])
         cache_dir.mkdir(parents=True, exist_ok=True)
         opendrive_content_hash = cache.generate_opendrive_content_hash(self._map)
         cache_filename = (
