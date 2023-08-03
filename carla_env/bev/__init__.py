@@ -207,16 +207,15 @@ class BirdViewProducer:
             render_lanes_on_junctions=render_lanes_on_junctions,
         )
 
-
         cache_path = self.parametrized_cache_path()
         with FileLock(f"{cache_path}.lock"):
             if Path(cache_path).is_file():
-                LOGGER.info(f"Loading cache from {cache_path}")
+                # LOGGER.info(f"Loading cache from {cache_path}")
                 static_cache = np.load(cache_path)
                 self.full_road_cache = static_cache[0]
                 self.full_lanes_cache = static_cache[1]
                 self.full_centerlines_cache = static_cache[2]
-                LOGGER.info(f"Loaded static layers from cache file: {cache_path}")
+                # LOGGER.info(f"Loaded static layers from cache file: {cache_path}")
             else:
                 LOGGER.warning(
                     f"Cache file does not exist, generating cache at {cache_path}"
