@@ -9,17 +9,17 @@ from externals.roach.carla_gym.utils.config_utils import load_entry_point
 
 
 class PpoPolicy(nn.Module):
-
-    def __init__(self,
-                 observation_space: gym.spaces.Space,
-                 action_space: gym.spaces.Space,
-                 policy_head_arch=[256, 256],
-                 value_head_arch=[256, 256],
-                 features_extractor_entry_point=None,
-                 features_extractor_kwargs={},
-                 distribution_entry_point=None,
-                 distribution_kwargs={}):
-
+    def __init__(
+        self,
+        observation_space: gym.spaces.Space,
+        action_space: gym.spaces.Space,
+        policy_head_arch=[256, 256],
+        value_head_arch=[256, 256],
+        features_extractor_entry_point=None,
+        features_extractor_kwargs={},
+        distribution_entry_point=None,
+        distribution_kwargs={},
+    ):
         super(PpoPolicy, self).__init__()
         self.observation_space = observation_space
         self.action_space = action_space
@@ -29,20 +29,24 @@ class PpoPolicy(nn.Module):
         self.distribution_kwargs = distribution_kwargs
 
         if th.cuda.is_available():
-            self.device = 'cuda'
+            self.device = "cuda"
         else:
-            self.device = 'cpu'
+            self.device = "cpu"
 
         self.optimizer_class = th.optim.Adam
-        self.optimizer_kwargs = {'eps': 1e-5}
+        self.optimizer_kwargs = {"eps": 1e-5}
 
         features_extractor_class = load_entry_point(features_extractor_entry_point)
-        self.features_extractor = features_extractor_class(observation_space, **features_extractor_kwargs)
+        self.features_extractor = features_extractor_class(
+            observation_space, **features_extractor_kwargs
+        )
 
         distribution_class = load_entry_point(distribution_entry_point)
-        self.action_dist = distribution_class(int(np.prod(action_space.shape)), **distribution_kwargs)
+        self.action_dist = distribution_class(
+            int(np.prod(action_space.shape)), **distribution_kwargs
+        )
 
-        if 'StateDependentNoiseDistribution' in distribution_entry_point:
+        if "StateDependentNoiseDistribution" in distribution_entry_point:
             self.use_sde = True
             self.sde_sample_freq = 4
         else:
@@ -59,7 +63,7 @@ class PpoPolicy(nn.Module):
         self._build()
 
     def reset_noise(self, n_envs: int = 1) -> None:
-        assert self.use_sde, 'reset_noise() is only available when using gSDE'
+        assert self.use_sde, "reset_noise() is only available when using gSDE"
         self.action_dist.sample_weights(self.dist_sigma, batch_size=n_envs)
 
     def _build(self) -> None:
@@ -72,7 +76,9 @@ class PpoPolicy(nn.Module):
 
         self.policy_head = nn.Sequential(*policy_net).to(self.device)
         # mu->alpha/mean, sigma->beta/log_std (nn.Module, nn.Parameter)
-        self.dist_mu, self.dist_sigma = self.action_dist.proba_distribution_net(last_layer_dim_pi)
+        self.dist_mu, self.dist_sigma = self.action_dist.proba_distribution_net(
+            last_layer_dim_pi
+        )
 
         last_layer_dim_vf = self.features_extractor.features_dim
         value_net = []
@@ -100,7 +106,9 @@ class PpoPolicy(nn.Module):
             for module, gain in module_gains.items():
                 module.apply(partial(self.init_weights, gain=gain))
 
-        self.optimizer = self.optimizer_class(self.parameters(), **self.optimizer_kwargs)
+        self.optimizer = self.optimizer_class(
+            self.parameters(), **self.optimizer_kwargs
+        )
 
     def _get_features(self, birdview: th.Tensor, state: th.Tensor) -> th.Tensor:
         """
@@ -118,10 +126,19 @@ class PpoPolicy(nn.Module):
             sigma = self.dist_sigma
         else:
             sigma = self.dist_sigma(latent_pi)
-        return self.action_dist.proba_distribution(mu, sigma), mu.detach().cpu().numpy(), sigma.detach().cpu().numpy()
+        return (
+            self.action_dist.proba_distribution(mu, sigma),
+            mu.detach().cpu().numpy(),
+            sigma.detach().cpu().numpy(),
+        )
 
-    def evaluate_actions(self, obs_dict: Dict[str, th.Tensor], actions: th.Tensor, exploration_suggests,
-                         detach_values=False):
+    def evaluate_actions(
+        self,
+        obs_dict: Dict[str, th.Tensor],
+        actions: th.Tensor,
+        exploration_suggests,
+        detach_values=False,
+    ):
         features = self._get_features(**obs_dict)
 
         if detach_values:
@@ -133,8 +150,13 @@ class PpoPolicy(nn.Module):
         distribution, mu, sigma = self._get_action_dist_from_features(features)
         actions = self.scale_action(actions)
         log_prob = distribution.log_prob(actions)
-        return values.flatten(), log_prob, distribution.entropy_loss(), \
-            distribution.exploration_loss(exploration_suggests), distribution.distribution
+        return (
+            values.flatten(),
+            log_prob,
+            distribution.entropy_loss(),
+            distribution.exploration_loss(exploration_suggests),
+            distribution.distribution,
+        )
 
     def evaluate_values(self, obs_dict: Dict[str, th.Tensor]):
         features = self._get_features(**obs_dict)
@@ -142,12 +164,19 @@ class PpoPolicy(nn.Module):
         distribution, mu, sigma = self._get_action_dist_from_features(features)
         return values.flatten(), distribution.distribution
 
-    def forward(self, obs_dict: Dict[str, np.ndarray], deterministic: bool = False, clip_action: bool = False):
-        '''
+    def forward(
+        self,
+        obs_dict: Dict[str, np.ndarray],
+        deterministic: bool = False,
+        clip_action: bool = False,
+    ):
+        """
         used in collect_rollouts(), do not clamp actions
-        '''
+        """
         with th.no_grad():
-            obs_tensor_dict = dict([(k, th.as_tensor(v).to(self.device)) for k, v in obs_dict.items()])
+            obs_tensor_dict = dict(
+                [(k, th.as_tensor(v).to(self.device)) for k, v in obs_dict.items()]
+            )
             features = self._get_features(**obs_tensor_dict)
             values = self.value_head(features)
             distribution, mu, sigma = self._get_action_dist_from_features(features)
@@ -165,7 +194,9 @@ class PpoPolicy(nn.Module):
 
     def forward_value(self, obs_dict: Dict[str, np.ndarray]) -> np.ndarray:
         with th.no_grad():
-            obs_tensor_dict = dict([(k, th.as_tensor(v).to(self.device)) for k, v in obs_dict.items()])
+            obs_tensor_dict = dict(
+                [(k, th.as_tensor(v).to(self.device)) for k, v in obs_dict.items()]
+            )
             features = self._get_features(**obs_tensor_dict)
             values = self.value_head(features)
         values = values.cpu().numpy().flatten()
@@ -173,7 +204,9 @@ class PpoPolicy(nn.Module):
 
     def forward_policy(self, obs_dict: Dict[str, np.ndarray]) -> np.ndarray:
         with th.no_grad():
-            obs_tensor_dict = dict([(k, th.as_tensor(v).to(self.device)) for k, v in obs_dict.items()])
+            obs_tensor_dict = dict(
+                [(k, th.as_tensor(v).to(self.device)) for k, v in obs_dict.items()]
+            )
             features = self._get_features(**obs_tensor_dict)
             distribution, mu, sigma = self._get_action_dist_from_features(features)
         return mu, sigma
@@ -184,10 +217,14 @@ class PpoPolicy(nn.Module):
         d_low, d_high = self.action_dist.low, self.action_dist.high  # scalar
 
         if d_low is not None and d_high is not None:
-            a_low = th.as_tensor(self.action_space.low.astype(np.float32)).to(action.device)
-            a_high = th.as_tensor(self.action_space.high.astype(np.float32)).to(action.device)
-            action = (action-a_low)/(a_high-a_low) * (d_high-d_low) + d_low
-            action = th.clamp(action, d_low+eps, d_high-eps)
+            a_low = th.as_tensor(self.action_space.low.astype(np.float32)).to(
+                action.device
+            )
+            a_high = th.as_tensor(self.action_space.high.astype(np.float32)).to(
+                action.device
+            )
+            action = (action - a_low) / (a_high - a_low) * (d_high - d_low) + d_low
+            action = th.clamp(action, d_low + eps, d_high - eps)
         return action
 
     def unscale_action(self, action: np.ndarray, eps=0.0) -> np.ndarray:
@@ -200,7 +237,7 @@ class PpoPolicy(nn.Module):
             a_low, a_high = self.action_space.low, self.action_space.high
             # same shape as action [batch_size, action_dim]
             # a_high = np.tile(self.action_space.high, [batch_size, 1])
-            action = (action-d_low)/(d_high-d_low) * (a_high-a_low) + a_low
+            action = (action - d_low) / (d_high - d_low) * (a_high - a_low) + a_low
             # action = np.clip(action, a_low+eps, a_high-eps)
         return action
 
@@ -220,16 +257,16 @@ class PpoPolicy(nn.Module):
     @classmethod
     def load(cls, path):
         if th.cuda.is_available():
-            device = 'cuda'
+            device = "cuda"
         else:
-            device = 'cpu'
+            device = "cpu"
         saved_variables = th.load(path, map_location=device)
         # Create policy object
-        model = cls(**saved_variables['policy_init_kwargs'])
+        model = cls(**saved_variables["policy_init_kwargs"])
         # Load weights
-        model.load_state_dict(saved_variables['policy_state_dict'])
+        model.load_state_dict(saved_variables["policy_state_dict"])
         model.to(device)
-        return model, saved_variables['train_init_kwargs']
+        return model, saved_variables["train_init_kwargs"]
 
     @staticmethod
     def init_weights(module: nn.Module, gain: float = 1) -> None:

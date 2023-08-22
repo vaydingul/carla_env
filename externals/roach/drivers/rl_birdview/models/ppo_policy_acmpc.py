@@ -141,7 +141,9 @@ class PPO_ACMPC(nn.Module):
         features = self.features_extractor(birdview_ppo, state)
         return features
 
-    def _get_action_dist_from_features(self, features: th.Tensor, obs: th.Tensor):
+    def _get_action_dist_from_features(
+        self, features: th.Tensor, obs: th.Tensor, set_requires_grad=True
+    ):
         latent_pi = self.policy_head(features)
 
         num_optimization_step = self.mpc_kwargs["num_optimization_step"]
@@ -154,7 +156,8 @@ class PPO_ACMPC(nn.Module):
                 action_initial = latent_pi.view(
                     -1, prediction_horizon, self.action_dist.action_dim
                 )
-                action_initial.requires_grad = True
+                if set_requires_grad:
+                    action_initial.requires_grad = True
 
                 mu, _ = self.mpc(
                     current_state=state,
@@ -193,7 +196,7 @@ class PPO_ACMPC(nn.Module):
             values = self.value_head(features)
 
         distribution, mu, sigma = self._get_action_dist_from_features(
-            features, obs_dict
+            features, obs_dict, set_requires_grad=False
         )
         actions = self.scale_action(actions)
         log_prob = distribution.log_prob(actions)
@@ -208,7 +211,9 @@ class PPO_ACMPC(nn.Module):
     def evaluate_values(self, obs_dict: Dict[str, th.Tensor]):
         features = self._get_features(**obs_dict)
         values = self.value_head(features)
-        distribution, mu, sigma = self._get_action_dist_from_features(features)
+        distribution, mu, sigma = self._get_action_dist_from_features(
+            features, obs_dict, set_requires_grad=False
+        )
         return values.flatten(), distribution.distribution
 
     def forward(

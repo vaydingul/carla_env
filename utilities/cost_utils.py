@@ -49,7 +49,7 @@ def create_coordinate_mask(nx, ny, pixels_per_meter, device):
     # Concatenate the meshes
     coordinate_mask = torch.stack([x, y], axis=2)
 
-    return coordinate_mask, X, Y
+    return coordinate_mask, x, y# X, Y
 
 
 def align_coordinate_mask_with_ego_vehicle(x, y, yaw, coordinate_mask):
@@ -223,8 +223,8 @@ def _test_transfer_cost_weight_func():
 
 
 def _test_mask_generation():
-    speed = 3
-    vehicle_width = 2
+    speed = 10
+    vehicle_width = 3
     vehicle_length = 4
     dx = (
         1.5 * (torch.maximum(torch.tensor(0.1), torch.tensor(speed)) + vehicle_length)
@@ -233,10 +233,10 @@ def _test_mask_generation():
     dy = (vehicle_width / 2) + 3
 
     # Visualization for testing purposes
-    coordinate_mask, X, Y = create_coordinate_mask(500, 500, 10, "cpu")
+    coordinate_mask, X, Y = create_coordinate_mask(20, 20, 1, "cpu")
     coordinate_mask_ = coordinate_mask.repeat(1, 1, 1, 1, 1)
-    x = torch.tensor([-10.0]).repeat(1, 1, 1)
-    y = torch.tensor([10.0]).repeat(1, 1, 1)
+    x = torch.tensor([5.0]).repeat(1, 1, 1)
+    y = torch.tensor([5.0]).repeat(1, 1, 1)
     yaw = torch.deg2rad(torch.tensor([-30.0]).repeat(1, 1, 1))
     aligned_coordinate_mask = align_coordinate_mask_with_ego_vehicle(
         x, y, yaw, coordinate_mask_
@@ -278,6 +278,7 @@ def _test_mask_generation():
 
     plt.figure()
     plt.imshow(mask_car, cmap="hot", interpolation="nearest")
+
     plt.colorbar()
 
     plt.figure()

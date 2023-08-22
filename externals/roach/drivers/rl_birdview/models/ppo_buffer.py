@@ -196,14 +196,14 @@ class PpoBuffer():
         assert self.full, ''
         list_render = []
 
-        _, _, c, h, w = self.observations['birdview'].shape
+        _, _, c, h, w = self.observations['birdview_ppo'].shape
         vis_idx = np.array([0, 1, 2, 6, 10, 14])
 
         for i in range(self.buffer_size):
             im_envs = []
             for j in range(self.n_envs):
 
-                masks = self.observations['birdview'][i, j, vis_idx, :, :] > 100
+                masks = self.observations['birdview_ppo'][i, j, vis_idx, :, :] > 100
 
                 im_birdview = np.zeros([h, w, 3], dtype=np.uint8)
                 for idx_c in range(len(vis_idx)):

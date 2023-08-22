@@ -95,7 +95,7 @@ class RlBirdviewAgent:
         self._render_dict = {
             "timestamp": timestamp,
             "obs": policy_input,
-            "im_render": input_data["birdview"]["rendered"],
+            "im_render": input_data["birdview_ppo"]["rendered"],
             "action": actions,
             "action_value": values[0],
             "action_log_probs": log_probs[0],
@@ -106,6 +106,7 @@ class RlBirdviewAgent:
 
         # return control
         return actions
+
     def reset(self, log_file_path):
         # logger
         self._logger.handlers = []
@@ -126,7 +127,7 @@ class RlBirdviewAgent:
         model = model_class(self._policy, env, **self._train_cfg["kwargs"])
         model.learn(total_timesteps, callback=callback, seed=seed)
 
-    def render(self, reward_debug = None, terminal_debug= None):
+    def render(self, reward_debug=None, terminal_debug=None):
         """
         test render, used in benchmark.py
         """

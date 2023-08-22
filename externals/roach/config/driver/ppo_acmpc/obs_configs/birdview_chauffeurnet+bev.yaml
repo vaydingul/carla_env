@@ -12,7 +12,7 @@ birdview_mpc:
   width: 256
   height: 256
   render_lanes_on_junctions: false
-  pixels_per_meter: 10
+  pixels_per_meter: 10.0
   crop_type: "FRONT_AREA_ONLY"
   road_on_off: true
   road_light: true

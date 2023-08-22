@@ -24,7 +24,7 @@ kwargs:
         decay_factor: 0.999
         vehicle_width: 2.0
         vehicle_length: 5.0
-        pixels_per_meter: 10
+        pixels_per_meter: 10.0
         longitudinal_offset: 0.5
         longitudinal_scaler: 0.75
         longitudinal_speed_offset: 0.0
