@@ -135,6 +135,7 @@ tickable_modules
 *.mp4
 *.json
 *.csv
+*.pth
 
 # Folders
 logs/
@@ -150,3 +151,4 @@ WoR_ego_model_parameters
 wor_correct_control_configuration_result
 wor_wrong_control_configuration_result
 VEHICLE_PHYSICS
+externals/roach/outputs/
