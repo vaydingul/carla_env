@@ -35,6 +35,12 @@ class BirdViewCropType(Enum):
     DYNAMIC = auto()
 
 
+BIRDVIEW_CROP_TYPE = {
+    "FRONT_AND_REAR_AREA": BirdViewCropType.FRONT_AND_REAR_AREA,
+    "FRONT_AREA_ONLY": BirdViewCropType.FRONT_AREA_ONLY,
+    "DYNAMIC": BirdViewCropType.DYNAMIC,
+}
+
 DEFAULT_HEIGHT = 336  # its 84m when density is 4px/m
 DEFAULT_WIDTH = 150  # its 37.5m when density is 4px/m
 DEFAULT_CROP_TYPE = BirdViewCropType.FRONT_AND_REAR_AREA

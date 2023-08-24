@@ -397,6 +397,41 @@ class Trainer(object):
             offroad_cost = cost["offroad_cost"] / (
                 world_previous_bev.shape[0] * self.num_time_step_future
             )
+
+            d0 = (
+                F.l1_loss(
+                    target_location,
+                    ego_future_location_predicted[:, 0],
+                    reduction="none",
+                )
+                .sum(1, keepdim=True)
+                .repeat(1, self.num_time_step_future - 1)
+            )  # B x 1
+
+            di = F.l1_loss(
+                ego_future_location_predicted[:, 1:],
+                ego_future_location_predicted[:, 0:1].repeat(
+                    1, self.num_time_step_future - 1, 1
+                ),
+                reduction="none",
+            ).sum(
+                2
+            )  # B x S
+
+            di_ = F.l1_loss(
+                target_location.unsqueeze(1).repeat(
+                    1, self.num_time_step_future - 1, 1
+                ),
+                ego_future_location_predicted[:, 1:],
+                reduction="none",
+            ).sum(
+                2
+            )  # B x S
+
+            target_progress = (di / d0).mean()
+
+            target_remainder = (di_ / d0).mean()
+
         else:
 
             cost = {}
@@ -407,6 +442,8 @@ class Trainer(object):
             red_light_cost = torch.zeros(1).to(self.gpu_id)
             pedestrian_cost = torch.zeros(1).to(self.gpu_id)
             offroad_cost = torch.zeros(1).to(self.gpu_id)
+            target_progress = torch.zeros(1).to(self.gpu_id)
+            target_remainder = torch.zeros(1).to(self.gpu_id)
 
         ego_future_action[..., 0] -= ego_future_action[..., -1]
 
@@ -417,36 +454,6 @@ class Trainer(object):
         action_jerk = torch.diff(ego_future_action_predicted, dim=1).square().sum() / (
             B * S_future
         )
-
-        d0 = (
-            F.l1_loss(
-                target_location, ego_future_location_predicted[:, 0], reduction="none"
-            )
-            .sum(1, keepdim=True)
-            .repeat(1, self.num_time_step_future - 1)
-        )  # B x 1
-
-        di = F.l1_loss(
-            ego_future_location_predicted[:, 1:],
-            ego_future_location_predicted[:, 0:1].repeat(
-                1, self.num_time_step_future - 1, 1
-            ),
-            reduction="none",
-        ).sum(
-            2
-        )  # B x S
-
-        di_ = F.l1_loss(
-            target_location.unsqueeze(1).repeat(1, self.num_time_step_future - 1, 1),
-            ego_future_location_predicted[:, 1:],
-            reduction="none",
-        ).sum(
-            2
-        )  # B x S
-
-        target_progress = (di / d0).mean()
-
-        target_remainder = (di_ / d0).mean()
 
         # ego_state_mse = F.l1_loss(
         #     ego_future_location_predicted, ego_future_location, reduction="sum") / (

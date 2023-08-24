@@ -330,7 +330,7 @@ def main(config):
                 skip_counter + (repeat_counter + 1 == (config.repeat_frames))
             ) % config.skip_frames
             repeat_counter = (repeat_counter + 1) % config.repeat_frames
-        time.sleep(0.1)    
+        time.sleep(0.1)
     c.close()
 
 
@@ -453,7 +453,7 @@ if __name__ == "__main__":
         description="Collect data from the CARLA simulator"
     )
 
-    parser.add_argument("--seed", type=int, default=26845)
+    parser.add_argument("--seed", type=int, default=468)
 
     parser.add_argument("--rollout_length", type=int, default=5)
     parser.add_argument("--skip_frames", type=int, default=1)
@@ -474,7 +474,7 @@ if __name__ == "__main__":
     parser.add_argument("--world_forward_model_checkpoint_number", type=int, default=49)
 
     parser.add_argument(
-        "--policy_model_wandb_link", type=str, default="vaydingul/mbl/33t1uu18"
+        "--policy_model_wandb_link", type=str, default="vaydingul/mbl/2sb7u33x"
     )
 
     parser.add_argument("--policy_model_checkpoint_number", type=int, default=49)

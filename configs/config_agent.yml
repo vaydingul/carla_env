@@ -1,0 +1,22 @@
+wandb_ego_forward_model:
+  checkpoint_path: "pretrained_models/2022-09-30/17-49-06/ego_model_new.pt"
+
+wandb_world_forward_model:
+  link: "vaydingul/mbl/1gftiw9w"
+  checkpoint_number: 49
+
+wandb_policy_model:
+  link: vaydingul/mbl/33t1uu18
+  checkpoint_number: 49
+
+bev:
+  config:
+    width: 192
+    height: 192
+    render_lanes_on_junctions: false
+    pixels_per_meter: 5
+    crop_type: "FRONT_AREA_ONLY"
+    road_on_off: true
+    road_light: true
+    light_circle: true
+    lane_marking_thickness: 2

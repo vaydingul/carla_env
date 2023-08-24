@@ -103,9 +103,25 @@ def main(rank, world_size, run, config):
     world_forward_model = WorldBEVModel.load_model_from_wandb_run(
         run=world_model_run,
         checkpoint=checkpoint,
-        device={f"cuda:0": f"cuda:{rank}"} if config.num_gpu > 1 else rank,
+        device=lambda storage, loc: storage.cuda(rank) if config.num_gpu > 1 else rank,
     )
     world_forward_model.to(device=rank)
+
+    # ---------------------------------------------------------------------------- #
+    #                            Pretrained policy model                           #
+    # ---------------------------------------------------------------------------- #
+    policy_model_run = wandb.Api().run(config.policy_model_wandb_link)
+    checkpoint = fetch_checkpoint_from_wandb_link(
+        config.policy_model_wandb_link, config.policy_model_checkpoint_number
+    )
+    policy_model = Policy.load_model_from_wandb_run(
+        run=policy_model_run,
+        checkpoint=checkpoint,
+        device=lambda storage, loc: storage.cuda(rank) if config.num_gpu > 1 else rank,
+    )
+    policy_model.to(device=rank)
+
+    # ---------------------------------------------------------------------------- #
 
     config.num_time_step_previous = (
         world_model_run.config["num_time_step_previous"]
@@ -166,47 +182,6 @@ def main(rank, world_size, run, config):
     logger.info(f"Train dataset size: {len(dataset_train)}")
     logger.info(f"Val dataset size: {len(dataset_val)}")
 
-    # ---------------------------------------------------------------------------- #
-    #                                  Policy Model                                 #
-    # ---------------------------------------------------------------------------- #
-    if not config.resume:
-
-        c, h, w = world_forward_model.world_previous_bev_encoder.to(
-            "cpu"
-        ).get_output_shape()
-
-        _input_shape_world_state = (c, h, w)
-
-        if config.wandb:
-            run.config.update({"input_shape_world_state": _input_shape_world_state})
-
-        policy_model = Policy(
-            input_shape_world_state=_input_shape_world_state,
-            input_ego_location=config.input_ego_location,
-            input_ego_yaw=config.input_ego_yaw,
-            input_ego_speed=config.input_ego_speed,
-            action_size=config.action_size,
-            hidden_size=config.hidden_size,
-            occupancy_size=config.occupancy_size,
-            layers=config.num_layer,
-            delta_target=config.delta_target,
-            dropout=config.dropout,
-        )
-
-    else:
-
-        checkpoint = fetch_checkpoint_from_wandb_run(
-            run=run, checkpoint_number=config.resume_checkpoint_number
-        )
-
-        policy_model = Policy.load_model_from_wandb_run(
-            run=run,
-            checkpoint=checkpoint,
-            device=lambda storage, loc: storage.cuda(rank)
-            if config.num_gpu > 1
-            else rank,
-        )
-    policy_model.to(device=rank)
     # ---------------------------------------------------------------------------- #
     #                              DFM_KM with Policy                              #
     # ---------------------------------------------------------------------------- #
@@ -423,6 +398,12 @@ if __name__ == "__main__":
     )
 
     parser.add_argument("--world_forward_model_checkpoint_number", type=int, default=47)
+
+    parser.add_argument(
+        "--policy_model_wandb_link", type=str, default="vaydingul/mbl/31mxv8ub"
+    )
+
+    parser.add_argument("--policy_model_checkpoint_number", type=int, default=47)
 
     config = parser.parse_args()
 
